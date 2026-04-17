@@ -1,0 +1,158 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: 'Heebo', sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sport: var(--sport);
+  --color-sport-foreground: var(--sport-foreground);
+  --color-nutrition: var(--nutrition);
+  --color-nutrition-foreground: var(--nutrition-foreground);
+  --color-finance: var(--finance);
+  --color-finance-foreground: var(--finance-foreground);
+  --color-market: var(--market);
+  --color-market-foreground: var(--market-foreground);
+  --color-work: var(--work);
+  --color-work-foreground: var(--work-foreground);
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.13 0.02 280);
+  --foreground: oklch(0.9 0.01 260);
+  --card: oklch(0.17 0.02 280);
+  --card-foreground: oklch(0.9 0.01 260);
+  --popover: oklch(0.17 0.02 280);
+  --popover-foreground: oklch(0.9 0.01 260);
+  --primary: oklch(0.7 0.15 250);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.22 0.02 280);
+  --secondary-foreground: oklch(0.85 0.01 260);
+  --muted: oklch(0.2 0.015 280);
+  --muted-foreground: oklch(0.6 0.02 260);
+  --accent: oklch(0.22 0.02 280);
+  --accent-foreground: oklch(0.9 0.01 260);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.25 0.015 280);
+  --input: oklch(0.22 0.015 280);
+  --ring: oklch(0.7 0.15 250);
+  --chart-1: oklch(0.7 0.2 150);
+  --chart-2: oklch(0.65 0.15 200);
+  --chart-3: oklch(0.75 0.18 80);
+  --chart-4: oklch(0.6 0.2 300);
+  --chart-5: oklch(0.65 0.22 30);
+  --sidebar: oklch(0.15 0.02 280);
+  --sidebar-foreground: oklch(0.85 0.01 260);
+  --sidebar-primary: oklch(0.7 0.15 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.22 0.02 280);
+  --sidebar-accent-foreground: oklch(0.9 0.01 260);
+  --sidebar-border: oklch(0.25 0.015 280);
+  --sidebar-ring: oklch(0.7 0.15 250);
+
+  /* Module accent colors */
+  --sport: oklch(0.8 0.25 155);
+  --sport-foreground: oklch(0.15 0.03 155);
+  --nutrition: oklch(0.75 0.18 165);
+  --nutrition-foreground: oklch(0.15 0.03 165);
+  --finance: oklch(0.7 0.12 70);
+  --finance-foreground: oklch(0.15 0.03 70);
+  --market: oklch(0.7 0.18 145);
+  --market-foreground: oklch(0.15 0.03 145);
+  --work: oklch(0.7 0.15 250);
+  --work-foreground: oklch(0.15 0.03 250);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    background-color: var(--color-background);
+    touch-action: manipulation;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: 'Heebo', sans-serif;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input, textarea, [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  button, a {
+    touch-action: manipulation;
+  }
+}
+
+@layer utilities {
+  .safe-area-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.25rem);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
