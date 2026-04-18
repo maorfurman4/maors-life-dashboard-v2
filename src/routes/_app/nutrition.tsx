@@ -7,7 +7,6 @@ import { NutritionMealCards } from "@/components/nutrition/NutritionMealCards";
 import { NutritionQuickAdd } from "@/components/nutrition/NutritionQuickAdd";
 import { NutritionFavorites } from "@/components/nutrition/NutritionFavorites";
 import { NutritionFoodSearch } from "@/components/nutrition/NutritionFoodSearch";
-import { NutritionAIZone } from "@/components/nutrition/NutritionAIZone";
 import { NutritionWeightChart } from "@/components/nutrition/NutritionWeightChart";
 import { NutritionTDEECalculator } from "@/components/nutrition/NutritionTDEECalculator";
 import { WeightTracker } from "@/components/health/WeightTracker";
@@ -74,7 +73,6 @@ function NutritionPage() {
           <NutritionTDEECalculator />
           <WeightTracker />
           <NutritionWeightChart />
-          <NutritionAIZone />
         </div>
       )}
 
