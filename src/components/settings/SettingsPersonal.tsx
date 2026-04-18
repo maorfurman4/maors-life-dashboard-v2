@@ -1,23 +1,82 @@
-import { useState } from "react";
-import { User } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, Save } from "lucide-react";
+import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
+import { toast } from "sonner";
 
-interface PersonalData {
-  fullName: string;
-  dateOfBirth: string;
-  heightCm: string;
-  weightKg: string;
+const GENDER_OPTIONS = ["זכר", "נקבה", "אחר", "מעדיף/ה לא לציין"];
+const LIMITATION_OPTIONS = ["כתף", "גב תחתון", "ברך", "מרפק", "ירך", "קרסול", "אין מגבלות"];
+
+function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+        selected
+          ? "bg-primary/20 border-primary text-primary"
+          : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+      }`}
+    >
+      {label}
+    </button>
+  );
 }
 
 export function SettingsPersonal() {
-  const [data, setData] = useState<PersonalData>({
-    fullName: "",
-    dateOfBirth: "",
-    heightCm: "",
-    weightKg: "",
+  const { data: profile } = useProfile();
+  const { mutate: updateProfile, isPending } = useUpdateProfile();
+
+  const [draft, setDraft] = useState({
+    full_name: "",
+    age: "",
+    city: "",
+    gender: "",
+    height_cm: "",
+    weight_kg: "",
+    target_weight_kg: "",
+    physical_limitations: [] as string[],
   });
 
-  const update = (key: keyof PersonalData, value: string) =>
-    setData((prev) => ({ ...prev, [key]: value }));
+  useEffect(() => {
+    if (!profile) return;
+    setDraft({
+      full_name: profile.full_name ?? "",
+      age: profile.age != null ? String(profile.age) : "",
+      city: profile.city ?? "",
+      gender: profile.gender ?? "",
+      height_cm: profile.height_cm != null ? String(profile.height_cm) : "",
+      weight_kg: profile.weight_kg != null ? String(profile.weight_kg) : "",
+      target_weight_kg: profile.target_weight_kg != null ? String(profile.target_weight_kg) : "",
+      physical_limitations: profile.physical_limitations ?? [],
+    });
+  }, [profile]);
+
+  const toggleLimitation = (l: string) => {
+    const curr = draft.physical_limitations;
+    setDraft((d) => ({
+      ...d,
+      physical_limitations: curr.includes(l) ? curr.filter((x) => x !== l) : [...curr, l],
+    }));
+  };
+
+  const handleSave = () => {
+    updateProfile(
+      {
+        full_name: draft.full_name || null,
+        age: draft.age ? Number(draft.age) : null,
+        city: draft.city || null,
+        gender: draft.gender || null,
+        height_cm: draft.height_cm ? Number(draft.height_cm) : null,
+        weight_kg: draft.weight_kg ? Number(draft.weight_kg) : null,
+        target_weight_kg: draft.target_weight_kg ? Number(draft.target_weight_kg) : null,
+        physical_limitations: draft.physical_limitations,
+      },
+      {
+        onSuccess: () => toast.success("פרטים אישיים נשמרו"),
+        onError: (e) => toast.error("שגיאה: " + e.message),
+      }
+    );
+  };
 
   return (
     <div className="rounded-2xl bg-card border border-border p-4 md:p-5 space-y-4">
@@ -25,26 +84,96 @@ export function SettingsPersonal() {
         <User className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold">פרטים אישיים</h3>
       </div>
+
       <div className="space-y-3">
-        {([
-          { key: "fullName" as const, label: "שם מלא", type: "text", placeholder: "הזן שם" },
-          { key: "dateOfBirth" as const, label: "תאריך לידה", type: "date", placeholder: "" },
-          { key: "heightCm" as const, label: 'גובה (ס"מ)', type: "number", placeholder: "170" },
-          { key: "weightKg" as const, label: 'משקל (ק"ג)', type: "number", placeholder: "75" },
-        ]).map((f) => (
-          <div key={f.key} className="flex items-center justify-between gap-3">
-            <label className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{f.label}</label>
+        {/* Name + City */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">שם מלא</label>
             <input
-              type={f.type}
-              value={data[f.key]}
-              onChange={(e) => update(f.key, e.target.value)}
-              placeholder={f.placeholder}
-              className="w-36 md:w-40 rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm text-left placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
-              dir="ltr"
+              type="text"
+              value={draft.full_name}
+              onChange={(e) => setDraft((d) => ({ ...d, full_name: e.target.value }))}
+              placeholder="מאור"
+              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
             />
           </div>
-        ))}
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">עיר</label>
+            <input
+              type="text"
+              value={draft.city}
+              onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
+              placeholder="תל אביב"
+              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
+            />
+          </div>
+        </div>
+
+        {/* Age + Height + Weight + Target */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">גיל</label>
+            <input type="number" value={draft.age}
+              onChange={(e) => setDraft((d) => ({ ...d, age: e.target.value }))}
+              placeholder="25" dir="ltr"
+              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">גובה (ס"מ)</label>
+            <input type="number" value={draft.height_cm}
+              onChange={(e) => setDraft((d) => ({ ...d, height_cm: e.target.value }))}
+              placeholder="175" dir="ltr"
+              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">משקל (ק"ג)</label>
+            <input type="number" value={draft.weight_kg}
+              onChange={(e) => setDraft((d) => ({ ...d, weight_kg: e.target.value }))}
+              placeholder="75" dir="ltr"
+              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">משקל יעד (ק"ג)</label>
+            <input type="number" value={draft.target_weight_kg}
+              onChange={(e) => setDraft((d) => ({ ...d, target_weight_kg: e.target.value }))}
+              placeholder="70" dir="ltr"
+              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
+            />
+          </div>
+        </div>
+
+        {/* Gender */}
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1.5">מגדר</label>
+          <div className="flex flex-wrap gap-2">
+            {GENDER_OPTIONS.map((g) => (
+              <Chip key={g} label={g} selected={draft.gender === g}
+                onClick={() => setDraft((d) => ({ ...d, gender: g }))} />
+            ))}
+          </div>
+        </div>
+
+        {/* Physical limitations */}
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1.5">מגבלות גופניות</label>
+          <div className="flex flex-wrap gap-2">
+            {LIMITATION_OPTIONS.map((l) => (
+              <Chip key={l} label={l} selected={draft.physical_limitations.includes(l)}
+                onClick={() => toggleLimitation(l)} />
+            ))}
+          </div>
+        </div>
       </div>
+
+      <button onClick={handleSave} disabled={isPending}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25 transition-colors disabled:opacity-50 min-h-[44px]">
+        <Save className="h-4 w-4" />
+        {isPending ? "שומר..." : "שמור פרטים"}
+      </button>
     </div>
   );
 }
