@@ -11,7 +11,6 @@ import { SportWorkoutTemplates } from "@/components/sport/SportWorkoutTemplates"
 import { SportAIPlanner } from "@/components/sport/SportAIPlanner";
 import { SportWeeklyPlan } from "@/components/sport/SportWeeklyPlan";
 import { ExerciseLibrary } from "@/components/sport/ExerciseLibrary";
-import { SportAppleWatchEntry } from "@/components/sport/SportAppleWatchEntry";
 import { SportCategoryZones } from "@/components/sport/SportCategoryZones";
 import { WeightTracker } from "@/components/health/WeightTracker";
 import { BodyProgressGallery } from "@/components/health/BodyProgressGallery";
@@ -69,7 +68,6 @@ function SportPage() {
           <SportDashboardKPIs />
           <SportWeeklyProgress />
           <SportQuickAdd />
-          <SportAppleWatchEntry />
           <SportCategoryZones />
         </div>
       )}

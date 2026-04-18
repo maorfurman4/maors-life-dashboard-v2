@@ -1,6 +1,6 @@
 {
-  "name": "החיים של מאור",
-  "short_name": "החיים שלי",
+  "name": "My Life",
+  "short_name": "My Life",
   "description": "אפליקציה אישית לניהול כל תחומי החיים",
   "start_url": "/",
   "scope": "/",
