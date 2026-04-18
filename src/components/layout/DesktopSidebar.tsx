@@ -1,9 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { mainNavItems, settingsNavItem } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
+import { useProfile } from "@/hooks/use-profile";
 
 export function DesktopSidebar() {
   const location = useLocation();
+  const { data: profile } = useProfile();
+  const firstName = profile?.full_name?.split(" ")[0] ?? null;
 
   const isActive = (to: string) =>
     to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
@@ -13,7 +16,7 @@ export function DesktopSidebar() {
       {/* Logo */}
       <div className="h-14 flex items-center px-5 border-b border-sidebar-border">
         <span className="text-lg font-black tracking-tight bg-gradient-to-l from-primary to-accent-foreground bg-clip-text text-transparent">
-          החיים של מאור
+          {firstName ? `החיים של ${firstName}` : "הדשבורד שלי"}
         </span>
       </div>
 

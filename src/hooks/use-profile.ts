@@ -16,6 +16,17 @@ export type UserProfile = {
   sport_frequency: string | null
   sport_location: string | null
   sport_level: string | null
+  sport_goals: string[]
+  muscle_focus: string[]
+  diet_type: string | null
+  food_allergies: string[]
+  macro_preference: string | null
+  monthly_income: number | null
+  monthly_budget: number | null
+  savings_goal_percent: number | null
+  invests_in_market: boolean
+  investment_types: string[]
+  investment_level: string | null
   interest_topics: string[]
   onboarding_completed: boolean
 }
