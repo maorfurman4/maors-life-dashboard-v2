@@ -75,15 +75,36 @@ function LoginPage() {
   const handleGoogle = async () => {
     setSubmitting(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) {
-      setError("Google טרם הוגדר — השתמש באימייל וסיסמה");
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/` },
+      });
+      if (error) throw error;
+      // data.url exists → redirect is happening, keep spinner
+      if (!data?.url) throw new Error("לא התקבלה כתובת הפניה מ-Google");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("missing OAuth secret") || msg.includes("Unsupported provider")) {
+        setError("התחברות עם Google טרם הוגדרה בשרת — השתמש באימייל וסיסמה");
+      } else {
+        setError(`שגיאה בהתחברות עם Google: ${msg}`);
+      }
       setSubmitting(false);
     }
   };
+
+  // Handle OAuth callback errors (when user is redirected back with an error)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace("#", "?"));
+    const errorDesc = params.get("error_description") || hashParams.get("error_description");
+    if (errorDesc) {
+      setError(decodeURIComponent(errorDesc));
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   if (loading) {
     return (
