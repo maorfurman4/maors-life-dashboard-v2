@@ -14,12 +14,15 @@ import { ExerciseLibrary } from "@/components/sport/ExerciseLibrary";
 import { SportCategoryZones } from "@/components/sport/SportCategoryZones";
 import { WeightTracker } from "@/components/health/WeightTracker";
 import { BodyProgressGallery } from "@/components/health/BodyProgressGallery";
+import { SportFunFact } from "@/components/sport/SportFunFact";
+import { SportFavorites } from "@/components/sport/SportFavorites";
+import { SportAIConsultant } from "@/components/sport/SportAIConsultant";
 
 export const Route = createFileRoute("/_app/sport")({
   component: SportPage,
 });
 
-type Tab = "dashboard" | "workouts" | "library" | "progress" | "body";
+type Tab = "dashboard" | "workouts" | "library" | "progress" | "body" | "ai";
 
 const tabs: { key: Tab; label: string }[] = [
   { key: "dashboard", label: "דשבורד" },
@@ -27,6 +30,7 @@ const tabs: { key: Tab; label: string }[] = [
   { key: "library", label: "ספרייה" },
   { key: "progress", label: "התקדמות" },
   { key: "body", label: "גוף" },
+  { key: "ai", label: "יועץ AI" },
 ];
 
 function SportPage() {
@@ -47,12 +51,12 @@ function SportPage() {
         </div>
       </div>
 
-      <div className="flex gap-1 rounded-xl bg-secondary/30 p-1">
+      <div className="flex gap-1 rounded-xl bg-secondary/30 p-1 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors min-h-[40px] ${
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors min-h-[40px] whitespace-nowrap px-2 ${
               activeTab === tab.key
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -65,8 +69,10 @@ function SportPage() {
 
       {activeTab === "dashboard" && (
         <div className="space-y-5">
+          <SportFunFact />
           <SportDashboardKPIs />
           <SportWeeklyProgress />
+          <SportFavorites />
           <SportQuickAdd />
           <SportCategoryZones />
         </div>
@@ -99,6 +105,12 @@ function SportPage() {
         <div className="space-y-5">
           <WeightTracker />
           <BodyProgressGallery />
+        </div>
+      )}
+
+      {activeTab === "ai" && (
+        <div className="space-y-5">
+          <SportAIConsultant />
         </div>
       )}
     </div>

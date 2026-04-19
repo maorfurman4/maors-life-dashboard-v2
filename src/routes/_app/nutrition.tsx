@@ -10,17 +10,21 @@ import { NutritionFoodSearch } from "@/components/nutrition/NutritionFoodSearch"
 import { NutritionWeightChart } from "@/components/nutrition/NutritionWeightChart";
 import { NutritionTDEECalculator } from "@/components/nutrition/NutritionTDEECalculator";
 import { WeightTracker } from "@/components/health/WeightTracker";
+import { NutritionPhotoAnalyzer } from "@/components/nutrition/NutritionPhotoAnalyzer";
+import { NutritionRecipeGenerator } from "@/components/nutrition/NutritionRecipeGenerator";
+import { NutritionFoodLabels } from "@/components/nutrition/NutritionFoodLabels";
 
 export const Route = createFileRoute("/_app/nutrition")({
   component: NutritionPage,
 });
 
-type Tab = "daily" | "tracking" | "search";
+type Tab = "daily" | "tracking" | "search" | "ai";
 
 const tabs: { key: Tab; label: string }[] = [
   { key: "daily", label: "יומי" },
   { key: "tracking", label: "מעקב" },
   { key: "search", label: "חיפוש" },
+  { key: "ai", label: "זיהוי AI" },
 ];
 
 function NutritionPage() {
@@ -80,6 +84,14 @@ function NutritionPage() {
         <div className="space-y-5">
           <NutritionFoodSearch />
           <NutritionFavorites />
+        </div>
+      )}
+
+      {activeTab === "ai" && (
+        <div className="space-y-5">
+          <NutritionPhotoAnalyzer />
+          <NutritionRecipeGenerator />
+          <NutritionFoodLabels />
         </div>
       )}
     </div>

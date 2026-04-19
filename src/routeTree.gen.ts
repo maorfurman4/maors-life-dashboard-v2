@@ -13,11 +13,13 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppWorkRouteImport } from './routes/_app/work'
+import { Route as AppTasksRouteImport } from './routes/_app/tasks'
 import { Route as AppSportRouteImport } from './routes/_app/sport'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppNutritionRouteImport } from './routes/_app/nutrition'
 import { Route as AppMarketRouteImport } from './routes/_app/market'
 import { Route as AppFinanceRouteImport } from './routes/_app/finance'
+import { Route as AppCouponsRouteImport } from './routes/_app/coupons'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -36,6 +38,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppWorkRoute = AppWorkRouteImport.update({
   id: '/work',
   path: '/work',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTasksRoute = AppTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSportRoute = AppSportRouteImport.update({
@@ -63,24 +70,33 @@ const AppFinanceRoute = AppFinanceRouteImport.update({
   path: '/finance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCouponsRoute = AppCouponsRouteImport.update({
+  id: '/coupons',
+  path: '/coupons',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
+  '/coupons': typeof AppCouponsRoute
   '/finance': typeof AppFinanceRoute
   '/market': typeof AppMarketRoute
   '/nutrition': typeof AppNutritionRoute
   '/settings': typeof AppSettingsRoute
   '/sport': typeof AppSportRoute
+  '/tasks': typeof AppTasksRoute
   '/work': typeof AppWorkRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/coupons': typeof AppCouponsRoute
   '/finance': typeof AppFinanceRoute
   '/market': typeof AppMarketRoute
   '/nutrition': typeof AppNutritionRoute
   '/settings': typeof AppSettingsRoute
   '/sport': typeof AppSportRoute
+  '/tasks': typeof AppTasksRoute
   '/work': typeof AppWorkRoute
   '/': typeof AppIndexRoute
 }
@@ -88,11 +104,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/coupons': typeof AppCouponsRoute
   '/_app/finance': typeof AppFinanceRoute
   '/_app/market': typeof AppMarketRoute
   '/_app/nutrition': typeof AppNutritionRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/sport': typeof AppSportRoute
+  '/_app/tasks': typeof AppTasksRoute
   '/_app/work': typeof AppWorkRoute
   '/_app/': typeof AppIndexRoute
 }
@@ -101,31 +119,37 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/coupons'
     | '/finance'
     | '/market'
     | '/nutrition'
     | '/settings'
     | '/sport'
+    | '/tasks'
     | '/work'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/coupons'
     | '/finance'
     | '/market'
     | '/nutrition'
     | '/settings'
     | '/sport'
+    | '/tasks'
     | '/work'
     | '/'
   id:
     | '__root__'
     | '/_app'
     | '/login'
+    | '/_app/coupons'
     | '/_app/finance'
     | '/_app/market'
     | '/_app/nutrition'
     | '/_app/settings'
     | '/_app/sport'
+    | '/_app/tasks'
     | '/_app/work'
     | '/_app/'
   fileRoutesById: FileRoutesById
@@ -165,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/tasks': {
+      id: '/_app/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AppTasksRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/sport': {
       id: '/_app/sport'
       path: '/sport'
@@ -200,25 +231,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppFinanceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/coupons': {
+      id: '/_app/coupons'
+      path: '/coupons'
+      fullPath: '/coupons'
+      preLoaderRoute: typeof AppCouponsRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppCouponsRoute: typeof AppCouponsRoute
   AppFinanceRoute: typeof AppFinanceRoute
   AppMarketRoute: typeof AppMarketRoute
   AppNutritionRoute: typeof AppNutritionRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppSportRoute: typeof AppSportRoute
+  AppTasksRoute: typeof AppTasksRoute
   AppWorkRoute: typeof AppWorkRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppCouponsRoute: AppCouponsRoute,
   AppFinanceRoute: AppFinanceRoute,
   AppMarketRoute: AppMarketRoute,
   AppNutritionRoute: AppNutritionRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppSportRoute: AppSportRoute,
+  AppTasksRoute: AppTasksRoute,
   AppWorkRoute: AppWorkRoute,
   AppIndexRoute: AppIndexRoute,
 }
@@ -232,12 +274,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

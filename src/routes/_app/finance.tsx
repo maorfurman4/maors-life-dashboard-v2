@@ -14,18 +14,21 @@ import { FinanceBudgetAlerts } from "@/components/finance/FinanceBudgetAlerts";
 import { FinanceSmartInsights } from "@/components/finance/FinanceSmartInsights";
 import { FinanceAIInsights } from "@/components/finance/FinanceAIInsights";
 import { FinanceMonthlyArchive } from "@/components/finance/FinanceMonthlyArchive";
+import { FinanceReceiptScanner } from "@/components/finance/FinanceReceiptScanner";
+import { FinanceGroceryList } from "@/components/finance/FinanceGroceryList";
 
 export const Route = createFileRoute("/_app/finance")({
   component: FinancePage,
 });
 
-type Tab = "overview" | "analysis" | "archive" | "subscriptions";
+type Tab = "overview" | "analysis" | "archive" | "subscriptions" | "receipts";
 
 const tabs: { key: Tab; label: string }[] = [
   { key: "overview", label: "סקירה" },
   { key: "analysis", label: "ניתוח" },
   { key: "archive", label: "ארכיון" },
   { key: "subscriptions", label: "מנויים" },
+  { key: "receipts", label: "קבלות" },
 ];
 
 function FinancePage() {
@@ -91,6 +94,13 @@ function FinancePage() {
       {activeTab === "subscriptions" && (
         <div className="space-y-5">
           <FinanceSubscriptions />
+        </div>
+      )}
+
+      {activeTab === "receipts" && (
+        <div className="space-y-5">
+          <FinanceReceiptScanner />
+          <FinanceGroceryList />
         </div>
       )}
     </div>

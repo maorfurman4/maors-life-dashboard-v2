@@ -28,18 +28,18 @@ export function TopBar() {
   };
 
   return (
-    <header className="border-b border-border bg-card/80 backdrop-blur-sm flex items-center justify-between px-5 shrink-0 safe-area-top gap-3" style={{ minHeight: "3.5rem" }}>
-      <h1 className="text-lg font-bold tracking-tight">
+    <header role="banner" className="border-b border-border bg-card/80 backdrop-blur-sm flex items-center justify-between px-5 shrink-0 safe-area-top gap-3" style={{ minHeight: "3.5rem" }}>
+      <h1 className="text-lg font-bold">
         {current?.label ?? "My Life"}
       </h1>
       {user && (
         <button
           onClick={handleSignOut}
-          aria-label="יציאה"
-          title="יציאה"
+          aria-label="יציאה מהמערכת"
+          title="יציאה מהמערכת"
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut aria-hidden="true" className="h-4 w-4" />
           <span className="hidden sm:inline">יציאה</span>
         </button>
       )}
