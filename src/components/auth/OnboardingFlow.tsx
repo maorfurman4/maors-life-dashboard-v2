@@ -663,7 +663,8 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       try {
         await updateProfile({ ...draft, onboarding_completed: true });
         const firstName = draft.full_name?.split(" ")[0] ?? "";
-        toast.success(`ברוך הבא${firstName ? `, ${firstName}` : ""}! האפליקציה מוכנה עבורך`);
+        const greeting = draft.gender === "נקבה" ? "ברוכה הבאה" : "ברוך הבא";
+        toast.success(`${greeting}${firstName ? `, ${firstName}` : ""}! האפליקציה מוכנה עבורך`);
         onComplete();
       } catch {
         toast.error("שגיאה בשמירת הנתונים — נסה שוב");

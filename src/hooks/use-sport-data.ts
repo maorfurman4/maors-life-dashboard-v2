@@ -484,6 +484,40 @@ export function useUserSettings() {
   });
 }
 
+// Alias for generic settings updates (used by settings components)
+export function useUpdateUserSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (settings: Record<string, unknown>) => {
+      const userId = await getUserId();
+      const { data: existing } = await (supabase as any)
+        .from("user_settings")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await (supabase as any)
+          .from("user_settings")
+          .update(settings)
+          .eq("user_id", userId);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any)
+          .from("user_settings")
+          .insert({ user_id: userId, ...settings });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["user-settings"] });
+    },
+    onError: (e: Error) => {
+      toast.error("שגיאה בשמירת ההגדרות: " + e.message);
+    },
+  });
+}
+
 export function useSaveUserSettings() {
   const qc = useQueryClient();
   return useMutation({

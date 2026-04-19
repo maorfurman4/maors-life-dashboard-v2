@@ -420,6 +420,9 @@ export type Database = {
           weekly_workouts_goal: number | null
           weight_kg: number | null
           work_role: string | null
+          hidden_modules: Json | null
+          google_calendar_token: string | null
+          sport_favorites: Json | null
         }
         Insert: {
           alt_hourly_rate?: number | null
@@ -469,6 +472,9 @@ export type Database = {
           weekly_workouts_goal?: number | null
           weight_kg?: number | null
           work_role?: string | null
+          hidden_modules?: Json | null
+          google_calendar_token?: string | null
+          sport_favorites?: Json | null
         }
         Update: {
           alt_hourly_rate?: number | null
@@ -518,6 +524,9 @@ export type Database = {
           weekly_workouts_goal?: number | null
           weight_kg?: number | null
           work_role?: string | null
+          hidden_modules?: Json | null
+          google_calendar_token?: string | null
+          sport_favorites?: Json | null
         }
         Relationships: []
       }
@@ -782,6 +791,202 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      coupons: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          code: string | null
+          barcode: string | null
+          store: string | null
+          discount_amount: number | null
+          discount_percent: number | null
+          expiry_date: string | null
+          category: string | null
+          is_used: boolean
+          image_url: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          code?: string | null
+          barcode?: string | null
+          store?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          expiry_date?: string | null
+          category?: string | null
+          is_used?: boolean
+          image_url?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          code?: string | null
+          barcode?: string | null
+          store?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          expiry_date?: string | null
+          category?: string | null
+          is_used?: boolean
+          image_url?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      task_projects: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          color: string
+          icon: string | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          color?: string
+          icon?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          color?: string
+          icon?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          id: string
+          user_id: string
+          project_id: string | null
+          title: string
+          description: string | null
+          status: string
+          priority: string
+          due_date: string | null
+          completed_at: string | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_id?: string | null
+          title: string
+          description?: string | null
+          status?: string
+          priority?: string
+          due_date?: string | null
+          completed_at?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          project_id?: string | null
+          title?: string
+          description?: string | null
+          status?: string
+          priority?: string
+          due_date?: string | null
+          completed_at?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "task_projects"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      grocery_lists: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      grocery_items: {
+        Row: {
+          id: string
+          list_id: string
+          user_id: string
+          name: string
+          quantity: number
+          unit: string | null
+          barcode: string | null
+          is_checked: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          list_id: string
+          user_id: string
+          name: string
+          quantity?: number
+          unit?: string | null
+          barcode?: string | null
+          is_checked?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          list_id?: string
+          user_id?: string
+          name?: string
+          quantity?: number
+          unit?: string | null
+          barcode?: string | null
+          is_checked?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grocery_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "grocery_lists"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
