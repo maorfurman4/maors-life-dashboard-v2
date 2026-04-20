@@ -11,12 +11,14 @@ import { SportWorkoutTemplates } from "@/components/sport/SportWorkoutTemplates"
 import { SportAIPlanner } from "@/components/sport/SportAIPlanner";
 import { SportWeeklyPlan } from "@/components/sport/SportWeeklyPlan";
 import { ExerciseLibrary } from "@/components/sport/ExerciseLibrary";
-import { SportCategoryZones } from "@/components/sport/SportCategoryZones";
 import { WeightTracker } from "@/components/health/WeightTracker";
 import { BodyProgressGallery } from "@/components/health/BodyProgressGallery";
 import { SportFunFact } from "@/components/sport/SportFunFact";
-import { SportFavorites } from "@/components/sport/SportFavorites";
 import { SportAIConsultant } from "@/components/sport/SportAIConsultant";
+import { WeatherWidget } from "@/components/home/WeatherWidget";
+import { SportDailyWorkout } from "@/components/sport/SportDailyWorkout";
+import { SportProgressSummary } from "@/components/sport/SportProgressSummary";
+import { WearableStub } from "@/components/sport/WearableStub";
 
 export const Route = createFileRoute("/_app/sport")({
   component: SportPage,
@@ -25,25 +27,25 @@ export const Route = createFileRoute("/_app/sport")({
 type Tab = "dashboard" | "workouts" | "library" | "progress" | "body" | "ai";
 
 const tabs: { key: Tab; label: string }[] = [
-  { key: "dashboard", label: "דשבורד" },
+  { key: "dashboard", label: "בית הספורט" },
   { key: "workouts", label: "אימונים" },
   { key: "library", label: "ספרייה" },
   { key: "progress", label: "התקדמות" },
   { key: "body", label: "גוף" },
-  { key: "ai", label: "יועץ AI" },
+  { key: "ai", label: "ייעוץ ספורטיבי" },
 ];
 
 function SportPage() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto">
+    <div className="space-y-5 max-w-4xl mx-auto" dir="rtl">
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 rounded-xl bg-sport/15 flex items-center justify-center shadow-[0_0_20px_rgba(0,255,135,0.15)]">
           <Dumbbell className="h-5 w-5 text-sport" />
         </div>
         <div>
-          <h2 className="text-xl font-bold tracking-tight">ספורט ובריאות</h2>
+          <h2 className="text-xl font-bold" style={{ letterSpacing: 0 }}>בית הספורט</h2>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Flame className="h-3 w-3 text-sport" />
             <span>התחל להוסיף אימונים</span>
@@ -70,11 +72,11 @@ function SportPage() {
       {activeTab === "dashboard" && (
         <div className="space-y-5">
           <SportFunFact />
+          <WeatherWidget />
+          <SportDailyWorkout />
           <SportDashboardKPIs />
           <SportWeeklyProgress />
-          <SportFavorites />
-          <SportQuickAdd />
-          <SportCategoryZones />
+          <SportProgressSummary />
         </div>
       )}
 
@@ -98,6 +100,7 @@ function SportPage() {
         <div className="space-y-5">
           <SportProgressCharts />
           <SportPRTracking />
+          <WearableStub />
         </div>
       )}
 
@@ -111,6 +114,7 @@ function SportPage() {
       {activeTab === "ai" && (
         <div className="space-y-5">
           <SportAIConsultant />
+          <SportAIPlanner />
         </div>
       )}
     </div>

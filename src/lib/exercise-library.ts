@@ -21,6 +21,7 @@ export interface LibraryExercise {
   defaultReps: number;
   restSeconds: number;
   description?: string;
+  youtube_link?: string;
 }
 
 export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
@@ -38,18 +39,18 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
 
 export const EXERCISE_LIBRARY: LibraryExercise[] = [
   // CHEST
-  { id: "pushup", name: "שכיבות סמיכה", nameEn: "Push-up", muscleGroups: ["chest", "triceps", "shoulders"], primaryMuscle: "chest", category: "calisthenics", difficulty: "beginner", shoulderSafe: true, equipment: [], defaultSets: 3, defaultReps: 15, restSeconds: 60 },
-  { id: "diamond-pushup", name: "שכיבת יהלום", nameEn: "Diamond Push-up", muscleGroups: ["chest", "triceps"], primaryMuscle: "triceps", category: "calisthenics", difficulty: "intermediate", shoulderSafe: true, equipment: [], defaultSets: 3, defaultReps: 12, restSeconds: 60 },
-  { id: "dips", name: "מקבילים", nameEn: "Parallel Bar Dips", muscleGroups: ["chest", "triceps", "shoulders"], primaryMuscle: "chest", category: "calisthenics", difficulty: "intermediate", shoulderSafe: false, equipment: ["מקבילים"], defaultSets: 3, defaultReps: 10, restSeconds: 90 },
-  { id: "bench-press", name: "לחיצת חזה", nameEn: "Bench Press", muscleGroups: ["chest", "triceps", "shoulders"], primaryMuscle: "chest", category: "weights", difficulty: "intermediate", shoulderSafe: false, equipment: ["משקולת", "ספסל"], defaultSets: 4, defaultReps: 8, restSeconds: 120 },
+  { id: "pushup", name: "שכיבות סמיכה", nameEn: "Push-up", muscleGroups: ["chest", "triceps", "shoulders"], primaryMuscle: "chest", category: "calisthenics", difficulty: "beginner", shoulderSafe: true, equipment: [], defaultSets: 3, defaultReps: 15, restSeconds: 60, youtube_link: "https://www.youtube.com/watch?v=IODxDxX7oi4" },
+  { id: "diamond-pushup", name: "שכיבת יהלום", nameEn: "Diamond Push-up", muscleGroups: ["chest", "triceps"], primaryMuscle: "triceps", category: "calisthenics", difficulty: "intermediate", shoulderSafe: true, equipment: [], defaultSets: 3, defaultReps: 12, restSeconds: 60, youtube_link: "https://www.youtube.com/watch?v=J0DnG1_S92I" },
+  { id: "dips", name: "מקבילים", nameEn: "Parallel Bar Dips", muscleGroups: ["chest", "triceps", "shoulders"], primaryMuscle: "chest", category: "calisthenics", difficulty: "intermediate", shoulderSafe: false, equipment: ["מקבילים"], defaultSets: 3, defaultReps: 10, restSeconds: 90, youtube_link: "https://www.youtube.com/watch?v=2z8JmcrW-As" },
+  { id: "bench-press", name: "לחיצת חזה", nameEn: "Bench Press", muscleGroups: ["chest", "triceps", "shoulders"], primaryMuscle: "chest", category: "weights", difficulty: "intermediate", shoulderSafe: false, equipment: ["משקולת", "ספסל"], defaultSets: 4, defaultReps: 8, restSeconds: 120, youtube_link: "https://www.youtube.com/watch?v=SCVCLChPQFY" },
   { id: "incline-pushup", name: "שכיבות בשיפוע", nameEn: "Incline Push-up", muscleGroups: ["chest"], primaryMuscle: "chest", category: "calisthenics", difficulty: "beginner", shoulderSafe: true, equipment: [], defaultSets: 3, defaultReps: 15, restSeconds: 60 },
 
   // BACK
-  { id: "pullup", name: "מתח", nameEn: "Pull-up", muscleGroups: ["back", "biceps"], primaryMuscle: "back", category: "calisthenics", difficulty: "intermediate", shoulderSafe: true, equipment: ["מתח"], defaultSets: 3, defaultReps: 8, restSeconds: 120 },
-  { id: "chinup", name: "מתח אחיזה הפוכה", nameEn: "Chin-up", muscleGroups: ["back", "biceps"], primaryMuscle: "back", category: "calisthenics", difficulty: "intermediate", shoulderSafe: true, equipment: ["מתח"], defaultSets: 3, defaultReps: 8, restSeconds: 120 },
+  { id: "pullup", name: "מתח", nameEn: "Pull-up", muscleGroups: ["back", "biceps"], primaryMuscle: "back", category: "calisthenics", difficulty: "intermediate", shoulderSafe: true, equipment: ["מתח"], defaultSets: 3, defaultReps: 8, restSeconds: 120, youtube_link: "https://www.youtube.com/watch?v=eGo4IYlbE5g" },
+  { id: "chinup", name: "מתח אחיזה הפוכה", nameEn: "Chin-up", muscleGroups: ["back", "biceps"], primaryMuscle: "back", category: "calisthenics", difficulty: "intermediate", shoulderSafe: true, equipment: ["מתח"], defaultSets: 3, defaultReps: 8, restSeconds: 120, youtube_link: "https://www.youtube.com/watch?v=brhRXlOhsAM" },
   { id: "australian-pullup", name: "מתח אוסטרלי", nameEn: "Australian Pull-up", muscleGroups: ["back", "biceps"], primaryMuscle: "back", category: "calisthenics", difficulty: "beginner", shoulderSafe: true, equipment: [], defaultSets: 3, defaultReps: 12, restSeconds: 90 },
-  { id: "row", name: "חתירה", nameEn: "Row", muscleGroups: ["back", "biceps"], primaryMuscle: "back", category: "weights", difficulty: "beginner", shoulderSafe: true, equipment: ["משקולת"], defaultSets: 4, defaultReps: 10, restSeconds: 90 },
-  { id: "deadlift", name: "דדליפט", nameEn: "Deadlift", muscleGroups: ["back", "legs", "glutes"], primaryMuscle: "back", category: "weights", difficulty: "advanced", shoulderSafe: true, equipment: ["מוט", "משקולות"], defaultSets: 4, defaultReps: 6, restSeconds: 180 },
+  { id: "row", name: "חתירה", nameEn: "Row", muscleGroups: ["back", "biceps"], primaryMuscle: "back", category: "weights", difficulty: "beginner", shoulderSafe: true, equipment: ["משקולת"], defaultSets: 4, defaultReps: 10, restSeconds: 90, youtube_link: "https://www.youtube.com/watch?v=FWJR5Ve8bnQ" },
+  { id: "deadlift", name: "דדליפט", nameEn: "Deadlift", muscleGroups: ["back", "legs", "glutes"], primaryMuscle: "back", category: "weights", difficulty: "advanced", shoulderSafe: true, equipment: ["מוט", "משקולות"], defaultSets: 4, defaultReps: 6, restSeconds: 180, youtube_link: "https://www.youtube.com/watch?v=op9kVnSso6Q" },
 
   // SHOULDERS (mostly avoided due to shoulder sensitivity)
   { id: "pike-pushup", name: "שכיבת פייק", nameEn: "Pike Push-up", muscleGroups: ["shoulders", "triceps"], primaryMuscle: "shoulders", category: "calisthenics", difficulty: "intermediate", shoulderSafe: false, equipment: [], defaultSets: 3, defaultReps: 10, restSeconds: 90 },
@@ -65,9 +66,9 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
   { id: "bench-dips", name: "מקבילים על ספסל", nameEn: "Bench Dips", muscleGroups: ["triceps"], primaryMuscle: "triceps", category: "calisthenics", difficulty: "beginner", shoulderSafe: false, equipment: ["ספסל"], defaultSets: 3, defaultReps: 12, restSeconds: 60 },
 
   // LEGS
-  { id: "squat", name: "סקוואט", nameEn: "Squat", muscleGroups: ["legs", "glutes"], primaryMuscle: "legs", category: "calisthenics", difficulty: "beginner", shoulderSafe: true, equipment: [], defaultSets: 4, defaultReps: 15, restSeconds: 90 },
-  { id: "barbell-squat", name: "סקוואט עם מוט", nameEn: "Barbell Squat", muscleGroups: ["legs", "glutes"], primaryMuscle: "legs", category: "weights", difficulty: "advanced", shoulderSafe: false, equipment: ["מוט", "משקולות"], defaultSets: 4, defaultReps: 8, restSeconds: 180 },
-  { id: "lunges", name: "לאנג'ים", nameEn: "Lunges", muscleGroups: ["legs", "glutes"], primaryMuscle: "legs", category: "calisthenics", difficulty: "beginner", shoulderSafe: true, equipment: [], defaultSets: 3, defaultReps: 12, restSeconds: 60 },
+  { id: "squat", name: "סקוואט", nameEn: "Squat", muscleGroups: ["legs", "glutes"], primaryMuscle: "legs", category: "calisthenics", difficulty: "beginner", shoulderSafe: true, equipment: [], defaultSets: 4, defaultReps: 15, restSeconds: 90, youtube_link: "https://www.youtube.com/watch?v=aclHkVaku9U" },
+  { id: "barbell-squat", name: "סקוואט עם מוט", nameEn: "Barbell Squat", muscleGroups: ["legs", "glutes"], primaryMuscle: "legs", category: "weights", difficulty: "advanced", shoulderSafe: false, equipment: ["מוט", "משקולות"], defaultSets: 4, defaultReps: 8, restSeconds: 180, youtube_link: "https://www.youtube.com/watch?v=Dy28eq2PjcM" },
+  { id: "lunges", name: "לאנג'ים", nameEn: "Lunges", muscleGroups: ["legs", "glutes"], primaryMuscle: "legs", category: "calisthenics", difficulty: "beginner", shoulderSafe: true, equipment: [], defaultSets: 3, defaultReps: 12, restSeconds: 60, youtube_link: "https://www.youtube.com/watch?v=QOVaHwm-Q6U" },
   { id: "pistol-squat", name: "פיסטול סקוואט", nameEn: "Pistol Squat", muscleGroups: ["legs", "glutes", "core"], primaryMuscle: "legs", category: "calisthenics", difficulty: "advanced", shoulderSafe: true, equipment: [], defaultSets: 3, defaultReps: 6, restSeconds: 90 },
   { id: "calf-raise", name: "עליות שוק", nameEn: "Calf Raise", muscleGroups: ["legs"], primaryMuscle: "legs", category: "calisthenics", difficulty: "beginner", shoulderSafe: true, equipment: [], defaultSets: 3, defaultReps: 20, restSeconds: 45 },
 

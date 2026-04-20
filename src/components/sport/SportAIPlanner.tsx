@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Sparkles, Loader2, Calendar, Plus, Save } from "lucide-react";
+import { Sparkles, Loader2, Calendar, Save, ChevronRight, ChevronLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePersonalRecords, useAddWorkoutTemplate } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
+import { isShabbat } from "@/lib/shabbat-guard";
 
 interface PlannedExercise {
   name: string;
@@ -26,33 +27,117 @@ interface AIWorkoutPlan {
   tips: string[];
 }
 
-const GOALS = [
-  { value: "כוח ומסת שריר", label: "כוח ומסה" },
-  { value: "ירידה במשקל וקרדיו", label: "ירידה במשקל" },
-  { value: "סבולת וריצה", label: "סבולת" },
-  { value: "תחזוקה כללית", label: "תחזוקה" },
+// Conversational step definitions
+type StepKey = "frequency" | "location" | "duration" | "rpe" | "limitations";
+
+interface Step {
+  key: StepKey;
+  question: string;
+  options?: string[];
+  inputType: "options" | "range" | "text";
+  rangeMin?: number;
+  rangeMax?: number;
+  rangeUnit?: string;
+  placeholder?: string;
+}
+
+const STEPS: Step[] = [
+  {
+    key: "frequency",
+    question: "כמה פעמים בשבוע תרצה/י להתאמן?",
+    options: ["2 פעמים", "3 פעמים", "4 פעמים", "5 פעמים", "6 פעמים"],
+    inputType: "options",
+  },
+  {
+    key: "location",
+    question: "איפה מתאמנים?",
+    options: ["חדר כושר", "בבית", "בחוץ", "משולב"],
+    inputType: "options",
+  },
+  {
+    key: "duration",
+    question: "כמה דקות לאימון?",
+    inputType: "range",
+    rangeMin: 20,
+    rangeMax: 120,
+    rangeUnit: "דק'",
+  },
+  {
+    key: "rpe",
+    question: "עוצמת מאמץ (RPE 1–10)?",
+    inputType: "range",
+    rangeMin: 1,
+    rangeMax: 10,
+    rangeUnit: "RPE",
+  },
+  {
+    key: "limitations",
+    question: "האם יש מגבלות גופניות או פציעות?",
+    inputType: "text",
+    placeholder: "למשל: כתף רגישה, ברכיים, גב תחתון... (אפשר לכתוב אין)",
+  },
 ];
+
+type Answers = Partial<Record<StepKey, string>>;
 
 export function SportAIPlanner() {
   const { data: prs } = usePersonalRecords();
   const addTemplate = useAddWorkoutTemplate();
-  const [goal, setGoal] = useState(GOALS[0].value);
-  const [days, setDays] = useState(4);
-  const [equipment, setEquipment] = useState("חדר כושר מלא");
-  const [constraints, setConstraints] = useState("");
+
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState<Answers>({});
+  const [textInput, setTextInput] = useState("");
+  const [rangeValue, setRangeValue] = useState<Record<string, number>>({
+    duration: 60,
+    rpe: 7,
+  });
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<AIWorkoutPlan | null>(null);
 
+  const currentStep = STEPS[step];
+  const allAnswered = step >= STEPS.length;
+
+  const recordAnswer = (value: string) => {
+    setAnswers((prev) => ({ ...prev, [currentStep.key]: value }));
+    setTextInput("");
+  };
+
+  const handleOptionSelect = (option: string) => {
+    recordAnswer(option);
+    setStep((s) => s + 1);
+  };
+
+  const handleRangeNext = () => {
+    const val = rangeValue[currentStep.key] ?? currentStep.rangeMin ?? 0;
+    recordAnswer(`${val} ${currentStep.rangeUnit}`);
+    setStep((s) => s + 1);
+  };
+
+  const handleTextNext = () => {
+    if (!textInput.trim()) {
+      toast.error("נא למלא תשובה");
+      return;
+    }
+    recordAnswer(textInput.trim());
+    setStep((s) => s + 1);
+  };
+
   const generate = async () => {
+    if (isShabbat()) {
+      toast.error('יצירת תוכנית אינה זמינה בשבת (שישי 14:00 — מוצ"ש 22:00)');
+      return;
+    }
     setLoading(true);
     setPlan(null);
     try {
       const { data, error } = await supabase.functions.invoke("workout-plan-ai", {
         body: {
-          goal,
-          daysPerWeek: days,
-          equipment,
-          constraints,
+          goal: "תוכנית מותאמת אישית",
+          daysPerWeek: parseInt(answers.frequency ?? "3"),
+          equipment: answers.location ?? "חדר כושר",
+          sessionDuration: answers.duration,
+          rpe: answers.rpe,
+          constraints: answers.limitations,
           recentPRs: (prs || []).slice(0, 8),
         },
       });
@@ -86,6 +171,13 @@ export function SportAIPlanner() {
     );
   };
 
+  const reset = () => {
+    setStep(0);
+    setAnswers({});
+    setTextInput("");
+    setPlan(null);
+  };
+
   return (
     <div className="rounded-2xl border border-sport/30 bg-gradient-to-br from-sport/5 to-transparent p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -93,52 +185,115 @@ export function SportAIPlanner() {
           <Sparkles className="h-4 w-4 text-sport" />
         </div>
         <div>
-          <h3 className="text-sm font-bold">תכנון אימונים שבועי AI</h3>
-          <p className="text-[11px] text-muted-foreground">תוכנית מותאמת לפי השיאים שלך</p>
+          <h3 className="text-sm font-bold" style={{ letterSpacing: 0 }}>תכנון אימונים AI</h3>
+          <p className="text-[11px] text-muted-foreground">תוכנית מותאמת אישית — שלב אחרי שלב</p>
         </div>
       </div>
 
+      {/* Step progress indicator */}
       {!plan && (
-        <div className="space-y-2.5">
-          <div>
-            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">מטרה</label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {GOALS.map((g) => (
+        <div className="flex gap-1">
+          {STEPS.map((s, i) => (
+            <div
+              key={s.key}
+              className={`h-1 flex-1 rounded-full transition-colors ${
+                i < step ? "bg-sport" : i === step ? "bg-sport/50" : "bg-border"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Conversational questions */}
+      {!allAnswered && !plan && (
+        <div className="space-y-3">
+          <p className="text-sm font-semibold">{currentStep.question}</p>
+
+          {currentStep.inputType === "options" && (
+            <div className="grid grid-cols-2 gap-2">
+              {currentStep.options!.map((opt) => (
                 <button
-                  key={g.value}
-                  onClick={() => setGoal(g.value)}
-                  className={`py-2 rounded-lg text-[11px] font-semibold transition-colors min-h-[36px] ${
-                    goal === g.value ? "bg-sport/20 text-sport border border-sport/40" : "bg-secondary/30 text-muted-foreground border border-transparent"
-                  }`}
+                  key={opt}
+                  onClick={() => handleOptionSelect(opt)}
+                  className="py-2.5 rounded-xl text-xs font-semibold border border-border bg-secondary/30 hover:border-sport/40 hover:bg-sport/10 hover:text-sport transition-colors min-h-[40px]"
                 >
-                  {g.label}
+                  {opt}
                 </button>
               ))}
             </div>
-          </div>
+          )}
 
-          <div>
-            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">ימי אימון בשבוע: {days}</label>
-            <input type="range" min={2} max={6} value={days} onChange={(e) => setDays(parseInt(e.target.value))} className="w-full accent-sport" />
-          </div>
+          {currentStep.inputType === "range" && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{currentStep.rangeMin} {currentStep.rangeUnit}</span>
+                <span className="text-lg font-black text-sport">
+                  {rangeValue[currentStep.key] ?? currentStep.rangeMin} {currentStep.rangeUnit}
+                </span>
+                <span className="text-xs text-muted-foreground">{currentStep.rangeMax} {currentStep.rangeUnit}</span>
+              </div>
+              <input
+                type="range"
+                min={currentStep.rangeMin}
+                max={currentStep.rangeMax}
+                value={rangeValue[currentStep.key] ?? currentStep.rangeMin}
+                onChange={(e) =>
+                  setRangeValue((prev) => ({ ...prev, [currentStep.key]: parseInt(e.target.value) }))
+                }
+                className="w-full accent-sport"
+              />
+              <button
+                onClick={handleRangeNext}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-sport/15 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[40px]"
+              >
+                המשך
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
 
-          <div>
-            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">ציוד</label>
-            <input
-              value={equipment}
-              onChange={(e) => setEquipment(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-xs"
-            />
-          </div>
+          {currentStep.inputType === "text" && (
+            <div className="space-y-2">
+              <textarea
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder={currentStep.placeholder}
+                rows={3}
+                className="w-full rounded-xl border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sport resize-none"
+              />
+              <button
+                onClick={handleTextNext}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-sport/15 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[40px]"
+              >
+                המשך
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
 
-          <div>
-            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">מגבלות / רגישויות (אופציונלי)</label>
-            <input
-              value={constraints}
-              onChange={(e) => setConstraints(e.target.value)}
-              placeholder="לדוגמה: כתף רגישה, ברכיים..."
-              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-xs placeholder:text-muted-foreground/50"
-            />
+          {step > 0 && (
+            <button
+              onClick={() => setStep((s) => s - 1)}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronRight className="h-3 w-3" />
+              חזור
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Summary before generating */}
+      {allAnswered && !plan && (
+        <div className="space-y-3">
+          <div className="rounded-xl bg-secondary/30 border border-border p-3 space-y-1.5">
+            <p className="text-[11px] font-bold text-sport mb-1">סיכום הבחירות שלך</p>
+            {STEPS.map((s) => (
+              <div key={s.key} className="flex items-center justify-between text-[11px]">
+                <span className="text-muted-foreground">{s.question.replace("?", "")}</span>
+                <span className="font-semibold">{answers[s.key]}</span>
+              </div>
+            ))}
           </div>
 
           <button
@@ -147,11 +302,16 @@ export function SportAIPlanner() {
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-sport text-sport-foreground font-bold text-sm min-h-[48px] disabled:opacity-50"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {loading ? "AI מתכנן…" : "צור תוכנית AI"}
+            {loading ? "AI בונה תוכנית…" : "צור תוכנית AI"}
+          </button>
+
+          <button onClick={reset} className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+            התחל מחדש
           </button>
         </div>
       )}
 
+      {/* Generated plan */}
       {plan && (
         <div className="space-y-3">
           <div className="rounded-xl bg-secondary/30 p-3">
@@ -174,7 +334,7 @@ export function SportAIPlanner() {
                   {w.exercises.map((ex, ei) => (
                     <div key={ei} className="flex items-center justify-between text-[11px] border-r-2 border-sport/30 pr-2">
                       <span className="font-medium truncate">{ex.name}</span>
-                      <span className="text-muted-foreground shrink-0 ml-2">
+                      <span className="text-muted-foreground shrink-0 ms-2">
                         {ex.sets}×{ex.reps}
                         {ex.weight_kg ? ` @${ex.weight_kg}kg` : ""}
                       </span>
@@ -201,10 +361,10 @@ export function SportAIPlanner() {
           )}
 
           <button
-            onClick={() => setPlan(null)}
+            onClick={reset}
             className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-secondary/40 text-xs font-semibold"
           >
-            <Plus className="h-3 w-3" /> צור תוכנית חדשה
+            <Sparkles className="h-3 w-3" /> צור תוכנית חדשה
           </button>
         </div>
       )}

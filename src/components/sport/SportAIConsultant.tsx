@@ -62,8 +62,8 @@ export function SportAIConsultant() {
           <BrainCircuit className="h-4 w-4 text-sport" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold">יועץ ספורט AI</h3>
-          <p className="text-xs text-muted-foreground">שאל כל שאלה על אימונים ובריאות</p>
+          <h3 className="text-sm font-semibold">ייעוץ ספורטיבי</h3>
+          <p className="text-xs text-muted-foreground">שאל/י כל שאלה על אימונים ובריאות</p>
         </div>
       </div>
 
@@ -89,7 +89,7 @@ export function SportAIConsultant() {
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="תאר את האתגר או השאלה שלך... למשל: איך אני יכול לשפר את הסיבולת שלי בריצה? מה לאכול לפני אימון?"
+          placeholder="תאר/י את האתגר או השאלה שלך... למשל: איך אפשר לשפר סיבולת בריצה? מה לאכול לפני אימון?"
           rows={3}
           className="w-full rounded-xl border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sport resize-none"
         />
@@ -106,7 +106,7 @@ export function SportAIConsultant() {
           ) : (
             <>
               <BrainCircuit className="h-4 w-4 ml-2" />
-              קבל עצה
+              קבל/י עצה
             </>
           )}
         </Button>
