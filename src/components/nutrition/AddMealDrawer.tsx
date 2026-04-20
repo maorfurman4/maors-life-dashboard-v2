@@ -1,18 +1,11 @@
 import { useState } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
-import { Coffee, Sun, Sunset, Moon, Search, Loader2, Plus, ScanLine } from "lucide-react";
+import { Search, Loader2, Plus, ScanLine, UtensilsCrossed } from "lucide-react";
 import { useAddNutrition } from "@/hooks/use-sport-data";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { MealPhotoCapture } from "./MealPhotoCapture";
-
-const mealTypes = [
-  { value: "breakfast", label: "בוקר", icon: Coffee },
-  { value: "lunch", label: "צהריים", icon: Sun },
-  { value: "dinner", label: "ערב", icon: Sunset },
-  { value: "snack", label: "חטיף", icon: Moon },
-];
 
 interface FoodResult {
   name: string;
@@ -26,17 +19,28 @@ interface FoodResult {
 interface AddMealDrawerProps {
   open: boolean;
   onClose: () => void;
-  defaultType?: string;
+  prefillName?: string;
+  prefillCalories?: number;
+  prefillProtein?: number;
+  prefillCarbs?: number;
+  prefillFat?: number;
 }
 
-export function AddMealDrawer({ open, onClose, defaultType }: AddMealDrawerProps) {
-  const [mealType, setMealType] = useState(defaultType || "breakfast");
+export function AddMealDrawer({
+  open,
+  onClose,
+  prefillName = "",
+  prefillCalories,
+  prefillProtein,
+  prefillCarbs,
+  prefillFat,
+}: AddMealDrawerProps) {
   const [mode, setMode] = useState<"manual" | "search">("search");
-  const [name, setName] = useState("");
-  const [calories, setCalories] = useState("");
-  const [protein, setProtein] = useState("");
-  const [carbs, setCarbs] = useState("");
-  const [fat, setFat] = useState("");
+  const [name, setName] = useState(prefillName);
+  const [calories, setCalories] = useState(prefillCalories?.toString() ?? "");
+  const [protein, setProtein] = useState(prefillProtein?.toString() ?? "");
+  const [carbs, setCarbs] = useState(prefillCarbs?.toString() ?? "");
+  const [fat, setFat] = useState(prefillFat?.toString() ?? "");
   const [grams, setGrams] = useState("100");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<FoodResult[]>([]);
@@ -54,8 +58,7 @@ export function AddMealDrawer({ open, onClose, defaultType }: AddMealDrawerProps
       });
       if (error) throw error;
       setResults((data?.results as FoodResult[]) || []);
-    } catch (e) {
-      console.error(e);
+    } catch {
       toast.error("שגיאה בחיפוש");
       setResults([]);
     } finally {
@@ -76,7 +79,7 @@ export function AddMealDrawer({ open, onClose, defaultType }: AddMealDrawerProps
         toast.success(`נמצא: ${product.name}`);
         selectFood(product);
       } else {
-        toast.error(data?.error || "מוצר לא נמצא במאגר");
+        toast.error(data?.error || "מוצר לא נמצא");
       }
     } catch (e: any) {
       toast.error("שגיאה: " + (e?.message || "לא ידוע"));
@@ -99,7 +102,7 @@ export function AddMealDrawer({ open, onClose, defaultType }: AddMealDrawerProps
 
   const resetForm = () => {
     setName(""); setCalories(""); setProtein(""); setCarbs(""); setFat("");
-    setQuery(""); setResults([]); setMode("manual");
+    setQuery(""); setResults([]); setMode("search");
   };
 
   const handleSave = () => {
@@ -107,7 +110,7 @@ export function AddMealDrawer({ open, onClose, defaultType }: AddMealDrawerProps
     addNutrition.mutate(
       {
         name,
-        meal_type: mealType,
+        meal_type: "lunch", // unified — no type shown to user
         calories: calories ? parseInt(calories) : undefined,
         protein_g: protein ? parseFloat(protein) : undefined,
         carbs_g: carbs ? parseFloat(carbs) : undefined,
@@ -122,32 +125,28 @@ export function AddMealDrawer({ open, onClose, defaultType }: AddMealDrawerProps
 
   return (
     <AddItemDrawer open={open} onClose={onClose} title="הוסף ארוחה">
-      <div className="space-y-4">
-        <div>
-          <label className="text-xs font-medium text-muted-foreground mb-2 block">סוג ארוחה</label>
-          <div className="grid grid-cols-4 gap-2">
-            {mealTypes.map((mt) => (
-              <button key={mt.value} onClick={() => setMealType(mt.value)}
-                className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border transition-colors text-xs font-medium min-h-[44px] ${
-                  mealType === mt.value ? "border-nutrition bg-nutrition/10 text-nutrition" : "border-border bg-card hover:bg-secondary/40 text-foreground"
-                }`}>
-                <mt.icon className="h-4 w-4" />{mt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
+      <div className="space-y-4" dir="rtl">
+        {/* Mode toggle */}
         <div className="flex gap-1 rounded-xl bg-secondary/30 p-1">
-          <button onClick={() => setMode("manual")}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors min-h-[36px] ${mode === "manual" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
+          <button
+            onClick={() => setMode("manual")}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors min-h-[36px] ${
+              mode === "manual" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+            }`}
+          >
             הזנה ידנית
           </button>
-          <button onClick={() => setMode("search")}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors min-h-[36px] ${mode === "search" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
+          <button
+            onClick={() => setMode("search")}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors min-h-[36px] ${
+              mode === "search" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+            }`}
+          >
             <Search className="h-3 w-3 inline ml-1" />חיפוש
           </button>
         </div>
 
+        {/* Photo capture in search mode */}
         {mode === "search" && (
           <MealPhotoCapture
             onRecognized={(meal) => {
@@ -164,42 +163,72 @@ export function AddMealDrawer({ open, onClose, defaultType }: AddMealDrawerProps
         {mode === "search" && (
           <div className="space-y-2">
             <div className="flex gap-2">
-              <input type="text" value={query} onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && searchFood()} placeholder="חפש: חזה עוף, אורז, במבה..."
-                className="flex-1 px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]" />
-              <button onClick={searchFood} disabled={loading || !query.trim()}
-                className="px-3 rounded-xl bg-nutrition/15 text-nutrition text-sm font-medium hover:bg-nutrition/25 disabled:opacity-50 min-h-[44px]">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && searchFood()}
+                placeholder="חפש: חזה עוף, אורז, במבה, קוטג׳..."
+                className="flex-1 px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
+              />
+              <button
+                onClick={searchFood}
+                disabled={loading || !query.trim()}
+                className="px-3 rounded-xl bg-nutrition/15 text-nutrition text-sm font-medium hover:bg-nutrition/25 disabled:opacity-50 min-h-[44px]"
+              >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               </button>
-              <button onClick={() => setScanOpen(true)} type="button"
+              <button
+                onClick={() => setScanOpen(true)}
+                type="button"
                 className="px-3 rounded-xl bg-nutrition text-nutrition-foreground text-sm font-medium hover:opacity-90 min-h-[44px] flex items-center gap-1"
-                title="סרוק ברקוד">
+                title="סרוק ברקוד"
+              >
                 <ScanLine className="h-4 w-4" />
               </button>
             </div>
+
+            {/* Gram selector */}
             <div>
               <label className="text-[10px] font-medium text-muted-foreground mb-1 block">כמות (גרם)</label>
               <div className="flex gap-1.5">
                 {[50, 100, 150, 200, 300].map((g) => (
-                  <button key={g} onClick={() => setGrams(g.toString())}
+                  <button
+                    key={g}
+                    onClick={() => setGrams(g.toString())}
                     className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-colors min-h-[32px] ${
-                      grams === g.toString() ? "bg-nutrition/20 text-nutrition border border-nutrition/40" : "bg-secondary/30 text-muted-foreground border border-transparent"
-                    }`}>{g}g</button>
+                      grams === g.toString()
+                        ? "bg-nutrition/20 text-nutrition border border-nutrition/40"
+                        : "bg-secondary/30 text-muted-foreground border border-transparent"
+                    }`}
+                  >
+                    {g}g
+                  </button>
                 ))}
-                <input type="number" value={grams} onChange={(e) => setGrams(e.target.value)}
-                  className="w-16 px-2 rounded-lg border border-border bg-card text-[11px] text-center" />
+                <input
+                  type="number"
+                  value={grams}
+                  onChange={(e) => setGrams(e.target.value)}
+                  className="w-16 px-2 rounded-lg border border-border bg-card text-[11px] text-center"
+                  dir="ltr"
+                />
               </div>
             </div>
+
             {results.length > 0 && (
               <div className="space-y-1 max-h-64 overflow-y-auto">
                 {results.map((r, i) => (
-                  <button key={i} onClick={() => selectFood(r)}
-                    className="w-full flex items-center gap-2 p-2 rounded-xl bg-secondary/20 hover:bg-secondary/35 transition-colors text-right">
+                  <button
+                    key={i}
+                    onClick={() => selectFood(r)}
+                    className="w-full flex items-center gap-2 p-2 rounded-xl bg-secondary/20 hover:bg-secondary/35 transition-colors text-right"
+                  >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{r.name}</p>
                       <div className="flex gap-2 text-[10px] text-muted-foreground">
                         {r.brand && <span className="truncate">{r.brand}</span>}
-                        <span>{r.calories} kcal/100g</span><span>P:{r.protein}g</span>
+                        <span>{r.calories} קל׳/100g</span>
+                        <span>P:{r.protein}g</span>
                       </div>
                     </div>
                     <Plus className="h-4 w-4 text-nutrition shrink-0" />
@@ -208,7 +237,7 @@ export function AddMealDrawer({ open, onClose, defaultType }: AddMealDrawerProps
               </div>
             )}
             {!loading && query && results.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-2">אין תוצאות — נסה חיפוש אחר</p>
+              <p className="text-xs text-muted-foreground text-center py-2">אין תוצאות — נסה מילה אחרת</p>
             )}
           </div>
         )}
@@ -216,37 +245,44 @@ export function AddMealDrawer({ open, onClose, defaultType }: AddMealDrawerProps
         {mode === "manual" && (
           <>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">שם המזון</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="לדוגמה: חזה עוף 200 גרם"
-                className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]" />
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">שם המזון / הארוחה</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="לדוגמה: חזה עוף 200 גרם, סלט ירקות"
+                className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">קלוריות</label>
-                <input type="number" value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="0"
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">חלבון (g)</label>
-                <input type="number" value={protein} onChange={(e) => setProtein(e.target.value)} placeholder="0"
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">פחמימות (g)</label>
-                <input type="number" value={carbs} onChange={(e) => setCarbs(e.target.value)} placeholder="0"
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">שומן (g)</label>
-                <input type="number" value={fat} onChange={(e) => setFat(e.target.value)} placeholder="0"
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]" />
-              </div>
+              {[
+                { label: "קלוריות", value: calories, set: setCalories },
+                { label: "חלבון (g)", value: protein, set: setProtein },
+                { label: "פחמימות (g)", value: carbs, set: setCarbs },
+                { label: "שומן (g)", value: fat, set: setFat },
+              ].map(({ label, value, set }) => (
+                <div key={label}>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{label}</label>
+                  <input
+                    type="number"
+                    value={value}
+                    onChange={(e) => set(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
+                    dir="ltr"
+                  />
+                </div>
+              ))}
             </div>
           </>
         )}
 
-        <button onClick={handleSave} disabled={addNutrition.isPending}
-          className="w-full py-3 rounded-xl bg-nutrition text-nutrition-foreground font-bold text-sm hover:opacity-90 transition-opacity min-h-[44px] disabled:opacity-50">
+        <button
+          onClick={handleSave}
+          disabled={addNutrition.isPending}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-nutrition text-nutrition-foreground font-bold text-sm hover:opacity-90 transition-opacity min-h-[44px] disabled:opacity-50"
+        >
+          <UtensilsCrossed className="h-4 w-4" />
           {addNutrition.isPending ? "שומר..." : "שמור ארוחה"}
         </button>
       </div>

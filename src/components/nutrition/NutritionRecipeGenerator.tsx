@@ -1,31 +1,81 @@
 import { useState } from "react";
-import { ChefHat, Loader2, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { ChefHat, Loader2, Star, ChevronDown, ChevronUp, ExternalLink, Clock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateText } from "@/lib/gemini";
 import { useAddFavoriteMeal } from "@/hooks/use-sport-data";
+import { useProfile } from "@/hooks/use-profile";
 import { toast } from "sonner";
+
+type DietaryType = "בשרי" | "חלבי" | "פרווה";
 
 interface Recipe {
   name: string;
+  dietary_type: DietaryType;
   calories_per_serving: number;
   protein_per_serving: number;
   carbs_per_serving: number;
   fat_per_serving: number;
+  prep_time_minutes: number;
+  cook_time_minutes: number;
   ingredients: string[];
   instructions: string[];
+  video_link?: string;
 }
 
+// Stub — replace body with real AI call when API is ready
+async function generateRecipeStub(
+  _protein: string,
+  _calories: string,
+  _people: string,
+  dietaryType: DietaryType,
+  _excluded: string[]
+): Promise<Recipe> {
+  // TODO: call Gemini / recipe AI with:
+  //   - protein & calorie targets
+  //   - dietary_type (בשרי / חלבי / פרווה)
+  //   - excluded ingredients list (never include)
+  //   - number of people
+  return {
+    name: `מתכון ${dietaryType} (ממתין לחיבור AI)`,
+    dietary_type: dietaryType,
+    calories_per_serving: 0,
+    protein_per_serving: 0,
+    carbs_per_serving: 0,
+    fat_per_serving: 0,
+    prep_time_minutes: 10,
+    cook_time_minutes: 20,
+    ingredients: ["מרכיבים יתמלאו לאחר חיבור API"],
+    instructions: ["הוראות הכנה יתמלאו לאחר חיבור API"],
+    video_link: "",
+  };
+}
+
+const DIETARY_OPTIONS: DietaryType[] = ["בשרי", "חלבי", "פרווה"];
+
 export function NutritionRecipeGenerator() {
+  const { data: profile } = useProfile();
+  const addFavorite = useAddFavoriteMeal();
+
+  const [dietaryType, setDietaryType] = useState<DietaryType | null>(null);
   const [protein, setProtein] = useState("");
   const [calories, setCalories] = useState("");
-  const [restrictions, setRestrictions] = useState("");
   const [people, setPeople] = useState("2");
+  const [extraRestrictions, setExtraRestrictions] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [showInstructions, setShowInstructions] = useState(false);
-  const addFavorite = useAddFavoriteMeal();
+
+  // Build excluded list from user profile
+  const profileExcluded: string[] = profile?.food_allergies ?? [];
+  const allExcluded = [
+    ...profileExcluded,
+    ...extraRestrictions.split(",").map((s) => s.trim()).filter(Boolean),
+  ];
 
   const handleGenerate = async () => {
+    if (!dietaryType) {
+      toast.error("בחר/י בשרי / חלבי / פרווה לפני יצירת מתכון");
+      return;
+    }
     if (!protein || !calories) {
       toast.error("נא למלא יעד חלבון וקלוריות");
       return;
@@ -33,23 +83,8 @@ export function NutritionRecipeGenerator() {
     setIsGenerating(true);
     setRecipe(null);
     try {
-      const prompt = `צור מתכון בעברית שמכיל לפחות ${protein}g חלבון ובסביבות ${calories} קלוריות.
-${restrictions ? `הגבלות תזונתיות: ${restrictions}` : ""}
-ל-${people} אנשים.
-
-החזר JSON בלבד (בלי markdown): {
-  "name": "שם המתכון",
-  "calories_per_serving": מספר,
-  "protein_per_serving": מספר,
-  "carbs_per_serving": מספר,
-  "fat_per_serving": מספר,
-  "ingredients": ["מרכיב 1", "מרכיב 2"],
-  "instructions": ["שלב 1", "שלב 2"]
-}`;
-      const text = await generateText(prompt);
-      const clean = text.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      setRecipe(parsed);
+      const result = await generateRecipeStub(protein, calories, people, dietaryType, allExcluded);
+      setRecipe(result);
       setShowInstructions(false);
     } catch {
       toast.error("שגיאה ביצירת מתכון, נסה שנית");
@@ -75,17 +110,43 @@ ${restrictions ? `הגבלות תזונתיות: ${restrictions}` : ""}
   };
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 space-y-4">
+    <div className="rounded-2xl bg-card border border-border p-4 space-y-4" dir="rtl">
       <div className="flex items-center gap-3">
         <div className="h-9 w-9 rounded-xl bg-nutrition/10 flex items-center justify-center">
           <ChefHat className="h-4 w-4 text-nutrition" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold">מחולל מתכונים AI</h3>
-          <p className="text-xs text-muted-foreground">צור מתכון לפי יעדי המאקרו שלך</p>
+          <h3 className="text-sm font-semibold" style={{ letterSpacing: 0 }}>מחולל מתכונים</h3>
+          <p className="text-xs text-muted-foreground">מותאם להעדפות, מאקרו ומזונות אסורים</p>
         </div>
       </div>
 
+      {/* Step 1: MANDATORY dietary type */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold text-muted-foreground">
+          סוג הכשרות <span className="text-destructive">*</span>
+        </label>
+        <div className="grid grid-cols-3 gap-2">
+          {DIETARY_OPTIONS.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setDietaryType(opt)}
+              className={`py-2.5 rounded-xl text-xs font-bold border transition-colors min-h-[40px] ${
+                dietaryType === opt
+                  ? "border-nutrition/60 bg-nutrition/15 text-nutrition"
+                  : "border-border bg-secondary/30 text-muted-foreground hover:border-nutrition/30"
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+        {!dietaryType && (
+          <p className="text-[10px] text-muted-foreground">יש לבחור לפני יצירת מתכון</p>
+        )}
+      </div>
+
+      {/* Macro targets */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">חלבון יעד (g)</label>
@@ -93,8 +154,8 @@ ${restrictions ? `הגבלות תזונתיות: ${restrictions}` : ""}
             type="number"
             value={protein}
             onChange={(e) => setProtein(e.target.value)}
-            placeholder="למשל: 40"
-            className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-nutrition"
+            placeholder="40"
+            className="w-full rounded-xl border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-nutrition min-h-[40px]"
             dir="ltr"
           />
         </div>
@@ -104,48 +165,62 @@ ${restrictions ? `הגבלות תזונתיות: ${restrictions}` : ""}
             type="number"
             value={calories}
             onChange={(e) => setCalories(e.target.value)}
-            placeholder="למשל: 600"
-            className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-nutrition"
+            placeholder="600"
+            className="w-full rounded-xl border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-nutrition min-h-[40px]"
             dir="ltr"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">מספר אנשים</label>
+          <label className="text-xs font-medium text-muted-foreground">מספר מנות</label>
           <input
             type="number"
             value={people}
             onChange={(e) => setPeople(e.target.value)}
             min="1"
             max="10"
-            className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-nutrition"
+            className="w-full rounded-xl border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-nutrition min-h-[40px]"
             dir="ltr"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">הגבלות (אופציונלי)</label>
+          <label className="text-xs font-medium text-muted-foreground">הגבלות נוספות</label>
           <input
             type="text"
-            value={restrictions}
-            onChange={(e) => setRestrictions(e.target.value)}
-            placeholder="טבעוני, ללא גלוטן..."
-            className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-nutrition"
+            value={extraRestrictions}
+            onChange={(e) => setExtraRestrictions(e.target.value)}
+            placeholder="ללא גלוטן, אגוזים..."
+            className="w-full rounded-xl border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-nutrition min-h-[40px]"
           />
         </div>
       </div>
 
+      {/* Excluded ingredients from profile */}
+      {profileExcluded.length > 0 && (
+        <div className="rounded-xl bg-destructive/5 border border-destructive/20 p-2.5">
+          <p className="text-[10px] font-bold text-destructive mb-1">מזונות אסורים מהפרופיל שלך (לעולם לא ייכללו):</p>
+          <div className="flex flex-wrap gap-1">
+            {profileExcluded.map((item) => (
+              <span key={item} className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Button
         className="w-full bg-nutrition hover:bg-nutrition/90 text-nutrition-foreground"
         onClick={handleGenerate}
-        disabled={isGenerating}
+        disabled={isGenerating || !dietaryType}
       >
         {isGenerating ? (
           <>
-            <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+            <Loader2 className="h-4 w-4 ms-2 animate-spin" />
             יוצר מתכון...
           </>
         ) : (
           <>
-            <ChefHat className="h-4 w-4 ml-2" />
+            <ChefHat className="h-4 w-4 ms-2" />
             צור מתכון
           </>
         )}
@@ -154,39 +229,52 @@ ${restrictions ? `הגבלות תזונתיות: ${restrictions}` : ""}
       {recipe && (
         <div className="space-y-3 pt-1">
           <div className="p-3 rounded-xl bg-secondary space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="font-bold text-base">{recipe.name}</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={handleSaveFavorite}
-                disabled={addFavorite.isPending}
-              >
-                <Star className="h-3 w-3 ml-1 text-nutrition" />
-                שמור מועדף
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-bold text-base leading-tight">{recipe.name}</p>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-nutrition/10 text-nutrition border border-nutrition/20 font-semibold">
+                  {recipe.dietary_type}
+                </span>
+              </div>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs shrink-0" onClick={handleSaveFavorite} disabled={addFavorite.isPending}>
+                <Star className="h-3 w-3 ms-1 text-nutrition" />
+                מועדף
               </Button>
             </div>
 
+            {/* Timing */}
+            <div className="flex gap-3 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                הכנה: {recipe.prep_time_minutes} דק׳
+              </div>
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                בישול: {recipe.cook_time_minutes} דק׳
+              </div>
+              <div className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {people} מנות
+              </div>
+            </div>
+
+            {/* Macros */}
             <div className="grid grid-cols-4 gap-2 text-center">
-              {(
-                [
-                  ["קלוריות", recipe.calories_per_serving, ""],
-                  ["חלבון", recipe.protein_per_serving, "g"],
-                  ["פחמימות", recipe.carbs_per_serving, "g"],
-                  ["שומן", recipe.fat_per_serving, "g"],
-                ] as [string, number, string][]
-              ).map(([label, val, unit]) => (
-                <div key={label} className="bg-card rounded-lg p-2">
+              {[
+                ["קלוריות", recipe.calories_per_serving, ""],
+                ["חלבון", recipe.protein_per_serving, "g"],
+                ["פחמימות", recipe.carbs_per_serving, "g"],
+                ["שומן", recipe.fat_per_serving, "g"],
+              ].map(([label, val, unit]) => (
+                <div key={String(label)} className="bg-card rounded-lg p-2">
                   <p className="text-xs text-muted-foreground">{label}</p>
-                  <p className="text-sm font-bold text-nutrition">
-                    {val}
-                    {unit}
-                  </p>
+                  <p className="text-sm font-bold text-nutrition">{val}{unit}</p>
                 </div>
               ))}
             </div>
 
+            {/* Ingredients */}
             <div className="space-y-1.5">
               <p className="text-xs font-bold text-muted-foreground">מרכיבים</p>
               <ul className="space-y-1">
@@ -199,20 +287,15 @@ ${restrictions ? `הגבלות תזונתיות: ${restrictions}` : ""}
               </ul>
             </div>
 
+            {/* Instructions toggle */}
             <button
               className="flex items-center gap-1 text-xs font-semibold text-nutrition w-full"
               onClick={() => setShowInstructions((v) => !v)}
             >
               {showInstructions ? (
-                <>
-                  <ChevronUp className="h-3 w-3" />
-                  הסתר הוראות הכנה
-                </>
+                <><ChevronUp className="h-3 w-3" />הסתר הוראות הכנה</>
               ) : (
-                <>
-                  <ChevronDown className="h-3 w-3" />
-                  הצג הוראות הכנה
-                </>
+                <><ChevronDown className="h-3 w-3" />הצג הוראות הכנה</>
               )}
             </button>
 
@@ -227,6 +310,19 @@ ${restrictions ? `הגבלות תזונתיות: ${restrictions}` : ""}
                   </li>
                 ))}
               </ol>
+            )}
+
+            {/* Video link */}
+            {recipe.video_link && (
+              <a
+                href={recipe.video_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-nutrition font-semibold hover:underline"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                סרטון הכנה
+              </a>
             )}
           </div>
         </div>

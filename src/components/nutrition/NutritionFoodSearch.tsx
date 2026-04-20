@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { Search, Plus, Loader2, Star, Check } from "lucide-react";
+import { Search, Plus, Loader2, Star, Check, AlertTriangle } from "lucide-react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
+import { useAddNutrition, useAddFavoriteMeal } from "@/hooks/use-sport-data";
+import { detectRedLabels, redLabelColor } from "@/lib/red-labels";
+import { toast } from "sonner";
 
 interface FoodResult {
   name: string;
@@ -9,6 +12,9 @@ interface FoodResult {
   protein: number;
   carbs: number;
   fat: number;
+  sugar?: number;
+  sodium?: number;
+  saturated_fat?: number;
   serving: string;
 }
 
@@ -20,28 +26,43 @@ export function NutritionFoodSearch() {
   const [selectedFood, setSelectedFood] = useState<FoodResult | null>(null);
   const [addedItems, setAddedItems] = useState<Set<number>>(new Set());
   const [quantity, setQuantity] = useState("100");
-  const [mealType, setMealType] = useState("lunch");
+
+  const addNutrition = useAddNutrition();
+  const addFavorite = useAddFavoriteMeal();
 
   const searchFood = async () => {
     if (!query.trim()) return;
     setLoading(true);
     setSearched(true);
     try {
+      // Israeli + global food search via Open Food Facts with IL country boost
       const res = await fetch(
-        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,brands,nutriments,serving_size`
+        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&fields=product_name,brands,nutriments,serving_size,countries_tags&tagtype_0=countries&tag_contains_0=contains&tag_0=israel`
       );
       const data = await res.json();
-      const items: FoodResult[] = (data.products || [])
-        .filter((p: any) => p.product_name && p.nutriments)
-        .map((p: any) => ({
-          name: p.product_name,
-          brand: p.brands || undefined,
-          calories: Math.round(p.nutriments["energy-kcal_100g"] || p.nutriments["energy-kcal"] || 0),
-          protein: Math.round((p.nutriments.proteins_100g || 0) * 10) / 10,
-          carbs: Math.round((p.nutriments.carbohydrates_100g || 0) * 10) / 10,
-          fat: Math.round((p.nutriments.fat_100g || 0) * 10) / 10,
-          serving: p.serving_size || "100g",
-        }));
+
+      // Fallback to global if no IL results
+      let products = (data.products || []).filter((p: any) => p.product_name && p.nutriments);
+      if (products.length < 3) {
+        const res2 = await fetch(
+          `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,brands,nutriments,serving_size`
+        );
+        const data2 = await res2.json();
+        products = (data2.products || []).filter((p: any) => p.product_name && p.nutriments);
+      }
+
+      const items: FoodResult[] = products.map((p: any) => ({
+        name: p.product_name,
+        brand: p.brands || undefined,
+        calories: Math.round(p.nutriments["energy-kcal_100g"] ?? p.nutriments["energy-kcal"] ?? 0),
+        protein: Math.round((p.nutriments.proteins_100g ?? 0) * 10) / 10,
+        carbs: Math.round((p.nutriments.carbohydrates_100g ?? 0) * 10) / 10,
+        fat: Math.round((p.nutriments.fat_100g ?? 0) * 10) / 10,
+        sugar: p.nutriments.sugars_100g,
+        sodium: p.nutriments.sodium_100g != null ? p.nutriments.sodium_100g * 1000 : undefined, // g→mg
+        saturated_fat: p.nutriments["saturated-fat_100g"],
+        serving: p.serving_size || "100g",
+      }));
       setResults(items);
     } catch {
       setResults([]);
@@ -50,42 +71,69 @@ export function NutritionFoodSearch() {
     }
   };
 
-  const handleAddFood = (food: FoodResult, index: number) => {
-    setSelectedFood(food);
-  };
+  const qtyNum = parseFloat(quantity) || 100;
+  const multiplier = qtyNum / 100;
 
   const handleConfirmAdd = () => {
     if (!selectedFood) return;
     const idx = results.indexOf(selectedFood);
-    if (idx >= 0) setAddedItems(prev => new Set(prev).add(idx));
-    setSelectedFood(null);
-    setQuantity("100");
+    addNutrition.mutate(
+      {
+        name: selectedFood.name,
+        meal_type: "lunch",
+        calories: Math.round(selectedFood.calories * multiplier),
+        protein_g: parseFloat((selectedFood.protein * multiplier).toFixed(1)),
+        carbs_g: parseFloat((selectedFood.carbs * multiplier).toFixed(1)),
+        fat_g: parseFloat((selectedFood.fat * multiplier).toFixed(1)),
+      },
+      {
+        onSuccess: () => {
+          toast.success(`"${selectedFood.name}" נוסף`);
+          if (idx >= 0) setAddedItems((prev) => new Set(prev).add(idx));
+          setSelectedFood(null);
+          setQuantity("100");
+        },
+        onError: (err) => toast.error("שגיאה: " + err.message),
+      }
+    );
   };
 
-  const mealTypes = [
-    { value: "breakfast", label: "בוקר" },
-    { value: "lunch", label: "צהריים" },
-    { value: "dinner", label: "ערב" },
-    { value: "snack", label: "חטיף" },
-  ];
-
-  const qtyNum = parseFloat(quantity) || 100;
-  const multiplier = qtyNum / 100;
+  const handleSaveFavorite = () => {
+    if (!selectedFood) return;
+    addFavorite.mutate(
+      {
+        name: selectedFood.name,
+        calories: Math.round(selectedFood.calories * multiplier),
+        protein_g: parseFloat((selectedFood.protein * multiplier).toFixed(1)),
+        carbs_g: parseFloat((selectedFood.carbs * multiplier).toFixed(1)),
+        fat_g: parseFloat((selectedFood.fat * multiplier).toFixed(1)),
+      },
+      {
+        onSuccess: () => toast.success("נשמר כמועדף"),
+        onError: (err) => toast.error("שגיאה: " + err.message),
+      }
+    );
+  };
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 md:p-5 space-y-3">
-      <h3 className="text-sm font-semibold text-muted-foreground">חיפוש מזון</h3>
+    <div className="rounded-2xl bg-card border border-border p-4 space-y-3" dir="rtl">
+      <h3 className="text-sm font-semibold text-muted-foreground" style={{ letterSpacing: 0 }}>
+        חיפוש מוצרי מזון
+      </h3>
+      <p className="text-[10px] text-muted-foreground -mt-1">
+        מאגר ישראלי + עולמי · כולל מדבקות אדומות לפי קריטריוני משרד הבריאות
+      </p>
 
       <div className="flex gap-2">
         <div className="flex-1 relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && searchFood()}
-            placeholder="חפש מזון... (לדוגמה: chicken, rice, banana)"
-            className="w-full rounded-xl bg-secondary/40 border border-border pr-9 pl-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-nutrition min-h-[44px]"
+            placeholder="חפש: חומוס, גבינה לבנה, בננה..."
+            className="w-full rounded-xl bg-secondary/40 border border-border pe-9 ps-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-nutrition min-h-[44px]"
           />
         </div>
         <button
@@ -101,22 +149,48 @@ export function NutritionFoodSearch() {
         <div className="space-y-1.5 max-h-80 overflow-y-auto">
           {results.map((r, i) => {
             const added = addedItems.has(i);
+            const redLabels = detectRedLabels({
+              calories: r.calories,
+              sugar_g: r.sugar,
+              sodium_mg: r.sodium,
+              saturated_fat_g: r.saturated_fat,
+            });
             return (
-              <div key={i} className={`flex items-center gap-3 p-2.5 rounded-xl transition-colors cursor-pointer ${added ? "bg-nutrition/10 border border-nutrition/20" : "bg-secondary/20 hover:bg-secondary/35"}`}>
-                <div className="flex-1 min-w-0" onClick={() => handleAddFood(r, i)}>
+              <div
+                key={i}
+                className={`flex items-center gap-3 p-2.5 rounded-xl transition-colors cursor-pointer ${
+                  added ? "bg-nutrition/10 border border-nutrition/20" : "bg-secondary/20 hover:bg-secondary/35"
+                }`}
+              >
+                <div className="flex-1 min-w-0" onClick={() => setSelectedFood(r)}>
                   <p className="text-sm font-medium truncate">{r.name}</p>
                   {r.brand && <p className="text-[10px] text-muted-foreground truncate">{r.brand}</p>}
-                  <div className="flex gap-2 md:gap-3 mt-1 text-[10px] text-muted-foreground flex-wrap">
-                    <span>{r.calories} kcal</span>
-                    <span>P: {r.protein}g</span>
-                    <span>C: {r.carbs}g</span>
-                    <span>F: {r.fat}g</span>
-                    <span className="text-muted-foreground/50">/ {r.serving}</span>
+                  <div className="flex gap-2 mt-1 text-[10px] text-muted-foreground flex-wrap">
+                    <span>{r.calories} קל׳</span>
+                    <span>P:{r.protein}g</span>
+                    <span>C:{r.carbs}g</span>
+                    <span>F:{r.fat}g</span>
+                    <span className="text-muted-foreground/50">/{r.serving}</span>
                   </div>
+                  {redLabels.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {redLabels.map((lb) => (
+                        <span
+                          key={lb.key}
+                          className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${redLabelColor(lb.severity)}`}
+                        >
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          {lb.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button
-                  onClick={() => handleAddFood(r, i)}
-                  className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${added ? "bg-nutrition/20" : "bg-nutrition/10 hover:bg-nutrition/20"}`}
+                  onClick={() => setSelectedFood(r)}
+                  className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    added ? "bg-nutrition/20" : "bg-nutrition/10 hover:bg-nutrition/20"
+                  }`}
                 >
                   {added ? <Check className="h-4 w-4 text-nutrition" /> : <Plus className="h-4 w-4 text-nutrition" />}
                 </button>
@@ -127,17 +201,13 @@ export function NutritionFoodSearch() {
       )}
 
       {searched && !loading && results.length === 0 && (
-        <p className="text-xs text-muted-foreground text-center py-4">לא נמצאו תוצאות — נסה לחפש באנגלית</p>
+        <p className="text-xs text-muted-foreground text-center py-4">לא נמצאו תוצאות — נסה שם אחר</p>
       )}
 
-      {/* Quick add drawer for selected food */}
-      <AddItemDrawer
-        open={!!selectedFood}
-        onClose={() => setSelectedFood(null)}
-        title="הוסף מזון"
-      >
+      {/* Add food drawer */}
+      <AddItemDrawer open={!!selectedFood} onClose={() => setSelectedFood(null)} title="הוסף מזון">
         {selectedFood && (
-          <div className="space-y-4">
+          <div className="space-y-4" dir="rtl">
             <div className="rounded-xl bg-secondary/30 p-3">
               <p className="text-sm font-bold">{selectedFood.name}</p>
               {selectedFood.brand && <p className="text-[10px] text-muted-foreground">{selectedFood.brand}</p>}
@@ -145,6 +215,21 @@ export function NutritionFoodSearch() {
 
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">כמות (גרם)</label>
+              <div className="flex gap-1.5 mb-2">
+                {[50, 100, 150, 200, 300].map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => setQuantity(g.toString())}
+                    className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-colors min-h-[32px] ${
+                      quantity === g.toString()
+                        ? "bg-nutrition/20 text-nutrition border border-nutrition/40"
+                        : "bg-secondary/30 text-muted-foreground border border-transparent"
+                    }`}
+                  >
+                    {g}g
+                  </button>
+                ))}
+              </div>
               <input
                 type="number"
                 value={quantity}
@@ -154,54 +239,52 @@ export function NutritionFoodSearch() {
               />
             </div>
 
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">סוג ארוחה</label>
-              <div className="grid grid-cols-4 gap-2">
-                {mealTypes.map((mt) => (
-                  <button
-                    key={mt.value}
-                    onClick={() => setMealType(mt.value)}
-                    className={`py-2 rounded-xl border text-xs font-medium transition-colors min-h-[40px] ${
-                      mealType === mt.value
-                        ? "border-nutrition bg-nutrition/10 text-nutrition"
-                        : "border-border hover:bg-secondary/40"
-                    }`}
-                  >
-                    {mt.label}
-                  </button>
-                ))}
-              </div>
+            <div className="grid grid-cols-4 gap-2 rounded-xl bg-secondary/20 p-3">
+              {[
+                ["קלוריות", Math.round(selectedFood.calories * multiplier), ""],
+                ["חלבון", (selectedFood.protein * multiplier).toFixed(1), "g"],
+                ["פחמימות", (selectedFood.carbs * multiplier).toFixed(1), "g"],
+                ["שומן", (selectedFood.fat * multiplier).toFixed(1), "g"],
+              ].map(([label, val, unit]) => (
+                <div key={String(label)} className="text-center">
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="text-sm font-bold">{val}{unit}</p>
+                </div>
+              ))}
             </div>
 
-            <div className="grid grid-cols-4 gap-2 rounded-xl bg-secondary/20 p-3">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">קלוריות</p>
-                <p className="text-sm font-bold">{Math.round(selectedFood.calories * multiplier)}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">חלבון</p>
-                <p className="text-sm font-bold">{(selectedFood.protein * multiplier).toFixed(1)}g</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">פחמימות</p>
-                <p className="text-sm font-bold">{(selectedFood.carbs * multiplier).toFixed(1)}g</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">שומן</p>
-                <p className="text-sm font-bold">{(selectedFood.fat * multiplier).toFixed(1)}g</p>
-              </div>
-            </div>
+            {/* Red labels in drawer */}
+            {(() => {
+              const labels = detectRedLabels({
+                calories: selectedFood.calories,
+                sugar_g: selectedFood.sugar,
+                sodium_mg: selectedFood.sodium,
+                saturated_fat_g: selectedFood.saturated_fat,
+              });
+              return labels.length > 0 ? (
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                  <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[11px] font-bold text-orange-500 mb-0.5">מדבקות אדומות (משרד הבריאות)</p>
+                    <p className="text-[11px] text-orange-500/80">{labels.map((l) => l.label).join(" · ")}</p>
+                  </div>
+                </div>
+              ) : null;
+            })()}
 
             <div className="flex gap-2">
               <button
                 onClick={handleConfirmAdd}
-                className="flex-1 py-3 rounded-xl bg-nutrition text-nutrition-foreground font-bold text-sm hover:opacity-90 transition-opacity min-h-[44px]"
+                disabled={addNutrition.isPending}
+                className="flex-1 py-3 rounded-xl bg-nutrition text-nutrition-foreground font-bold text-sm hover:opacity-90 transition-opacity min-h-[44px] disabled:opacity-50"
               >
-                הוסף ארוחה
+                {addNutrition.isPending ? "מוסיף..." : "הוסף ארוחה"}
               </button>
               <button
-                onClick={() => { handleConfirmAdd(); }}
+                onClick={handleSaveFavorite}
+                disabled={addFavorite.isPending}
                 className="px-4 py-3 rounded-xl border border-nutrition/30 text-nutrition font-medium text-sm hover:bg-nutrition/10 transition-colors min-h-[44px]"
+                title="שמור כמועדף"
               >
                 <Star className="h-4 w-4" />
               </button>
