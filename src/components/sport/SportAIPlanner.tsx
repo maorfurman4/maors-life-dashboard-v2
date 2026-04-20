@@ -1,42 +1,43 @@
 import { useState } from "react";
 import { Sparkles, Loader2, Calendar, Save, ChevronRight, ChevronLeft } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { generateText, parseGeminiJson } from "@/lib/gemini";
 import { usePersonalRecords, useAddWorkoutTemplate } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
 
 interface PlannedExercise {
-  name: string;
-  sets: number;
-  reps: string;
+  name:       string;
+  sets:       number;
+  reps:       string;
   weight_kg?: number;
-  notes?: string;
+  notes?:     string;
 }
 
 interface PlannedWorkout {
-  day: string;
-  name: string;
-  category: string;
-  duration_minutes: number;
-  exercises: PlannedExercise[];
+  day:               string;
+  name:              string;
+  category:          string;
+  duration_minutes:  number;
+  exercises:         PlannedExercise[];
 }
 
 interface AIWorkoutPlan {
-  summary: string;
+  summary:  string;
   workouts: PlannedWorkout[];
-  tips: string[];
+  tips:     string[];
 }
 
-// Conversational step definitions
+// ─── Conversational steps ─────────────────────────────────────────────────────
+
 type StepKey = "frequency" | "location" | "duration" | "rpe" | "limitations";
 
 interface Step {
-  key: StepKey;
-  question: string;
-  options?: string[];
-  inputType: "options" | "range" | "text";
-  rangeMin?: number;
-  rangeMax?: number;
-  rangeUnit?: string;
+  key:         StepKey;
+  question:    string;
+  options?:    string[];
+  inputType:   "options" | "range" | "text";
+  rangeMin?:   number;
+  rangeMax?:   number;
+  rangeUnit?:  string;
   placeholder?: string;
 }
 
@@ -79,19 +80,68 @@ const STEPS: Step[] = [
 
 type Answers = Partial<Record<StepKey, string>>;
 
+// ─── Gemini prompt builder ────────────────────────────────────────────────────
+
+function buildWorkoutPrompt(answers: Answers, prs: any[]): string {
+  const daysPerWeek = parseInt(answers.frequency ?? "3");
+  const prText = prs.length > 0
+    ? `\nשיאים אישיים של המשתמש: ${prs.slice(0, 6).map((p: any) => `${p.exercise_name}: ${p.value}${p.unit ?? ""}`).join(", ")}`
+    : "";
+
+  return `אתה מאמן כושר מקצועי ישראלי. צור תוכנית אימונים שבועית מותאמת אישית בפורמט JSON בלבד.
+
+פרמטרים:
+- תדירות: ${answers.frequency}
+- מיקום: ${answers.location}
+- משך אימון: ${answers.duration}
+- עוצמה (RPE): ${answers.rpe}
+- מגבלות: ${answers.limitations}${prText}
+
+החזר JSON בפורמט הבא בדיוק:
+{
+  "summary": "תיאור קצר של התוכנית (2 משפטים בעברית)",
+  "workouts": [
+    {
+      "day": "יום ראשון",
+      "name": "שם האימון בעברית",
+      "category": "כוח / קרדיו / גמישות / משולב",
+      "duration_minutes": ${answers.duration?.split(" ")[0] ?? 60},
+      "exercises": [
+        {
+          "name": "שם התרגיל בעברית",
+          "sets": 3,
+          "reps": "8-12",
+          "weight_kg": null,
+          "notes": "הנחיה קצרה אם צריך"
+        }
+      ]
+    }
+  ],
+  "tips": ["טיפ 1 בעברית", "טיפ 2 בעברית", "טיפ 3 בעברית"]
+}
+
+כללים:
+- צור בדיוק ${daysPerWeek} אימונים (אחד לכל יום אימון)
+- כל אימון יכיל 4–7 תרגילים מתאימים למיקום (${answers.location})
+- התחשב במגבלות: ${answers.limitations}
+- שמות תרגילים בעברית
+- weight_kg: null אם לא ידוע
+- ימי מנוחה לא מופיעים ברשימה
+- ללא markdown, JSON תקין בלבד`;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function SportAIPlanner() {
   const { data: prs } = usePersonalRecords();
-  const addTemplate = useAddWorkoutTemplate();
+  const addTemplate   = useAddWorkoutTemplate();
 
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Answers>({});
-  const [textInput, setTextInput] = useState("");
-  const [rangeValue, setRangeValue] = useState<Record<string, number>>({
-    duration: 60,
-    rpe: 7,
-  });
-  const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState<AIWorkoutPlan | null>(null);
+  const [step,       setStep]       = useState(0);
+  const [answers,    setAnswers]    = useState<Answers>({});
+  const [textInput,  setTextInput]  = useState("");
+  const [rangeValue, setRangeValue] = useState<Record<string, number>>({ duration: 60, rpe: 7 });
+  const [loading,    setLoading]    = useState(false);
+  const [plan,       setPlan]       = useState<AIWorkoutPlan | null>(null);
 
   const currentStep = STEPS[step];
   const allAnswered = step >= STEPS.length;
@@ -113,39 +163,27 @@ export function SportAIPlanner() {
   };
 
   const handleTextNext = () => {
-    if (!textInput.trim()) {
-      toast.error("נא למלא תשובה");
-      return;
-    }
+    if (!textInput.trim()) { toast.error("נא למלא תשובה"); return; }
     recordAnswer(textInput.trim());
     setStep((s) => s + 1);
   };
 
+  // ── Generate via Gemini directly (no Edge Function) ──
   const generate = async () => {
     setLoading(true);
     setPlan(null);
     try {
-      const { data, error } = await supabase.functions.invoke("workout-plan-ai", {
-        body: {
-          goal: "תוכנית מותאמת אישית",
-          daysPerWeek: parseInt(answers.frequency ?? "3"),
-          equipment: answers.location ?? "חדר כושר",
-          sessionDuration: answers.duration,
-          rpe: answers.rpe,
-          constraints: answers.limitations,
-          recentPRs: (prs || []).slice(0, 8),
-        },
-      });
-      if (error) throw error;
-      if (data?.error) {
-        toast.error(data.error);
-        return;
-      }
-      setPlan(data.plan);
-      toast.success("התוכנית מוכנה!");
+      const prompt = buildWorkoutPrompt(answers, prs || []);
+      const raw    = await generateText(prompt);
+      const parsed = parseGeminiJson<AIWorkoutPlan>(raw);
+
+      if (!parsed.workouts || !Array.isArray(parsed.workouts)) throw new Error("מבנה JSON לא תקין");
+
+      setPlan(parsed);
+      toast.success("התוכנית מוכנה! 💪");
     } catch (e: any) {
-      console.error(e);
-      toast.error("שגיאה: " + (e?.message || "לא ידוע"));
+      console.error("Workout plan error:", e);
+      toast.error("שגיאה ביצירת התוכנית — נסה שוב");
     } finally {
       setLoading(false);
     }
@@ -154,14 +192,14 @@ export function SportAIPlanner() {
   const saveAsTemplate = (w: PlannedWorkout) => {
     addTemplate.mutate(
       {
-        name: w.name,
-        category: w.category,
+        name:                       w.name,
+        category:                   w.category,
         estimated_duration_minutes: w.duration_minutes,
-        exercises: w.exercises as any,
+        exercises:                  w.exercises as any,
       },
       {
         onSuccess: () => toast.success(`"${w.name}" נשמר כתבנית`),
-        onError: (e: any) => toast.error("שגיאה: " + e.message),
+        onError:   (e: any) => toast.error("שגיאה: " + e.message),
       }
     );
   };
@@ -174,7 +212,7 @@ export function SportAIPlanner() {
   };
 
   return (
-    <div className="rounded-2xl border border-sport/30 bg-gradient-to-br from-sport/5 to-transparent p-4 space-y-3">
+    <div className="rounded-2xl border border-sport/30 bg-gradient-to-br from-sport/5 to-transparent p-4 space-y-3" dir="rtl">
       <div className="flex items-center gap-2">
         <div className="h-8 w-8 rounded-lg bg-sport/15 flex items-center justify-center">
           <Sparkles className="h-4 w-4 text-sport" />
@@ -185,7 +223,7 @@ export function SportAIPlanner() {
         </div>
       </div>
 
-      {/* Step progress indicator */}
+      {/* Step progress */}
       {!plan && (
         <div className="flex gap-1">
           {STEPS.map((s, i) => (
@@ -199,7 +237,7 @@ export function SportAIPlanner() {
         </div>
       )}
 
-      {/* Conversational questions */}
+      {/* Questions */}
       {!allAnswered && !plan && (
         <div className="space-y-3">
           <p className="text-sm font-semibold">{currentStep.question}</p>
@@ -232,17 +270,14 @@ export function SportAIPlanner() {
                 min={currentStep.rangeMin}
                 max={currentStep.rangeMax}
                 value={rangeValue[currentStep.key] ?? currentStep.rangeMin}
-                onChange={(e) =>
-                  setRangeValue((prev) => ({ ...prev, [currentStep.key]: parseInt(e.target.value) }))
-                }
+                onChange={(e) => setRangeValue((prev) => ({ ...prev, [currentStep.key]: parseInt(e.target.value) }))}
                 className="w-full accent-sport"
               />
               <button
                 onClick={handleRangeNext}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-sport/15 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[40px]"
               >
-                המשך
-                <ChevronLeft className="h-3.5 w-3.5" />
+                המשך <ChevronLeft className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
@@ -260,8 +295,7 @@ export function SportAIPlanner() {
                 onClick={handleTextNext}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-sport/15 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[40px]"
               >
-                המשך
-                <ChevronLeft className="h-3.5 w-3.5" />
+                המשך <ChevronLeft className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
@@ -271,14 +305,13 @@ export function SportAIPlanner() {
               onClick={() => setStep((s) => s - 1)}
               className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ChevronRight className="h-3 w-3" />
-              חזור
+              <ChevronRight className="h-3 w-3" /> חזור
             </button>
           )}
         </div>
       )}
 
-      {/* Summary before generating */}
+      {/* Summary + Generate */}
       {allAnswered && !plan && (
         <div className="space-y-3">
           <div className="rounded-xl bg-secondary/30 border border-border p-3 space-y-1.5">
@@ -296,8 +329,9 @@ export function SportAIPlanner() {
             disabled={loading}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-sport text-sport-foreground font-bold text-sm min-h-[48px] disabled:opacity-50"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {loading ? "AI בונה תוכנית…" : "צור תוכנית AI"}
+            {loading
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Gemini בונה תוכנית...</>
+              : <><Sparkles className="h-4 w-4" /> צור תוכנית AI</>}
           </button>
 
           <button onClick={reset} className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors">
@@ -319,9 +353,7 @@ export function SportAIPlanner() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Calendar className="h-3.5 w-3.5 text-sport shrink-0" />
-                    <p className="text-xs font-bold truncate">
-                      {w.day} · {w.name}
-                    </p>
+                    <p className="text-xs font-bold truncate">{w.day} · {w.name}</p>
                   </div>
                   <span className="text-[10px] text-muted-foreground shrink-0">{w.duration_minutes} דק'</span>
                 </div>
@@ -330,8 +362,7 @@ export function SportAIPlanner() {
                     <div key={ei} className="flex items-center justify-between text-[11px] border-r-2 border-sport/30 pr-2">
                       <span className="font-medium truncate">{ex.name}</span>
                       <span className="text-muted-foreground shrink-0 ms-2">
-                        {ex.sets}×{ex.reps}
-                        {ex.weight_kg ? ` @${ex.weight_kg}kg` : ""}
+                        {ex.sets}×{ex.reps}{ex.weight_kg ? ` @${ex.weight_kg}kg` : ""}
                       </span>
                     </div>
                   ))}
