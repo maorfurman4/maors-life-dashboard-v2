@@ -65,3 +65,17 @@ export function useToggleGroceryItem() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["grocery_lists"] }),
   });
 }
+
+export function useDeleteGroceryItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("grocery_items")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["grocery_lists"] }),
+  });
+}

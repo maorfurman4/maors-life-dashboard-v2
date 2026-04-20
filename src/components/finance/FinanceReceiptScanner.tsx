@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
-import { Camera, Loader2, Check, X, Plus } from "lucide-react";
+import { Camera, FolderOpen, Loader2, Check, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { analyzeImage } from "@/lib/gemini";
 import { useAddExpense } from "@/hooks/use-finance-data";
 import { toast } from "sonner";
 
@@ -11,11 +10,18 @@ interface ExtractedExpense {
   category: string;
 }
 
+// Stub — replace with real Gemini Vision / OCR call when API is ready
+async function extractReceiptStub(_base64: string, _mimeType: string): Promise<ExtractedExpense[]> {
+  // TODO: call analyzeImage from @/lib/gemini with receipt OCR prompt
+  return [];
+}
+
 export function FinanceReceiptScanner() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [extracted, setExtracted] = useState<ExtractedExpense[]>([]);
   const [selected, setSelected] = useState<boolean[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const addExpense = useAddExpense();
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,17 +30,16 @@ export function FinanceReceiptScanner() {
     setIsAnalyzing(true);
     try {
       const base64 = await fileToBase64(file);
-      const prompt = `נתח את הקבלה בתמונה. החזר JSON בלבד (בלי markdown), מערך של: [{"name": "שם המוצר", "amount": מחיר_מספרי, "category": "קטגוריה מתוך: מזון/תחבורה/בידור/קניות/בריאות/אחר"}]. זהה את כל הפריטים.`;
-      const result = await analyzeImage(base64.split(",")[1], file.type, prompt);
-      const cleanJson = result.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
-      const items: ExtractedExpense[] = JSON.parse(cleanJson);
+      const items = await extractReceiptStub(base64.split(",")[1], file.type);
       setExtracted(items);
       setSelected(items.map(() => true));
+      if (items.length === 0) toast.info("ממתין לחיבור AI — זיהוי קבלה עדיין לא פעיל");
     } catch {
-      toast.error("לא ניתן לנתח את הקבלה. נסה תמונה ברורה יותר.");
+      toast.error("לא ניתן לנתח את הקבלה.");
     } finally {
       setIsAnalyzing(false);
-      if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
+      if (galleryRef.current) galleryRef.current.value = "";
     }
   };
 
@@ -68,27 +73,39 @@ export function FinanceReceiptScanner() {
         </div>
       </div>
 
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFile}
-      />
+      {/* Camera input */}
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+      {/* Gallery input */}
+      <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
 
       {extracted.length === 0 ? (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => fileRef.current?.click()}
-          disabled={isAnalyzing}
-        >
-          {isAnalyzing ? (
-            <><Loader2 className="h-4 w-4 ml-2 animate-spin" />מנתח קבלה...</>
-          ) : (
-            <><Camera className="h-4 w-4 ml-2" />בחר תמונה</>
-          )}
-        </Button>
+        isAnalyzing ? (
+          <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-finance" />
+            מנתח קבלה...
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => cameraRef.current?.click()}
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-finance/30 hover:border-finance/60 hover:bg-finance/5 transition-colors min-h-[90px] group"
+            >
+              <div className="h-9 w-9 rounded-xl bg-finance/10 flex items-center justify-center group-hover:bg-finance/20 transition-colors">
+                <Camera className="h-5 w-5 text-finance" />
+              </div>
+              <span className="text-xs font-semibold text-finance">צלם קבלה</span>
+            </button>
+            <button
+              onClick={() => galleryRef.current?.click()}
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-finance/30 hover:bg-finance/5 transition-colors min-h-[90px] group"
+            >
+              <div className="h-9 w-9 rounded-xl bg-secondary/50 flex items-center justify-center group-hover:bg-finance/10 transition-colors">
+                <FolderOpen className="h-5 w-5 text-muted-foreground group-hover:text-finance transition-colors" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground group-hover:text-finance transition-colors">בחר מגלריה</span>
+            </button>
+          </div>
+        )
       ) : (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">בחר הוצאות לשמירה:</p>
