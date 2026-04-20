@@ -56,13 +56,39 @@ export function useMarkCouponUsed() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("coupons")
-        .update({ is_used: true })
+        .update({ is_used: true, used_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["coupons"] }),
+  });
+}
+
+export function useMonthlyCouponSavings() {
+  return useQuery({
+    queryKey: ["coupons-monthly-savings"],
+    queryFn: async () => {
+      const userId  = await getUserId();
+      const now     = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("discount_amount, discount_percent")
+        .eq("user_id", userId)
+        .eq("is_used", true)
+        .gte("used_at", monthStart);
+
+      if (error) throw error;
+      const total = (data || []).reduce(
+        (sum, c) => sum + (c.discount_amount ?? 0),
+        0
+      );
+      return { total, count: (data || []).length };
+    },
+    staleTime: 1000 * 60 * 5,
   });
 }
 

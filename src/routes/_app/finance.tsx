@@ -17,6 +17,7 @@ import { FinanceKanbanPayments } from "@/components/finance/FinanceKanbanPayment
 import { FinanceDebtTracker } from "@/components/finance/FinanceDebtTracker";
 import { FinanceCouponVault } from "@/components/finance/FinanceCouponVault";
 import { FinanceGroceryPriceList } from "@/components/finance/FinanceGroceryPriceList";
+import { FinanceMonthlySavings } from "@/components/finance/FinanceMonthlySavings";
 
 export const Route = createFileRoute("/_app/finance")({
   component: FinancePage,
@@ -73,6 +74,7 @@ function FinancePage() {
           <FinanceDashboardCards />
           <FinanceKanbanPayments />
           <FinanceSavings />
+          <FinanceMonthlySavings />
           <FinanceBudgetAlerts />
         </div>
       )}
