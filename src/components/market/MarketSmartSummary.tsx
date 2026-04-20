@@ -3,52 +3,98 @@ import { Brain, ChevronDown, ChevronUp, RefreshCw, Loader2 } from "lucide-react"
 import { useStockHoldings } from "@/hooks/use-sport-data";
 import { useStockQuotes } from "@/hooks/use-stock-quotes";
 import { useProfile } from "@/hooks/use-profile";
+import { generateText, parseGeminiJson } from "@/lib/gemini";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SummaryResult {
   greeting: string;
-  cot: string[];      // Chain-of-thought reasoning steps
-  summary: string;
-  tips: string[];
+  cot:      string[];
+  summary:  string;
+  tips:     string[];
 }
 
-// ─── Stub — replace with real Gemini / GPT call ───────────────────────────────
-async function analyzePortfolioStub(
-  holdings: any[],
-  quoteMap: Map<string, any>,
-  firstName: string | null,
-  gender: string | null
-): Promise<SummaryResult> {
-  // TODO: call analyzeMarket(prompt) from @/lib/gemini when API is ready
-  const totalPL = holdings.reduce((s, h) => {
-    const q = quoteMap.get(h.symbol.toUpperCase());
-    const price = q?.price ?? Number(h.avg_price);
-    return s + (Number(h.shares) * price - Number(h.shares) * Number(h.avg_price));
-  }, 0);
+// ─── Prompt builder ───────────────────────────────────────────────────────────
 
-  const name    = firstName || (gender === "נקבה" ? "משקיעה" : "משקיע");
-  const suffix  = gender === "נקבה" ? "ה" : "";
-  const greeting = `שלום${suffix}, ${name}`;
+function buildPortfolioPrompt(
+  holdings:  any[],
+  quoteMap:  Map<string, any>,
+  firstName: string | null,
+  gender:    string | null
+): string {
+  const suffix = gender === "נקבה" ? "ה" : "";
+  const name   = firstName ?? (gender === "נקבה" ? "משקיעה" : "משקיע");
+
+  const holdingsData = holdings.map((h) => {
+    const q      = quoteMap.get(h.symbol?.toUpperCase());
+    const price  = q?.price ?? Number(h.avg_price);
+    const pl     = Number(h.shares) * price - Number(h.shares) * Number(h.avg_price);
+    const plPct  = (pl / (Number(h.shares) * Number(h.avg_price))) * 100;
+    return {
+      symbol:    h.symbol,
+      shares:    h.shares,
+      avg_price: h.avg_price,
+      current_price: price.toFixed(2),
+      pl_usd:    pl.toFixed(2),
+      pl_pct:    plPct.toFixed(1) + "%",
+    };
+  });
 
   const hebrewDate = new Date().toLocaleDateString("he-IL", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 
+  return `אתה אנליסט פיננסי מומחה המספק ניתוח תיק השקעות בעברית בסגנון ישיר ומקצועי.
+
+תאריך: ${hebrewDate}
+משתמש${suffix}: ${name}
+נתוני תיק: ${JSON.stringify(holdingsData, null, 2)}
+
+ספק ניתוח מקיף בפורמט JSON בלבד:
+{
+  "greeting": "ברכה קצרה בעברית, מותאמת מגדרית ל${name}",
+  "cot": [
+    "1. [שלב ניתוח ראשון — בדיקת הפוזיציות]",
+    "2. [שלב ניתוח שני — רווח/הפסד כולל]",
+    "3. [שלב שלישי — פיזור סיכונים]",
+    "4. [שלב רביעי — מגמות שוק רלוונטיות]",
+    "5. [שלב חמישי — סיכום והמלצות]"
+  ],
+  "summary": "סיכום 2–3 משפטים על מצב התיק, מה עובד, מה דורש תשומת לב",
+  "tips": [
+    "המלצה ספציפית ומעשית 1",
+    "המלצה ספציפית ומעשית 2",
+    "המלצה ספציפית ומעשית 3"
+  ]
+}
+כתוב הכל בעברית. היה ישיר, מקצועי, וספציפי לנתוני התיק. ללא markdown, JSON תקין בלבד.`;
+}
+
+// ─── Fallback (if API unavailable) ───────────────────────────────────────────
+
+function buildFallback(holdings: any[], quoteMap: Map<string, any>, firstName: string | null, gender: string | null): SummaryResult {
+  const suffix  = gender === "נקבה" ? "ה" : "";
+  const name    = firstName ?? (gender === "נקבה" ? "משקיעה" : "משקיע");
+  const totalPL = holdings.reduce((s, h) => {
+    const q     = quoteMap.get(h.symbol?.toUpperCase());
+    const price = q?.price ?? Number(h.avg_price);
+    return s + (Number(h.shares) * price - Number(h.shares) * Number(h.avg_price));
+  }, 0);
+  const hebrewDate = new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
   return {
-    greeting,
+    greeting: `שלום${suffix}, ${name}`,
     cot: [
       `1. בדיקת מספר הניירות בתיק: ${holdings.length} פוזיציות פעילות.`,
       `2. חישוב רווח/הפסד כולל: ${totalPL >= 0 ? "+" : ""}${totalPL.toFixed(2)}$.`,
-      `3. בחינת מצב השוק לפי שינוי יומי ממוצע של הניירות.`,
-      `4. שקלול חשיפה סקטוריאלית וגיוון.`,
-      `5. גיבוש המלצות בהתבסס על פרופיל הסיכון.`,
+      "3. בחינת מצב השוק לפי שינוי יומי ממוצע.",
+      "4. שקלול חשיפה סקטוריאלית.",
+      "5. גיבוש המלצות (מצב לא מקוון).",
     ],
-    summary: `היום, ${hebrewDate}. תיק ההשקעות שלך${suffix} מציג ${totalPL >= 0 ? "רווח" : "הפסד"} כולל של ${Math.abs(totalPL).toFixed(2)}$. השוק פועל לפי שעות המסחר הרגילות. ניתוח AI מלא יופעל לאחר חיבור ה-API.`,
+    summary: `היום, ${hebrewDate}. הרווח/הפסד הכולל: ${totalPL >= 0 ? "+" : ""}${Math.abs(totalPL).toFixed(2)}$. לניתוח AI מלא — ודא שמפתח Gemini פעיל.`,
     tips: [
-      "גיוון בין סקטורים מפחית סיכון — בחן אם התיק מרוכז מדי.",
-      `שינוי של 1% ביום בשוק ה-S&P 500 ישפיע על תיק מגוון ב-${(holdings.length * 0.7).toFixed(1)}% בממוצע.`,
-      "שקול לקבוע יעדי Stop-Loss להגנת הרווחים.",
+      "גיוון בין סקטורים מפחית סיכון.",
+      "שקול Stop-Loss על פוזיציות מפסידות.",
+      "בחן רמת חשיפה מול מזומן.",
     ],
   };
 }
@@ -57,9 +103,9 @@ async function analyzePortfolioStub(
 
 export function MarketSmartSummary() {
   const { data: holdings } = useStockHoldings();
-  const { data: profile } = useProfile();
+  const { data: profile  } = useProfile();
 
-  const symbols = useMemo(() => (holdings || []).map((h: any) => h.symbol), [holdings]);
+  const symbols  = useMemo(() => (holdings || []).map((h: any) => h.symbol), [holdings]);
   const { data: quotes } = useStockQuotes(symbols);
 
   const quoteMap = useMemo(() => {
@@ -68,23 +114,33 @@ export function MarketSmartSummary() {
     return m;
   }, [quotes]);
 
-  const [result, setResult]       = useState<SummaryResult | null>(null);
-  const [loading, setLoading]     = useState(false);
-  const [cotOpen, setCotOpen]     = useState(false);
-  const [tipsOpen, setTipsOpen]   = useState(false);
+  const [result,   setResult]   = useState<SummaryResult | null>(null);
+  const [loading,  setLoading]  = useState(false);
+  const [cotOpen,  setCotOpen]  = useState(false);
+  const [tipsOpen, setTipsOpen] = useState(false);
+  const [aiError,  setAiError]  = useState<string | null>(null);
 
   const firstName = profile?.full_name?.split(" ")[0] ?? null;
 
   const handleAnalyze = async () => {
     setLoading(true);
+    setAiError(null);
     try {
-      const res = await analyzePortfolioStub(
-        holdings || [],
-        quoteMap,
-        firstName,
-        profile?.gender ?? null
-      );
-      setResult(res);
+      const prompt = buildPortfolioPrompt(holdings || [], quoteMap, firstName, profile?.gender ?? null);
+      const raw    = await generateText(prompt);
+      const parsed = parseGeminiJson<SummaryResult>(raw);
+      setResult({
+        greeting: parsed.greeting ?? "",
+        cot:      Array.isArray(parsed.cot)  ? parsed.cot  : [],
+        summary:  parsed.summary  ?? "",
+        tips:     Array.isArray(parsed.tips) ? parsed.tips : [],
+      });
+    } catch (err) {
+      console.error("Market AI error:", err);
+      // Graceful degradation — show computed fallback
+      const fallback = buildFallback(holdings || [], quoteMap, firstName, profile?.gender ?? null);
+      setResult(fallback);
+      setAiError("Gemini לא זמין — מוצג ניתוח מחושב");
     } finally {
       setLoading(false);
     }
@@ -99,7 +155,7 @@ export function MarketSmartSummary() {
           </div>
           <div>
             <h3 className="text-sm font-bold" style={{ letterSpacing: 0 }}>ניתוח AI חכם</h3>
-            <p className="text-[10px] text-muted-foreground">תובנות שוק יומיות · Chain of Thought</p>
+            <p className="text-[10px] text-muted-foreground">Gemini · תובנות שוק · Chain of Thought</p>
           </div>
         </div>
         <button
@@ -114,20 +170,21 @@ export function MarketSmartSummary() {
         </button>
       </div>
 
-      {!holdings || holdings.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-2">
-          הוסף פוזיציות לתיק כדי לקבל ניתוח AI
+      {aiError && (
+        <p className="text-[10px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-lg px-2.5 py-1.5">
+          ⚠️ {aiError}
         </p>
+      )}
+
+      {!holdings || holdings.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-2">הוסף פוזיציות לתיק כדי לקבל ניתוח AI</p>
       ) : !result ? (
         <p className="text-xs text-muted-foreground text-center py-2">
-          לחץ/י על "נתח תיק" לקבלת תובנות מותאמות אישית
+          לחץ/י על "נתח תיק" לקבלת תובנות מותאמות אישית מ-Gemini
         </p>
       ) : (
         <div className="space-y-3">
-          {/* Greeting */}
           <p className="text-sm font-bold text-market">{result.greeting} 👋</p>
-
-          {/* Summary */}
           <p className="text-xs text-foreground/90 leading-relaxed">{result.summary}</p>
 
           {/* Chain of Thought */}
@@ -137,7 +194,9 @@ export function MarketSmartSummary() {
               className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold"
             >
               <span className="text-market">🧠 תהליך החשיבה (COT)</span>
-              {cotOpen ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+              {cotOpen
+                ? <ChevronUp   className="h-3.5 w-3.5 text-muted-foreground" />
+                : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
             </button>
             {cotOpen && (
               <div className="px-3 pb-3 space-y-1.5 border-t border-border pt-2">
@@ -158,7 +217,9 @@ export function MarketSmartSummary() {
               className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold"
             >
               <span>💡 המלצות לשיפור</span>
-              {tipsOpen ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+              {tipsOpen
+                ? <ChevronUp   className="h-3.5 w-3.5 text-muted-foreground" />
+                : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
             </button>
             {tipsOpen && (
               <ul className="px-3 pb-3 space-y-1.5 border-t border-border pt-2">
@@ -168,9 +229,6 @@ export function MarketSmartSummary() {
                     <span>{tip}</span>
                   </li>
                 ))}
-                <li className="text-[10px] text-muted-foreground/40 italic pt-1">
-                  * ניתוח מלא יופעל לאחר חיבור Gemini API
-                </li>
               </ul>
             )}
           </div>

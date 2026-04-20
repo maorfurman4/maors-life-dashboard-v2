@@ -1,45 +1,66 @@
 import { useRef, useState } from "react";
 import { Camera, FolderOpen, Loader2, Sparkles, Check } from "lucide-react";
 import { useAddCoupon } from "@/hooks/use-coupons";
+import { analyzeImage, parseGeminiJson } from "@/lib/gemini";
 import { toast } from "sonner";
 
 interface ExtractedCoupon {
-  title: string;
-  store: string;
-  code: string;
-  barcode: string;
-  discount_amount: number | null;
+  title:            string;
+  store:            string;
+  code:             string;
+  barcode:          string;
+  discount_amount:  number | null;
   discount_percent: number | null;
-  expiry_date: string;
-  category: string;
-  notes: string;
+  expiry_date:      string;
+  category:         string;
+  notes:            string;
 }
 
-// ─── Visual Analysis stub ─────────────────────────────────────────────────────
-// TODO: replace with real call:
-//   import { analyzeImage } from "@/lib/gemini";
-//   const result = await analyzeImage(base64, mimeType, COUPON_EXTRACTION_PROMPT);
-//
-// COUPON_EXTRACTION_PROMPT:
-//   "You are a coupon data extractor. Analyze this coupon image and return JSON with:
-//    { title, store, code, barcode, discount_amount (number|null), discount_percent (number|null),
-//      expiry_date (YYYY-MM-DD|null), category (סופרמרקט|ביגוד|מסעדות|תרופות|אחר), notes }
-//    Extract the numeric barcode/code visible in the image.
-//    Respond ONLY with valid JSON, no markdown."
+// ─── Prompt ───────────────────────────────────────────────────────────────────
 
-async function analyzeImageStub(_base64: string, _mimeType: string): Promise<ExtractedCoupon> {
-  await new Promise((r) => setTimeout(r, 800)); // simulate API latency
-  return {
-    title: "זוהה מתמונה",
-    store: "",
-    code: "",
-    barcode: "",
-    discount_amount: null,
-    discount_percent: null,
-    expiry_date: "",
-    category: "אחר",
-    notes: "⚠️ ממתין לחיבור AI — ערוך ידנית",
-  };
+const COUPON_EXTRACTION_PROMPT = `אתה מומחה חילוץ נתוני קופונים ישראליים. נתח את תמונת הקופון והחזר JSON בלבד.
+פורמט: {
+  "title": "שם הקופון/מבצע בעברית",
+  "store": "שם החנות/רשת בעברית",
+  "code": "קוד הנחה אלפנומרי אם קיים",
+  "barcode": "מספר ברקוד רק ספרות אם נראה בתמונה",
+  "discount_amount": מספר בשקלים אם ידוע אחרת null,
+  "discount_percent": אחוז הנחה מספרי אם ידוע אחרת null,
+  "expiry_date": "YYYY-MM-DD אם תאריך תפוגה נראה בתמונה אחרת null",
+  "category": "אחת מ: סופרמרקט | ביגוד | מסעדות | תרופות | אלקטרוניקה | בריאות | אחר",
+  "notes": "הערות נוספות רלוונטיות מהקופון"
+}
+כללים:
+- חלץ ברקוד/QR רק אם ברור בתמונה
+- קטגוריה — בחר לפי לוגו החנות או תוכן הקופון
+- אם שדה לא ניתן לקריאה — החזר null או מחרוזת ריקה
+- השב ONLY עם JSON תקין, ללא markdown, ללא הסבר`;
+
+// ─── Real Gemini Vision call ──────────────────────────────────────────────────
+
+async function analyzeCouponImage(base64: string, mimeType: string): Promise<ExtractedCoupon> {
+  const raw = await analyzeImage(base64, mimeType, COUPON_EXTRACTION_PROMPT);
+  try {
+    const parsed = parseGeminiJson<ExtractedCoupon>(raw);
+    return {
+      title:            parsed.title            ?? "קופון מתמונה",
+      store:            parsed.store            ?? "",
+      code:             parsed.code             ?? "",
+      barcode:          parsed.barcode          ?? "",
+      discount_amount:  parsed.discount_amount  != null ? Number(parsed.discount_amount)  : null,
+      discount_percent: parsed.discount_percent != null ? Number(parsed.discount_percent) : null,
+      expiry_date:      parsed.expiry_date      ?? "",
+      category:         parsed.category         ?? "אחר",
+      notes:            parsed.notes            ?? "",
+    };
+  } catch {
+    console.error("Coupon JSON parse failed:", raw);
+    return {
+      title: "קופון מתמונה", store: "", code: "", barcode: "",
+      discount_amount: null, discount_percent: null,
+      expiry_date: "", category: "אחר", notes: "⚠️ שגיאה בניתוח — ערוך ידנית",
+    };
+  }
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -76,11 +97,13 @@ export function CouponImageAnalyzer() {
     setFields(null);
 
     try {
-      const base64 = dataUrl.split(",")[1];
-      const result = await analyzeImageStub(base64, file.type);
+      const base64 = dataUrl.split(",")[1]; // raw base64 only
+      const result = await analyzeCouponImage(base64, file.type);
       setFields(result);
-    } catch {
-      toast.error("שגיאה בניתוח תמונה");
+      toast.success(`זוהה: ${result.title || "קופון"}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("שגיאה בניתוח תמונה — בדוק חיבור AI");
     } finally {
       setAnalyzing(false);
     }
@@ -120,7 +143,7 @@ export function CouponImageAnalyzer() {
         </div>
         <div>
           <h3 className="text-sm font-bold" style={{ letterSpacing: 0 }}>ניתוח קופון מתמונה</h3>
-          <p className="text-[10px] text-muted-foreground">צלם / העלה — AI יחלץ את הנתונים</p>
+          <p className="text-[10px] text-muted-foreground">Gemini Vision · חילוץ ברקוד, קוד, הנחה</p>
         </div>
       </div>
 
@@ -153,7 +176,7 @@ export function CouponImageAnalyzer() {
           )}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin text-finance" />
-            <span>מנתח תמונה...</span>
+            <span>Gemini Vision מנתח קופון...</span>
           </div>
         </div>
       )}
@@ -163,14 +186,13 @@ export function CouponImageAnalyzer() {
           {preview && (
             <img src={preview} alt="" className="h-20 w-auto rounded-xl object-contain border border-border mx-auto" />
           )}
-
           <p className="text-[11px] font-semibold text-muted-foreground">ערוך לפני שמירה:</p>
 
           {[
-            { key: "title"   as const, label: "שם קופון",      dir: "rtl" },
-            { key: "store"   as const, label: "חנות",           dir: "rtl" },
-            { key: "code"    as const, label: "קוד",            dir: "ltr" },
-            { key: "barcode" as const, label: "ברקוד",          dir: "ltr" },
+            { key: "title"   as const, label: "שם קופון", dir: "rtl" },
+            { key: "store"   as const, label: "חנות",      dir: "rtl" },
+            { key: "code"    as const, label: "קוד",       dir: "ltr" },
+            { key: "barcode" as const, label: "ברקוד",     dir: "ltr" },
           ].map(({ key, label, dir }) => (
             <div key={key}>
               <label className="text-[10px] font-medium text-muted-foreground block mb-1">{label}</label>

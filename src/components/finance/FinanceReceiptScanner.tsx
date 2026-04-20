@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Camera, FolderOpen, Loader2, Check, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAddExpense } from "@/hooks/use-finance-data";
+import { analyzeImage, parseGeminiJson } from "@/lib/gemini";
 import { toast } from "sonner";
 
 interface ExtractedExpense {
@@ -10,17 +11,38 @@ interface ExtractedExpense {
   category: string;
 }
 
-// Stub — replace with real Gemini Vision / OCR call when API is ready
-async function extractReceiptStub(_base64: string, _mimeType: string): Promise<ExtractedExpense[]> {
-  // TODO: call analyzeImage from @/lib/gemini with receipt OCR prompt
-  return [];
+// ─── Prompt ───────────────────────────────────────────────────────────────────
+
+const RECEIPT_PROMPT = `אתה מומחה OCR לקבלות ישראליות. נתח את תמונת הקבלה והחזר JSON בלבד — מערך של פריטי הוצאה.
+פורמט כל פריט: { "name": "שם המוצר/שירות בעברית", "amount": מספר בשקלים, "category": קטגוריה }
+קטגוריות אפשריות: "מזון", "תחבורה", "בריאות", "בידור", "קניות", "חשבונות", "אחר"
+כללים:
+- חלץ פריטים בודדים עם מחיריהם
+- אל תכלול שורות סיכום, מע"מ, או כותרת החנות
+- סכומים בשקלים ישראלים (ILS), ללא סימן מטבע
+- אם המחיר לא ברור — אל תכלול את הפריט
+- השב ONLY עם JSON array תקין, ללא markdown, ללא הסבר`;
+
+// ─── Real Gemini Vision call ──────────────────────────────────────────────────
+
+async function extractReceipt(base64: string, mimeType: string): Promise<ExtractedExpense[]> {
+  const raw = await analyzeImage(base64, mimeType, RECEIPT_PROMPT);
+  try {
+    const parsed = parseGeminiJson<ExtractedExpense[]>(raw);
+    return Array.isArray(parsed) ? parsed.filter((i) => i.name && i.amount > 0) : [];
+  } catch {
+    console.error("Receipt JSON parse failed:", raw);
+    return [];
+  }
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function FinanceReceiptScanner() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [extracted, setExtracted] = useState<ExtractedExpense[]>([]);
-  const [selected, setSelected] = useState<boolean[]>([]);
-  const cameraRef = useRef<HTMLInputElement>(null);
+  const [extracted,   setExtracted]   = useState<ExtractedExpense[]>([]);
+  const [selected,    setSelected]    = useState<boolean[]>([]);
+  const cameraRef  = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const addExpense = useAddExpense();
 
@@ -29,16 +51,20 @@ export function FinanceReceiptScanner() {
     if (!file) return;
     setIsAnalyzing(true);
     try {
-      const base64 = await fileToBase64(file);
-      const items = await extractReceiptStub(base64.split(",")[1], file.type);
+      const dataUrl = await fileToBase64(file);
+      // base64 only — strip the "data:[mime];base64," prefix
+      const base64  = dataUrl.split(",")[1];
+      const items   = await extractReceipt(base64, file.type);
       setExtracted(items);
       setSelected(items.map(() => true));
-      if (items.length === 0) toast.info("ממתין לחיבור AI — זיהוי קבלה עדיין לא פעיל");
-    } catch {
-      toast.error("לא ניתן לנתח את הקבלה.");
+      if (items.length === 0) toast.info("לא זוהו פריטים בקבלה — נסה תמונה ברורה יותר");
+      else toast.success(`זוהו ${items.length} פריטים`);
+    } catch (err) {
+      console.error(err);
+      toast.error("שגיאה בניתוח הקבלה — בדוק חיבור AI");
     } finally {
       setIsAnalyzing(false);
-      if (cameraRef.current) cameraRef.current.value = "";
+      if (cameraRef.current)  cameraRef.current.value  = "";
       if (galleryRef.current) galleryRef.current.value = "";
     }
   };
@@ -47,11 +73,11 @@ export function FinanceReceiptScanner() {
     const toSave = extracted.filter((_, i) => selected[i]);
     for (const expense of toSave) {
       await addExpense.mutateAsync({
-        amount: expense.amount,
-        category: expense.category,
-        description: expense.name,
+        amount:       expense.amount,
+        category:     expense.category,
+        description:  expense.name,
         expense_type: "variable",
-        date: new Date().toISOString().slice(0, 10),
+        date:         new Date().toISOString().slice(0, 10),
         is_recurring: false,
         needs_review: false,
       });
@@ -62,27 +88,25 @@ export function FinanceReceiptScanner() {
   };
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 space-y-4">
+    <div className="rounded-2xl bg-card border border-border p-4 space-y-4" dir="rtl">
       <div className="flex items-center gap-3">
         <div className="h-9 w-9 rounded-xl bg-finance/10 flex items-center justify-center">
           <Camera className="h-4 w-4 text-finance" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold">סריקת קבלה</h3>
-          <p className="text-xs text-muted-foreground">העלה תמונת קבלה לזיהוי אוטומטי</p>
+          <h3 className="text-sm font-semibold" style={{ letterSpacing: 0 }}>סריקת קבלה</h3>
+          <p className="text-xs text-muted-foreground">AI מזהה פריטים אוטומטית · Gemini Vision</p>
         </div>
       </div>
 
-      {/* Camera input */}
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
-      {/* Gallery input */}
+      <input ref={cameraRef}  type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
       <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
 
       {extracted.length === 0 ? (
         isAnalyzing ? (
-          <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin text-finance" />
-            מנתח קבלה...
+          <div className="flex flex-col items-center justify-center gap-3 py-8 text-sm text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin text-finance" />
+            <span>מנתח קבלה עם Gemini Vision...</span>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
@@ -108,12 +132,14 @@ export function FinanceReceiptScanner() {
         )
       ) : (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">בחר הוצאות לשמירה:</p>
+          <p className="text-xs text-muted-foreground">✅ זוהו {extracted.length} פריטים — בחר לשמירה:</p>
           {extracted.map((item, i) => (
             <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-secondary">
               <button
-                onClick={() => setSelected(s => s.map((v, j) => j === i ? !v : v))}
-                className={`h-5 w-5 rounded-md border flex items-center justify-center flex-shrink-0 ${selected[i] ? "bg-finance border-finance text-white" : "border-border"}`}
+                onClick={() => setSelected((s) => s.map((v, j) => (j === i ? !v : v)))}
+                className={`h-5 w-5 rounded-md border flex items-center justify-center flex-shrink-0 ${
+                  selected[i] ? "bg-finance border-finance text-white" : "border-border"
+                }`}
               >
                 {selected[i] && <Check className="h-3 w-3" />}
               </button>
@@ -126,7 +152,10 @@ export function FinanceReceiptScanner() {
           ))}
           <div className="flex gap-2">
             <Button className="flex-1" onClick={handleSave} disabled={addExpense.isPending}>
-              <Plus className="h-4 w-4 ml-1" />שמור {selected.filter(Boolean).length} הוצאות
+              {addExpense.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <Plus className="h-4 w-4 ms-1" />}
+              שמור {selected.filter(Boolean).length} הוצאות
             </Button>
             <Button variant="outline" onClick={() => { setExtracted([]); setSelected([]); }}>
               <X className="h-4 w-4" />
@@ -141,7 +170,7 @@ export function FinanceReceiptScanner() {
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
+    reader.onload  = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });

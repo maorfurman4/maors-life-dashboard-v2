@@ -3,6 +3,7 @@ import { ScanSearch, Loader2, AlertTriangle, FolderOpen, Star, Camera } from "lu
 import { Button } from "@/components/ui/button";
 import { useAddNutrition, useAddFavoriteMeal } from "@/hooks/use-sport-data";
 import { detectRedLabels, redLabelColor } from "@/lib/red-labels";
+import { analyzeImage, parseGeminiJson } from "@/lib/gemini";
 import { toast } from "sonner";
 
 interface FoodAnalysis {
@@ -14,23 +15,43 @@ interface FoodAnalysis {
   red_labels: string[];
 }
 
-// Stub — replace with real Gemini Vision / food recognition API call when ready
-async function analyzeImageStub(_base64: string, _mimeType: string): Promise<FoodAnalysis> {
-  // TODO: connect to Gemini Vision / food recognition API
-  return {
-    name: "ממתין לחיבור AI — זיהוי תמונה",
-    calories: 0,
-    protein_g: 0,
-    carbs_g: 0,
-    fat_g: 0,
-    red_labels: [],
-  };
+// ─── Prompt ───────────────────────────────────────────────────────────────────
+
+const NUTRITION_PROMPT = `אתה מנתח תזונה מומחה לאוכל ישראלי. נתח את תמונת האוכל והחזר JSON בלבד.
+פורמט: { "name": "שם המאכל בעברית", "calories": מספר, "protein_g": מספר, "carbs_g": מספר, "fat_g": מספר, "red_labels": ["מערך של אזהרות תזונתיות בעברית"] }
+כללים:
+- שם המאכל — בעברית, ספציפי (לדוגמה: "שניצל עוף עם אורז" ולא "אוכל")
+- הערכת קלוריות: בהתבסס על מנה ישראלית טיפוסית (200–350 גרם לעיקרית, 150–200 גרם לתוספת)
+- red_labels: כלול רק אם רלוונטי: "גבוה בנתרן", "גבוה בשומן רווי", "גבוה בסוכר", "גבוה בקלוריות", "עתיר פחמימות"
+- אם לא ניתן לזהות מזון בתמונה — החזר name: "לא זוהה מזון", calories: 0
+- השב ONLY עם JSON תקין, ללא markdown, ללא הסבר`;
+
+// ─── Real Gemini Vision call ──────────────────────────────────────────────────
+
+async function analyzeFood(base64: string, mimeType: string): Promise<FoodAnalysis> {
+  const raw = await analyzeImage(base64, mimeType, NUTRITION_PROMPT);
+  try {
+    const parsed = parseGeminiJson<FoodAnalysis>(raw);
+    return {
+      name:       parsed.name      ?? "לא זוהה",
+      calories:   Number(parsed.calories)  || 0,
+      protein_g:  Number(parsed.protein_g) || 0,
+      carbs_g:    Number(parsed.carbs_g)   || 0,
+      fat_g:      Number(parsed.fat_g)     || 0,
+      red_labels: Array.isArray(parsed.red_labels) ? parsed.red_labels : [],
+    };
+  } catch {
+    console.error("Nutrition JSON parse failed:", raw);
+    return { name: "שגיאה בזיהוי", calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, red_labels: [] };
+  }
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((res, rej) => {
     const reader = new FileReader();
-    reader.onload = () => res(reader.result as string);
+    reader.onload  = () => res(reader.result as string);
     reader.onerror = rej;
     reader.readAsDataURL(file);
   });
@@ -38,12 +59,12 @@ function fileToBase64(file: File): Promise<string> {
 
 export function NutritionPhotoAnalyzer() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [result, setResult] = useState<FoodAnalysis | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
+  const [result,      setResult]      = useState<FoodAnalysis | null>(null);
+  const [preview,     setPreview]     = useState<string | null>(null);
+  const cameraRef  = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const addNutrition = useAddNutrition();
-  const addFavorite = useAddFavoriteMeal();
+  const addFavorite  = useAddFavoriteMeal();
   const today = new Date().toISOString().slice(0, 10);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,14 +74,17 @@ export function NutritionPhotoAnalyzer() {
     setIsAnalyzing(true);
     setResult(null);
     try {
-      const b64 = await fileToBase64(file);
-      const analysis = await analyzeImageStub(b64.split(",")[1], file.type);
+      const dataUrl  = await fileToBase64(file);
+      const base64   = dataUrl.split(",")[1]; // raw base64 only
+      const analysis = await analyzeFood(base64, file.type);
       setResult(analysis);
-    } catch {
-      toast.error("לא ניתן לנתח את התמונה");
+      if (analysis.calories > 0) toast.success(`זוהה: ${analysis.name}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("שגיאה בניתוח התמונה — בדוק חיבור AI");
     } finally {
       setIsAnalyzing(false);
-      if (cameraRef.current) cameraRef.current.value = "";
+      if (cameraRef.current)  cameraRef.current.value  = "";
       if (galleryRef.current) galleryRef.current.value = "";
     }
   };
@@ -69,13 +93,13 @@ export function NutritionPhotoAnalyzer() {
     if (!result) return;
     try {
       await addNutrition.mutateAsync({
-        name: result.name,
+        name:      result.name,
         meal_type: "lunch",
-        calories: result.calories,
+        calories:  result.calories,
         protein_g: result.protein_g,
-        carbs_g: result.carbs_g,
-        fat_g: result.fat_g,
-        date: today,
+        carbs_g:   result.carbs_g,
+        fat_g:     result.fat_g,
+        date:      today,
       });
       setResult(null);
       setPreview(null);
@@ -89,11 +113,11 @@ export function NutritionPhotoAnalyzer() {
     if (!result) return;
     try {
       await addFavorite.mutateAsync({
-        name: result.name,
-        calories: result.calories,
+        name:      result.name,
+        calories:  result.calories,
         protein_g: result.protein_g,
-        carbs_g: result.carbs_g,
-        fat_g: result.fat_g,
+        carbs_g:   result.carbs_g,
+        fat_g:     result.fat_g,
       });
       toast.success("נשמר כמועדף");
     } catch {
@@ -113,27 +137,12 @@ export function NutritionPhotoAnalyzer() {
         </div>
         <div>
           <h3 className="text-sm font-semibold" style={{ letterSpacing: 0 }}>זיהוי מזון מתמונה</h3>
-          <p className="text-xs text-muted-foreground">צלם ישירות או בחר מהגלריה</p>
+          <p className="text-xs text-muted-foreground">Gemini Vision · ניתוח קלוריות ותוויות אדומות</p>
         </div>
       </div>
 
-      {/* Camera input — uses device camera */}
-      <input
-        ref={cameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleFile}
-      />
-      {/* Gallery input — file picker only, no camera */}
-      <input
-        ref={galleryRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFile}
-      />
+      <input ref={cameraRef}  type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+      <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
 
       {!result && !isAnalyzing && (
         <div className="grid grid-cols-2 gap-3">
@@ -146,7 +155,6 @@ export function NutritionPhotoAnalyzer() {
             </div>
             <span className="text-xs font-semibold text-nutrition">צלם תמונה</span>
           </button>
-
           <button
             onClick={() => galleryRef.current?.click()}
             className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-nutrition/30 hover:bg-nutrition/5 transition-colors min-h-[90px] group"
@@ -162,11 +170,11 @@ export function NutritionPhotoAnalyzer() {
       {isAnalyzing && (
         <div className="flex flex-col items-center gap-3 py-6">
           {preview && (
-            <img src={preview} alt="preview" className="h-28 w-28 object-cover rounded-xl border border-border" />
+            <img src={preview} alt="preview" className="h-28 w-28 object-cover rounded-xl border border-border opacity-70" />
           )}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin text-nutrition" />
-            מנתח תמונה...
+            Gemini Vision מנתח תמונה...
           </div>
         </div>
       )}
@@ -180,10 +188,10 @@ export function NutritionPhotoAnalyzer() {
             <p className="font-semibold text-sm">{result.name}</p>
             <div className="grid grid-cols-4 gap-2 text-center">
               {[
-                ["קלוריות", result.calories, ""],
-                ["חלבון", result.protein_g, "g"],
-                ["פחמימות", result.carbs_g, "g"],
-                ["שומן", result.fat_g, "g"],
+                ["קלוריות", result.calories,  ""],
+                ["חלבון",   result.protein_g, "g"],
+                ["פחמימות", result.carbs_g,   "g"],
+                ["שומן",    result.fat_g,     "g"],
               ].map(([label, val, unit]) => (
                 <div key={String(label)} className="bg-card rounded-lg p-2">
                   <p className="text-xs text-muted-foreground">{label}</p>
