@@ -3,7 +3,6 @@ import { Sparkles, Loader2, Calendar, Save, ChevronRight, ChevronLeft } from "lu
 import { supabase } from "@/integrations/supabase/client";
 import { usePersonalRecords, useAddWorkoutTemplate } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
-import { isShabbat } from "@/lib/shabbat-guard";
 
 interface PlannedExercise {
   name: string;
@@ -123,10 +122,6 @@ export function SportAIPlanner() {
   };
 
   const generate = async () => {
-    if (isShabbat()) {
-      toast.error('יצירת תוכנית אינה זמינה בשבת (שישי 14:00 — מוצ"ש 22:00)');
-      return;
-    }
     setLoading(true);
     setPlan(null);
     try {
