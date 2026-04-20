@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { ScanSearch, Loader2, AlertTriangle, FolderOpen, Star } from "lucide-react";
+import { ScanSearch, Loader2, AlertTriangle, FolderOpen, Star, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAddNutrition, useAddFavoriteMeal } from "@/hooks/use-sport-data";
 import { detectRedLabels, redLabelColor } from "@/lib/red-labels";
@@ -14,7 +14,7 @@ interface FoodAnalysis {
   red_labels: string[];
 }
 
-// Stub — replace analyzeImage call with real Gemini / Vision API when ready
+// Stub — replace with real Gemini Vision / food recognition API call when ready
 async function analyzeImageStub(_base64: string, _mimeType: string): Promise<FoodAnalysis> {
   // TODO: connect to Gemini Vision / food recognition API
   return {
@@ -40,7 +40,8 @@ export function NutritionPhotoAnalyzer() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<FoodAnalysis | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const addNutrition = useAddNutrition();
   const addFavorite = useAddFavoriteMeal();
   const today = new Date().toISOString().slice(0, 10);
@@ -59,7 +60,8 @@ export function NutritionPhotoAnalyzer() {
       toast.error("לא ניתן לנתח את התמונה");
     } finally {
       setIsAnalyzing(false);
-      if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
+      if (galleryRef.current) galleryRef.current.value = "";
     }
   };
 
@@ -100,10 +102,7 @@ export function NutritionPhotoAnalyzer() {
   };
 
   const allRedLabels = result
-    ? [
-        ...result.red_labels,
-        ...detectRedLabels({ calories: result.calories }).map((l) => l.label),
-      ]
+    ? [...result.red_labels, ...detectRedLabels({ calories: result.calories }).map((l) => l.label)]
     : [];
 
   return (
@@ -113,33 +112,50 @@ export function NutritionPhotoAnalyzer() {
           <ScanSearch className="h-4 w-4 text-nutrition" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold" style={{ letterSpacing: 0 }}>
-            זיהוי מזון מתמונה
-          </h3>
-          <p className="text-xs text-muted-foreground">העלה תמונה מהגלריה — AI מזהה מאקרו</p>
+          <h3 className="text-sm font-semibold" style={{ letterSpacing: 0 }}>זיהוי מזון מתמונה</h3>
+          <p className="text-xs text-muted-foreground">צלם ישירות או בחר מהגלריה</p>
         </div>
       </div>
 
-      {/* Gallery-only file picker (no camera) */}
+      {/* Camera input — uses device camera */}
       <input
-        ref={fileRef}
+        ref={cameraRef}
         type="file"
         accept="image/*"
-        capture={undefined}
+        capture="environment"
+        className="hidden"
+        onChange={handleFile}
+      />
+      {/* Gallery input — file picker only, no camera */}
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/*"
         className="hidden"
         onChange={handleFile}
       />
 
       {!result && !isAnalyzing && (
-        <div
-          className="rounded-xl border-2 border-dashed border-border hover:border-nutrition/30 transition-colors cursor-pointer p-6"
-          onClick={() => fileRef.current?.click()}
-        >
-          <div className="flex flex-col items-center gap-2 text-center">
-            <FolderOpen className="h-8 w-8 text-muted-foreground/40" />
-            <p className="text-xs font-semibold text-muted-foreground">בחר תמונה מהגלריה</p>
-            <p className="text-[10px] text-muted-foreground/60">JPEG, PNG, HEIF · ללא גישה למצלמה</p>
-          </div>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => cameraRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-nutrition/30 hover:border-nutrition/60 hover:bg-nutrition/5 transition-colors min-h-[90px] group"
+          >
+            <div className="h-9 w-9 rounded-xl bg-nutrition/10 flex items-center justify-center group-hover:bg-nutrition/20 transition-colors">
+              <Camera className="h-5 w-5 text-nutrition" />
+            </div>
+            <span className="text-xs font-semibold text-nutrition">צלם תמונה</span>
+          </button>
+
+          <button
+            onClick={() => galleryRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-border hover:border-nutrition/30 hover:bg-nutrition/5 transition-colors min-h-[90px] group"
+          >
+            <div className="h-9 w-9 rounded-xl bg-secondary/50 flex items-center justify-center group-hover:bg-nutrition/10 transition-colors">
+              <FolderOpen className="h-5 w-5 text-muted-foreground group-hover:text-nutrition transition-colors" />
+            </div>
+            <span className="text-xs font-semibold text-muted-foreground group-hover:text-nutrition transition-colors">בחר מגלריה</span>
+          </button>
         </div>
       )}
 
@@ -185,13 +201,19 @@ export function NutritionPhotoAnalyzer() {
           </div>
 
           <div className="flex gap-2">
-            <Button className="flex-1 bg-nutrition hover:bg-nutrition/90 text-nutrition-foreground" onClick={handleSave} disabled={addNutrition.isPending}>
+            <Button
+              className="flex-1 bg-nutrition hover:bg-nutrition/90 text-nutrition-foreground"
+              onClick={handleSave}
+              disabled={addNutrition.isPending}
+            >
               {addNutrition.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "שמור ארוחה"}
             </Button>
             <Button variant="outline" onClick={handleSaveFavorite} disabled={addFavorite.isPending} className="px-3">
               <Star className="h-4 w-4 text-nutrition" />
             </Button>
-            <Button variant="outline" onClick={() => { setResult(null); setPreview(null); }}>ביטול</Button>
+            <Button variant="outline" onClick={() => { setResult(null); setPreview(null); }}>
+              ביטול
+            </Button>
           </div>
         </div>
       )}
