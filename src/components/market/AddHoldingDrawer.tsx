@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { useAddStockHolding } from "@/hooks/use-sport-data";
-import { supabase } from "@/integrations/supabase/client";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface SearchResult {
@@ -34,13 +33,22 @@ export function AddHoldingDrawer({ open, onClose }: AddHoldingDrawerProps) {
     if (!searchQuery.trim()) return;
     setSearching(true);
     try {
-      const { data, error } = await supabase.functions.invoke("stock-search", {
-        body: { query: searchQuery.trim() },
-      });
-      if (error) throw error;
-      setSearchResults(data?.results || []);
+      const res = await fetch(
+        `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(searchQuery)}&quotesCount=8&newsCount=0&listsCount=0`,
+        { headers: { Accept: "application/json" } }
+      );
+      if (!res.ok) throw new Error("Yahoo search failed");
+      const data = await res.json();
+      const quotes = (data?.quotes ?? []).filter((q: any) => q.symbol && (q.quoteType === "EQUITY" || q.quoteType === "ETF" || q.quoteType === "MUTUALFUND"));
+      setSearchResults(quotes.map((q: any) => ({
+        symbol:   q.symbol,
+        name:     q.longname || q.shortname || q.symbol,
+        exchange: q.exchange || q.exchDisp || "",
+        type:     q.quoteType || "EQUITY",
+      })));
     } catch {
-      toast.error("שגיאה בחיפוש מניות");
+      toast.error("שגיאה בחיפוש — הזן סימבול ידנית");
+      setSearchResults([]);
     } finally {
       setSearching(false);
     }
@@ -85,7 +93,7 @@ export function AddHoldingDrawer({ open, onClose }: AddHoldingDrawerProps) {
               className="flex-1 px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-market" dir="ltr" />
             <button onClick={handleSearch} disabled={searching}
               className="px-3 py-2.5 rounded-xl bg-market text-market-foreground text-xs font-medium min-h-[44px] disabled:opacity-50">
-              <Search className="h-4 w-4" />
+              {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             </button>
           </div>
           {searchResults.length > 0 && (

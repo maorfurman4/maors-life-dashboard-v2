@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Camera, Loader2, Sparkles, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { analyzeImage, parseGeminiJson } from "@/lib/gemini";
 import { toast } from "sonner";
 
 interface MealPhotoCaptureProps {
@@ -33,19 +33,15 @@ export function MealPhotoCapture({ onRecognized }: MealPhotoCaptureProps) {
       setPreviewUrl(dataUrl);
       setLoading(true);
       try {
-        const { data, error } = await supabase.functions.invoke("meal-recognize", {
-          body: { imageBase64: dataUrl },
-        });
-        if (error) throw error;
-        if (data?.error) {
-          toast.error(data.error);
-          return;
-        }
-        if (data?.meal) {
-          toast.success(`זוהה: ${data.meal.name}`);
-          onRecognized(data.meal);
-          setPreviewUrl(null);
-        }
+        const base64 = dataUrl.split(",")[1];
+        const prompt = `אתה מומחה תזונה. נתח את תמונת הארוחה והחזר JSON בלבד:
+{"name":"שם הארוחה בעברית","calories":מספר,"protein_g":מספר,"carbs_g":מספר,"fat_g":מספר,"items":["פריט1","פריט2"],"confidence":"high/medium/low"}
+כללים: הערכה לפי מנה ישראלית טיפוסית. ללא markdown. JSON בלבד.`;
+        const raw = await analyzeImage(base64, file.type, prompt);
+        const meal = parseGeminiJson<{ name: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; items: string[]; confidence: string }>(raw);
+        toast.success(`זוהה: ${meal.name}`);
+        onRecognized(meal);
+        setPreviewUrl(null);
       } catch (e: any) {
         console.error(e);
         toast.error("שגיאה בזיהוי: " + (e?.message || "לא ידוע"));

@@ -1,15 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
 export interface StockQuote {
-  symbol: string;
-  name: string;
-  price: number | null;
-  change: number | null;
+  symbol:        string;
+  name:          string;
+  price:         number | null;
+  change:        number | null;
   changePercent: number | null;
-  currency: string;
-  marketState: string | null;
+  currency:      string;
+  marketState:   string | null;
   previousClose: number | null;
+}
+
+async function fetchYahooQuotes(symbols: string[]): Promise<StockQuote[]> {
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols.map(encodeURIComponent).join(",")}`;
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error(`Yahoo Finance ${res.status}`);
+  const data = await res.json();
+  const results = data?.quoteResponse?.result ?? [];
+  return results.map((q: any): StockQuote => ({
+    symbol:        q.symbol,
+    name:          q.longName || q.shortName || q.symbol,
+    price:         q.regularMarketPrice         ?? null,
+    change:        q.regularMarketChange        ?? null,
+    changePercent: q.regularMarketChangePercent ?? null,
+    currency:      q.currency                   ?? "USD",
+    marketState:   q.marketState                ?? null,
+    previousClose: q.regularMarketPreviousClose ?? null,
+  }));
 }
 
 export function useStockQuotes(symbols: string[]) {
@@ -18,17 +35,17 @@ export function useStockQuotes(symbols: string[]) {
     queryKey: ["stock-quotes", key],
     queryFn: async (): Promise<StockQuote[]> => {
       if (symbols.length === 0) return [];
-      const { data, error } = await supabase.functions.invoke("stock-quotes", {
-        body: { symbols },
-      });
-      if (error) {
-        console.error("stock-quotes invoke:", error);
+      try {
+        return await fetchYahooQuotes(symbols);
+      } catch (err) {
+        // CORS / network error — return [] so UI falls back to purchase price
+        console.warn("stock-quotes fetch failed:", err);
         return [];
       }
-      return (data?.quotes as StockQuote[]) || [];
     },
-    enabled: symbols.length > 0,
+    enabled:         symbols.length > 0,
     refetchInterval: 60_000,
-    staleTime: 30_000,
+    staleTime:       30_000,
+    retry:           1,
   });
 }

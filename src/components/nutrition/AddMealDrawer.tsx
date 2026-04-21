@@ -2,7 +2,6 @@ import { useState } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { Search, Loader2, Plus, ScanLine, UtensilsCrossed } from "lucide-react";
 import { useAddNutrition } from "@/hooks/use-sport-data";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { MealPhotoCapture } from "./MealPhotoCapture";
@@ -53,11 +52,28 @@ export function AddMealDrawer({
     if (!query.trim()) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("food-search", {
-        body: { query: query.trim() },
-      });
-      if (error) throw error;
-      setResults((data?.results as FoodResult[]) || []);
+      // Israeli-first search via Open Food Facts
+      const res = await fetch(
+        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,brands,nutriments,serving_size&tagtype_0=countries&tag_contains_0=contains&tag_0=israel`
+      );
+      const data = await res.json();
+      let products = (data.products || []).filter((p: any) => p.product_name && p.nutriments);
+      // Fallback to global if < 3 results
+      if (products.length < 3) {
+        const res2 = await fetch(
+          `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,brands,nutriments,serving_size`
+        );
+        const data2 = await res2.json();
+        products = (data2.products || []).filter((p: any) => p.product_name && p.nutriments);
+      }
+      setResults(products.map((p: any) => ({
+        name:     p.product_name,
+        brand:    p.brands || undefined,
+        calories: Math.round(p.nutriments["energy-kcal_100g"] ?? p.nutriments["energy-kcal"] ?? 0),
+        protein:  Math.round((p.nutriments.proteins_100g ?? 0) * 10) / 10,
+        carbs:    Math.round((p.nutriments.carbohydrates_100g ?? 0) * 10) / 10,
+        fat:      Math.round((p.nutriments.fat_100g ?? 0) * 10) / 10,
+      })));
     } catch {
       toast.error("שגיאה בחיפוש");
       setResults([]);
@@ -70,16 +86,22 @@ export function AddMealDrawer({
     setScanOpen(false);
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("food-search", {
-        body: { barcode },
-      });
-      if (error) throw error;
-      const product = data?.product || data?.results?.[0];
-      if (product) {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+      const data = await res.json();
+      if (data.status === 1 && data.product) {
+        const p = data.product;
+        const product: FoodResult = {
+          name:     p.product_name || p.product_name_he || "מוצר לא ידוע",
+          brand:    p.brands || undefined,
+          calories: Math.round(p.nutriments?.["energy-kcal_100g"] ?? 0),
+          protein:  Math.round((p.nutriments?.proteins_100g ?? 0) * 10) / 10,
+          carbs:    Math.round((p.nutriments?.carbohydrates_100g ?? 0) * 10) / 10,
+          fat:      Math.round((p.nutriments?.fat_100g ?? 0) * 10) / 10,
+        };
         toast.success(`נמצא: ${product.name}`);
         selectFood(product);
       } else {
-        toast.error(data?.error || "מוצר לא נמצא");
+        toast.error("מוצר לא נמצא — הזן ידנית");
       }
     } catch (e: any) {
       toast.error("שגיאה: " + (e?.message || "לא ידוע"));

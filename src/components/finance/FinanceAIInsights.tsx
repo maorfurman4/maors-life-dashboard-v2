@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sparkles, Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { generateText, parseGeminiJson } from "@/lib/gemini";
 import { useMonthlyFinance, useExpenseHistory, useIncomeHistory, useFinanceSettings } from "@/hooks/use-finance-data";
 import { toast } from "sonner";
 
@@ -60,24 +60,37 @@ export function FinanceAIInsights() {
         });
       }
 
-      const { data, error } = await supabase.functions.invoke("finance-insights-ai", {
-        body: {
-          currentMonth: {
-            income: Math.round(monthly.totalIncome || 0),
-            expenses: Math.round(monthly.totalExpenses || 0),
-            savings: Math.round((monthly.totalIncome || 0) - (monthly.totalExpenses || 0)),
-            categories: monthly.categoryBreakdown || {},
-          },
-          previousMonths,
-          savingsGoalPct: settings?.savings_goal_pct || 35,
-        },
-      });
-      if (error) throw error;
-      if (data?.error) {
-        toast.error(data.error);
-        return;
-      }
-      setInsights(data.insights);
+      const currentMonth = {
+        income:     Math.round(monthly.totalIncome   || 0),
+        expenses:   Math.round(monthly.totalExpenses || 0),
+        savings:    Math.round((monthly.totalIncome  || 0) - (monthly.totalExpenses || 0)),
+        categories: monthly.categoryBreakdown || {},
+      };
+      const savingsGoalPct = settings?.savings_goal_pct || 35;
+
+      const prompt = `אתה יועץ פיננסי ישראלי. נתח את הנתונים הבאים והחזר JSON בלבד.
+
+חודש נוכחי: הכנסות ₪${currentMonth.income}, הוצאות ₪${currentMonth.expenses}, חיסכון ₪${currentMonth.savings}
+קטגוריות: ${JSON.stringify(currentMonth.categories)}
+חודשים קודמים: ${JSON.stringify(previousMonths)}
+יעד חיסכון: ${savingsGoalPct}%
+
+פרמט תשובה:
+{
+  "status": "excellent|good|warning|danger",
+  "summary": "2 משפטים על מצב החודש",
+  "comparisons": [
+    { "category": "שם", "change_pct": מספר, "verdict": "good|neutral|bad", "note": "הסבר קצר" }
+  ],
+  "recommendations": [
+    { "title": "כותרת", "impact_ils": מספר, "action": "פעולה מעשית" }
+  ]
+}
+JSON בלבד, ללא markdown.`;
+
+      const raw = await generateText(prompt);
+      const parsed = parseGeminiJson<{ status: string; summary: string; comparisons: any[]; recommendations: any[] }>(raw);
+      setInsights(parsed as AIInsights);
       toast.success("הניתוח מוכן!");
     } catch (e: any) {
       console.error(e);

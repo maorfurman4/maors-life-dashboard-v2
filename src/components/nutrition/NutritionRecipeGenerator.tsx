@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ChefHat, Loader2, Star, ChevronDown, ChevronUp, ExternalLink, Clock, Users } from "lucide-react";
+import { ChefHat, Loader2, Star, ChevronDown, ChevronUp, Clock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAddFavoriteMeal } from "@/hooks/use-sport-data";
 import { useProfile } from "@/hooks/use-profile";
+import { generateText, parseGeminiJson } from "@/lib/gemini";
 import { toast } from "sonner";
 
 type DietaryType = "בשרי" | "חלבי" | "פרווה";
@@ -21,32 +22,41 @@ interface Recipe {
   video_link?: string;
 }
 
-// Stub — replace body with real AI call when API is ready
-async function generateRecipeStub(
-  _protein: string,
-  _calories: string,
-  _people: string,
+async function generateRecipeWithGemini(
+  protein: string,
+  calories: string,
+  people: string,
   dietaryType: DietaryType,
-  _excluded: string[]
+  excluded: string[]
 ): Promise<Recipe> {
-  // TODO: call Gemini / recipe AI with:
-  //   - protein & calorie targets
-  //   - dietary_type (בשרי / חלבי / פרווה)
-  //   - excluded ingredients list (never include)
-  //   - number of people
-  return {
-    name: `מתכון ${dietaryType} (ממתין לחיבור AI)`,
-    dietary_type: dietaryType,
-    calories_per_serving: 0,
-    protein_per_serving: 0,
-    carbs_per_serving: 0,
-    fat_per_serving: 0,
-    prep_time_minutes: 10,
-    cook_time_minutes: 20,
-    ingredients: ["מרכיבים יתמלאו לאחר חיבור API"],
-    instructions: ["הוראות הכנה יתמלאו לאחר חיבור API"],
-    video_link: "",
-  };
+  const excludedStr = excluded.length > 0 ? `מזונות אסורים (אסור להכניס): ${excluded.join(", ")}` : "אין הגבלות מיוחדות";
+  const prompt = `אתה שף ישראלי מקצועי. צור מתכון ${dietaryType} בפורמט JSON בלבד.
+
+פרמטרים:
+- סוג: ${dietaryType}
+- יעד חלבון למנה: ${protein}g
+- יעד קלוריות למנה: ${calories} קל׳
+- מספר מנות: ${people}
+- ${excludedStr}
+
+החזר JSON בדיוק:
+{
+  "name": "שם המתכון בעברית",
+  "dietary_type": "${dietaryType}",
+  "calories_per_serving": מספר,
+  "protein_per_serving": מספר,
+  "carbs_per_serving": מספר,
+  "fat_per_serving": מספר,
+  "prep_time_minutes": מספר,
+  "cook_time_minutes": מספר,
+  "ingredients": ["מרכיב + כמות", "..."],
+  "instructions": ["שלב 1", "שלב 2", "..."],
+  "video_link": ""
+}
+כללים: מתכון ישראלי אמיתי ומעשי. הקפד על ${dietaryType}. ללא markdown. JSON בלבד.`;
+
+  const raw = await generateText(prompt);
+  return parseGeminiJson<Recipe>(raw);
 }
 
 const DIETARY_OPTIONS: DietaryType[] = ["בשרי", "חלבי", "פרווה"];
@@ -83,7 +93,7 @@ export function NutritionRecipeGenerator() {
     setIsGenerating(true);
     setRecipe(null);
     try {
-      const result = await generateRecipeStub(protein, calories, people, dietaryType, allExcluded);
+      const result = await generateRecipeWithGemini(protein, calories, people, dietaryType, allExcluded);
       setRecipe(result);
       setShowInstructions(false);
     } catch {
