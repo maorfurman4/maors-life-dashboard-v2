@@ -12,9 +12,10 @@ export interface StockQuote {
 }
 
 async function fetchYahooQuotes(symbols: string[]): Promise<StockQuote[]> {
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols.map(encodeURIComponent).join(",")}`;
+  // Use our Vercel serverless proxy to avoid browser CORS restrictions
+  const url = `/api/stock-quotes?symbols=${symbols.map(encodeURIComponent).join(",")}`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!res.ok) throw new Error(`Yahoo Finance ${res.status}`);
+  if (!res.ok) throw new Error(`stock-quotes proxy ${res.status}`);
   const data = await res.json();
   const results = data?.quoteResponse?.result ?? [];
   return results.map((q: any): StockQuote => ({

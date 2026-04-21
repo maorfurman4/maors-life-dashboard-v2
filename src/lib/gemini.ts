@@ -60,13 +60,33 @@ export async function generateText(prompt: string): Promise<string> {
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
-// ─── JSON parse helper (strips markdown fences Gemini sometimes adds) ─────────
+// ─── JSON parse helper (robust: handles fences, preamble text, arrays) ───────
 
 export function parseGeminiJson<T>(raw: string): T {
-  const clean = raw
+  // 1. Strip markdown code fences
+  let clean = raw
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
-    .replace(/```\s*$/,  "")
+    .replace(/```\s*$/, "")
     .trim();
+
+  // 2. If Gemini prepended prose before the JSON, find the first { or [
+  const objStart   = clean.indexOf("{");
+  const arrStart   = clean.indexOf("[");
+  const jsonStart  =
+    objStart === -1 ? arrStart
+    : arrStart === -1 ? objStart
+    : Math.min(objStart, arrStart);
+
+  if (jsonStart > 0) clean = clean.slice(jsonStart);
+
+  // 3. Trim trailing prose after the closing brace/bracket
+  const lastBrace   = clean.lastIndexOf("}");
+  const lastBracket = clean.lastIndexOf("]");
+  const jsonEnd     = Math.max(lastBrace, lastBracket);
+  if (jsonEnd !== -1 && jsonEnd < clean.length - 1) {
+    clean = clean.slice(0, jsonEnd + 1);
+  }
+
   return JSON.parse(clean) as T;
 }
