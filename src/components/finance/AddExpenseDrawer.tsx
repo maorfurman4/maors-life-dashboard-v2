@@ -40,7 +40,10 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
           setCategory("מזון");
           setIsRecurring(false);
         },
-        onError: () => toast.error("שגיאה בשמירה"),
+        onError: (err) => {
+          console.error("AddExpense error:", err);
+          toast.error("שגיאה בשמירת הוצאה: " + ((err as Error).message || "נסה שוב"));
+        },
       }
     );
   };
