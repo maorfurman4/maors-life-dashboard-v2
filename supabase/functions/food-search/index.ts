@@ -40,18 +40,18 @@ async function searchOpenFoodFacts(query: string): Promise<FoodResult[]> {
 }
 
 async function translateToHebrew(names: string[]): Promise<string[]> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey || names.length === 0) return names;
 
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",

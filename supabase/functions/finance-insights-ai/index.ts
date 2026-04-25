@@ -10,8 +10,8 @@ serve(async (req) => {
 
   try {
     const { currentMonth, previousMonths, savingsGoalPct } = await req.json();
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) throw new Error("LOVABLE_API_KEY not set");
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!apiKey) throw new Error("OPENAI_API_KEY not set");
 
     const userPrompt = `
 חודש נוכחי:
@@ -26,11 +26,11 @@ ${(previousMonths || []).map((m: any) => `- ${m.label}: הכנסות ₪${m.inco
 נתח את המצב, השווה לחודשים קודמים, וזהה איפה בזבז יותר מדי. תן 3-5 המלצות מעשיות וקצרות בעברית איפה לקצץ ואיך להגיע ליעד החיסכון.
 `;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "אתה יועץ פיננסי אישי בישראל. דבר בעברית, תן עצות מעשיות וקצרות." },
           { role: "user", content: userPrompt },
@@ -83,7 +83,6 @@ ${(previousMonths || []).map((m: any) => `- ${m.label}: הכנסות ₪${m.inco
       const t = await res.text();
       console.error("AI error:", res.status, t);
       if (res.status === 429) return new Response(JSON.stringify({ error: "יותר מדי בקשות" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (res.status === 402) return new Response(JSON.stringify({ error: "אין קרדיטים" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       throw new Error(`AI ${res.status}`);
     }
 
