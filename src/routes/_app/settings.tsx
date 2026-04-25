@@ -6,7 +6,6 @@ import { SettingsSport } from "@/components/settings/SettingsSport";
 import { SettingsWork } from "@/components/settings/SettingsWork";
 import { SettingsFinance } from "@/components/settings/SettingsFinance";
 import { SettingsFinanceCategories } from "@/components/settings/SettingsFinanceCategories";
-import { SettingsMarket } from "@/components/settings/SettingsMarket";
 import { SettingsModules } from "@/components/settings/SettingsModules";
 
 export const Route = createFileRoute("/_app/settings")({
@@ -31,7 +30,6 @@ function SettingsPage() {
       <SettingsNutrition />
       <SettingsFinance />
       <SettingsFinanceCategories />
-      <SettingsMarket />
       <SettingsWork />
 
       <SettingsModules />
