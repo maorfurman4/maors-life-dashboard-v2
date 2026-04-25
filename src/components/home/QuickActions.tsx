@@ -3,7 +3,6 @@ import {
   Dumbbell,
   Apple,
   Wallet,
-  TrendingUp,
   Briefcase,
   Plus,
   type LucideIcon,
@@ -11,7 +10,6 @@ import {
 import { AddWorkoutDrawer } from "@/components/sport/AddWorkoutDrawer";
 import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
 import { AddExpenseDrawer } from "@/components/finance/AddExpenseDrawer";
-import { AddHoldingDrawer } from "@/components/market/AddHoldingDrawer";
 import { AddShiftDrawer } from "@/components/work/AddShiftDrawer";
 
 interface Action {
@@ -23,11 +21,10 @@ interface Action {
 }
 
 const actions: Action[] = [
-  { label: "אימון חדש", drawerKey: "workout", icon: Dumbbell, colorClass: "text-sport", bgClass: "bg-sport/15" },
-  { label: "הוסף ארוחה", drawerKey: "meal", icon: Apple, colorClass: "text-nutrition", bgClass: "bg-nutrition/15" },
-  { label: "הוסף הוצאה", drawerKey: "expense", icon: Wallet, colorClass: "text-finance", bgClass: "bg-finance/15" },
-  { label: "עסקה חדשה", drawerKey: "holding", icon: TrendingUp, colorClass: "text-market", bgClass: "bg-market/15" },
-  { label: "הוסף משמרת", drawerKey: "shift", icon: Briefcase, colorClass: "text-work", bgClass: "bg-work/15" },
+  { label: "אימון חדש",  drawerKey: "workout", icon: Dumbbell,  colorClass: "text-sport",    bgClass: "bg-sport/15"    },
+  { label: "הוסף ארוחה", drawerKey: "meal",    icon: Apple,     colorClass: "text-nutrition", bgClass: "bg-nutrition/15" },
+  { label: "הוסף הוצאה", drawerKey: "expense", icon: Wallet,    colorClass: "text-finance",   bgClass: "bg-finance/15"   },
+  { label: "הוסף משמרת", drawerKey: "shift",   icon: Briefcase, colorClass: "text-work",      bgClass: "bg-work/15"      },
 ];
 
 export function QuickActions() {
@@ -52,10 +49,9 @@ export function QuickActions() {
       </div>
 
       <AddWorkoutDrawer open={openDrawer === "workout"} onClose={() => setOpenDrawer(null)} />
-      <AddMealDrawer open={openDrawer === "meal"} onClose={() => setOpenDrawer(null)} />
+      <AddMealDrawer    open={openDrawer === "meal"}    onClose={() => setOpenDrawer(null)} />
       <AddExpenseDrawer open={openDrawer === "expense"} onClose={() => setOpenDrawer(null)} />
-      <AddHoldingDrawer open={openDrawer === "holding"} onClose={() => setOpenDrawer(null)} />
-      <AddShiftDrawer open={openDrawer === "shift"} onClose={() => setOpenDrawer(null)} />
+      <AddShiftDrawer   open={openDrawer === "shift"}   onClose={() => setOpenDrawer(null)} />
     </div>
   );
 }
