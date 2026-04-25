@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Dumbbell, Apple, Wallet, TrendingUp } from "lucide-react";
+import { Dumbbell, Apple, Wallet, Briefcase } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { CategoryCube } from "./CategoryCube";
 import { WeatherMini } from "./WeatherMini";
 import { AddWorkoutDrawer } from "@/components/sport/AddWorkoutDrawer";
 import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
 import { AddExpenseDrawer } from "@/components/finance/AddExpenseDrawer";
-import { AddHoldingDrawer } from "@/components/market/AddHoldingDrawer";
+import { AddShiftDrawer } from "@/components/work/AddShiftDrawer";
 
 const BG_IMAGE =
   "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1400&q=80";
@@ -34,11 +34,11 @@ const cubes = [
     imageUrl: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80",
   },
   {
-    key: "market",
-    title: "שוק ההון",
-    icon: TrendingUp,
-    to: "/market",
-    imageUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80",
+    key: "work",
+    title: "עבודה",
+    icon: Briefcase,
+    to: "/work",
+    imageUrl: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
   },
 ] as const;
 
@@ -108,10 +108,10 @@ export function ModernHome() {
       </div>
 
       {/* Drawers */}
-      <AddWorkoutDrawer  open={openDrawer === "sport"}     onClose={() => setOpenDrawer(null)} />
-      <AddMealDrawer     open={openDrawer === "nutrition"}  onClose={() => setOpenDrawer(null)} />
-      <AddExpenseDrawer  open={openDrawer === "finance"}    onClose={() => setOpenDrawer(null)} />
-      <AddHoldingDrawer  open={openDrawer === "market"}     onClose={() => setOpenDrawer(null)} />
+      <AddWorkoutDrawer open={openDrawer === "sport"}     onClose={() => setOpenDrawer(null)} />
+      <AddMealDrawer    open={openDrawer === "nutrition"}  onClose={() => setOpenDrawer(null)} />
+      <AddExpenseDrawer open={openDrawer === "finance"}    onClose={() => setOpenDrawer(null)} />
+      <AddShiftDrawer   open={openDrawer === "work"}       onClose={() => setOpenDrawer(null)} />
     </div>
   );
 }

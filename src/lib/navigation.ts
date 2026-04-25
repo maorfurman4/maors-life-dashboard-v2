@@ -3,7 +3,6 @@ import {
   Dumbbell,
   Apple,
   Wallet,
-  TrendingUp,
   Briefcase,
   Settings,
   type LucideIcon,
@@ -22,7 +21,6 @@ export const mainNavItems: NavItem[] = [
   { id: "sport", label: "ספורט", to: "/sport", icon: Dumbbell, colorClass: "text-sport" },
   { id: "nutrition", label: "תזונה", to: "/nutrition", icon: Apple, colorClass: "text-nutrition" },
   { id: "finance", label: "כלכלה", to: "/finance", icon: Wallet, colorClass: "text-finance" },
-  { id: "market", label: "שוק ההון", to: "/market", icon: TrendingUp, colorClass: "text-market" },
   { id: "work", label: "עבודה", to: "/work", icon: Briefcase, colorClass: "text-work" },
 ];
 

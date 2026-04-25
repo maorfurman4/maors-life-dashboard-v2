@@ -16,7 +16,6 @@ import { Route as AppWorkRouteImport } from './routes/_app/work'
 import { Route as AppSportRouteImport } from './routes/_app/sport'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppNutritionRouteImport } from './routes/_app/nutrition'
-import { Route as AppMarketRouteImport } from './routes/_app/market'
 import { Route as AppFinanceRouteImport } from './routes/_app/finance'
 
 const LoginRoute = LoginRouteImport.update({
@@ -53,11 +52,6 @@ const AppNutritionRoute = AppNutritionRouteImport.update({
   path: '/nutrition',
   getParentRoute: () => AppRoute,
 } as any)
-const AppMarketRoute = AppMarketRouteImport.update({
-  id: '/market',
-  path: '/market',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppFinanceRoute = AppFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
@@ -68,7 +62,6 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/finance': typeof AppFinanceRoute
-  '/market': typeof AppMarketRoute
   '/nutrition': typeof AppNutritionRoute
   '/settings': typeof AppSettingsRoute
   '/sport': typeof AppSportRoute
@@ -77,7 +70,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/finance': typeof AppFinanceRoute
-  '/market': typeof AppMarketRoute
   '/nutrition': typeof AppNutritionRoute
   '/settings': typeof AppSettingsRoute
   '/sport': typeof AppSportRoute
@@ -89,7 +81,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/finance': typeof AppFinanceRoute
-  '/_app/market': typeof AppMarketRoute
   '/_app/nutrition': typeof AppNutritionRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/sport': typeof AppSportRoute
@@ -102,7 +93,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/finance'
-    | '/market'
     | '/nutrition'
     | '/settings'
     | '/sport'
@@ -111,7 +101,6 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/finance'
-    | '/market'
     | '/nutrition'
     | '/settings'
     | '/sport'
@@ -122,7 +111,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/finance'
-    | '/_app/market'
     | '/_app/nutrition'
     | '/_app/settings'
     | '/_app/sport'
@@ -186,13 +174,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNutritionRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/market': {
-      id: '/_app/market'
-      path: '/market'
-      fullPath: '/market'
-      preLoaderRoute: typeof AppMarketRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/finance': {
       id: '/_app/finance'
       path: '/finance'
@@ -205,7 +186,6 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppFinanceRoute: typeof AppFinanceRoute
-  AppMarketRoute: typeof AppMarketRoute
   AppNutritionRoute: typeof AppNutritionRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppSportRoute: typeof AppSportRoute
@@ -215,7 +195,6 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppFinanceRoute: AppFinanceRoute,
-  AppMarketRoute: AppMarketRoute,
   AppNutritionRoute: AppNutritionRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppSportRoute: AppSportRoute,
