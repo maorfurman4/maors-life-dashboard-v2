@@ -54,13 +54,15 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
         onSuccess: () => {
           // If had meal, add meal voucher income
           if (hadMeal) {
-            addIncome.mutate({
-              amount: 68,
-              category: "salary",
-              description: "שובר ארוחה",
-              date,
-              source: "meal_voucher",
-            });
+            addIncome.mutate(
+              { amount: 68, category: "salary", description: "שובר ארוחה", date, source: "meal_voucher" },
+              {
+                onError: (err) => {
+                  console.error("Meal voucher income error:", err);
+                  toast.error("המשמרת נשמרה, אך שובר הארוחה נכשל: " + (err as Error).message);
+                },
+              }
+            );
           }
           toast.success("משמרת נוספה בהצלחה");
           resetForm();
