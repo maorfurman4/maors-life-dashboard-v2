@@ -41,30 +41,30 @@ export function SportFunFact() {
   if (!fact && !loading) return null;
 
   return (
-    <div className="rounded-2xl bg-sport/10 border border-sport/20 p-4 space-y-2">
+    <div className="rounded-3xl bg-sport/15 backdrop-blur-md border border-sport/25 p-4 space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-sport" />
-          <p className="text-xs font-semibold text-sport">עובדת היום</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-sport">עובדת היום</p>
         </div>
         {!loading && (
           <button
             onClick={() => fetchFact(true)}
-            className="h-6 w-6 rounded-lg flex items-center justify-center hover:bg-sport/20 transition-colors"
+            className="h-7 w-7 rounded-xl flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
             title="עובדה חדשה"
           >
-            <RefreshCw className="h-3 w-3 text-sport/70" />
+            <RefreshCw className="h-3 w-3 text-white/60" />
           </button>
         )}
       </div>
       {loading ? (
         <div className="space-y-2">
-          <div className="h-3 bg-sport/15 animate-pulse rounded-full w-full" />
-          <div className="h-3 bg-sport/15 animate-pulse rounded-full w-4/5" />
-          <div className="h-3 bg-sport/15 animate-pulse rounded-full w-3/5" />
+          <div className="h-3 bg-white/10 animate-pulse rounded-full w-full" />
+          <div className="h-3 bg-white/10 animate-pulse rounded-full w-4/5" />
+          <div className="h-3 bg-white/10 animate-pulse rounded-full w-3/5" />
         </div>
       ) : (
-        <p className="text-sm text-foreground leading-relaxed">{fact}</p>
+        <p className="text-sm text-white/80 leading-relaxed">{fact}</p>
       )}
     </div>
   );
