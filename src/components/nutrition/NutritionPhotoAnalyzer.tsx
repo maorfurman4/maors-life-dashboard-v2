@@ -3,7 +3,7 @@ import { ScanSearch, Loader2, AlertTriangle, FolderOpen, Star, Camera } from "lu
 import { Button } from "@/components/ui/button";
 import { useAddNutrition, useAddFavoriteMeal } from "@/hooks/use-sport-data";
 import { detectRedLabels, redLabelColor } from "@/lib/red-labels";
-import { analyzeImage, parseGeminiJson } from "@/lib/ai-service";
+import { recognizeMeal } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 interface FoodAnalysis {
@@ -15,35 +15,16 @@ interface FoodAnalysis {
   red_labels: string[];
 }
 
-// ─── Prompt ───────────────────────────────────────────────────────────────────
-
-const NUTRITION_PROMPT = `אתה מנתח תזונה מומחה לאוכל ישראלי. נתח את תמונת האוכל והחזר JSON בלבד.
-פורמט: { "name": "שם המאכל בעברית", "calories": מספר, "protein_g": מספר, "carbs_g": מספר, "fat_g": מספר, "red_labels": ["מערך של אזהרות תזונתיות בעברית"] }
-כללים:
-- שם המאכל — בעברית, ספציפי (לדוגמה: "שניצל עוף עם אורז" ולא "אוכל")
-- הערכת קלוריות: בהתבסס על מנה ישראלית טיפוסית (200–350 גרם לעיקרית, 150–200 גרם לתוספת)
-- red_labels: כלול רק אם רלוונטי: "גבוה בנתרן", "גבוה בשומן רווי", "גבוה בסוכר", "גבוה בקלוריות", "עתיר פחמימות"
-- אם לא ניתן לזהות מזון בתמונה — החזר name: "לא זוהה מזון", calories: 0
-- השב ONLY עם JSON תקין, ללא markdown, ללא הסבר`;
-
-// ─── Real Gemini Vision call ──────────────────────────────────────────────────
-
-async function analyzeFood(base64: string, mimeType: string): Promise<FoodAnalysis> {
-  const raw = await analyzeImage(base64, mimeType, NUTRITION_PROMPT);
-  try {
-    const parsed = parseGeminiJson<FoodAnalysis>(raw);
-    return {
-      name:       parsed.name      ?? "לא זוהה",
-      calories:   Number(parsed.calories)  || 0,
-      protein_g:  Number(parsed.protein_g) || 0,
-      carbs_g:    Number(parsed.carbs_g)   || 0,
-      fat_g:      Number(parsed.fat_g)     || 0,
-      red_labels: Array.isArray(parsed.red_labels) ? parsed.red_labels : [],
-    };
-  } catch {
-    console.error("Nutrition JSON parse failed:", raw);
-    return { name: "שגיאה בזיהוי", calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, red_labels: [] };
-  }
+async function analyzeFood(base64: string): Promise<FoodAnalysis> {
+  const meal = await recognizeMeal(base64);
+  return {
+    name:       meal.name,
+    calories:   meal.calories,
+    protein_g:  meal.protein_g,
+    carbs_g:    meal.carbs_g,
+    fat_g:      meal.fat_g,
+    red_labels: [],
+  };
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -75,8 +56,8 @@ export function NutritionPhotoAnalyzer() {
     setResult(null);
     try {
       const dataUrl  = await fileToBase64(file);
-      const base64   = dataUrl.split(",")[1]; // raw base64 only
-      const analysis = await analyzeFood(base64, file.type);
+      const base64   = dataUrl.split(",")[1];
+      const analysis = await analyzeFood(base64);
       setResult(analysis);
       if (analysis.calories > 0) toast.success(`זוהה: ${analysis.name}`);
     } catch (err) {
@@ -137,7 +118,7 @@ export function NutritionPhotoAnalyzer() {
         </div>
         <div>
           <h3 className="text-sm font-semibold" style={{ letterSpacing: 0 }}>זיהוי מזון מתמונה</h3>
-          <p className="text-xs text-muted-foreground">Gemini Vision · ניתוח קלוריות ותוויות אדומות</p>
+          <p className="text-xs text-muted-foreground">ניתוח קלוריות ותוויות אדומות</p>
         </div>
       </div>
 
@@ -174,7 +155,7 @@ export function NutritionPhotoAnalyzer() {
           )}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin text-nutrition" />
-            Gemini Vision מנתח תמונה...
+            מנתח תמונה...
           </div>
         </div>
       )}

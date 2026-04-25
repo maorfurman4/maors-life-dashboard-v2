@@ -1,5 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export interface MealRecognitionResult {
+  name: string;
+  items: string[];
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  confidence: "low" | "medium" | "high";
+}
+
 async function invokeAI(payload: {
   prompt: string;
   imageBase64?: string;
@@ -9,6 +19,16 @@ async function invokeAI(payload: {
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
   return data?.text ?? "";
+}
+
+export async function recognizeMeal(imageBase64: string): Promise<MealRecognitionResult> {
+  const { data, error } = await supabase.functions.invoke("meal-recognize", {
+    body: { imageBase64 },
+  });
+  if (error) throw new Error(error.message);
+  if (data?.error) throw new Error(data.error);
+  if (!data?.meal) throw new Error("לא הצלחתי לזהות ארוחה בתמונה");
+  return data.meal as MealRecognitionResult;
 }
 
 export async function analyzeImage(
