@@ -27,53 +27,48 @@ Deno.serve(async (req) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 25_000);
 
-    let res: Response;
-    try {
-      res = await fetch("https://api.openai.com/v1/chat/completions", {
-        signal: controller.signal,
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "system",
-              content: "אתה תזונאי AI. נתחו תמונות ארוחות והערכת ערכים תזונתיים. תמיד החזר תוצאות בעברית.",
-            },
-            {
-              role: "user",
-              content: [
-                { type: "image_url", image_url: { url: dataUrl } },
-                { type: "text", text: "זהה את כל המאכלים בתמונה והערך כמויות וערכים תזונתיים כוללים לארוחה. החזר JSON בלבד." },
-              ],
-            },
-          ],
-          tools: [{
-            type: "function",
-            function: {
-              name: "report_meal",
-              description: "Report identified meal nutrition",
-              parameters: {
-                type: "object",
-                properties: {
-                  name: { type: "string", description: "שם הארוחה בעברית, למשל: חזה עוף עם אורז וירקות" },
-                  items: { type: "array", items: { type: "string" }, description: "רשימת המאכלים שזוהו" },
-                  calories: { type: "number" },
-                  protein_g: { type: "number" },
-                  carbs_g: { type: "number" },
-                  fat_g: { type: "number" },
-                  confidence: { type: "string", enum: ["low", "medium", "high"] },
-                },
-                required: ["name", "items", "calories", "protein_g", "carbs_g", "fat_g", "confidence"],
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      signal: controller.signal,
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "אתה תזונאי AI. נתחו תמונות ארוחות והערכת ערכים תזונתיים. תמיד החזר תוצאות בעברית.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: dataUrl } },
+              { type: "text", text: "זהה את כל המאכלים בתמונה והערך כמויות וערכים תזונתיים כוללים לארוחה. החזר JSON בלבד." },
+            ],
+          },
+        ],
+        tools: [{
+          type: "function",
+          function: {
+            name: "report_meal",
+            description: "Report identified meal nutrition",
+            parameters: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "שם הארוחה בעברית, למשל: חזה עוף עם אורז וירקות" },
+                items: { type: "array", items: { type: "string" }, description: "רשימת המאכלים שזוהו" },
+                calories: { type: "number" },
+                protein_g: { type: "number" },
+                carbs_g: { type: "number" },
+                fat_g: { type: "number" },
+                confidence: { type: "string", enum: ["low", "medium", "high"] },
               },
+              required: ["name", "items", "calories", "protein_g", "carbs_g", "fat_g", "confidence"],
             },
-          }],
-          tool_choice: { type: "function", function: { name: "report_meal" } },
-        }),
-      });
-    } finally {
-      clearTimeout(timer);
-    }
+          },
+        }],
+        tool_choice: { type: "function", function: { name: "report_meal" } },
+      }),
+    }).finally(() => clearTimeout(timer));
 
     if (!res.ok) {
       const t = await res.text();

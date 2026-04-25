@@ -29,58 +29,53 @@ Deno.serve(async (req) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 25_000);
 
-    let res: Response;
-    try {
-      res = await fetch("https://api.openai.com/v1/chat/completions", {
-        signal: controller.signal,
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "system",
-              content: "אתה מומחה OCR לקבלות ישראליות. חלץ פריטי הוצאה מהקבלה. קטגוריות: מזון, תחבורה, בריאות, בידור, קניות, חשבונות, אחר.",
-            },
-            {
-              role: "user",
-              content: [
-                { type: "image_url", image_url: { url: dataUrl } },
-                { type: "text", text: "חלץ את פריטי ההוצאה מהקבלה. אל תכלול שורות סיכום, מע\"מ, או כותרת חנות." },
-              ],
-            },
-          ],
-          tools: [{
-            type: "function",
-            function: {
-              name: "report_receipt",
-              description: "Report extracted receipt items",
-              parameters: {
-                type: "object",
-                properties: {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      signal: controller.signal,
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "אתה מומחה OCR לקבלות ישראליות. חלץ פריטי הוצאה מהקבלה. קטגוריות: מזון, תחבורה, בריאות, בידור, קניות, חשבונות, אחר.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: dataUrl } },
+              { type: "text", text: "חלץ את פריטי ההוצאה מהקבלה. אל תכלול שורות סיכום, מע\"מ, או כותרת חנות." },
+            ],
+          },
+        ],
+        tools: [{
+          type: "function",
+          function: {
+            name: "report_receipt",
+            description: "Report extracted receipt items",
+            parameters: {
+              type: "object",
+              properties: {
+                items: {
+                  type: "array",
                   items: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        name:     { type: "string", description: "שם המוצר/שירות בעברית" },
-                        amount:   { type: "number", description: "מחיר בשקלים" },
-                        category: { type: "string", enum: ["מזון", "תחבורה", "בריאות", "בידור", "קניות", "חשבונות", "אחר"] },
-                      },
-                      required: ["name", "amount", "category"],
+                    type: "object",
+                    properties: {
+                      name:     { type: "string", description: "שם המוצר/שירות בעברית" },
+                      amount:   { type: "number", description: "מחיר בשקלים" },
+                      category: { type: "string", enum: ["מזון", "תחבורה", "בריאות", "בידור", "קניות", "חשבונות", "אחר"] },
                     },
+                    required: ["name", "amount", "category"],
                   },
                 },
-                required: ["items"],
               },
+              required: ["items"],
             },
-          }],
-          tool_choice: { type: "function", function: { name: "report_receipt" } },
-        }),
-      });
-    } finally {
-      clearTimeout(timer);
-    }
+          },
+        }],
+        tool_choice: { type: "function", function: { name: "report_receipt" } },
+      }),
+    }).finally(() => clearTimeout(timer));
 
     if (!res.ok) {
       const t = await res.text();
