@@ -36,7 +36,7 @@ const COUPON_EXTRACTION_PROMPT = `אתה מומחה חילוץ נתוני קופ
 - אם שדה לא ניתן לקריאה — החזר null או מחרוזת ריקה
 - השב ONLY עם JSON תקין, ללא markdown, ללא הסבר`;
 
-// ─── Real Gemini Vision call ──────────────────────────────────────────────────
+// ─── AI Vision call ───────────────────────────────────────────────────────────
 
 async function analyzeCouponImage(base64: string, mimeType: string): Promise<ExtractedCoupon> {
   const raw = await analyzeImage(base64, mimeType, COUPON_EXTRACTION_PROMPT);
@@ -143,7 +143,7 @@ export function CouponImageAnalyzer() {
         </div>
         <div>
           <h3 className="text-sm font-bold" style={{ letterSpacing: 0 }}>ניתוח קופון מתמונה</h3>
-          <p className="text-[10px] text-muted-foreground">Gemini Vision · חילוץ ברקוד, קוד, הנחה</p>
+          <p className="text-[10px] text-muted-foreground">AI · חילוץ ברקוד, קוד, הנחה</p>
         </div>
       </div>
 
@@ -176,7 +176,7 @@ export function CouponImageAnalyzer() {
           )}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin text-finance" />
-            <span>Gemini Vision מנתח קופון...</span>
+            <span>AI מנתח קופון...</span>
           </div>
         </div>
       )}

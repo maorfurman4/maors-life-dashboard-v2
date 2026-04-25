@@ -105,7 +105,7 @@ function analyzeTaskPatterns(tasks: Task[], name: string | null, gender: string 
   return insights.slice(0, 3);
 }
 
-// ─── Gemini "Dugri" prompt builder ────────────────────────────────────────────
+// ─── AI "Dugri" prompt builder ────────────────────────────────────────────────
 
 interface DugriResult {
   message:   string;
@@ -177,7 +177,7 @@ export function TaskMotivationAgent() {
       setDugri(parsed);
     } catch (err) {
       console.error("Dugri AI error:", err);
-      toast.error("Gemini לא זמין כרגע");
+      toast.error("AI לא זמין כרגע");
     } finally {
       setLoadingDugri(false);
     }

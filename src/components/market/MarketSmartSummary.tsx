@@ -90,7 +90,7 @@ function buildFallback(holdings: any[], quoteMap: Map<string, any>, firstName: s
       "4. שקלול חשיפה סקטוריאלית.",
       "5. גיבוש המלצות (מצב לא מקוון).",
     ],
-    summary: `היום, ${hebrewDate}. הרווח/הפסד הכולל: ${totalPL >= 0 ? "+" : ""}${Math.abs(totalPL).toFixed(2)}$. לניתוח AI מלא — ודא שמפתח Gemini פעיל.`,
+    summary: `היום, ${hebrewDate}. הרווח/הפסד הכולל: ${totalPL >= 0 ? "+" : ""}${Math.abs(totalPL).toFixed(2)}$. לחץ/י על "נתח תיק" לניתוח AI מלא.`,
     tips: [
       "גיוון בין סקטורים מפחית סיכון.",
       "שקול Stop-Loss על פוזיציות מפסידות.",
@@ -140,7 +140,7 @@ export function MarketSmartSummary() {
       // Graceful degradation — show computed fallback
       const fallback = buildFallback(holdings || [], quoteMap, firstName, profile?.gender ?? null);
       setResult(fallback);
-      setAiError("Gemini לא זמין — מוצג ניתוח מחושב");
+      setAiError("AI לא זמין — מוצג ניתוח מחושב");
     } finally {
       setLoading(false);
     }
@@ -155,7 +155,7 @@ export function MarketSmartSummary() {
           </div>
           <div>
             <h3 className="text-sm font-bold" style={{ letterSpacing: 0 }}>ניתוח AI חכם</h3>
-            <p className="text-[10px] text-muted-foreground">Gemini · תובנות שוק · Chain of Thought</p>
+            <p className="text-[10px] text-muted-foreground">AI · תובנות שוק · Chain of Thought</p>
           </div>
         </div>
         <button
@@ -180,7 +180,7 @@ export function MarketSmartSummary() {
         <p className="text-xs text-muted-foreground text-center py-2">הוסף פוזיציות לתיק כדי לקבל ניתוח AI</p>
       ) : !result ? (
         <p className="text-xs text-muted-foreground text-center py-2">
-          לחץ/י על "נתח תיק" לקבלת תובנות מותאמות אישית מ-Gemini
+          לחץ/י על "נתח תיק" לקבלת תובנות מותאמות אישית
         </p>
       ) : (
         <div className="space-y-3">
