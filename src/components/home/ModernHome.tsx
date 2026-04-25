@@ -3,7 +3,6 @@ import { Dumbbell, Apple, Wallet, Briefcase } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { CategoryCube } from "./CategoryCube";
 import { WeatherMini } from "./WeatherMini";
-import { BrandLogo } from "@/components/shared/BrandLogo";
 import { AddWorkoutDrawer } from "@/components/sport/AddWorkoutDrawer";
 import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
 import { AddExpenseDrawer } from "@/components/finance/AddExpenseDrawer";
@@ -87,16 +86,7 @@ export function ModernHome() {
               {name || "ברוך הבא"}
             </h1>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <WeatherMini />
-            {/* Brand mark */}
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">Smart Helix</span>
-              <div className="rounded-xl shadow-[0_0_18px_rgba(37,99,235,0.4)]">
-                <BrandLogo size={36} />
-              </div>
-            </div>
-          </div>
+          <WeatherMini />
         </div>
 
         {/* 2×2 category grid */}
