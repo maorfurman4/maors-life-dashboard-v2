@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Camera, Loader2, Sparkles, X } from "lucide-react";
-import { analyzeImage, parseGeminiJson } from "@/lib/ai-service";
+import { recognizeMeal } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 interface MealPhotoCaptureProps {
@@ -34,11 +34,7 @@ export function MealPhotoCapture({ onRecognized }: MealPhotoCaptureProps) {
       setLoading(true);
       try {
         const base64 = dataUrl.split(",")[1];
-        const prompt = `אתה מומחה תזונה. נתח את תמונת הארוחה והחזר JSON בלבד:
-{"name":"שם הארוחה בעברית","calories":מספר,"protein_g":מספר,"carbs_g":מספר,"fat_g":מספר,"items":["פריט1","פריט2"],"confidence":"high/medium/low"}
-כללים: הערכה לפי מנה ישראלית טיפוסית. ללא markdown. JSON בלבד.`;
-        const raw = await analyzeImage(base64, file.type, prompt);
-        const meal = parseGeminiJson<{ name: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; items: string[]; confidence: string }>(raw);
+        const meal = await recognizeMeal(base64);
         toast.success(`זוהה: ${meal.name}`);
         onRecognized(meal);
         setPreviewUrl(null);
