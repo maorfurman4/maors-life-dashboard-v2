@@ -15,9 +15,7 @@ import { FinanceReceiptScanner } from "@/components/finance/FinanceReceiptScanne
 import { FinanceFastAdd } from "@/components/finance/FinanceFastAdd";
 import { FinanceKanbanPayments } from "@/components/finance/FinanceKanbanPayments";
 import { FinanceDebtTracker } from "@/components/finance/FinanceDebtTracker";
-import { FinanceCouponVault } from "@/components/finance/FinanceCouponVault";
 import { FinanceGroceryPriceList } from "@/components/finance/FinanceGroceryPriceList";
-import { FinanceMonthlySavings } from "@/components/finance/FinanceMonthlySavings";
 
 export const Route = createFileRoute("/_app/finance")({
   component: FinancePage,
@@ -74,7 +72,6 @@ function FinancePage() {
           <FinanceDashboardCards />
           <FinanceKanbanPayments />
           <FinanceSavings />
-          <FinanceMonthlySavings />
           <FinanceBudgetAlerts />
         </div>
       )}
@@ -98,11 +95,10 @@ function FinancePage() {
         </div>
       )}
 
-      {/* קניות — grocery with prices + coupon vault */}
+      {/* קניות — grocery with prices */}
       {activeTab === "shopping" && (
         <div className="space-y-5">
           <FinanceGroceryPriceList />
-          <FinanceCouponVault />
         </div>
       )}
 
