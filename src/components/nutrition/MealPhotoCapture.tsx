@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Camera, Loader2, Sparkles, X } from "lucide-react";
 import { recognizeMeal } from "@/lib/ai-service";
+import { compressImageToBase64 } from "@/lib/image-utils";
 import { toast } from "sonner";
 
 interface MealPhotoCaptureProps {
@@ -22,30 +23,22 @@ export function MealPhotoCapture({ onRecognized }: MealPhotoCaptureProps) {
 
   const handleFile = async (file: File) => {
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error("התמונה גדולה מדי (מקסימום 8MB)");
-      return;
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    setLoading(true);
+    try {
+      const base64 = await compressImageToBase64(file);
+      const meal = await recognizeMeal(base64);
+      toast.success(`זוהה: ${meal.name}`);
+      onRecognized(meal);
+      setPreviewUrl(null);
+      URL.revokeObjectURL(objectUrl);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("שגיאה בזיהוי: " + (e?.message || "לא ידוע"));
+    } finally {
+      setLoading(false);
     }
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      setPreviewUrl(dataUrl);
-      setLoading(true);
-      try {
-        const base64 = dataUrl.split(",")[1];
-        const meal = await recognizeMeal(base64);
-        toast.success(`זוהה: ${meal.name}`);
-        onRecognized(meal);
-        setPreviewUrl(null);
-      } catch (e: any) {
-        console.error(e);
-        toast.error("שגיאה בזיהוי: " + (e?.message || "לא ידוע"));
-      } finally {
-        setLoading(false);
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   return (
