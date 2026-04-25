@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sparkles, Loader2, Calendar, Save, ChevronRight, ChevronLeft } from "lucide-react";
-import { generateText, parseGeminiJson } from "@/lib/gemini";
+import { generateText, parseGeminiJson } from "@/lib/ai-service";
 import { usePersonalRecords, useAddWorkoutTemplate } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
 

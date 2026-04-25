@@ -3,7 +3,7 @@ import { ChefHat, Loader2, Star, ChevronDown, ChevronUp, Clock, Users, ExternalL
 import { Button } from "@/components/ui/button";
 import { useAddFavoriteMeal } from "@/hooks/use-sport-data";
 import { useProfile } from "@/hooks/use-profile";
-import { generateText, parseGeminiJson } from "@/lib/gemini";
+import { generateText, parseGeminiJson } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 type DietaryType = "בשרי" | "חלבי" | "פרווה";

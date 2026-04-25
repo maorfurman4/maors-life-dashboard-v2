@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Camera, FolderOpen, Loader2, Check, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAddExpense } from "@/hooks/use-finance-data";
-import { analyzeImage, parseGeminiJson } from "@/lib/gemini";
+import { analyzeImage, parseGeminiJson } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 interface ExtractedExpense {

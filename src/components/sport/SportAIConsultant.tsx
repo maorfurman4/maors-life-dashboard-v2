@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { BrainCircuit, Loader2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateText } from "@/lib/gemini";
+import { generateText } from "@/lib/ai-service";
 import { useProfile } from "@/hooks/use-profile";
 import { toast } from "sonner";
 

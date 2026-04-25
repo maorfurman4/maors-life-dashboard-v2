@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Camera, FolderOpen, Loader2, Sparkles, Check } from "lucide-react";
 import { useAddCoupon } from "@/hooks/use-coupons";
-import { analyzeImage, parseGeminiJson } from "@/lib/gemini";
+import { analyzeImage, parseGeminiJson } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 interface ExtractedCoupon {

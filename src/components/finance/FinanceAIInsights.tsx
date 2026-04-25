@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sparkles, Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { generateText, parseGeminiJson } from "@/lib/gemini";
+import { generateText, parseGeminiJson } from "@/lib/ai-service";
 import { useMonthlyFinance, useExpenseHistory, useIncomeHistory, useFinanceSettings } from "@/hooks/use-finance-data";
 import { toast } from "sonner";
 
