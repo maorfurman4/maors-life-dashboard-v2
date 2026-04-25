@@ -34,7 +34,7 @@ export function NutritionAIZone() {
 
   const buildContext = () => {
     const name    = profile?.full_name?.split(" ")[0] ?? "המשתמש";
-    const goal    = profile?.nutrition_goal ?? "לא הוגדר";
+    const goal    = profile?.diet_type ?? "לא הוגדר";
     const weight  = profile?.weight_kg ? `${profile.weight_kg} ק"ג` : "לא ידוע";
     const todayCal = entries.reduce((s, e) => s + (e.calories || 0), 0);
     const todayPro = entries.reduce((s, e) => s + (e.protein_g || 0), 0);

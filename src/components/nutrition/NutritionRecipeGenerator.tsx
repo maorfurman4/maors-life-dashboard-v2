@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChefHat, Loader2, Star, ChevronDown, ChevronUp, Clock, Users } from "lucide-react";
+import { ChefHat, Loader2, Star, ChevronDown, ChevronUp, Clock, Users, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAddFavoriteMeal } from "@/hooks/use-sport-data";
 import { useProfile } from "@/hooks/use-profile";

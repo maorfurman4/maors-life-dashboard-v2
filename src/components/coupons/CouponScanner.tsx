@@ -15,8 +15,9 @@ export function CouponScanner({ onScanned }: CouponScannerProps) {
 
   const startScan = async () => {
     try {
-      const { BrowserBarcodeReader } = await import("@zxing/browser");
-      const reader = new BrowserBarcodeReader();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const zxing = await import("@zxing/browser") as any;
+      const reader = new zxing.BrowserBarcodeReader();
       readerRef.current = reader;
       setScanning(true);
 
@@ -28,7 +29,8 @@ export function CouponScanner({ onScanned }: CouponScannerProps) {
       const controls = await reader.decodeFromVideoDevice(
         undefined,
         videoRef.current,
-        (result, err) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (result: any, err: any) => {
           if (result) {
             const text = result.getText();
             onScanned(text);
