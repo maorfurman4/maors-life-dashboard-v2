@@ -3,7 +3,7 @@ import { Brain, ChevronDown, ChevronUp, RefreshCw, Loader2 } from "lucide-react"
 import { useStockHoldings } from "@/hooks/use-sport-data";
 import { useStockQuotes } from "@/hooks/use-stock-quotes";
 import { useProfile } from "@/hooks/use-profile";
-import { generateText, parseGeminiJson } from "@/lib/gemini";
+import { generateText, parseGeminiJson } from "@/lib/ai-service";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

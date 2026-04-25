@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tag, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateText } from "@/lib/gemini";
+import { generateText } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 interface LabelAnalysis {

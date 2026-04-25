@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Camera, Loader2, Sparkles, X } from "lucide-react";
-import { analyzeImage, parseGeminiJson } from "@/lib/gemini";
+import { analyzeImage, parseGeminiJson } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 interface MealPhotoCaptureProps {

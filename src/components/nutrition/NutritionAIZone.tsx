@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Bot, Send, Loader2, Sparkles, RotateCcw } from "lucide-react";
-import { generateText } from "@/lib/gemini";
+import { generateText } from "@/lib/ai-service";
 import { useProfile } from "@/hooks/use-profile";
 import { useNutritionEntries } from "@/hooks/use-sport-data";
 import { toast } from "sonner";

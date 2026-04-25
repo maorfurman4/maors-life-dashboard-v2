@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Sparkles, ChevronDown, ChevronUp, AlertTriangle, Trophy, Target, Loader2, MessageSquare } from "lucide-react";
 import { useTasks, type Task } from "@/hooks/use-tasks";
 import { useProfile } from "@/hooks/use-profile";
-import { generateText, parseGeminiJson } from "@/lib/gemini";
+import { generateText, parseGeminiJson } from "@/lib/ai-service";
 import { subDays } from "date-fns";
 import { toast } from "sonner";
 

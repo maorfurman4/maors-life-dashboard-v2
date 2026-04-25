@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Zap, RefreshCw } from "lucide-react";
-import { generateText } from "@/lib/gemini";
+import { generateText } from "@/lib/ai-service";
 import { useProfile } from "@/hooks/use-profile";
 
 export function SportFunFact() {

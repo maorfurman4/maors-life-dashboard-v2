@@ -3,7 +3,7 @@ import { ScanSearch, Loader2, AlertTriangle, FolderOpen, Star, Camera } from "lu
 import { Button } from "@/components/ui/button";
 import { useAddNutrition, useAddFavoriteMeal } from "@/hooks/use-sport-data";
 import { detectRedLabels, redLabelColor } from "@/lib/red-labels";
-import { analyzeImage, parseGeminiJson } from "@/lib/gemini";
+import { analyzeImage, parseGeminiJson } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 interface FoodAnalysis {
