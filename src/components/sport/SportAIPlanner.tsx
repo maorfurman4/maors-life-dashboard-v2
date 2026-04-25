@@ -331,7 +331,7 @@ export function SportAIPlanner() {
           >
             {loading
               ? <><Loader2 className="h-4 w-4 animate-spin" /> בונה תוכנית...</>
-              : <><Sparkles className="h-4 w-4" /> צור תוכנית</>}}
+              : <><Sparkles className="h-4 w-4" /> צור תוכנית</>}
           </button>
 
           <button onClick={reset} className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors">
