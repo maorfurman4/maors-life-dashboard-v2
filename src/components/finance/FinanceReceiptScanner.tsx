@@ -3,6 +3,7 @@ import { Camera, FolderOpen, Loader2, Check, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAddExpense } from "@/hooks/use-finance-data";
 import { scanReceipt } from "@/lib/ai-service";
+import { compressImageToBase64 } from "@/lib/image-utils";
 import { toast } from "sonner";
 
 interface ExtractedExpense {
@@ -26,10 +27,8 @@ export function FinanceReceiptScanner() {
     if (!file) return;
     setIsAnalyzing(true);
     try {
-      const dataUrl = await fileToBase64(file);
-      // base64 only — strip the "data:[mime];base64," prefix
-      const base64  = dataUrl.split(",")[1];
-      const items   = await scanReceipt(base64, file.type);
+      const base64 = await compressImageToBase64(file);
+      const items  = await scanReceipt(base64, "image/jpeg");
       setExtracted(items);
       setSelected(items.map(() => true));
       if (items.length === 0) toast.info("לא זוהו פריטים בקבלה — נסה תמונה ברורה יותר");
@@ -142,11 +141,3 @@ export function FinanceReceiptScanner() {
   );
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}

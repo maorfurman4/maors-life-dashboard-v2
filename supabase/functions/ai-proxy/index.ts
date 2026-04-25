@@ -1,19 +1,26 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+const errResponse = (msg: string, status = 500) =>
+  new Response(JSON.stringify({ error: msg }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { prompt, imageBase64, mimeType } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { prompt, imageBase64, mimeType } = body;
+
+    if (!prompt) return errResponse("prompt is required", 400);
+    if (imageBase64 && imageBase64.length > 5_000_000) return errResponse("התמונה גדולה מדי — הקטן אותה ונסה שוב", 413);
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!apiKey) throw new Error("OPENAI_API_KEY not set");
-    if (!prompt) throw new Error("prompt is required");
+    if (!apiKey) return errResponse("OPENAI_API_KEY not set");
 
     const isVision = !!imageBase64;
     const dataUrl = isVision
@@ -27,20 +34,30 @@ serve(async (req) => {
         ]
       : prompt;
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: isVision ? "gpt-4o" : "gpt-4o-mini",
-        messages: [{ role: "user", content }],
-        temperature: isVision ? 0.1 : 0.4,
-      }),
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 25_000);
+
+    let res: Response;
+    try {
+      res = await fetch("https://api.openai.com/v1/chat/completions", {
+        signal: controller.signal,
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: isVision ? "gpt-4o" : "gpt-4o-mini",
+          messages: [{ role: "user", content }],
+          temperature: isVision ? 0.1 : 0.4,
+        }),
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!res.ok) {
-      const err = await res.text();
-      if (res.status === 429) return new Response(JSON.stringify({ error: "יותר מדי בקשות, נסה שוב" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`OpenAI ${res.status}: ${err}`);
+      const t = await res.text();
+      console.error("OpenAI error:", res.status, t);
+      if (res.status === 429) return errResponse("יותר מדי בקשות, נסה שוב", 429);
+      return errResponse(`שגיאת AI (${res.status})`, 502);
     }
 
     const data = await res.json();
@@ -51,9 +68,7 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error("ai-proxy error:", err);
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const msg = err instanceof Error ? err.message : String(err);
+    return errResponse(msg.includes("aborted") ? "הבקשה ארכה יותר מדי — נסה שוב" : msg);
   }
 });

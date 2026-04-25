@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAddNutrition, useAddFavoriteMeal } from "@/hooks/use-sport-data";
 import { detectRedLabels, redLabelColor } from "@/lib/red-labels";
 import { recognizeMeal } from "@/lib/ai-service";
+import { compressImageToBase64 } from "@/lib/image-utils";
 import { toast } from "sonner";
 
 interface FoodAnalysis {
@@ -29,15 +30,6 @@ async function analyzeFood(base64: string): Promise<FoodAnalysis> {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload  = () => res(reader.result as string);
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
-  });
-}
-
 export function NutritionPhotoAnalyzer() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result,      setResult]      = useState<FoodAnalysis | null>(null);
@@ -55,8 +47,7 @@ export function NutritionPhotoAnalyzer() {
     setIsAnalyzing(true);
     setResult(null);
     try {
-      const dataUrl  = await fileToBase64(file);
-      const base64   = dataUrl.split(",")[1];
+      const base64   = await compressImageToBase64(file);
       const analysis = await analyzeFood(base64);
       setResult(analysis);
       if (analysis.calories > 0) toast.success(`זוהה: ${analysis.name}`);

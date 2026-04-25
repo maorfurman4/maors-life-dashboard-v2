@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Camera, FolderOpen, Loader2, Sparkles, Check } from "lucide-react";
 import { useAddCoupon } from "@/hooks/use-coupons";
 import { analyzeImage, parseGeminiJson } from "@/lib/ai-service";
+import { compressImageToBase64 } from "@/lib/image-utils";
 import { toast } from "sonner";
 
 interface ExtractedCoupon {
@@ -38,8 +39,8 @@ const COUPON_EXTRACTION_PROMPT = `אתה מומחה חילוץ נתוני קופ
 
 // ─── AI Vision call ───────────────────────────────────────────────────────────
 
-async function analyzeCouponImage(base64: string, mimeType: string): Promise<ExtractedCoupon> {
-  const raw = await analyzeImage(base64, mimeType, COUPON_EXTRACTION_PROMPT);
+async function analyzeCouponImage(base64: string): Promise<ExtractedCoupon> {
+  const raw = await analyzeImage(base64, "image/jpeg", COUPON_EXTRACTION_PROMPT);
   try {
     const parsed = parseGeminiJson<ExtractedCoupon>(raw);
     return {
@@ -63,15 +64,6 @@ async function analyzeCouponImage(base64: string, mimeType: string): Promise<Ext
   }
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result as string);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-}
-
 const CATEGORIES = ["סופרמרקט", "ביגוד", "מסעדות", "תרופות", "אלקטרוניקה", "בריאות", "אחר"];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -91,14 +83,13 @@ export function CouponImageAnalyzer() {
     if (!file) return;
     e.target.value = "";
 
-    const dataUrl = await fileToBase64(file);
-    setPreview(dataUrl);
+    setPreview(URL.createObjectURL(file));
     setAnalyzing(true);
     setFields(null);
 
     try {
-      const base64 = dataUrl.split(",")[1]; // raw base64 only
-      const result = await analyzeCouponImage(base64, file.type);
+      const base64 = await compressImageToBase64(file);
+      const result = await analyzeCouponImage(base64);
       setFields(result);
       toast.success(`זוהה: ${result.title || "קופון"}`);
     } catch (err) {
