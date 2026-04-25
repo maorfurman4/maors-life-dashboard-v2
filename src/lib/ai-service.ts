@@ -31,6 +31,74 @@ export async function recognizeMeal(imageBase64: string): Promise<MealRecognitio
   return data.meal as MealRecognitionResult;
 }
 
+// ─── Receipt Scanning ─────────────────────────────────────────────────────────
+
+export interface ScannedExpense {
+  name: string;
+  amount: number;
+  category: string;
+}
+
+export async function scanReceipt(imageBase64: string, mimeType?: string): Promise<ScannedExpense[]> {
+  const { data, error } = await supabase.functions.invoke("receipt-scan", {
+    body: { imageBase64, mimeType },
+  });
+  if (error) throw new Error(error.message);
+  if (data?.error) throw new Error(data.error);
+  return (data?.items ?? []) as ScannedExpense[];
+}
+
+// ─── Finance Insights ─────────────────────────────────────────────────────────
+
+export interface FinanceInsights {
+  status: "excellent" | "good" | "warning" | "danger";
+  summary: string;
+  comparisons: { category: string; change_pct: number; verdict: "good" | "neutral" | "bad"; note: string }[];
+  recommendations: { title: string; impact_ils: number; action: string }[];
+}
+
+export async function getFinanceInsights(payload: {
+  currentMonth: { income: number; expenses: number; savings: number; categories: Record<string, number> };
+  previousMonths: { label: string; income: number; expenses: number; savings: number }[];
+  savingsGoalPct: number;
+}): Promise<FinanceInsights> {
+  const { data, error } = await supabase.functions.invoke("finance-insights-ai", { body: payload });
+  if (error) throw new Error(error.message);
+  if (data?.error) throw new Error(data.error);
+  if (!data?.insights) throw new Error("לא התקבל ניתוח");
+  return data.insights as FinanceInsights;
+}
+
+// ─── Workout Plan ─────────────────────────────────────────────────────────────
+
+export interface WorkoutPlan {
+  summary: string;
+  workouts: {
+    day: string;
+    name: string;
+    category: string;
+    duration_minutes: number;
+    exercises: { name: string; sets: number; reps: string; weight_kg?: number; notes?: string }[];
+  }[];
+  tips: string[];
+}
+
+export async function generateWorkoutPlan(payload: {
+  goal: string;
+  daysPerWeek: number;
+  equipment: string;
+  constraints: string;
+  recentPRs: { exercise_name: string; value: number; unit: string }[];
+}): Promise<WorkoutPlan> {
+  const { data, error } = await supabase.functions.invoke("workout-plan-ai", { body: payload });
+  if (error) throw new Error(error.message);
+  if (data?.error) throw new Error(data.error);
+  if (!data?.plan) throw new Error("לא התקבלה תוכנית");
+  return data.plan as WorkoutPlan;
+}
+
+// ─── Generic (for free-form text components) ─────────────────────────────────
+
 export async function analyzeImage(
   base64Image: string,
   mimeType: string,

@@ -1,28 +1,10 @@
 import { useState } from "react";
 import { Sparkles, Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { generateText, parseGeminiJson } from "@/lib/ai-service";
+import { getFinanceInsights, FinanceInsights } from "@/lib/ai-service";
 import { useMonthlyFinance, useExpenseHistory, useIncomeHistory, useFinanceSettings } from "@/hooks/use-finance-data";
 import { toast } from "sonner";
 
-interface AIComparison {
-  category: string;
-  change_pct: number;
-  verdict: "good" | "neutral" | "bad";
-  note: string;
-}
-
-interface AIRecommendation {
-  title: string;
-  impact_ils: number;
-  action: string;
-}
-
-interface AIInsights {
-  status: "excellent" | "good" | "warning" | "danger";
-  summary: string;
-  comparisons: AIComparison[];
-  recommendations: AIRecommendation[];
-}
+type AIInsights = FinanceInsights;
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; icon: any; label: string }> = {
   excellent: { bg: "bg-emerald-500/15 border-emerald-500/30", text: "text-emerald-500", icon: CheckCircle2, label: "מצוין" },
@@ -68,29 +50,8 @@ export function FinanceAIInsights() {
       };
       const savingsGoalPct = settings?.savings_goal_pct || 35;
 
-      const prompt = `אתה יועץ פיננסי ישראלי. נתח את הנתונים הבאים והחזר JSON בלבד.
-
-חודש נוכחי: הכנסות ₪${currentMonth.income}, הוצאות ₪${currentMonth.expenses}, חיסכון ₪${currentMonth.savings}
-קטגוריות: ${JSON.stringify(currentMonth.categories)}
-חודשים קודמים: ${JSON.stringify(previousMonths)}
-יעד חיסכון: ${savingsGoalPct}%
-
-פרמט תשובה:
-{
-  "status": "excellent|good|warning|danger",
-  "summary": "2 משפטים על מצב החודש",
-  "comparisons": [
-    { "category": "שם", "change_pct": מספר, "verdict": "good|neutral|bad", "note": "הסבר קצר" }
-  ],
-  "recommendations": [
-    { "title": "כותרת", "impact_ils": מספר, "action": "פעולה מעשית" }
-  ]
-}
-JSON בלבד, ללא markdown.`;
-
-      const raw = await generateText(prompt);
-      const parsed = parseGeminiJson<{ status: string; summary: string; comparisons: any[]; recommendations: any[] }>(raw);
-      setInsights(parsed as AIInsights);
+      const result = await getFinanceInsights({ currentMonth, previousMonths, savingsGoalPct });
+      setInsights(result);
       toast.success("הניתוח מוכן!");
     } catch (e: any) {
       console.error(e);

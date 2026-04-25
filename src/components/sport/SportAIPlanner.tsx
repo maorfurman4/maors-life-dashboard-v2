@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sparkles, Loader2, Calendar, Save, ChevronRight, ChevronLeft } from "lucide-react";
-import { generateText, parseGeminiJson } from "@/lib/ai-service";
+import { generateWorkoutPlan, WorkoutPlan } from "@/lib/ai-service";
 import { usePersonalRecords, useAddWorkoutTemplate } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
 
@@ -20,11 +20,7 @@ interface PlannedWorkout {
   exercises:         PlannedExercise[];
 }
 
-interface AIWorkoutPlan {
-  summary:  string;
-  workouts: PlannedWorkout[];
-  tips:     string[];
-}
+type AIWorkoutPlan = WorkoutPlan;
 
 // ─── Conversational steps ─────────────────────────────────────────────────────
 
@@ -80,55 +76,6 @@ const STEPS: Step[] = [
 
 type Answers = Partial<Record<StepKey, string>>;
 
-// ─── Gemini prompt builder ────────────────────────────────────────────────────
-
-function buildWorkoutPrompt(answers: Answers, prs: any[]): string {
-  const daysPerWeek = parseInt(answers.frequency ?? "3");
-  const prText = prs.length > 0
-    ? `\nשיאים אישיים של המשתמש: ${prs.slice(0, 6).map((p: any) => `${p.exercise_name}: ${p.value}${p.unit ?? ""}`).join(", ")}`
-    : "";
-
-  return `אתה מאמן כושר מקצועי ישראלי. צור תוכנית אימונים שבועית מותאמת אישית בפורמט JSON בלבד.
-
-פרמטרים:
-- תדירות: ${answers.frequency}
-- מיקום: ${answers.location}
-- משך אימון: ${answers.duration}
-- עוצמה (RPE): ${answers.rpe}
-- מגבלות: ${answers.limitations}${prText}
-
-החזר JSON בפורמט הבא בדיוק:
-{
-  "summary": "תיאור קצר של התוכנית (2 משפטים בעברית)",
-  "workouts": [
-    {
-      "day": "יום ראשון",
-      "name": "שם האימון בעברית",
-      "category": "כוח / קרדיו / גמישות / משולב",
-      "duration_minutes": ${answers.duration?.split(" ")[0] ?? 60},
-      "exercises": [
-        {
-          "name": "שם התרגיל בעברית",
-          "sets": 3,
-          "reps": "8-12",
-          "weight_kg": null,
-          "notes": "הנחיה קצרה אם צריך"
-        }
-      ]
-    }
-  ],
-  "tips": ["טיפ 1 בעברית", "טיפ 2 בעברית", "טיפ 3 בעברית"]
-}
-
-כללים:
-- צור בדיוק ${daysPerWeek} אימונים (אחד לכל יום אימון)
-- כל אימון יכיל 4–7 תרגילים מתאימים למיקום (${answers.location})
-- התחשב במגבלות: ${answers.limitations}
-- שמות תרגילים בעברית
-- weight_kg: null אם לא ידוע
-- ימי מנוחה לא מופיעים ברשימה
-- ללא markdown, JSON תקין בלבד`;
-}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -168,18 +115,25 @@ export function SportAIPlanner() {
     setStep((s) => s + 1);
   };
 
-  // ── Generate via Gemini directly (no Edge Function) ──
   const generate = async () => {
     setLoading(true);
     setPlan(null);
     try {
-      const prompt = buildWorkoutPrompt(answers, prs || []);
-      const raw    = await generateText(prompt);
-      const parsed = parseGeminiJson<AIWorkoutPlan>(raw);
+      const result = await generateWorkoutPlan({
+        goal:        `${answers.location ?? "חדר כושר"} — RPE ${answers.rpe ?? "7"}`,
+        daysPerWeek: parseInt(answers.frequency ?? "3"),
+        equipment:   answers.location ?? "חדר כושר מלא",
+        constraints: answers.limitations ?? "אין",
+        recentPRs:   (prs || []).slice(0, 6).map((p: any) => ({
+          exercise_name: p.exercise_name,
+          value:         p.value,
+          unit:          p.unit ?? "",
+        })),
+      });
 
-      if (!parsed.workouts || !Array.isArray(parsed.workouts)) throw new Error("מבנה JSON לא תקין");
+      if (!result.workouts || !Array.isArray(result.workouts)) throw new Error("מבנה לא תקין");
 
-      setPlan(parsed);
+      setPlan(result);
       toast.success("התוכנית מוכנה! 💪");
     } catch (e: any) {
       console.error("Workout plan error:", e);

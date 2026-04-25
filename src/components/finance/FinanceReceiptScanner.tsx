@@ -2,38 +2,13 @@ import { useState, useRef } from "react";
 import { Camera, FolderOpen, Loader2, Check, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAddExpense } from "@/hooks/use-finance-data";
-import { analyzeImage, parseGeminiJson } from "@/lib/ai-service";
+import { scanReceipt } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 interface ExtractedExpense {
   name: string;
   amount: number;
   category: string;
-}
-
-// ─── Prompt ───────────────────────────────────────────────────────────────────
-
-const RECEIPT_PROMPT = `אתה מומחה OCR לקבלות ישראליות. נתח את תמונת הקבלה והחזר JSON בלבד — מערך של פריטי הוצאה.
-פורמט כל פריט: { "name": "שם המוצר/שירות בעברית", "amount": מספר בשקלים, "category": קטגוריה }
-קטגוריות אפשריות: "מזון", "תחבורה", "בריאות", "בידור", "קניות", "חשבונות", "אחר"
-כללים:
-- חלץ פריטים בודדים עם מחיריהם
-- אל תכלול שורות סיכום, מע"מ, או כותרת החנות
-- סכומים בשקלים ישראלים (ILS), ללא סימן מטבע
-- אם המחיר לא ברור — אל תכלול את הפריט
-- השב ONLY עם JSON array תקין, ללא markdown, ללא הסבר`;
-
-// ─── Real Gemini Vision call ──────────────────────────────────────────────────
-
-async function extractReceipt(base64: string, mimeType: string): Promise<ExtractedExpense[]> {
-  const raw = await analyzeImage(base64, mimeType, RECEIPT_PROMPT);
-  try {
-    const parsed = parseGeminiJson<ExtractedExpense[]>(raw);
-    return Array.isArray(parsed) ? parsed.filter((i) => i.name && i.amount > 0) : [];
-  } catch {
-    console.error("Receipt JSON parse failed:", raw);
-    return [];
-  }
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -54,7 +29,7 @@ export function FinanceReceiptScanner() {
       const dataUrl = await fileToBase64(file);
       // base64 only — strip the "data:[mime];base64," prefix
       const base64  = dataUrl.split(",")[1];
-      const items   = await extractReceipt(base64, file.type);
+      const items   = await scanReceipt(base64, file.type);
       setExtracted(items);
       setSelected(items.map(() => true));
       if (items.length === 0) toast.info("לא זוהו פריטים בקבלה — נסה תמונה ברורה יותר");
@@ -95,7 +70,7 @@ export function FinanceReceiptScanner() {
         </div>
         <div>
           <h3 className="text-sm font-semibold" style={{ letterSpacing: 0 }}>סריקת קבלה</h3>
-          <p className="text-xs text-muted-foreground">AI מזהה פריטים אוטומטית · Gemini Vision</p>
+          <p className="text-xs text-muted-foreground">AI מזהה פריטים אוטומטית</p>
         </div>
       </div>
 
@@ -106,7 +81,7 @@ export function FinanceReceiptScanner() {
         isAnalyzing ? (
           <div className="flex flex-col items-center justify-center gap-3 py-8 text-sm text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin text-finance" />
-            <span>מנתח קבלה עם Gemini Vision...</span>
+            <span>מנתח קבלה...</span>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
