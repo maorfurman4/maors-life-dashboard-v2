@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Helix — Logo Concepts</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #030508;
+    color: #fff;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px 56px;
+    gap: 28px;
+  }
+  .heading { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; color: #f8fafc; }
+  .sub { font-size: 13px; color: #475569; }
+  .grid { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+  .card {
+    width: 230px;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 22px;
+    padding: 22px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .card-letter { font-size: 11px; font-weight: 700; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+  .card-title { font-size: 16px; font-weight: 900; color: #f1f5f9; }
+  .card-desc { font-size: 11px; color: #64748b; text-align: center; line-height: 1.7; }
+  .sizes { display: flex; align-items: center; gap: 12px; }
+  .icon-lg { width: 160px; height: 160px; display: block; }
+  .icon-sm { width: 58px; height: 58px; display: block; border-radius: 13px; overflow: hidden; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="heading">🧬 Smart Helix Logo</div>
+<div class="sub">שלוש גרסאות — בחר את המועדפת</div>
+
+<div class="grid">
+
+<!-- ═══════════════════════════════════════════
+     VERSION A — THE ARCHITECT
+     Cold, precise, digital. Thin green line + blue data nodes.
+═══════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-letter">VERSION</div>
+  <div class="card-title">A — The Architect</div>
+  <div class="card-desc">מדויק · דיגיטלי · קר<br>קו ירוק דק + נקודות כחולות</div>
+  <div class="sizes">
+
+    <svg class="icon-lg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgA" cx="30%" cy="70%" r="80%">
+          <stop offset="0%" stop-color="#0c1525"/>
+          <stop offset="100%" stop-color="#050810"/>
+        </radialGradient>
+        <radialGradient id="coreA" cx="38%" cy="32%" r="65%">
+          <stop offset="0%" stop-color="#bfdbfe"/>
+          <stop offset="30%" stop-color="#3b82f6"/>
+          <stop offset="100%" stop-color="#1e3a8a"/>
+        </radialGradient>
+        <filter id="fGreenA">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="fGlowA">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="14"/>
+        </filter>
+      </defs>
+      <rect width="400" height="400" rx="80" fill="url(#bgA)"/>
+      <!-- Grid -->
+      <g opacity="0.05" stroke="#60a5fa" stroke-width="0.8" fill="none">
+        <line x1="0" y1="133" x2="400" y2="133"/><line x1="0" y1="267" x2="400" y2="267"/>
+        <line x1="133" y1="0" x2="133" y2="400"/><line x1="267" y1="0" x2="267" y2="400"/>
+      </g>
+      <!-- Blue strand (back) -->
+      <path d="M 95,305 C 175,375 355,255 305,95" fill="none" stroke="#1d4ed8" stroke-width="2" opacity="0.35"/>
+      <!-- Blue nodes -->
+      <circle cx="122" cy="320" r="3.5" fill="#3b82f6" opacity="0.6"/>
+      <circle cx="152" cy="325" r="4.5" fill="#60a5fa" opacity="0.7"/>
+      <circle cx="218" cy="307" r="5" fill="#93c5fd" opacity="0.75"/>
+      <circle cx="249" cy="286" r="4.5" fill="#60a5fa" opacity="0.7"/>
+      <circle cx="276" cy="258" r="3.5" fill="#3b82f6" opacity="0.55"/>
+      <circle cx="310" cy="185" r="4.5" fill="#60a5fa" opacity="0.7"/>
+      <circle cx="313" cy="142" r="3.5" fill="#3b82f6" opacity="0.55"/>
+      <!-- Gold crossbars -->
+      <line x1="78" y1="232" x2="152" y2="325" stroke="#f59e0b" stroke-width="1.2" opacity="0.5"/>
+      <line x1="97" y1="163" x2="218" y2="307" stroke="#f59e0b" stroke-width="1.2" opacity="0.5"/>
+      <line x1="145" y1="111" x2="276" y2="258" stroke="#f59e0b" stroke-width="1.2" opacity="0.45"/>
+      <line x1="216" y1="84" x2="310" y2="185" stroke="#f59e0b" stroke-width="1.2" opacity="0.5"/>
+      <!-- Green strand glow + main -->
+      <path d="M 95,305 C 35,185 145,40 305,95" fill="none" stroke="#00ff87" stroke-width="9" opacity="0.1" stroke-linecap="round"/>
+      <path d="M 95,305 C 35,185 145,40 305,95" fill="none" stroke="#00e676" stroke-width="3.5" stroke-linecap="round" filter="url(#fGreenA)"/>
+      <!-- Core glow -->
+      <circle cx="195" cy="205" r="62" fill="#2563eb" opacity="0.18" filter="url(#fGlowA)"/>
+      <!-- Geometric cage -->
+      <g stroke="#93c5fd" stroke-width="1" fill="none" opacity="0.45">
+        <polygon points="195,162 232,184 232,227 195,248 158,227 158,184"/>
+        <line x1="195" y1="162" x2="195" y2="248"/>
+        <line x1="158" y1="184" x2="232" y2="227"/>
+        <line x1="232" y1="184" x2="158" y2="227"/>
+      </g>
+      <!-- Core sphere -->
+      <circle cx="195" cy="205" r="36" fill="url(#coreA)"/>
+      <circle cx="183" cy="193" r="10" fill="white" opacity="0.12"/>
+      <circle cx="186" cy="196" r="5" fill="white" opacity="0.18"/>
+    </svg>
+
+    <svg class="icon-sm" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgAs" cx="30%" cy="70%" r="80%">
+          <stop offset="0%" stop-color="#0c1525"/><stop offset="100%" stop-color="#050810"/>
+        </radialGradient>
+        <radialGradient id="coreAs" cx="38%" cy="32%" r="65%">
+          <stop offset="0%" stop-color="#bfdbfe"/><stop offset="30%" stop-color="#3b82f6"/>
+          <stop offset="100%" stop-color="#1e3a8a"/>
+        </radialGradient>
+        <filter id="fGlowAs"><feGaussianBlur in="SourceGraphic" stdDeviation="14"/></filter>
+      </defs>
+      <rect width="400" height="400" rx="80" fill="url(#bgAs)"/>
+      <path d="M 95,305 C 175,375 355,255 305,95" fill="none" stroke="#1d4ed8" stroke-width="2.5" opacity="0.4"/>
+      <circle cx="152" cy="325" r="5.5" fill="#60a5fa" opacity="0.8"/>
+      <circle cx="218" cy="307" r="6" fill="#93c5fd" opacity="0.85"/>
+      <circle cx="276" cy="258" r="5.5" fill="#60a5fa" opacity="0.75"/>
+      <circle cx="310" cy="185" r="5.5" fill="#60a5fa" opacity="0.8"/>
+      <line x1="78" y1="232" x2="152" y2="325" stroke="#f59e0b" stroke-width="1.5" opacity="0.55"/>
+      <line x1="97" y1="163" x2="218" y2="307" stroke="#f59e0b" stroke-width="1.5" opacity="0.55"/>
+      <line x1="216" y1="84" x2="310" y2="185" stroke="#f59e0b" stroke-width="1.5" opacity="0.55"/>
+      <path d="M 95,305 C 35,185 145,40 305,95" fill="none" stroke="#00e676" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="195" cy="205" r="60" fill="#2563eb" opacity="0.2" filter="url(#fGlowAs)"/>
+      <circle cx="195" cy="205" r="36" fill="url(#coreAs)"/>
+      <circle cx="183" cy="193" r="10" fill="white" opacity="0.12"/>
+    </svg>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     VERSION B — THE VITALIST
+     Warm, organic, both strands glowing thick.
+═══════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-letter">VERSION</div>
+  <div class="card-title">B — The Vitalist</div>
+  <div class="card-desc">אורגני · חם · בריאות<br>שני קווים זוהרים עבים</div>
+  <div class="sizes">
+
+    <svg class="icon-lg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgB" cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stop-color="#0f1320"/><stop offset="100%" stop-color="#070810"/>
+        </radialGradient>
+        <radialGradient id="bgBglow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#1a237e" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#070810" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="coreB" cx="40%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#e0f2fe"/>
+          <stop offset="25%" stop-color="#0ea5e9"/>
+          <stop offset="70%" stop-color="#1e40af"/>
+          <stop offset="100%" stop-color="#0f172a"/>
+        </radialGradient>
+        <filter id="fGreenB">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="fBlueB">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="fCoreB"><feGaussianBlur in="SourceGraphic" stdDeviation="22"/></filter>
+        <filter id="fCoreSphB"><feGaussianBlur in="SourceGraphic" stdDeviation="6"/></filter>
+      </defs>
+      <rect width="400" height="400" rx="80" fill="url(#bgB)"/>
+      <circle cx="195" cy="205" r="180" fill="url(#bgBglow)"/>
+      <!-- Blue strand glow + main -->
+      <path d="M 95,305 C 175,375 355,255 305,95" fill="none" stroke="#0ea5e9" stroke-width="14" opacity="0.14" stroke-linecap="round"/>
+      <path d="M 95,305 C 175,375 355,255 305,95" fill="none" stroke="#38bdf8" stroke-width="5" stroke-linecap="round" filter="url(#fBlueB)"/>
+      <!-- Gold crossbars -->
+      <line x1="78" y1="232" x2="152" y2="325" stroke="#fbbf24" stroke-width="2" opacity="0.65"/>
+      <line x1="97" y1="163" x2="218" y2="307" stroke="#fbbf24" stroke-width="2" opacity="0.65"/>
+      <line x1="145" y1="111" x2="276" y2="258" stroke="#fcd34d" stroke-width="2" opacity="0.6"/>
+      <line x1="216" y1="84" x2="310" y2="185" stroke="#fbbf24" stroke-width="2" opacity="0.65"/>
+      <!-- Green strand glow + main -->
+      <path d="M 95,305 C 35,185 145,40 305,95" fill="none" stroke="#10b981" stroke-width="16" opacity="0.16" stroke-linecap="round"/>
+      <path d="M 95,305 C 35,185 145,40 305,95" fill="none" stroke="#34d399" stroke-width="6" stroke-linecap="round" filter="url(#fGreenB)"/>
+      <!-- Core bloom -->
+      <circle cx="195" cy="205" r="85" fill="#0ea5e9" opacity="0.22" filter="url(#fCoreB)"/>
+      <!-- Core sphere glow halo -->
+      <circle cx="195" cy="205" r="50" fill="#1e40af" opacity="0.4" filter="url(#fCoreSphB)"/>
+      <!-- Core sphere -->
+      <circle cx="195" cy="205" r="42" fill="url(#coreB)"/>
+      <circle cx="181" cy="191" r="14" fill="white" opacity="0.18"/>
+      <circle cx="184" cy="194" r="7" fill="white" opacity="0.28"/>
+    </svg>
+
+    <svg class="icon-sm" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgBs" cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stop-color="#0f1320"/><stop offset="100%" stop-color="#070810"/>
+        </radialGradient>
+        <radialGradient id="coreBs" cx="40%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#e0f2fe"/><stop offset="25%" stop-color="#0ea5e9"/>
+          <stop offset="70%" stop-color="#1e40af"/><stop offset="100%" stop-color="#0f172a"/>
+        </radialGradient>
+        <filter id="fCoreBs"><feGaussianBlur in="SourceGraphic" stdDeviation="20"/></filter>
+      </defs>
+      <rect width="400" height="400" rx="80" fill="url(#bgBs)"/>
+      <path d="M 95,305 C 175,375 355,255 305,95" fill="none" stroke="#38bdf8" stroke-width="6" stroke-linecap="round"/>
+      <line x1="97" y1="163" x2="218" y2="307" stroke="#fbbf24" stroke-width="2.5" opacity="0.7"/>
+      <line x1="216" y1="84" x2="310" y2="185" stroke="#fbbf24" stroke-width="2.5" opacity="0.7"/>
+      <path d="M 95,305 C 35,185 145,40 305,95" fill="none" stroke="#34d399" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="195" cy="205" r="80" fill="#0ea5e9" opacity="0.25" filter="url(#fCoreBs)"/>
+      <circle cx="195" cy="205" r="42" fill="url(#coreBs)"/>
+      <circle cx="181" cy="191" r="13" fill="white" opacity="0.18"/>
+    </svg>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     VERSION C — THE ORACLE  (Premium / Recommended)
+     All 3 colors, balanced, blue nodes like reference, sharp cage.
+═══════════════════════════════════════════ -->
+<div class="card" style="border-color:rgba(251,191,36,0.25);">
+  <div class="card-letter" style="color:#fbbf24;">RECOMMENDED</div>
+  <div class="card-title">C — The Oracle</div>
+  <div class="card-desc">מאוזן · פרימיום<br>שלושת הצבעים בהרמוניה</div>
+  <div class="sizes">
+
+    <svg class="icon-lg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgC" cx="50%" cy="50%" r="65%">
+          <stop offset="0%" stop-color="#0e1628"/><stop offset="100%" stop-color="#060911"/>
+        </radialGradient>
+        <radialGradient id="bgCglow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#1e3a8a" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#060911" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="coreC" cx="38%" cy="32%" r="65%">
+          <stop offset="0%" stop-color="#dbeafe"/>
+          <stop offset="28%" stop-color="#2563eb"/>
+          <stop offset="75%" stop-color="#1e3a8a"/>
+          <stop offset="100%" stop-color="#0d1b4b"/>
+        </radialGradient>
+        <filter id="fGreenC">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="fCoreGlowC"><feGaussianBlur in="SourceGraphic" stdDeviation="18"/></filter>
+        <filter id="fNodeC">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <rect width="400" height="400" rx="80" fill="url(#bgC)"/>
+      <!-- Center radial warmth -->
+      <circle cx="195" cy="205" r="200" fill="url(#bgCglow)"/>
+      <!-- Blue strand path (back) -->
+      <path d="M 95,305 C 175,375 355,255 305,95" fill="none" stroke="#1d4ed8" stroke-width="2.5" opacity="0.45"/>
+      <!-- Blue data nodes — prominent, like reference image -->
+      <circle cx="95" cy="305" r="5" fill="#1d4ed8" filter="url(#fNodeC)"/>
+      <circle cx="122" cy="320" r="4.5" fill="#2563eb" opacity="0.8"/>
+      <circle cx="152" cy="325" r="6" fill="#3b82f6" filter="url(#fNodeC)"/>
+      <circle cx="218" cy="307" r="6.5" fill="#60a5fa" filter="url(#fNodeC)"/>
+      <circle cx="249" cy="286" r="5.5" fill="#3b82f6"/>
+      <circle cx="276" cy="258" r="5" fill="#2563eb" opacity="0.85"/>
+      <circle cx="310" cy="185" r="6" fill="#60a5fa" filter="url(#fNodeC)"/>
+      <circle cx="313" cy="142" r="4.5" fill="#2563eb" opacity="0.8"/>
+      <circle cx="305" cy="95" r="5" fill="#1d4ed8" filter="url(#fNodeC)"/>
+      <!-- Gold crossbars — prominent, equal spacing -->
+      <line x1="78" y1="232" x2="152" y2="325" stroke="#fcd34d" stroke-width="2" opacity="0.7"/>
+      <line x1="97" y1="163" x2="218" y2="307" stroke="#fcd34d" stroke-width="2" opacity="0.7"/>
+      <line x1="145" y1="111" x2="276" y2="258" stroke="#fbbf24" stroke-width="2" opacity="0.65"/>
+      <line x1="216" y1="84" x2="310" y2="185" stroke="#fcd34d" stroke-width="2" opacity="0.7"/>
+      <!-- Green strand glow + main -->
+      <path d="M 95,305 C 35,185 145,40 305,95" fill="none" stroke="#10b981" stroke-width="11" opacity="0.15" stroke-linecap="round"/>
+      <path d="M 95,305 C 35,185 145,40 305,95" fill="none" stroke="#22c55e" stroke-width="4.5" stroke-linecap="round" filter="url(#fGreenC)"/>
+      <!-- Core ambient glow -->
+      <circle cx="195" cy="205" r="75" fill="#2563eb" opacity="0.22" filter="url(#fCoreGlowC)"/>
+      <!-- Icosahedron cage — more vertices, sharper -->
+      <g stroke="#93c5fd" stroke-width="1.2" fill="none" opacity="0.5">
+        <polygon points="195,158 235,181 235,229 195,250 155,229 155,181"/>
+        <line x1="195" y1="158" x2="235" y2="229"/>
+        <line x1="195" y1="158" x2="155" y2="229"/>
+        <line x1="235" y1="181" x2="155" y2="229"/>
+        <line x1="155" y1="181" x2="235" y2="229"/>
+        <line x1="195" y1="158" x2="195" y2="250"/>
+        <line x1="155" y1="181" x2="235" y2="181" opacity="0.4"/>
+        <line x1="155" y1="229" x2="235" y2="229" opacity="0.4"/>
+      </g>
+      <!-- Core sphere -->
+      <circle cx="195" cy="205" r="38" fill="url(#coreC)"/>
+      <!-- Highlight -->
+      <circle cx="182" cy="192" r="11" fill="white" opacity="0.14"/>
+      <circle cx="185" cy="195" r="5.5" fill="white" opacity="0.22"/>
+    </svg>
+
+    <svg class="icon-sm" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgCs" cx="50%" cy="50%" r="65%">
+          <stop offset="0%" stop-color="#0e1628"/><stop offset="100%" stop-color="#060911"/>
+        </radialGradient>
+        <radialGradient id="coreCs" cx="38%" cy="32%" r="65%">
+          <stop offset="0%" stop-color="#dbeafe"/><stop offset="28%" stop-color="#2563eb"/>
+          <stop offset="75%" stop-color="#1e3a8a"/><stop offset="100%" stop-color="#0d1b4b"/>
+        </radialGradient>
+        <filter id="fCoreCs"><feGaussianBlur in="SourceGraphic" stdDeviation="16"/></filter>
+      </defs>
+      <rect width="400" height="400" rx="80" fill="url(#bgCs)"/>
+      <path d="M 95,305 C 175,375 355,255 305,95" fill="none" stroke="#1d4ed8" stroke-width="3" opacity="0.45"/>
+      <circle cx="152" cy="325" r="6.5" fill="#3b82f6"/>
+      <circle cx="218" cy="307" r="7.5" fill="#60a5fa"/>
+      <circle cx="276" cy="258" r="6" fill="#3b82f6"/>
+      <circle cx="310" cy="185" r="7" fill="#60a5fa"/>
+      <line x1="97" y1="163" x2="218" y2="307" stroke="#fcd34d" stroke-width="2.5" opacity="0.75"/>
+      <line x1="216" y1="84" x2="310" y2="185" stroke="#fcd34d" stroke-width="2.5" opacity="0.75"/>
+      <path d="M 95,305 C 35,185 145,40 305,95" fill="none" stroke="#22c55e" stroke-width="5.5" stroke-linecap="round"/>
+      <circle cx="195" cy="205" r="70" fill="#2563eb" opacity="0.25" filter="url(#fCoreCs)"/>
+      <circle cx="195" cy="205" r="38" fill="url(#coreCs)"/>
+      <circle cx="182" cy="192" r="10" fill="white" opacity="0.14"/>
+    </svg>
+
+  </div>
+</div>
+
+</div><!-- /grid -->
+</body>
+</html>
