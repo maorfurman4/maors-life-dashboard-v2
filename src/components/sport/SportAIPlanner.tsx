@@ -27,13 +27,13 @@ type AIWorkoutPlan = WorkoutPlan;
 type StepKey = "frequency" | "location" | "duration" | "rpe" | "limitations";
 
 interface Step {
-  key:         StepKey;
-  question:    string;
-  options?:    string[];
-  inputType:   "options" | "range" | "text";
-  rangeMin?:   number;
-  rangeMax?:   number;
-  rangeUnit?:  string;
+  key:          StepKey;
+  question:     string;
+  options?:     string[];
+  inputType:    "options" | "range" | "text";
+  rangeMin?:    number;
+  rangeMax?:    number;
+  rangeUnit?:   string;
   placeholder?: string;
 }
 
@@ -75,7 +75,6 @@ const STEPS: Step[] = [
 ];
 
 type Answers = Partial<Record<StepKey, string>>;
-
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -166,35 +165,43 @@ export function SportAIPlanner() {
   };
 
   return (
-    <div className="rounded-2xl border border-sport/30 bg-gradient-to-br from-sport/5 to-transparent p-4 space-y-3" dir="rtl">
-      <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-lg bg-sport/15 flex items-center justify-center">
-          <Sparkles className="h-4 w-4 text-sport" />
+    <div
+      className="rounded-3xl bg-white/8 backdrop-blur-md border border-sport/35 shadow-[0_0_30px_rgba(0,255,135,0.12)] p-4 space-y-4"
+      dir="rtl"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-2xl bg-sport/20 border border-sport/30 flex items-center justify-center shadow-[0_0_16px_rgba(0,255,135,0.25)]">
+          <Sparkles className="h-5 w-5 text-sport" />
         </div>
         <div>
-          <h3 className="text-sm font-bold" style={{ letterSpacing: 0 }}>תכנון אימונים AI</h3>
-          <p className="text-[11px] text-muted-foreground">תוכנית מותאמת אישית — שלב אחרי שלב</p>
+          <h3 className="text-sm font-black text-white tracking-tight">תכנון אימונים AI</h3>
+          <p className="text-[11px] text-white/40">תוכנית מותאמת אישית — שלב אחרי שלב</p>
         </div>
       </div>
 
-      {/* Step progress */}
+      {/* Step progress bar */}
       {!plan && (
         <div className="flex gap-1">
           {STEPS.map((s, i) => (
             <div
               key={s.key}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                i < step ? "bg-sport" : i === step ? "bg-sport/50" : "bg-border"
+              className={`h-1 flex-1 rounded-full transition-all ${
+                i < step
+                  ? "bg-sport shadow-[0_0_6px_rgba(0,255,135,0.5)]"
+                  : i === step
+                  ? "bg-sport/40"
+                  : "bg-white/10"
               }`}
             />
           ))}
         </div>
       )}
 
-      {/* Questions */}
+      {/* Question steps */}
       {!allAnswered && !plan && (
         <div className="space-y-3">
-          <p className="text-sm font-semibold">{currentStep.question}</p>
+          <p className="text-sm font-bold text-white">{currentStep.question}</p>
 
           {currentStep.inputType === "options" && (
             <div className="grid grid-cols-2 gap-2">
@@ -202,7 +209,7 @@ export function SportAIPlanner() {
                 <button
                   key={opt}
                   onClick={() => handleOptionSelect(opt)}
-                  className="py-2.5 rounded-xl text-xs font-semibold border border-border bg-secondary/30 hover:border-sport/40 hover:bg-sport/10 hover:text-sport transition-colors min-h-[40px]"
+                  className="py-3 rounded-2xl text-xs font-semibold border border-white/10 bg-white/5 text-white/70 hover:border-sport/40 hover:bg-sport/10 hover:text-sport transition-all min-h-[44px]"
                 >
                   {opt}
                 </button>
@@ -211,13 +218,13 @@ export function SportAIPlanner() {
           )}
 
           {currentStep.inputType === "range" && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{currentStep.rangeMin} {currentStep.rangeUnit}</span>
-                <span className="text-lg font-black text-sport">
+                <span className="text-xs text-white/30">{currentStep.rangeMin} {currentStep.rangeUnit}</span>
+                <span className="text-2xl font-black text-sport">
                   {rangeValue[currentStep.key] ?? currentStep.rangeMin} {currentStep.rangeUnit}
                 </span>
-                <span className="text-xs text-muted-foreground">{currentStep.rangeMax} {currentStep.rangeUnit}</span>
+                <span className="text-xs text-white/30">{currentStep.rangeMax} {currentStep.rangeUnit}</span>
               </div>
               <input
                 type="range"
@@ -229,7 +236,7 @@ export function SportAIPlanner() {
               />
               <button
                 onClick={handleRangeNext}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-sport/15 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[40px]"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-sport/15 border border-sport/20 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[44px]"
               >
                 המשך <ChevronLeft className="h-3.5 w-3.5" />
               </button>
@@ -243,11 +250,11 @@ export function SportAIPlanner() {
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder={currentStep.placeholder}
                 rows={3}
-                className="w-full rounded-xl border border-border bg-secondary px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sport resize-none"
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sport/40 resize-none"
               />
               <button
                 onClick={handleTextNext}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-sport/15 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[40px]"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-sport/15 border border-sport/20 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[44px]"
               >
                 המשך <ChevronLeft className="h-3.5 w-3.5" />
               </button>
@@ -257,7 +264,7 @@ export function SportAIPlanner() {
           {step > 0 && (
             <button
               onClick={() => setStep((s) => s - 1)}
-              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/60 transition-colors"
             >
               <ChevronRight className="h-3 w-3" /> חזור
             </button>
@@ -268,12 +275,12 @@ export function SportAIPlanner() {
       {/* Summary + Generate */}
       {allAnswered && !plan && (
         <div className="space-y-3">
-          <div className="rounded-xl bg-secondary/30 border border-border p-3 space-y-1.5">
-            <p className="text-[11px] font-bold text-sport mb-1">סיכום הבחירות שלך</p>
+          <div className="rounded-2xl bg-white/5 border border-white/10 p-3.5 space-y-1.5">
+            <p className="text-[11px] font-bold text-sport uppercase tracking-widest mb-2">סיכום הבחירות שלך</p>
             {STEPS.map((s) => (
               <div key={s.key} className="flex items-center justify-between text-[11px]">
-                <span className="text-muted-foreground">{s.question.replace("?", "")}</span>
-                <span className="font-semibold">{answers[s.key]}</span>
+                <span className="text-white/40">{s.question.replace("?", "")}</span>
+                <span className="font-semibold text-white">{answers[s.key]}</span>
               </div>
             ))}
           </div>
@@ -281,41 +288,43 @@ export function SportAIPlanner() {
           <button
             onClick={generate}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-sport text-sport-foreground font-bold text-sm min-h-[48px] disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-sport text-sport-foreground font-bold text-sm min-h-[50px] disabled:opacity-50 shadow-[0_0_20px_rgba(0,255,135,0.3)] active:scale-[0.98] transition-transform"
           >
             {loading
               ? <><Loader2 className="h-4 w-4 animate-spin" /> בונה תוכנית...</>
               : <><Sparkles className="h-4 w-4" /> צור תוכנית</>}
           </button>
 
-          <button onClick={reset} className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={reset} className="w-full text-[11px] text-white/30 hover:text-white/60 transition-colors">
             התחל מחדש
           </button>
         </div>
       )}
 
-      {/* Generated plan */}
+      {/* Generated plan — timeline layout */}
       {plan && (
         <div className="space-y-3">
-          <div className="rounded-xl bg-secondary/30 p-3">
-            <p className="text-xs leading-relaxed">{plan.summary}</p>
+          <div className="rounded-2xl bg-sport/10 border border-sport/20 p-3">
+            <p className="text-xs text-white/80 leading-relaxed">{plan.summary}</p>
           </div>
 
           <div className="space-y-2">
             {plan.workouts.map((w, i) => (
-              <div key={i} className="rounded-xl border border-border bg-card p-3 space-y-2">
+              <div key={i} className="rounded-2xl bg-white/5 border border-white/10 p-3.5 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <Calendar className="h-3.5 w-3.5 text-sport shrink-0" />
-                    <p className="text-xs font-bold truncate">{w.day} · {w.name}</p>
+                    <div className="h-6 w-6 rounded-lg bg-sport/20 flex items-center justify-center shrink-0">
+                      <Calendar className="h-3 w-3 text-sport" />
+                    </div>
+                    <p className="text-xs font-bold text-white truncate">{w.day} · {w.name}</p>
                   </div>
-                  <span className="text-[10px] text-muted-foreground shrink-0">{w.duration_minutes} דק'</span>
+                  <span className="text-[10px] text-white/40 shrink-0">{w.duration_minutes} דק'</span>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1.5 border-t border-white/5 pt-2">
                   {w.exercises.map((ex, ei) => (
-                    <div key={ei} className="flex items-center justify-between text-[11px] border-r-2 border-sport/30 pr-2">
-                      <span className="font-medium truncate">{ex.name}</span>
-                      <span className="text-muted-foreground shrink-0 ms-2">
+                    <div key={ei} className="flex items-center justify-between text-[11px] border-r-2 border-sport/35 pr-2">
+                      <span className="font-medium text-white/80 truncate">{ex.name}</span>
+                      <span className="text-white/40 shrink-0 ms-2">
                         {ex.sets}×{ex.reps}{ex.weight_kg ? ` @${ex.weight_kg}kg` : ""}
                       </span>
                     </div>
@@ -323,7 +332,7 @@ export function SportAIPlanner() {
                 </div>
                 <button
                   onClick={() => saveAsTemplate(w)}
-                  className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg bg-sport/15 text-sport text-[11px] font-semibold hover:bg-sport/25"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-sport/15 border border-sport/20 text-sport text-[11px] font-bold hover:bg-sport/25 transition-colors"
                 >
                   <Save className="h-3 w-3" /> שמור כתבנית
                 </button>
@@ -332,19 +341,19 @@ export function SportAIPlanner() {
           </div>
 
           {plan.tips.length > 0 && (
-            <div className="rounded-xl bg-sport/5 border border-sport/20 p-3 space-y-1">
-              <p className="text-[11px] font-bold text-sport mb-1">💡 טיפים</p>
+            <div className="rounded-2xl bg-sport/10 border border-sport/20 p-3.5 space-y-1.5">
+              <p className="text-[11px] font-black uppercase tracking-widest text-sport mb-1">💡 טיפים</p>
               {plan.tips.map((t, i) => (
-                <p key={i} className="text-[11px] text-muted-foreground leading-relaxed">• {t}</p>
+                <p key={i} className="text-[11px] text-white/60 leading-relaxed">• {t}</p>
               ))}
             </div>
           )}
 
           <button
             onClick={reset}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-secondary/40 text-xs font-semibold"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white/60 text-xs font-semibold hover:bg-white/10 transition-colors"
           >
-            <Sparkles className="h-3 w-3" /> צור תוכנית חדשה
+            <Sparkles className="h-3 w-3 text-sport" /> צור תוכנית חדשה
           </button>
         </div>
       )}
