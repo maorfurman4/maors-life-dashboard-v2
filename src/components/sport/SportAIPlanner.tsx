@@ -330,8 +330,8 @@ export function SportAIPlanner() {
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-sport text-sport-foreground font-bold text-sm min-h-[48px] disabled:opacity-50"
           >
             {loading
-              ? <><Loader2 className="h-4 w-4 animate-spin" /> Gemini בונה תוכנית...</>
-              : <><Sparkles className="h-4 w-4" /> צור תוכנית AI</>}
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> בונה תוכנית...</>
+              : <><Sparkles className="h-4 w-4" /> צור תוכנית</>}}
           </button>
 
           <button onClick={reset} className="w-full text-[11px] text-muted-foreground hover:text-foreground transition-colors">

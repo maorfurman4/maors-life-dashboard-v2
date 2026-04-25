@@ -16,16 +16,16 @@ serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) throw new Error("LOVABLE_API_KEY not set");
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!apiKey) throw new Error("OPENAI_API_KEY not set");
 
     const dataUrl = imageBase64.startsWith("data:") ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -34,8 +34,8 @@ serve(async (req) => {
           {
             role: "user",
             content: [
-              { type: "text", text: "זהה את כל המאכלים בתמונה והערך כמויות וערכים תזונתיים כוללים לארוחה. החזר JSON בלבד." },
               { type: "image_url", image_url: { url: dataUrl } },
+              { type: "text", text: "זהה את כל המאכלים בתמונה והערך כמויות וערכים תזונתיים כוללים לארוחה. החזר JSON בלבד." },
             ],
           },
         ],
@@ -67,7 +67,6 @@ serve(async (req) => {
       const t = await res.text();
       console.error("AI error:", res.status, t);
       if (res.status === 429) return new Response(JSON.stringify({ error: "יותר מדי בקשות, נסה שוב בעוד דקה" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (res.status === 402) return new Response(JSON.stringify({ error: "אין יותר קרדיטים ב-AI Gateway" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       throw new Error(`AI ${res.status}`);
     }
 

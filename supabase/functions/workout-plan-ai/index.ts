@@ -10,8 +10,8 @@ serve(async (req) => {
 
   try {
     const { goal, daysPerWeek, equipment, constraints, recentPRs } = await req.json();
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) throw new Error("LOVABLE_API_KEY not set");
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!apiKey) throw new Error("OPENAI_API_KEY not set");
 
     const userPrompt = `
 מטרה: ${goal || "כוח ומסת שריר"}
@@ -25,11 +25,11 @@ ${(recentPRs || []).map((p: any) => `- ${p.exercise_name}: ${p.value} ${p.unit}`
 החזר תוצאה כ-JSON דרך הפונקציה.
 `;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "אתה מאמן כושר אישי מומחה. תכנן תוכניות אימונים בטוחות ויעילות בעברית." },
           { role: "user", content: userPrompt },
@@ -84,7 +84,6 @@ ${(recentPRs || []).map((p: any) => `- ${p.exercise_name}: ${p.value} ${p.unit}`
       const t = await res.text();
       console.error("AI error:", res.status, t);
       if (res.status === 429) return new Response(JSON.stringify({ error: "יותר מדי בקשות" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (res.status === 402) return new Response(JSON.stringify({ error: "אין קרדיטים" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       throw new Error(`AI ${res.status}`);
     }
 
