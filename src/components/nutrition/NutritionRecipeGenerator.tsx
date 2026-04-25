@@ -22,7 +22,7 @@ interface Recipe {
   video_link?: string;
 }
 
-async function generateRecipeWithGemini(
+async function generateRecipeWithAI(
   protein: string,
   calories: string,
   people: string,
@@ -93,7 +93,7 @@ export function NutritionRecipeGenerator() {
     setIsGenerating(true);
     setRecipe(null);
     try {
-      const result = await generateRecipeWithGemini(protein, calories, people, dietaryType, allExcluded);
+      const result = await generateRecipeWithAI(protein, calories, people, dietaryType, allExcluded);
       setRecipe(result);
       setShowInstructions(false);
     } catch {
