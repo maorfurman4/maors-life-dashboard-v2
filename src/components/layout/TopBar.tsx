@@ -1,15 +1,15 @@
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 import { mainNavItems, settingsNavItem } from "@/lib/navigation";
-import { useAuth } from "@/hooks/use-auth";
-import { LogOut } from "lucide-react";
-import { toast } from "sonner";
+import { Menu } from "lucide-react";
 
 const allItems = [...mainNavItems, settingsNavItem];
 
-export function TopBar() {
+interface TopBarProps {
+  onMenuOpen: () => void;
+}
+
+export function TopBar({ onMenuOpen }: TopBarProps) {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { signOut, user } = useAuth();
 
   const current = allItems.find((item) =>
     item.to === "/"
@@ -17,32 +17,27 @@ export function TopBar() {
       : location.pathname.startsWith(item.to)
   );
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast.success("התנתקת בהצלחה");
-      navigate({ to: "/login" });
-    } catch {
-      toast.error("שגיאה בהתנתקות");
-    }
-  };
-
   return (
-    <header role="banner" className="border-b border-border bg-card/80 backdrop-blur-sm flex items-center justify-between px-5 shrink-0 safe-area-top gap-3" style={{ minHeight: "3.5rem" }}>
-      <h1 className="text-lg font-bold">
+    <header
+      role="banner"
+      className="border-b border-border bg-card/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 safe-area-top gap-3"
+      style={{ minHeight: "3.5rem" }}
+    >
+      {/* Hamburger — mobile only */}
+      <button
+        onClick={onMenuOpen}
+        aria-label="פתח תפריט"
+        className="md:hidden h-9 w-9 rounded-xl bg-white/6 border border-white/8 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-white/12 transition-colors"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      <h1 className="text-lg font-bold flex-1 text-center md:text-right">
         {current?.label ?? "My Life"}
       </h1>
-      {user && (
-        <button
-          onClick={handleSignOut}
-          aria-label="יציאה מהמערכת"
-          title="יציאה מהמערכת"
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-        >
-          <LogOut aria-hidden="true" className="h-4 w-4" />
-          <span className="hidden sm:inline">יציאה</span>
-        </button>
-      )}
+
+      {/* Spacer on mobile to keep title visually centered */}
+      <div className="md:hidden h-9 w-9" aria-hidden="true" />
     </header>
   );
 }
