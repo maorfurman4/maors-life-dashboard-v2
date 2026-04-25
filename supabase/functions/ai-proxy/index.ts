@@ -37,21 +37,16 @@ Deno.serve(async (req) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 25_000);
 
-    let res: Response;
-    try {
-      res = await fetch("https://api.openai.com/v1/chat/completions", {
-        signal: controller.signal,
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: isVision ? "gpt-4o" : "gpt-4o-mini",
-          messages: [{ role: "user", content }],
-          temperature: isVision ? 0.1 : 0.4,
-        }),
-      });
-    } finally {
-      clearTimeout(timer);
-    }
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      signal: controller.signal,
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: isVision ? "gpt-4o" : "gpt-4o-mini",
+        messages: [{ role: "user", content }],
+        temperature: isVision ? 0.1 : 0.4,
+      }),
+    }).finally(() => clearTimeout(timer));
 
     if (!res.ok) {
       const t = await res.text();

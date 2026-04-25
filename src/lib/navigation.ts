@@ -6,8 +6,6 @@ import {
   TrendingUp,
   Briefcase,
   Settings,
-  CheckSquare,
-  Tag,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,8 +24,6 @@ export const mainNavItems: NavItem[] = [
   { id: "finance", label: "כלכלה", to: "/finance", icon: Wallet, colorClass: "text-finance" },
   { id: "market", label: "שוק ההון", to: "/market", icon: TrendingUp, colorClass: "text-market" },
   { id: "work", label: "עבודה", to: "/work", icon: Briefcase, colorClass: "text-work" },
-  { id: "tasks", label: "משימות", to: "/tasks", icon: CheckSquare, colorClass: "text-primary" },
-  { id: "coupons", label: "קופונים", to: "/coupons", icon: Tag, colorClass: "text-finance" },
 ];
 
 export const settingsNavItem: NavItem = {
