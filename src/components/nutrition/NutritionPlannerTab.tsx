@@ -10,7 +10,7 @@ import {
   calcTDEE, ACTIVITY_LABELS, ACTIVITY_MULTIPLIER, GOAL_LABELS,
   type ActivityLevel, type Goal, type Sex,
 } from "@/lib/tdee";
-import { generateText, parseGeminiJson } from "@/lib/ai-service";
+import { generateText, parseAIJson } from "@/lib/ai-service";
 import { useProfile } from "@/hooks/use-profile";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -197,7 +197,7 @@ export function NutritionPlannerTab() {
 כללים: 7 ימים בדיוק (ראשון עד שבת). ארוחות ישראליות אמיתיות. אל תחרוג מ${excStr} לעולם. JSON בלבד ללא markdown.`;
 
       const raw  = await generateText(prompt);
-      const plan = parseGeminiJson<WeeklyPlan>(raw);
+      const plan = parseAIJson<WeeklyPlan>(raw);
       setWeekPlan(plan);
       setOpenDay(0);
     } catch {

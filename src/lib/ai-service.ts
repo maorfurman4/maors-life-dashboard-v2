@@ -111,8 +111,8 @@ export async function generateText(prompt: string): Promise<string> {
   return invokeAI({ prompt });
 }
 
-// JSON parse helper — strips markdown fences and extracts first JSON object/array
-export function parseGeminiJson<T>(raw: string): T {
+// JSON parse helper — strips markdown fences from OpenAI responses, extracts first JSON object/array
+export function parseAIJson<T>(raw: string): T {
   let clean = raw
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")

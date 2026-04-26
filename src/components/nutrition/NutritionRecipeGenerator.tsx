@@ -3,7 +3,7 @@ import { ChefHat, Loader2, Star, ChevronDown, ChevronUp, Clock, Users, ExternalL
 import { Button } from "@/components/ui/button";
 import { useAddFavoriteMeal } from "@/hooks/use-sport-data";
 import { useProfile } from "@/hooks/use-profile";
-import { generateText, parseGeminiJson } from "@/lib/ai-service";
+import { generateText, parseAIJson } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 type DietaryType = "בשרי" | "חלבי" | "פרווה";
@@ -56,7 +56,7 @@ async function generateRecipeWithAI(
 כללים: מתכון ישראלי אמיתי ומעשי. הקפד על ${dietaryType}. ללא markdown. JSON בלבד.`;
 
   const raw = await generateText(prompt);
-  return parseGeminiJson<Recipe>(raw);
+  return parseAIJson<Recipe>(raw);
 }
 
 const DIETARY_OPTIONS: DietaryType[] = ["בשרי", "חלבי", "פרווה"];

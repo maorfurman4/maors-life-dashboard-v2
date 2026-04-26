@@ -3,7 +3,7 @@ import {
   Camera, Search, Sparkles, Loader2, ChevronDown, ChevronUp,
   Clock, Users, Flame, Zap,
 } from "lucide-react";
-import { recognizeMeal, generateText, parseGeminiJson } from "@/lib/ai-service";
+import { recognizeMeal, generateText, parseAIJson } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 // ─── types ───────────────────────────────────────────────────────────────────
@@ -229,7 +229,7 @@ export function NutritionCulinaryTab() {
 כללים: מתכונים ישראליים ריאליים. difficulty: קל/בינוני/מתקדם. JSON בלבד ללא markdown.`;
 
       const raw    = await generateText(prompt);
-      const parsed = parseGeminiJson<{ recipes: RecipeResult[] }>(raw);
+      const parsed = parseAIJson<{ recipes: RecipeResult[] }>(raw);
       setRecipes(parsed.recipes ?? []);
     } catch {
       toast.error("שגיאה ביצירת מתכונים — נסה שנית");
