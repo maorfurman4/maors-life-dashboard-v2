@@ -7,6 +7,8 @@ import {
 import { useNutritionEntries, useUserSettings, useWaterEntry, useUpsertWater } from "@/hooks/use-sport-data";
 import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
 import { NutritionPlannerTab } from "@/components/nutrition/NutritionPlannerTab";
+import { NutritionJournalTab } from "@/components/nutrition/NutritionJournalTab";
+import { NutritionCulinaryTab } from "@/components/nutrition/NutritionCulinaryTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/nutrition")({
@@ -140,19 +142,6 @@ function QuickAddFAB({ onManual }: { onManual: () => void }) {
           ? <X    className="h-6 w-6 text-white" />
           : <Plus className="h-7 w-7 text-white" />}
       </button>
-    </div>
-  );
-}
-
-// ─── Placeholder for future phases ───────────────────────────────────────────
-function ComingSoon({ emoji, title, subtitle }: { emoji: string; title: string; subtitle: string }) {
-  return (
-    <div className="px-4 pt-16 flex flex-col items-center gap-4 text-center">
-      <span className="text-7xl">{emoji}</span>
-      <p className="text-white/80 font-black text-xl">{title}</p>
-      <div className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl">
-        <p className="text-white/40 text-sm">{subtitle}</p>
-      </div>
     </div>
   );
 }
@@ -378,22 +367,14 @@ function NutritionPage() {
             TAB 3 — JOURNAL  (Phase 3)
         ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "journal" && (
-          <ComingSoon
-            emoji="📋"
-            title="יומן תזונה חזותי"
-            subtitle="כרטיסי ארוחות · גרפים · מגמות — Phase 3"
-          />
+          <NutritionJournalTab />
         )}
 
         {/* ══════════════════════════════════════════════════════════════════
             TAB 4 — CULINARY AI  (Phase 3)
         ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "culinary" && (
-          <ComingSoon
-            emoji="👨‍🍳"
-            title="שף AI · סריקת מקרר"
-            subtitle="מתכונים מותאמים דיאטה · זיהוי מרכיבים — Phase 3"
-          />
+          <NutritionCulinaryTab />
         )}
 
       </div>
