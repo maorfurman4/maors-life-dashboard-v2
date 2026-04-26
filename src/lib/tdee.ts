@@ -65,6 +65,24 @@ export function calcAge(dateOfBirth: string | null | undefined): number | null {
   return age;
 }
 
+// ─── Evidence-based protein multipliers (g/kg bodyweight) ────────────────────
+// Sources: ISSN Position Stand, Helms et al. 2014, Morton et al. 2018
+const PROTEIN_MULT: Record<ActivityLevel, { rest: number; training: number }> = {
+  sedentary:   { rest: 1.4, training: 1.6 },
+  light:       { rest: 1.6, training: 1.8 },
+  moderate:    { rest: 1.8, training: 2.0 },
+  active:      { rest: 2.0, training: 2.2 },
+  very_active: { rest: 2.2, training: 2.4 },
+};
+
+// Goal shifts protein up: deficit needs more protein to preserve lean mass;
+// surplus shifts up to maximise anabolic signalling.
+const GOAL_PROTEIN_BONUS: Record<Goal, number> = {
+  lose:     0.2,
+  maintain: 0.0,
+  gain:     0.2,
+};
+
 export function calcTDEE(input: TDEEInput): TDEEResult {
   const { sex, age, heightCm, weightKg, activityLevel, goal } = input;
 
@@ -77,15 +95,19 @@ export function calcTDEE(input: TDEEInput): TDEEResult {
   const targetCalories = tdee + GOAL_ADJUSTMENT[goal];
   const trainingCalories = targetCalories + 200;
 
-  // Macros: protein 2g/kg (training), 1.6g/kg (rest); fat 25% kcal; carbs = remainder
-  const protein = Math.round(weightKg * 1.6);
-  const trainingProtein = Math.round(weightKg * 2.0);
-  const fat = Math.round((targetCalories * 0.25) / 9);
-  const proteinKcal = protein * 4;
-  const fatKcal = fat * 9;
-  const carbs = Math.max(0, Math.round((targetCalories - proteinKcal - fatKcal) / 4));
+  // Smart protein: activity-scaled + goal-adjusted (g/kg)
+  const protMult    = PROTEIN_MULT[activityLevel];
+  const goalBonus   = GOAL_PROTEIN_BONUS[goal];
+  const protein         = Math.round(weightKg * (protMult.rest     + goalBonus));
+  const trainingProtein = Math.round(weightKg * (protMult.training + goalBonus));
 
-  // Water: 35ml per kg body weight
+  // Fat: 25% of target calories; carbs fill remainder
+  const fat         = Math.round((targetCalories * 0.25) / 9);
+  const proteinKcal = protein * 4;
+  const fatKcal     = fat * 9;
+  const carbs       = Math.max(0, Math.round((targetCalories - proteinKcal - fatKcal) / 4));
+
+  // Water: 35ml per kg (WHO recommendation)
   const waterMl = Math.round(weightKg * 35);
 
   return {

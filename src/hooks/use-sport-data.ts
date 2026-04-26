@@ -323,6 +323,41 @@ export function useUpsertWater() {
   });
 }
 
+// ─── Water ml quick-add (stores ml directly in the glasses column) ───────────
+// New UI uses ml amounts (+500, +750, +1500) instead of glass counts.
+// The `glasses` column is repurposed as total_ml_consumed for the day.
+export function useAddWaterMl() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ addMl, currentMl, date }: { addMl: number; currentMl: number; date?: string }) => {
+      const userId = await getUserId();
+      const targetDate = date || new Date().toISOString().slice(0, 10);
+      const newMl = Math.max(0, currentMl + addMl);
+
+      const { data: existing } = await supabase
+        .from("water_entries")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("date", targetDate)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("water_entries")
+          .update({ glasses: newMl })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("water_entries")
+          .insert({ user_id: userId, glasses: newMl, date: targetDate });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["water-entry"] }),
+  });
+}
+
 // ─── Stock Holdings ───
 export function useStockHoldings() {
   return useQuery({

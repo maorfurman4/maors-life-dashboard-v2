@@ -161,10 +161,12 @@ export function NutritionCulinaryTab() {
   const [scanDone, setScanDone]   = useState(false);
 
   // ── Recipe Generator state ──
-  const [query,       setQuery]       = useState("");
-  const [dietFilter,  setDietFilter]  = useState("");
-  const [generating,  setGenerating]  = useState(false);
-  const [recipes,     setRecipes]     = useState<RecipeResult[]>([]);
+  const [query,          setQuery]          = useState("");
+  const [dietFilter,     setDietFilter]     = useState("");
+  const [targetCalories, setTargetCalories] = useState("");
+  const [targetProtein,  setTargetProtein]  = useState("");
+  const [generating,     setGenerating]     = useState(false);
+  const [recipes,        setRecipes]        = useState<RecipeResult[]>([]);
 
   // ─── Scan image → extract ingredients ────────────────────────────────────
   const handleScan = async (file: File) => {
@@ -194,10 +196,17 @@ export function NutritionCulinaryTab() {
     setGenerating(true);
     setRecipes([]);
     try {
-      const dietClause = dietFilter ? `\n- דיאטה: ${dietFilter}` : "";
-      const prompt = `אתה שף ישראלי מקצועי. צור 3 מתכונים מפורטים בפורמט JSON בלבד.
+      const dietClause = dietFilter     ? `\n- דיאטה מועדפת: ${dietFilter}` : "";
+      const calClause  = targetCalories ? `\n- יעד קלוריות למנה: ${targetCalories} קק"ל (חובה לעמוד בטווח ±10%)` : "";
+      const protClause = targetProtein  ? `\n- יעד חלבון למנה: ${targetProtein}g (חובה לעמוד בטווח ±5g)` : "";
 
-בקשה: "${query}"${dietClause}
+      const macroInstruction = (targetCalories || targetProtein)
+        ? `\n\nחשוב ביותר: עליך לבנות את המתכון כך שיגיע בדיוק ליעדי המאקרו שצוינו. חשב את הכמויות בהתאם.`
+        : "";
+
+      const prompt = `אתה שף ודיאטן ישראלי מקצועי. צור 3 מתכונים מפורטים בפורמט JSON בלבד.
+
+בקשה: "${query}"${dietClause}${calClause}${protClause}${macroInstruction}
 
 פורמט JSON חובה:
 {
@@ -217,7 +226,7 @@ export function NutritionCulinaryTab() {
   ]
 }
 
-כללים: מתכונים ישראליים ריאליים. difficulty: קל/בינוני/מתקדם. JSON בלבד.`;
+כללים: מתכונים ישראליים ריאליים. difficulty: קל/בינוני/מתקדם. JSON בלבד ללא markdown.`;
 
       const raw    = await generateText(prompt);
       const parsed = parseGeminiJson<{ recipes: RecipeResult[] }>(raw);
@@ -337,6 +346,46 @@ export function NutritionCulinaryTab() {
               {f.label}
             </button>
           ))}
+        </div>
+
+        {/* ── Precision Macro Targets ── */}
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
+          <p className="text-[10px] font-black text-amber-400/80 uppercase tracking-widest">
+            🎯 יעדי מאקרו מדויקים (אופציונלי)
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-[9px] text-white/40 font-bold uppercase tracking-wide block">
+                קלוריות למנה (קק"ל)
+              </label>
+              <input
+                type="number"
+                value={targetCalories}
+                onChange={(e) => setTargetCalories(e.target.value)}
+                placeholder="למשל: 450"
+                className={inputCls}
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] text-white/40 font-bold uppercase tracking-wide block">
+                חלבון למנה (g)
+              </label>
+              <input
+                type="number"
+                value={targetProtein}
+                onChange={(e) => setTargetProtein(e.target.value)}
+                placeholder="למשל: 35"
+                className={inputCls}
+                dir="ltr"
+              />
+            </div>
+          </div>
+          {(targetCalories || targetProtein) && (
+            <p className="text-[9px] text-amber-400/60">
+              ✓ AI יבנה מתכונים שמגיעים בדיוק לערכים אלו
+            </p>
+          )}
         </div>
 
         {/* Generate button */}

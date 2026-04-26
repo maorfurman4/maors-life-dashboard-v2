@@ -1,14 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
-  Camera, PenLine, Image as ImageIcon,
-  Dumbbell, Droplets, X, Plus, UtensilsCrossed,
+  Camera, PenLine, Dumbbell, Droplets,
+  X, Plus, UtensilsCrossed, Loader2,
 } from "lucide-react";
-import { useNutritionEntries, useUserSettings, useWaterEntry, useUpsertWater } from "@/hooks/use-sport-data";
+import {
+  useNutritionEntries, useUserSettings, useWaterEntry,
+  useAddWaterMl,
+} from "@/hooks/use-sport-data";
 import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
 import { NutritionPlannerTab } from "@/components/nutrition/NutritionPlannerTab";
 import { NutritionJournalTab } from "@/components/nutrition/NutritionJournalTab";
 import { NutritionCulinaryTab } from "@/components/nutrition/NutritionCulinaryTab";
+import { recognizeMeal } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/nutrition")({
@@ -98,24 +102,35 @@ function TrainingToggle({ active, onToggle }: { active: boolean; onToggle: () =>
 }
 
 // ─── Floating Action Button ───────────────────────────────────────────────────
-function QuickAddFAB({ onManual }: { onManual: () => void }) {
+// Two distinct flows: AI Vision (camera/gallery) vs Manual entry
+function QuickAddFAB({
+  onManual,
+  onAIVision,
+}: {
+  onManual: () => void;
+  onAIVision: () => void;
+}) {
   const [expanded, setExpanded] = useState(false);
 
   const options = [
-    { icon: Camera,    label: "זיהוי מצלמה / AI", color: "#a855f7" },
-    { icon: PenLine,   label: "הזנה ידנית",        color: "#10b981" },
-    { icon: ImageIcon, label: "העלה מגלריה",       color: "#3b82f6" },
+    {
+      icon: Camera,  label: "זיהוי AI מתמונה", color: "#a855f7",
+      action: () => { onAIVision(); setExpanded(false); },
+    },
+    {
+      icon: PenLine, label: "הזנה ידנית",       color: "#10b981",
+      action: () => { onManual();   setExpanded(false); },
+    },
   ];
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2.5">
-      {/* Expanded options */}
       {expanded && (
         <div className="flex flex-col items-center gap-2 mb-1">
           {options.map((opt, i) => (
             <button
               key={i}
-              onClick={() => { onManual(); setExpanded(false); }}
+              onClick={opt.action}
               className="flex items-center gap-3 px-5 py-2.5 rounded-2xl text-white text-sm font-bold shadow-2xl backdrop-blur-xl border border-white/15"
               style={{
                 background: opt.color + "e0",
@@ -129,7 +144,6 @@ function QuickAddFAB({ onManual }: { onManual: () => void }) {
         </div>
       )}
 
-      {/* Main FAB */}
       <button
         onClick={() => setExpanded((v) => !v)}
         className={`h-14 w-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 ${
@@ -138,9 +152,7 @@ function QuickAddFAB({ onManual }: { onManual: () => void }) {
             : "bg-emerald-500 hover:bg-emerald-400 active:scale-95"
         }`}
       >
-        {expanded
-          ? <X    className="h-6 w-6 text-white" />
-          : <Plus className="h-7 w-7 text-white" />}
+        {expanded ? <X className="h-6 w-6 text-white" /> : <Plus className="h-7 w-7 text-white" />}
       </button>
     </div>
   );
@@ -152,19 +164,27 @@ function NutritionPage() {
   const [isTraining,  setIsTraining]  = useState(false);
   const [addMealOpen, setAddMealOpen] = useState(false);
 
+  // ── AI Vision state ──
+  const aiFileRef                     = useRef<HTMLInputElement>(null);
+  const [aiScanning, setAiScanning]   = useState(false);
+  const [prefill, setPrefill]         = useState<{
+    name?: string; calories?: number; protein?: number; carbs?: number; fat?: number;
+  }>({});
+
   // ── Data hooks ──
   const { data: meals    } = useNutritionEntries();
   const { data: settings } = useUserSettings();
   const { data: waterEntry } = useWaterEntry();
-  const upsertWater = useUpsertWater();
+  const addWaterMl = useAddWaterMl();
 
-  // ── Macro totals from today's meals ──
+  // ── Macro totals ──
   const totalCal  = (meals ?? []).reduce((s, m) => s + (m.calories        ?? 0), 0);
   const totalProt = (meals ?? []).reduce((s, m) => s + (Number(m.protein_g) || 0), 0);
   const totalCarb = (meals ?? []).reduce((s, m) => s + (Number(m.carbs_g)   || 0), 0);
   const totalFat  = (meals ?? []).reduce((s, m) => s + (Number(m.fat_g)     || 0), 0);
-  const glasses   = waterEntry?.glasses ?? 0;
-  const totalWaterMl = glasses * 250;
+
+  // ── Water: glasses field now stores ml directly ──
+  const totalWaterMl = waterEntry?.glasses ?? 0;
 
   // ── Goals — switch on training day ──
   const s = settings as any;
@@ -174,13 +194,39 @@ function NutritionPage() {
   const fatGoal   = s?.daily_fat_goal   ?? 65;
   const waterGoal = s?.daily_water_ml   ?? 2500;
 
-  // ── Water glass click ──
-  const handleGlass = (g: number) => {
-    const next = glasses === g ? g - 1 : g;
-    upsertWater.mutate(
-      { glasses: Math.max(0, next) },
+  // ── Water quick-add ──
+  const handleAddWater = (ml: number) => {
+    addWaterMl.mutate(
+      { addMl: ml, currentMl: totalWaterMl },
       { onError: (e) => toast.error("שגיאה: " + (e as Error).message) }
     );
+  };
+
+  // ── AI Vision flow: file → recognizeMeal → prefill AddMealDrawer ──
+  const handleAIFile = async (file: File) => {
+    setAiScanning(true);
+    try {
+      const reader = new FileReader();
+      const b64 = await new Promise<string>((res, rej) => {
+        reader.onload = () => res((reader.result as string).split(",")[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+      const result = await recognizeMeal(b64);
+      setPrefill({
+        name:     result.name,
+        calories: Math.round(result.calories),
+        protein:  Math.round(result.protein_g),
+        carbs:    Math.round(result.carbs_g ?? 0),
+        fat:      Math.round(result.fat_g   ?? 0),
+      });
+      setAddMealOpen(true);
+      toast.success(`זוהה: ${result.name}`);
+    } catch {
+      toast.error("לא הצלחתי לזהות — נסה תמונה ברורה יותר");
+    } finally {
+      setAiScanning(false);
+    }
   };
 
   return (
@@ -285,36 +331,59 @@ function NutritionPage() {
             </div>
 
             {/* ── Water Tracker ── */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4">
-              <div className="flex items-center justify-between mb-2">
+            <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
+              {/* Header */}
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Droplets className="h-4 w-4 text-cyan-400" />
                   <span className="text-sm font-bold text-white">מים</span>
                 </div>
-                <span className="text-[11px] text-white/40">
-                  {totalWaterMl.toLocaleString("he")}ml / {waterGoal.toLocaleString("he")}ml
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-cyan-400">
+                    {(totalWaterMl / 1000).toFixed(2)}L
+                  </span>
+                  <span className="text-[10px] text-white/30">
+                    / {(waterGoal / 1000).toFixed(1)}L
+                  </span>
+                  {totalWaterMl > 0 && (
+                    <button
+                      onClick={() => addWaterMl.mutate({ addMl: -totalWaterMl, currentMl: totalWaterMl })}
+                      className="text-[9px] text-white/20 hover:text-rose-400 transition-colors"
+                    >
+                      איפוס
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Progress bar */}
-              <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden mb-3">
+              {/* Segmented progress bar */}
+              <div className="relative w-full h-3 rounded-full bg-white/10 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-500"
                   style={{ width: `${Math.min((totalWaterMl / waterGoal) * 100, 100)}%` }}
                 />
+                {/* droplet markers every 500ml */}
+                <div className="absolute inset-0 flex">
+                  {Array.from({ length: Math.floor(waterGoal / 500) }, (_, i) => (
+                    <div key={i} className="flex-1 border-r border-white/10 last:border-0" />
+                  ))}
+                </div>
               </div>
 
-              {/* Clickable glasses */}
-              <div className="flex gap-1 justify-center">
-                {Array.from({ length: 8 }, (_, i) => i + 1).map((g) => (
+              {/* Quick-add buttons */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "+500ml", ml: 500  },
+                  { label: "+750ml", ml: 750  },
+                  { label: "+1.5L",  ml: 1500 },
+                ].map(({ label, ml }) => (
                   <button
-                    key={g}
-                    onClick={() => handleGlass(g)}
-                    className={`text-xl transition-all duration-200 active:scale-125 ${
-                      g <= glasses ? "opacity-100" : "opacity-20 hover:opacity-40"
-                    }`}
+                    key={ml}
+                    onClick={() => handleAddWater(ml)}
+                    disabled={addWaterMl.isPending}
+                    className="py-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-bold hover:bg-cyan-500/20 active:scale-95 transition-all disabled:opacity-40"
                   >
-                    💧
+                    {label}
                   </button>
                 ))}
               </div>
@@ -383,13 +452,48 @@ function NutritionPage() {
         </div>{/* end: relative z-10 content */}
       </div>{/* end: bg wrapper */}
 
+      {/* ── AI Vision hidden file input ── */}
+      <input
+        ref={aiFileRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleAIFile(f);
+          e.target.value = "";
+        }}
+      />
+
+      {/* ── AI scanning overlay ── */}
+      {aiScanning && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-10 w-10 text-purple-400 animate-spin" />
+            <p className="text-white font-bold text-sm">מזהה ארוחה עם AI...</p>
+          </div>
+        </div>
+      )}
+
       {/* ── FAB — Tab 1 only ── */}
       {activeTab === "dashboard" && (
-        <QuickAddFAB onManual={() => setAddMealOpen(true)} />
+        <QuickAddFAB
+          onManual={() => { setPrefill({}); setAddMealOpen(true); }}
+          onAIVision={() => aiFileRef.current?.click()}
+        />
       )}
 
       {/* ── Drawers ── */}
-      <AddMealDrawer open={addMealOpen} onClose={() => setAddMealOpen(false)} />
+      <AddMealDrawer
+        open={addMealOpen}
+        onClose={() => { setAddMealOpen(false); setPrefill({}); }}
+        prefillName={prefill.name}
+        prefillCalories={prefill.calories}
+        prefillProtein={prefill.protein}
+        prefillCarbs={prefill.carbs}
+        prefillFat={prefill.fat}
+      />
 
       {/* ── FAB keyframe animation ── */}
       <style>{`
