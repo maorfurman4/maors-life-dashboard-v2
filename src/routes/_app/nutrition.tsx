@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useNutritionEntries, useUserSettings, useWaterEntry, useUpsertWater } from "@/hooks/use-sport-data";
 import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
+import { NutritionPlannerTab } from "@/components/nutrition/NutritionPlannerTab";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/nutrition")({
@@ -370,11 +371,7 @@ function NutritionPage() {
             TAB 2 — AI PLANNER  (Phase 2)
         ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "planner" && (
-          <ComingSoon
-            emoji="🧬"
-            title="מחשבון TDEE & AI Planner"
-            subtitle="מחשבון מדעי · בחירת דיאטה · תפריט שבועי — Phase 2"
-          />
+          <NutritionPlannerTab />
         )}
 
         {/* ══════════════════════════════════════════════════════════════════
