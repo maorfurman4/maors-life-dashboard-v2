@@ -5,6 +5,8 @@ import {
   Wallet,
   Briefcase,
   Settings,
+  CheckSquare,
+  Ticket,
   type LucideIcon,
 } from "lucide-react";
 
@@ -17,11 +19,13 @@ export interface NavItem {
 }
 
 export const mainNavItems: NavItem[] = [
-  { id: "home", label: "בית", to: "/", icon: Home, colorClass: "text-primary" },
-  { id: "sport", label: "ספורט", to: "/sport", icon: Dumbbell, colorClass: "text-sport" },
-  { id: "nutrition", label: "תזונה", to: "/nutrition", icon: Apple, colorClass: "text-nutrition" },
-  { id: "finance", label: "כלכלה", to: "/finance", icon: Wallet, colorClass: "text-finance" },
-  { id: "work", label: "עבודה", to: "/work", icon: Briefcase, colorClass: "text-work" },
+  { id: "home",      label: "בית",     to: "/",          icon: Home,        colorClass: "text-primary"    },
+  { id: "sport",     label: "ספורט",   to: "/sport",     icon: Dumbbell,    colorClass: "text-sport"      },
+  { id: "nutrition", label: "תזונה",   to: "/nutrition", icon: Apple,       colorClass: "text-nutrition"  },
+  { id: "finance",   label: "כלכלה",   to: "/finance",   icon: Wallet,      colorClass: "text-finance"    },
+  { id: "work",      label: "עבודה",   to: "/work",      icon: Briefcase,   colorClass: "text-work"       },
+  { id: "tasks",     label: "משימות",  to: "/tasks",     icon: CheckSquare, colorClass: "text-violet-400" },
+  { id: "coupons",   label: "קופונים", to: "/coupons",   icon: Ticket,      colorClass: "text-amber-400"  },
 ];
 
 export const settingsNavItem: NavItem = {
