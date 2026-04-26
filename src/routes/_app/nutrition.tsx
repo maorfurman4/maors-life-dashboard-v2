@@ -185,19 +185,22 @@ function NutritionPage() {
 
   return (
     <>
-      {/* ── Full-screen food background ─────────────────────────────────── */}
+      {/* ── Page wrapper: background image lives HERE, not in fixed divs ── */}
+      {/* z-index: -2 was hidden behind body bg-color. Now the wrapper      */}
+      {/* itself paints the image, directly over the body background.        */}
       <div
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        dir="rtl"
+        className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 relative bg-cover bg-center"
         style={{
-          zIndex: -2,
-          backgroundImage: `url('https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1400&auto=format&fit=crop&q=80')`,
+          backgroundImage: `url('https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=2000&auto=format&fit=crop')`,
+          minHeight: '100vh',
         }}
-      />
-      {/* Deep dark overlay */}
-      <div className="fixed inset-0 bg-[#080b12]/82" style={{ zIndex: -1 }} />
+      >
+        {/* ── Dark overlay — absolute, sits over the image ── */}
+        <div className="absolute inset-0 bg-[#080b12]/80 pointer-events-none" />
 
-      {/* ── Page wrapper — bleeds out of main's p-3/p-6 padding ─────────── */}
-      <div className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 pb-32" dir="rtl">
+        {/* ── All content — relative z-10 so it's above the overlay ── */}
+        <div className="relative z-10 pb-32">
 
         {/* ── Page header ── */}
         <div className="px-4 pt-5 pb-3">
@@ -206,7 +209,7 @@ function NutritionPage() {
         </div>
 
         {/* ── Glass tab bar — sticky ── */}
-        <div className="sticky top-0 z-20 px-4 py-2 bg-[#080b12]/40 backdrop-blur-lg">
+        <div className="sticky top-0 z-20 px-4 py-2 bg-[#080b12]/60 backdrop-blur-xl">
           <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
             {TABS.map((t) => (
               <button
@@ -377,7 +380,8 @@ function NutritionPage() {
           <NutritionCulinaryTab />
         )}
 
-      </div>
+        </div>{/* end: relative z-10 content */}
+      </div>{/* end: bg wrapper */}
 
       {/* ── FAB — Tab 1 only ── */}
       {activeTab === "dashboard" && (
