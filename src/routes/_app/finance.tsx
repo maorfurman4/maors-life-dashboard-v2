@@ -47,26 +47,29 @@ function FinancePage() {
   return (
     <div
       dir="rtl"
-      className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 min-h-screen relative"
-      style={{ background: FT.bg }}
+      className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 min-h-screen relative bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/piggy-bg.jpg')" }}
     >
-      {/* Warm ambient glows */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Heavy dark earthy overlay — keeps cards readable */}
+      <div className="absolute inset-0" style={{ background: "rgba(22,19,17,0.86)", zIndex: 0 }} />
+
+      {/* Warm ambient glows — above overlay */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
         <div
           className="absolute -top-40 -right-24 h-80 w-80 rounded-full blur-[130px]"
-          style={{ background: "rgba(244,226,140,0.07)" }}
+          style={{ background: "rgba(244,226,140,0.09)" }}
         />
         <div
           className="absolute top-1/3 -left-16 h-56 w-56 rounded-full blur-[100px]"
-          style={{ background: "rgba(140,117,85,0.09)" }}
+          style={{ background: "rgba(140,117,85,0.11)" }}
         />
         <div
           className="absolute bottom-40 right-1/3 h-48 w-48 rounded-full blur-[90px]"
-          style={{ background: "rgba(244,226,140,0.05)" }}
+          style={{ background: "rgba(244,226,140,0.07)" }}
         />
       </div>
 
-      <div className="relative z-10 pb-32">
+      <div className="relative pb-32" style={{ zIndex: 2 }}>
         {/* Header */}
         <div className="px-4 pt-6 pb-4 flex items-center gap-3">
           <div
@@ -98,9 +101,9 @@ function FinancePage() {
         <div
           className="sticky top-0 z-20 px-4 py-2.5"
           style={{
-            background: `${FT.bg}cc`,
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
+            background: "rgba(22,19,17,0.80)",
+            backdropFilter: "blur(28px)",
+            WebkitBackdropFilter: "blur(28px)",
             borderBottom: `1px solid ${FT.goldBorder}`,
           }}
         >
