@@ -1,9 +1,10 @@
 // Earthy Luxury design tokens — extracted from reference images
 export const FT = {
   bg:          "#161311",
-  card:        "#2b221c",
-  cardHover:   "#3d2e1e",
-  cardLight:   "#342819",
+  // Semi-transparent for glassmorphism against the cinematic background
+  card:        "rgba(43,34,28,0.60)",
+  cardHover:   "rgba(61,46,30,0.68)",
+  cardLight:   "rgba(52,40,25,0.62)",
 
   gold:        "#f4e28c",
   goldDim:     "rgba(244,226,140,0.12)",
