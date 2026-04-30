@@ -12,16 +12,14 @@ import {
   useDeleteFixedExpense,
   DEFAULT_EXPENSE_CATEGORIES,
 } from "@/hooks/use-finance-data";
+import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
 
 const fmt = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
 
 // ─── Installment helpers ──────────────────────────────────────────────────────
 
-interface InstallMeta {
-  t: number; // total payments
-  s: string; // start "YYYY-MM"
-}
+interface InstallMeta { t: number; s: string; }
 
 function parseInstallMeta(notes: string | null): InstallMeta | null {
   if (!notes || !notes.startsWith("{")) return null;
@@ -29,15 +27,13 @@ function parseInstallMeta(notes: string | null): InstallMeta | null {
     const m = JSON.parse(notes);
     if (typeof m.t === "number" && typeof m.s === "string") return m;
     return null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 function installProgress(meta: InstallMeta, year: number, month: number) {
   const [sy, sm] = meta.s.split("-").map(Number);
   const elapsed = (year - sy) * 12 + (month - sm);
-  const current = elapsed + 1; // 1-indexed: month 0 = payment 1
+  const current = elapsed + 1;
   return {
     current: Math.max(1, Math.min(current, meta.t)),
     total: meta.t,
@@ -55,6 +51,11 @@ const INCOME_CATS: { name: string; icon: string }[] = [
   { name: "העברה", icon: "💳" },
   { name: "אחר", icon: "💰" },
 ];
+
+// ─── Shared input style helpers ───────────────────────────────────────────────
+
+const inputCls = "w-full px-4 py-3 rounded-[16px] text-sm text-white placeholder:text-white/20 focus:outline-none transition-all";
+const inputStyle = { background: FT.cardLight, border: `1px solid ${FT.goldBorder}` } as const;
 
 // ─── Log Entry Form ───────────────────────────────────────────────────────────
 
@@ -90,26 +91,16 @@ function LogEntryForm({ year, month }: { year: number; month: number }) {
     try {
       if (type === "expense") {
         await addExpense.mutateAsync({
-          amount: num,
-          category,
-          description: description.trim() || undefined,
-          date,
-          expense_type: "variable",
-          is_recurring: false,
-          needs_review: false,
+          amount: num, category, description: description.trim() || undefined,
+          date, expense_type: "variable", is_recurring: false, needs_review: false,
         });
       } else {
         await addIncome.mutateAsync({
-          amount: num,
-          category,
-          description: description.trim() || undefined,
-          source: "manual",
-          date,
+          amount: num, category, description: description.trim() || undefined, source: "manual", date,
         });
       }
       toast.success(`₪${fmt(num)} נשמר בהצלחה ✓`);
-      setAmount("");
-      setDescription("");
+      setAmount(""); setDescription("");
     } catch (e: any) {
       toast.error("שגיאה: " + e.message);
     } finally {
@@ -120,11 +111,9 @@ function LogEntryForm({ year, month }: { year: number; month: number }) {
   const cats = type === "expense" ? DEFAULT_EXPENSE_CATEGORIES : INCOME_CATS;
 
   return (
-    <div
-      className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 space-y-4"
-      dir="rtl"
-    >
-      <p className="text-xs font-black text-white/50" style={{ letterSpacing: 0 }}>
+    <div className="rounded-3xl p-5 space-y-4" dir="rtl"
+      style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}>
+      <p className="text-xs font-black" style={{ color: FT.textMuted, letterSpacing: 0 }}>
         📝 תנועה חדשה
       </p>
 
@@ -134,14 +123,19 @@ function LogEntryForm({ year, month }: { year: number; month: number }) {
           <button
             key={t}
             onClick={() => handleTypeChange(t)}
-            className={`flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-bold transition-all ${
-              type === t
-                ? t === "expense"
-                  ? "bg-rose-500/20 border border-rose-400/40 text-rose-400"
-                  : "bg-emerald-500/20 border border-emerald-400/40 text-emerald-400"
-                : "bg-white/5 border border-white/10 text-white/40"
-            }`}
-            style={{ letterSpacing: 0 }}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-bold transition-all"
+            style={{
+              letterSpacing: 0,
+              background: type === t
+                ? t === "expense" ? FT.dangerDim : FT.successDim
+                : FT.brownDim,
+              border: `1px solid ${type === t
+                ? t === "expense" ? "rgba(217,107,107,0.35)" : "rgba(124,191,142,0.35)"
+                : FT.brownBorder}`,
+              color: type === t
+                ? t === "expense" ? FT.danger : FT.success
+                : FT.textMuted,
+            }}
           >
             {t === "expense" ? <Minus className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
             {t === "expense" ? "הוצאה" : "הכנסה"}
@@ -152,35 +146,26 @@ function LogEntryForm({ year, month }: { year: number; month: number }) {
       {/* Amount + Date */}
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <span className="absolute end-3 top-1/2 -translate-y-1/2 text-white/30 font-black text-sm">
-            ₪
-          </span>
+          <span className="absolute end-3 top-1/2 -translate-y-1/2 text-sm font-black" style={{ color: FT.textFaint }}>₪</span>
           <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0"
-            inputMode="decimal"
-            className="w-full pe-8 ps-3 py-3 rounded-2xl bg-white/8 border border-white/10 text-xl font-black text-white placeholder:text-white/20 focus:outline-none focus:border-emerald-500/40 transition-all"
-            dir="ltr"
+            type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+            placeholder="0" inputMode="decimal"
+            className="w-full pe-8 ps-3 py-3 rounded-[16px] text-xl font-black text-white placeholder:text-white/15 focus:outline-none transition-all"
+            style={inputStyle} dir="ltr"
           />
         </div>
         <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="w-32 rounded-2xl bg-white/8 border border-white/10 text-xs text-white/60 px-3 focus:outline-none focus:border-sky-500/40 transition-all"
-          dir="ltr"
+          type="date" value={date} onChange={(e) => setDate(e.target.value)}
+          className="w-32 rounded-[16px] text-xs px-3 focus:outline-none transition-all"
+          style={{ ...inputStyle, color: FT.textMuted }} dir="ltr"
         />
       </div>
 
       {/* Description */}
       <input
-        type="text"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
+        type="text" value={description} onChange={(e) => setDescription(e.target.value)}
         placeholder="תיאור (אופציונלי)"
-        className="w-full px-4 py-2.5 rounded-2xl bg-white/8 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-sky-500/40 transition-all"
+        className={inputCls} style={inputStyle}
       />
 
       {/* Category chips */}
@@ -189,14 +174,13 @@ function LogEntryForm({ year, month }: { year: number; month: number }) {
           <button
             key={cat.name}
             onClick={() => setCategory(cat.name)}
-            className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-all ${
-              category === cat.name
-                ? type === "expense"
-                  ? "border-rose-400/50 bg-rose-400/15 text-rose-300"
-                  : "border-emerald-400/50 bg-emerald-400/15 text-emerald-300"
-                : "border-white/10 bg-white/5 text-white/40"
-            }`}
-            style={{ letterSpacing: 0 }}
+            className="px-3 py-1 rounded-full text-[11px] font-bold transition-all"
+            style={{
+              letterSpacing: 0,
+              background: category === cat.name ? FT.goldMid : FT.brownDim,
+              border: `1px solid ${category === cat.name ? FT.goldBorder : FT.brownBorder}`,
+              color: category === cat.name ? FT.gold : FT.textMuted,
+            }}
           >
             {cat.icon ? `${cat.icon} ` : ""}{cat.name}
           </button>
@@ -207,12 +191,13 @@ function LogEntryForm({ year, month }: { year: number; month: number }) {
       <button
         onClick={handleSave}
         disabled={!amount || saving}
-        className={`w-full py-3 rounded-2xl font-black text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-          type === "expense"
-            ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30 hover:bg-rose-400 active:scale-[0.98]"
-            : "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 active:scale-[0.98]"
-        }`}
-        style={{ letterSpacing: 0 }}
+        className="w-full py-3 rounded-2xl font-black text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+        style={{
+          letterSpacing: 0,
+          background: type === "expense" ? FT.danger : FT.gold,
+          color: type === "expense" ? "#fff" : FT.bg,
+          boxShadow: type === "expense" ? `0 4px 16px ${FT.dangerDim}` : `0 4px 16px ${FT.goldGlow}`,
+        }}
       >
         <span className="flex items-center justify-center gap-2">
           <Check className="h-4 w-4" />
@@ -248,18 +233,11 @@ function AddFixedForm({ onDone }: { onDone: () => void }) {
     if (!num || num <= 0) { toast.error("סכום לא תקין"); return; }
     setSaving(true);
     try {
-      const notes =
-        fixedType === "installment"
-          ? JSON.stringify({ t: installTotal, s: startYm })
-          : null;
+      const notes = fixedType === "installment" ? JSON.stringify({ t: installTotal, s: startYm }) : null;
       await addFixed.mutateAsync({
-        name: name.trim(),
-        amount: num,
-        category,
-        charge_day: chargeDay,
-        is_active: true,
-        is_recurring: fixedType === "recurring",
-        notes,
+        name: name.trim(), amount: num, category,
+        charge_day: chargeDay, is_active: true,
+        is_recurring: fixedType === "recurring", notes,
       });
       toast.success(`"${name.trim()}" נוסף`);
       onDone();
@@ -270,31 +248,30 @@ function AddFixedForm({ onDone }: { onDone: () => void }) {
     }
   }
 
+  const subInputStyle = { background: FT.card, border: `1px solid ${FT.goldBorder}` } as const;
+
   return (
-    <div className="rounded-2xl bg-white/8 border border-emerald-400/20 p-4 space-y-3" dir="rtl">
-      <p className="text-[11px] font-black text-emerald-400/70" style={{ letterSpacing: 0 }}>
+    <div className="rounded-2xl p-4 space-y-3" dir="rtl"
+      style={{ background: FT.cardLight, border: `1px solid ${FT.goldBorder}` }}>
+      <p className="text-[11px] font-black" style={{ color: FT.textSub, letterSpacing: 0 }}>
         הוספת קבועה / תשלומים
       </p>
 
       {/* Name + Amount */}
       <div className="flex gap-2">
         <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          type="text" value={name} onChange={(e) => setName(e.target.value)}
           placeholder="שם (ביטוח רכב, שכירות...)"
-          className="flex-1 px-3 py-2.5 rounded-xl bg-white/8 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-sky-500/40 transition-all"
+          className="flex-1 px-3 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 focus:outline-none transition-all"
+          style={subInputStyle}
         />
         <div className="relative w-28">
-          <span className="absolute end-3 top-1/2 -translate-y-1/2 text-white/30 text-xs font-bold">₪</span>
+          <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs font-bold" style={{ color: FT.textFaint }}>₪</span>
           <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0"
-            inputMode="decimal"
-            className="w-full pe-7 ps-3 py-2.5 rounded-xl bg-white/8 border border-white/10 text-sm font-black text-white placeholder:text-white/20 focus:outline-none focus:border-emerald-500/40 transition-all"
-            dir="ltr"
+            type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+            placeholder="0" inputMode="decimal"
+            className="w-full pe-7 ps-3 py-2.5 rounded-xl text-sm font-black text-white placeholder:text-white/15 focus:outline-none transition-all"
+            style={subInputStyle} dir="ltr"
           />
         </div>
       </div>
@@ -302,24 +279,22 @@ function AddFixedForm({ onDone }: { onDone: () => void }) {
       {/* Category + Charge Day */}
       <div className="flex gap-2">
         <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="flex-1 px-3 py-2 rounded-xl bg-white/8 border border-white/10 text-sm text-white focus:outline-none transition-all"
+          value={category} onChange={(e) => setCategory(e.target.value)}
+          className="flex-1 px-3 py-2 rounded-xl text-sm text-white focus:outline-none transition-all"
+          style={{ ...subInputStyle, color: "#fff" }}
         >
           {DEFAULT_EXPENSE_CATEGORIES.map((c) => (
-            <option key={c.name} value={c.name} className="bg-[#0e1320] text-white">
+            <option key={c.name} value={c.name} style={{ background: FT.bg, color: "#fff" }}>
               {c.icon} {c.name}
             </option>
           ))}
         </select>
-        <div className="flex items-center gap-2 rounded-xl bg-white/8 border border-white/10 px-3 py-2">
-          <span className="text-[11px] text-white/40 shrink-0">יום חיוב</span>
+        <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={subInputStyle}>
+          <span className="text-[11px] shrink-0" style={{ color: FT.textMuted }}>יום</span>
           <input
-            type="number"
-            value={chargeDay}
+            type="number" value={chargeDay}
             onChange={(e) => setChargeDay(Math.min(31, Math.max(1, +e.target.value)))}
-            min={1}
-            max={31}
+            min={1} max={31}
             className="w-8 bg-transparent text-sm font-black text-white focus:outline-none text-center"
             dir="ltr"
           />
@@ -332,45 +307,40 @@ function AddFixedForm({ onDone }: { onDone: () => void }) {
           <button
             key={ft}
             onClick={() => setFixedType(ft)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold border transition-all ${
-              fixedType === ft
-                ? "border-sky-400/50 bg-sky-400/15 text-sky-300"
-                : "border-white/10 bg-white/5 text-white/40"
-            }`}
-            style={{ letterSpacing: 0 }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold transition-all"
+            style={{
+              letterSpacing: 0,
+              background: fixedType === ft ? FT.goldMid : FT.brownDim,
+              border: `1px solid ${fixedType === ft ? FT.goldBorder : FT.brownBorder}`,
+              color: fixedType === ft ? FT.gold : FT.textMuted,
+            }}
           >
-            {ft === "recurring" ? (
-              <><RefreshCw className="h-3 w-3" /> חיוב חוזר</>
-            ) : (
-              <><CreditCard className="h-3 w-3" /> תשלומים</>
-            )}
+            {ft === "recurring"
+              ? <><RefreshCw className="h-3 w-3" /> חיוב חוזר</>
+              : <><CreditCard className="h-3 w-3" /> תשלומים</>}
           </button>
         ))}
       </div>
 
-      {/* Installment settings (conditional) */}
+      {/* Installment settings */}
       {fixedType === "installment" && (
         <div className="flex gap-2">
-          <div className="flex items-center gap-2 flex-1 rounded-xl bg-white/8 border border-white/10 px-3 py-2.5">
-            <span className="text-[11px] text-white/40 shrink-0">סה״כ</span>
+          <div className="flex items-center gap-2 flex-1 rounded-xl px-3 py-2.5" style={subInputStyle}>
+            <span className="text-[11px] shrink-0" style={{ color: FT.textMuted }}>סה״כ</span>
             <input
-              type="number"
-              value={installTotal}
+              type="number" value={installTotal}
               onChange={(e) => setInstallTotal(Math.max(2, +e.target.value))}
               min={2}
               className="flex-1 bg-transparent text-sm font-black text-white focus:outline-none text-center"
               dir="ltr"
             />
-            <span className="text-[11px] text-white/40 shrink-0">תשלומים</span>
+            <span className="text-[11px] shrink-0" style={{ color: FT.textMuted }}>תשלומים</span>
           </div>
-          <div className="flex items-center gap-2 rounded-xl bg-white/8 border border-white/10 px-3 py-2.5">
-            <span className="text-[10px] text-white/40 shrink-0">מ:</span>
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={subInputStyle}>
+            <span className="text-[10px] shrink-0" style={{ color: FT.textMuted }}>מ:</span>
             <input
-              type="month"
-              value={startYm}
-              onChange={(e) => setStartYm(e.target.value)}
-              className="bg-transparent text-xs text-white focus:outline-none w-24"
-              dir="ltr"
+              type="month" value={startYm} onChange={(e) => setStartYm(e.target.value)}
+              className="bg-transparent text-xs text-white focus:outline-none w-24" dir="ltr"
             />
           </div>
         </div>
@@ -378,8 +348,8 @@ function AddFixedForm({ onDone }: { onDone: () => void }) {
 
       {/* Installment preview */}
       {fixedType === "installment" && amount && installTotal >= 2 && (
-        <div className="rounded-xl bg-sky-500/10 border border-sky-400/20 px-3 py-2">
-          <p className="text-[11px] text-sky-300" style={{ letterSpacing: 0 }}>
+        <div className="rounded-xl px-3 py-2" style={{ background: FT.goldDim, border: `1px solid ${FT.goldBorder}` }}>
+          <p className="text-[11px]" style={{ color: FT.gold, letterSpacing: 0 }}>
             💡 ₪{fmt(parseFloat(amount) || 0)} / חודש למשך {installTotal} חודשים
             {" · "}סה״כ ₪{fmt((parseFloat(amount) || 0) * installTotal)}
           </p>
@@ -390,16 +360,21 @@ function AddFixedForm({ onDone }: { onDone: () => void }) {
       <div className="flex gap-2">
         <button
           onClick={onDone}
-          className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-white/50 hover:text-white transition-colors"
-          style={{ letterSpacing: 0 }}
+          className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+          style={{ background: FT.brownDim, border: `1px solid ${FT.brownBorder}`, color: FT.textMuted, letterSpacing: 0 }}
         >
           ביטול
         </button>
         <button
           onClick={handleSave}
           disabled={saving || !name.trim() || !amount}
-          className="flex-1 py-2.5 rounded-xl bg-sky-500 text-white text-xs font-black shadow-lg shadow-sky-500/30 hover:bg-sky-400 active:scale-[0.98] transition-all disabled:opacity-40"
-          style={{ letterSpacing: 0 }}
+          className="flex-1 py-2.5 rounded-xl text-xs font-black transition-all disabled:opacity-40 active:scale-[0.98]"
+          style={{
+            letterSpacing: 0,
+            background: FT.gold,
+            color: FT.bg,
+            boxShadow: `0 4px 16px ${FT.goldGlow}`,
+          }}
         >
           <span className="flex items-center justify-center gap-1.5">
             <Check className="h-3.5 w-3.5" />
@@ -414,25 +389,11 @@ function AddFixedForm({ onDone }: { onDone: () => void }) {
 // ─── Fixed Expense Card ───────────────────────────────────────────────────────
 
 interface FixedItem {
-  id: string;
-  name: string;
-  amount: number;
-  category: string;
-  charge_day: number;
-  is_active: boolean;
-  is_recurring: boolean;
-  notes: string | null;
+  id: string; name: string; amount: number; category: string;
+  charge_day: number; is_active: boolean; is_recurring: boolean; notes: string | null;
 }
 
-function FixedExpenseCard({
-  item,
-  year,
-  month,
-}: {
-  item: FixedItem;
-  year: number;
-  month: number;
-}) {
+function FixedExpenseCard({ item, year, month }: { item: FixedItem; year: number; month: number }) {
   const updateFixed = useUpdateFixedExpense();
   const deleteFixed = useDeleteFixedExpense();
   const [deleting, setDeleting] = useState(false);
@@ -441,7 +402,6 @@ function FixedExpenseCard({
   const meta = parseInstallMeta(item.notes);
   const progress = meta ? installProgress(meta, year, month) : null;
 
-  // Auto-deactivate when all installments complete
   useEffect(() => {
     if (progress && !progress.active && item.is_active) {
       updateFixed.mutate({ id: item.id, is_active: false });
@@ -449,9 +409,7 @@ function FixedExpenseCard({
   }, [progress?.active, item.is_active, item.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    return () => {
-      if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
-    };
+    return () => { if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current); };
   }, []);
 
   async function toggleActive() {
@@ -473,71 +431,75 @@ function FixedExpenseCard({
   const catObj = DEFAULT_EXPENSE_CATEGORIES.find((c) => c.name === item.category);
   const pctFilled = progress ? (progress.current / progress.total) * 100 : 0;
   const barColor =
-    !progress ? "bg-white/20" :
-    progress.remaining === 0 ? "bg-emerald-400" :
-    progress.remaining <= 2 ? "bg-amber-400" : "bg-sky-400";
+    !progress ? FT.brown :
+    progress.remaining === 0 ? FT.success :
+    progress.remaining <= 2 ? FT.brown : FT.gold;
 
   return (
     <div
-      className={`rounded-2xl border p-4 space-y-3 transition-all ${
-        item.is_active
-          ? "bg-white/5 border-white/10"
-          : "bg-white/[0.02] border-white/5 opacity-50"
-      }`}
+      className="rounded-2xl p-4 space-y-3 transition-all"
+      style={{
+        background: item.is_active ? FT.cardLight : FT.card,
+        border: `1px solid ${item.is_active ? FT.goldBorder : FT.brownBorder}`,
+        opacity: item.is_active ? 1 : 0.5,
+      }}
       dir="rtl"
     >
-      {/* Header */}
+      {/* Header row: icon | name+sub | amount | toggle */}
       <div className="flex items-center gap-2.5">
-        <span className="text-xl leading-none shrink-0">{catObj?.icon ?? "💳"}</span>
+        <div
+          className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0 text-lg leading-none"
+          style={{ background: FT.goldDim, border: `1px solid ${FT.goldBorder}` }}
+        >
+          {catObj?.icon ?? "💳"}
+        </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-black text-white truncate" style={{ letterSpacing: 0 }}>
-            {item.name}
-          </p>
-          <p className="text-[10px] text-white/40 mt-0.5">
+          <p className="text-sm font-black text-white truncate" style={{ letterSpacing: 0 }}>{item.name}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: FT.textMuted }}>
             יום {item.charge_day} · {item.category}
           </p>
         </div>
-        <p className="text-sm font-black text-rose-400 shrink-0" dir="ltr">
+        <p className="text-sm font-black shrink-0" style={{ color: FT.danger }} dir="ltr">
           ₪{fmt(item.amount)}
         </p>
-        {/* Toggle switch */}
+        {/* Gold toggle switch */}
         <button
           onClick={toggleActive}
           aria-label={item.is_active ? "כבה" : "הדלק"}
-          className={`h-6 w-11 rounded-full relative transition-all shrink-0 ${
-            item.is_active ? "bg-emerald-500" : "bg-white/15"
-          }`}
+          className="h-6 w-11 rounded-full relative transition-all shrink-0"
+          style={{ background: item.is_active ? FT.gold : FT.brownDim, border: `1px solid ${item.is_active ? FT.goldBorder : FT.brownBorder}` }}
         >
           <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-all ${
-              item.is_active ? "end-0.5" : "start-0.5"
-            }`}
+            className="absolute top-0.5 h-5 w-5 rounded-full shadow-md transition-all"
+            style={{
+              background: item.is_active ? FT.bg : "rgba(255,255,255,0.4)",
+              [item.is_active ? "insetInlineEnd" : "insetInlineStart"]: "2px",
+              position: "absolute",
+              ...(item.is_active ? { right: "2px" } : { left: "2px" }),
+            }}
           />
         </button>
       </div>
 
-      {/* Installment progress bar */}
+      {/* Installment progress */}
       {progress && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-white/70" style={{ letterSpacing: 0 }}>
               💳 תשלום {progress.current} מתוך {progress.total}
             </span>
-            <span className="text-[10px] text-white/30">
-              {progress.remaining > 0
-                ? `${progress.remaining} חודשים נותרו`
-                : "✅ תשלום אחרון!"}
+            <span className="text-[10px]" style={{ color: FT.textFaint }}>
+              {progress.remaining > 0 ? `${progress.remaining} נותרו` : "✅ אחרון!"}
             </span>
           </div>
-          <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
             <div
-              className={`h-full rounded-full transition-all duration-700 ${barColor}`}
-              style={{ width: `${pctFilled}%` }}
+              className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${pctFilled}%`, background: barColor }}
             />
           </div>
-          {/* Month range */}
           {meta && (
-            <p className="text-[9px] text-white/20" style={{ letterSpacing: 0 }}>
+            <p className="text-[9px]" style={{ color: FT.textFaint, letterSpacing: 0 }}>
               החל מ-{meta.s} · {progress.total} תשלומים
             </p>
           )}
@@ -547,22 +509,21 @@ function FixedExpenseCard({
       {/* Recurring badge */}
       {item.is_recurring && !meta && (
         <div className="flex items-center gap-1.5">
-          <RefreshCw className="h-3 w-3 text-white/25" />
-          <span className="text-[10px] text-white/25" style={{ letterSpacing: 0 }}>
-            חיוב חוזר כל חודש
-          </span>
+          <RefreshCw className="h-3 w-3" style={{ color: FT.textFaint }} />
+          <span className="text-[10px]" style={{ color: FT.textFaint, letterSpacing: 0 }}>חיוב חוזר כל חודש</span>
         </div>
       )}
 
-      {/* Delete with confirm */}
+      {/* Delete */}
       <button
         onClick={handleDelete}
-        className={`w-full py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
-          deleting
-            ? "bg-rose-500/20 border border-rose-400/40 text-rose-400"
-            : "bg-white/5 border border-white/5 text-white/20 hover:text-white/50"
-        }`}
-        style={{ letterSpacing: 0 }}
+        className="w-full py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1.5"
+        style={{
+          letterSpacing: 0,
+          background: deleting ? FT.dangerDim : "transparent",
+          border: `1px solid ${deleting ? "rgba(217,107,107,0.3)" : "transparent"}`,
+          color: deleting ? FT.danger : FT.textFaint,
+        }}
       >
         <Trash2 className="h-3 w-3" />
         {deleting ? "לחץ שוב לאישור מחיקה" : "מחק"}
@@ -584,52 +545,48 @@ function FixedSection({ year, month }: { year: number; month: number }) {
   const totalMonthly = active.reduce((s, f) => s + Number(f.amount), 0);
 
   return (
-    <div
-      className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 space-y-4"
-      dir="rtl"
-    >
-      {/* Section header */}
+    <div className="rounded-3xl p-5 space-y-4" dir="rtl"
+      style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}>
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-black text-white/50" style={{ letterSpacing: 0 }}>
-            🔁 קבועות ותשלומים
-          </p>
+          <p className="text-xs font-black" style={{ color: FT.textMuted, letterSpacing: 0 }}>🔁 קבועות ותשלומים</p>
           {active.length > 0 && (
-            <p className="text-[10px] text-white/25 mt-0.5">
+            <p className="text-[10px] mt-0.5" style={{ color: FT.textFaint }}>
               {active.length} פעילות · ₪{fmt(totalMonthly)} / חודש
             </p>
           )}
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/15 border border-sky-400/30 text-sky-400 text-xs font-black hover:bg-sky-500/25 active:scale-95 transition-all"
-          style={{ letterSpacing: 0 }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black transition-all active:scale-95"
+          style={{
+            letterSpacing: 0,
+            background: FT.goldDim,
+            border: `1px solid ${FT.goldBorder}`,
+            color: FT.gold,
+          }}
         >
           <Plus className="h-3.5 w-3.5" />
           הוסף
         </button>
       </div>
 
-      {/* Add form (collapsible) */}
       {showForm && <AddFixedForm onDone={() => setShowForm(false)} />}
 
       {/* Active items */}
       {isLoading ? (
         <div className="flex justify-center py-6">
-          <div className="h-5 w-5 rounded-full border-2 border-white/15 border-t-sky-400 animate-spin" />
+          <div className="h-5 w-5 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: `${FT.goldBorder} ${FT.goldBorder} ${FT.goldBorder} ${FT.gold}` }} />
         </div>
       ) : active.length === 0 && !showForm ? (
-        <p
-          className="text-center text-white/25 text-xs py-6"
-          style={{ letterSpacing: 0 }}
-        >
+        <p className="text-center text-xs py-6" style={{ color: FT.textFaint, letterSpacing: 0 }}>
           אין קבועות פעילות · לחץ "הוסף" להוספה ראשונה
         </p>
       ) : (
         <div className="space-y-2">
-          {active.map((f) => (
-            <FixedExpenseCard key={f.id} item={f} year={year} month={month} />
-          ))}
+          {active.map((f) => <FixedExpenseCard key={f.id} item={f} year={year} month={month} />)}
         </div>
       )}
 
@@ -638,21 +595,15 @@ function FixedSection({ year, month }: { year: number; month: number }) {
         <>
           <button
             onClick={() => setShowInactive((v) => !v)}
-            className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-white/25 hover:text-white/50 transition-colors"
-            style={{ letterSpacing: 0 }}
+            className="w-full flex items-center justify-center gap-1.5 py-2 text-xs transition-colors"
+            style={{ color: FT.textFaint, letterSpacing: 0 }}
           >
-            {showInactive ? (
-              <ChevronUp className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronDown className="h-3.5 w-3.5" />
-            )}
+            {showInactive ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             {showInactive ? "הסתר לא פעילות" : `הצג ${inactive.length} לא פעילות`}
           </button>
           {showInactive && (
             <div className="space-y-2">
-              {inactive.map((f) => (
-                <FixedExpenseCard key={f.id} item={f} year={year} month={month} />
-              ))}
+              {inactive.map((f) => <FixedExpenseCard key={f.id} item={f} year={year} month={month} />)}
             </div>
           )}
         </>

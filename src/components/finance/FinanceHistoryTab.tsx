@@ -7,18 +7,28 @@ import {
   useDeleteExpense,
   useDeleteIncome,
 } from "@/hooks/use-finance-data";
+import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
 
 const fmt = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
 
 const MONTHS_HE = [
-  "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
-  "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+  "ינואר","פברואר","מרץ","אפריל","מאי","יוני",
+  "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר",
 ];
 
+// Earthy luxury donut palette
 const DONUT_COLORS = [
-  "#34d399", "#f43f5e", "#38bdf8", "#f59e0b", "#a78bfa",
-  "#fb923c", "#e879f9", "#4ade80", "#f472b6", "#60a5fa",
+  "#f4e28c", // gold
+  "#d96b6b", // muted red
+  "#8c7555", // brown
+  "#e8a87c", // warm terracotta
+  "#c4a882", // sandy
+  "#7cbf8e", // soft green
+  "#b8755a", // rust
+  "#c9a227", // dark gold
+  "#d4b896", // light sand
+  "#a67c52", // medium brown
 ];
 
 // ─── Smart Search ─────────────────────────────────────────────────────────────
@@ -40,18 +50,16 @@ function parseSearch(q: string): SearchFilter {
 }
 
 function applyFilter(items: any[], filter: SearchFilter, activeCategory: string | null) {
-  let result = activeCategory
-    ? items.filter((t) => t.category === activeCategory)
-    : items;
+  let result = activeCategory ? items.filter((t) => t.category === activeCategory) : items;
   switch (filter.type) {
-    case "gt":    return result.filter((t) => Number(t.amount) > filter.amount);
-    case "lt":    return result.filter((t) => Number(t.amount) < filter.amount);
-    case "text":  return result.filter((t) =>
+    case "gt":   return result.filter((t) => Number(t.amount) > filter.amount);
+    case "lt":   return result.filter((t) => Number(t.amount) < filter.amount);
+    case "text": return result.filter((t) =>
       t.category?.toLowerCase().includes(filter.query) ||
       (t.description ?? "").toLowerCase().includes(filter.query) ||
       String(t.amount).includes(filter.query)
     );
-    default:      return result;
+    default:     return result;
   }
 }
 
@@ -59,29 +67,23 @@ function applyFilter(items: any[], filter: SearchFilter, activeCategory: string 
 
 function useAnomalyIds(expenses: any[], year: number, month: number) {
   const { data: history } = useExpenseHistory(7);
-
   return useMemo(() => {
     const selectedKey = `${year}-${String(month).padStart(2, "0")}`;
     const catAmounts: Record<string, number[]> = {};
-
     (history || []).forEach((e: any) => {
-      if (e.date.slice(0, 7) === selectedKey) return; // exclude current month
+      if (e.date.slice(0, 7) === selectedKey) return;
       const cat = e.category;
       if (!catAmounts[cat]) catAmounts[cat] = [];
       catAmounts[cat].push(Number(e.amount));
     });
-
     const catAvg: Record<string, number> = {};
     for (const [cat, amounts] of Object.entries(catAmounts)) {
       catAvg[cat] = amounts.reduce((s, a) => s + a, 0) / amounts.length;
     }
-
     const ids = new Set<string>();
     expenses.forEach((e: any) => {
       const avg = catAvg[e.category];
-      if (avg && Number(e.amount) > avg * 2.5 && Number(e.amount) > avg + 150) {
-        ids.add(e.id);
-      }
+      if (avg && Number(e.amount) > avg * 2.5 && Number(e.amount) > avg + 150) ids.add(e.id);
     });
     return ids;
   }, [history, expenses, year, month]);
@@ -92,104 +94,70 @@ function useAnomalyIds(expenses: any[], year: number, month: number) {
 function exportCSV(transactions: any[], year: number, month: number) {
   const BOM = "﻿";
   const header = ["תאריך", "סוג", "קטגוריה", "תיאור", "סכום"].join(",");
-  const rows = transactions.map((t) =>
-    [
-      t.date,
-      t._type === "expense" ? "הוצאה" : "הכנסה",
-      t.category,
-      (t.description ?? "").replace(/,/g, " "),
-      Number(t.amount).toFixed(2),
-    ].join(",")
-  );
+  const rows = transactions.map((t) => [
+    t.date,
+    t._type === "expense" ? "הוצאה" : "הכנסה",
+    t.category,
+    (t.description ?? "").replace(/,/g, " "),
+    Number(t.amount).toFixed(2),
+  ].join(","));
   const csv = BOM + [header, ...rows].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = `finances-${year}-${String(month).padStart(2, "0")}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast.success("CSV הורד בהצלחה");
 }
 
 function exportPDF(
-  transactions: any[],
-  year: number,
-  month: number,
-  totalIncome: number,
-  totalExpenses: number,
-  balance: number,
-  anomalyIds: Set<string>
+  transactions: any[], year: number, month: number,
+  totalIncome: number, totalExpenses: number, balance: number, anomalyIds: Set<string>
 ) {
   const monthName = MONTHS_HE[month - 1];
-  const rows = transactions
-    .map(
-      (t) => `
-      <tr class="${anomalyIds.has(t.id) ? "anomaly" : ""}">
-        <td>${t.date}</td>
-        <td class="${t._type === "expense" ? "expense" : "income"}">
-          ${t._type === "expense" ? "הוצאה" : "הכנסה"}
-        </td>
-        <td>${t.category}</td>
-        <td>${t.description ?? "-"}</td>
-        <td dir="ltr" style="text-align:left">
-          ${t._type === "expense" ? "-" : "+"}₪${fmt(Number(t.amount))}
-          ${anomalyIds.has(t.id) ? " ⚠️" : ""}
-        </td>
-      </tr>`
-    )
-    .join("");
+  const rows = transactions.map((t) => `
+    <tr class="${anomalyIds.has(t.id) ? "anomaly" : ""}">
+      <td>${t.date}</td>
+      <td class="${t._type === "expense" ? "expense" : "income"}">${t._type === "expense" ? "הוצאה" : "הכנסה"}</td>
+      <td>${t.category}</td>
+      <td>${t.description ?? "-"}</td>
+      <td dir="ltr" style="text-align:left">${t._type === "expense" ? "-" : "+"}₪${fmt(Number(t.amount))}${anomalyIds.has(t.id) ? " ⚠️" : ""}</td>
+    </tr>`).join("");
 
   const html = `<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head>
-  <meta charset="UTF-8">
-  <title>דוח פיננסי — ${monthName} ${year}</title>
-  <style>
-    body{font-family:Arial,sans-serif;direction:rtl;padding:24px;color:#111}
-    h1{font-size:20px;margin:0 0 4px}
-    .sub{font-size:12px;color:#666;margin:0 0 16px}
-    .summary{display:flex;gap:24px;margin-bottom:20px;font-size:13px;font-weight:bold}
-    .income{color:#059669}.expense{color:#dc2626}
-    table{width:100%;border-collapse:collapse;font-size:12px}
-    th{background:#f5f5f5;padding:8px;text-align:right;border-bottom:2px solid #ddd;font-size:11px}
-    td{padding:7px 8px;border-bottom:1px solid #eee}
-    .anomaly{background:#fff8e1}
-    @media print{body{padding:12px}}
-  </style>
-</head>
-<body>
-  <h1>דוח פיננסי — ${monthName} ${year}</h1>
-  <p class="sub">הופק ב-${new Date().toLocaleDateString("he-IL")}</p>
-  <div class="summary">
-    <span class="income">הכנסות: ₪${fmt(totalIncome)}</span>
-    <span class="expense">הוצאות: ₪${fmt(totalExpenses)}</span>
-    <span style="color:${balance >= 0 ? "#059669" : "#dc2626"}">מאזן: ₪${fmt(balance)}</span>
-  </div>
-  <table>
-    <thead><tr><th>תאריך</th><th>סוג</th><th>קטגוריה</th><th>תיאור</th><th>סכום</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
-</body>
-</html>`;
+<html dir="rtl" lang="he"><head><meta charset="UTF-8">
+<title>דוח פיננסי — ${monthName} ${year}</title>
+<style>body{font-family:Arial,sans-serif;direction:rtl;padding:24px;color:#111}
+h1{font-size:20px;margin:0 0 4px}.sub{font-size:12px;color:#666;margin:0 0 16px}
+.summary{display:flex;gap:24px;margin-bottom:20px;font-size:13px;font-weight:bold}
+.income{color:#059669}.expense{color:#dc2626}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f5f5f5;padding:8px;text-align:right;border-bottom:2px solid #ddd;font-size:11px}
+td{padding:7px 8px;border-bottom:1px solid #eee}.anomaly{background:#fff8e1}
+@media print{body{padding:12px}}</style></head>
+<body><h1>דוח פיננסי — ${monthName} ${year}</h1>
+<p class="sub">הופק ב-${new Date().toLocaleDateString("he-IL")}</p>
+<div class="summary">
+  <span class="income">הכנסות: ₪${fmt(totalIncome)}</span>
+  <span class="expense">הוצאות: ₪${fmt(totalExpenses)}</span>
+  <span style="color:${balance >= 0 ? "#059669" : "#dc2626"}">מאזן: ₪${fmt(balance)}</span>
+</div>
+<table><thead><tr><th>תאריך</th><th>סוג</th><th>קטגוריה</th><th>תיאור</th><th>סכום</th></tr></thead>
+<tbody>${rows}</tbody></table></body></html>`;
 
   const win = window.open("", "_blank");
   if (!win) { toast.error("חסמת חלונות קופצים — אנא אפשר"); return; }
-  win.document.write(html);
-  win.document.close();
-  win.focus();
+  win.document.write(html); win.document.close(); win.focus();
   setTimeout(() => win.print(), 400);
   toast.success("דוח PDF נפתח להדפסה");
 }
 
-// ─── Donut Chart ──────────────────────────────────────────────────────────────
+// ─── Donut Chart — earthy palette ─────────────────────────────────────────────
 
 function DonutChart({
-  data,
-  activeCategory,
-  onSliceClick,
+  data, activeCategory, onSliceClick,
 }: {
   data: { name: string; value: number }[];
   activeCategory: string | null;
@@ -198,7 +166,7 @@ function DonutChart({
   const total = data.reduce((s, d) => s + d.value, 0);
 
   if (data.length === 0) return (
-    <div className="flex items-center justify-center h-48 text-white/25 text-sm">
+    <div className="flex items-center justify-center h-48 text-sm" style={{ color: FT.textFaint }}>
       אין הוצאות לחודש זה
     </div>
   );
@@ -210,13 +178,9 @@ function DonutChart({
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={48}
-              outerRadius={72}
-              paddingAngle={2}
-              dataKey="value"
+              data={data} cx="50%" cy="50%"
+              innerRadius={48} outerRadius={72}
+              paddingAngle={2} dataKey="value"
               onClick={(entry) => onSliceClick(entry.name)}
               style={{ cursor: "pointer" }}
             >
@@ -224,16 +188,16 @@ function DonutChart({
                 <Cell
                   key={`cell-${index}`}
                   fill={DONUT_COLORS[index % DONUT_COLORS.length]}
-                  opacity={activeCategory && activeCategory !== entry.name ? 0.25 : 1}
+                  opacity={activeCategory && activeCategory !== entry.name ? 0.2 : 1}
                   stroke="none"
                 />
               ))}
             </Pie>
             <Tooltip
               contentStyle={{
-                background: "rgba(14,19,32,0.95)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 12,
+                background: FT.card,
+                border: `1px solid ${FT.goldBorder}`,
+                borderRadius: 14,
                 fontSize: 11,
                 color: "#fff",
               }}
@@ -243,13 +207,10 @@ function DonutChart({
         </ResponsiveContainer>
         {/* Center label */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <p className="text-xs font-black text-white" style={{ letterSpacing: 0 }}>
-            ₪{fmt(activeCategory
-              ? (data.find((d) => d.name === activeCategory)?.value ?? 0)
-              : total
-            )}
+          <p className="text-xs font-black" style={{ color: FT.gold, letterSpacing: 0 }}>
+            ₪{fmt(activeCategory ? (data.find((d) => d.name === activeCategory)?.value ?? 0) : total)}
           </p>
-          <p className="text-[9px] text-white/30 mt-0.5" style={{ letterSpacing: 0 }}>
+          <p className="text-[9px] mt-0.5" style={{ color: FT.textMuted, letterSpacing: 0 }}>
             {activeCategory ?? "סה״כ"}
           </p>
         </div>
@@ -265,25 +226,24 @@ function DonutChart({
             <button
               key={entry.name}
               onClick={() => onSliceClick(entry.name)}
-              className={`flex items-center gap-2 text-right w-full rounded-xl px-2 py-1 transition-all ${
-                isActive ? "bg-white/10" : "hover:bg-white/5"
-              }`}
+              className="flex items-center gap-2 text-right w-full rounded-xl px-2 py-1 transition-all"
+              style={{ background: isActive ? FT.goldDim : "transparent" }}
             >
               <span
                 className="h-2.5 w-2.5 rounded-full shrink-0"
                 style={{
                   backgroundColor: color,
-                  opacity: activeCategory && !isActive ? 0.3 : 1,
+                  opacity: activeCategory && !isActive ? 0.25 : 1,
                   boxShadow: isActive ? `0 0 6px ${color}` : "none",
                 }}
               />
               <span
                 className="text-[11px] font-semibold truncate flex-1"
-                style={{ color: activeCategory && !isActive ? "rgba(255,255,255,0.25)" : "#fff", letterSpacing: 0 }}
+                style={{ color: activeCategory && !isActive ? FT.textFaint : "#fff", letterSpacing: 0 }}
               >
                 {entry.name}
               </span>
-              <span className="text-[10px] text-white/40 shrink-0">{pct}%</span>
+              <span className="text-[10px] shrink-0" style={{ color: FT.textMuted }}>{pct}%</span>
             </button>
           );
         })}
@@ -294,51 +254,49 @@ function DonutChart({
 
 // ─── Transaction Row ──────────────────────────────────────────────────────────
 
-function TransactionRow({
-  item,
-  isAnomaly,
-  onDelete,
-}: {
-  item: any;
-  isAnomaly: boolean;
-  onDelete: () => void;
+function TransactionRow({ item, isAnomaly, onDelete }: {
+  item: any; isAnomaly: boolean; onDelete: () => void;
 }) {
   const isExpense = item._type === "expense";
   return (
     <div
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl group transition-all ${
-        isAnomaly
-          ? "bg-amber-400/8 border border-amber-400/20"
-          : "bg-white/5 border border-white/5 hover:bg-white/8"
-      }`}
+      className="flex items-center gap-3 px-3 py-2.5 rounded-2xl group transition-all"
+      style={{
+        background: isAnomaly ? "rgba(212,178,100,0.08)" : FT.cardLight,
+        border: `1px solid ${isAnomaly ? "rgba(212,178,100,0.22)" : FT.brownBorder}`,
+      }}
       dir="rtl"
     >
-      {/* Anomaly badge */}
-      {isAnomaly && (
-        <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" aria-label="חריגה" />
-      )}
-
-      {/* Type icon */}
-      {!isAnomaly && (
-        isExpense
-          ? <ArrowDownRight className="h-3.5 w-3.5 text-rose-400 shrink-0" />
-          : <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-      )}
+      {/* Icon */}
+      <div
+        className="h-7 w-7 rounded-xl flex items-center justify-center shrink-0"
+        style={{
+          background: isAnomaly ? "rgba(212,178,100,0.15)" :
+            isExpense ? FT.dangerDim : FT.successDim,
+        }}
+      >
+        {isAnomaly
+          ? <AlertTriangle className="h-3.5 w-3.5" style={{ color: "#d4b264" }} aria-label="חריגה" />
+          : isExpense
+            ? <ArrowDownRight className="h-3.5 w-3.5" style={{ color: FT.danger }} />
+            : <ArrowUpRight className="h-3.5 w-3.5" style={{ color: FT.success }} />}
+      </div>
 
       {/* Details */}
       <div className="flex-1 min-w-0">
         <p className="text-xs font-bold text-white truncate" style={{ letterSpacing: 0 }}>
           {item.description || item.category}
         </p>
-        <p className="text-[10px] text-white/35 mt-0.5">
+        <p className="text-[10px] mt-0.5" style={{ color: FT.textMuted }}>
           {item.category} · {item.date}
-          {isAnomaly && <span className="text-amber-400 me-1"> · חריג מהממוצע</span>}
+          {isAnomaly && <span style={{ color: "#d4b264" }} className="me-1"> · חריג מהממוצע</span>}
         </p>
       </div>
 
       {/* Amount */}
       <span
-        className={`text-sm font-black shrink-0 tabular-nums ${isExpense ? "text-rose-400" : "text-emerald-400"}`}
+        className="text-sm font-black shrink-0 tabular-nums"
+        style={{ color: isExpense ? FT.danger : FT.success }}
         dir="ltr"
       >
         {isExpense ? "-" : "+"}₪{fmt(Number(item.amount))}
@@ -347,7 +305,8 @@ function TransactionRow({
       {/* Delete */}
       <button
         onClick={onDelete}
-        className="opacity-0 group-hover:opacity-100 h-6 w-6 rounded-lg bg-white/10 flex items-center justify-center text-white/40 hover:text-rose-400 transition-all shrink-0"
+        className="opacity-0 group-hover:opacity-100 h-6 w-6 rounded-lg flex items-center justify-center transition-all shrink-0"
+        style={{ background: FT.dangerDim, color: FT.danger }}
         aria-label="מחק"
       >
         <Trash2 className="h-3 w-3" />
@@ -368,33 +327,27 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
 
   const searchFilter = parseSearch(search);
 
-  // All transactions merged + sorted
   const allTransactions = useMemo(() => [
     ...(fin.expenses || []).map((e: any) => ({ ...e, _type: "expense" as const })),
     ...(fin.incomes  || []).map((i: any) => ({ ...i, _type: "income"  as const })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   [fin.expenses, fin.incomes]);
 
-  // Anomaly IDs (expenses only)
   const anomalyIds = useAnomalyIds(fin.expenses || [], year, month);
 
-  // Donut data — expense breakdown by category
   const donutData = useMemo(() => {
     const breakdown: Record<string, number> = {};
     (fin.expenses || []).forEach((e: any) => {
       breakdown[e.category] = (breakdown[e.category] || 0) + Number(e.amount);
     });
-    return Object.entries(breakdown)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+    return Object.entries(breakdown).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [fin.expenses]);
 
-  // Filtered transactions
   const filtered = applyFilter(allTransactions, searchFilter, activeCategory);
 
   function handleSliceClick(name: string) {
     setActiveCategory((prev) => (prev === name ? null : name));
-    setSearch(""); // clear search when clicking donut
+    setSearch("");
   }
 
   function handleDelete(item: any) {
@@ -411,47 +364,42 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
     <div className="space-y-4" dir="rtl">
 
       {/* Donut Chart Card */}
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5 space-y-3">
+      <div className="rounded-3xl p-5 space-y-3" style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}>
         <div className="flex items-center justify-between">
-          <p className="text-xs font-black text-white/50" style={{ letterSpacing: 0 }}>
+          <p className="text-xs font-black" style={{ color: FT.textMuted, letterSpacing: 0 }}>
             📊 פילוח הוצאות
           </p>
           {activeCategory && (
             <button
               onClick={() => setActiveCategory(null)}
-              className="flex items-center gap-1 text-[11px] text-sky-400 font-bold hover:text-sky-300 transition-colors"
-              style={{ letterSpacing: 0 }}
+              className="flex items-center gap-1 text-[11px] font-bold transition-colors"
+              style={{ color: FT.gold, letterSpacing: 0 }}
             >
               <X className="h-3 w-3" />
               נקה סינון
             </button>
           )}
         </div>
-        <DonutChart
-          data={donutData}
-          activeCategory={activeCategory}
-          onSliceClick={handleSliceClick}
-        />
+        <DonutChart data={donutData} activeCategory={activeCategory} onSliceClick={handleSliceClick} />
       </div>
 
       {/* Smart Search */}
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-4 space-y-2">
+      <div className="rounded-3xl p-4 space-y-2" style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}>
         <div className="relative">
-          <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none" />
+          <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" style={{ color: FT.textMuted }} />
           <input
             type="text"
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setActiveCategory(null); // clear donut selection when typing
-            }}
+            onChange={(e) => { setSearch(e.target.value); setActiveCategory(null); }}
             placeholder="חיפוש: טקסט, קטגוריה, >500 (גדול מ), <200 (קטן מ)"
-            className="w-full pe-10 ps-4 py-2.5 rounded-2xl bg-white/8 border border-white/10 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sky-500/40 transition-all"
+            className="w-full pe-10 ps-4 py-2.5 rounded-2xl text-sm text-white placeholder:text-white/20 focus:outline-none transition-all"
+            style={{ background: FT.cardLight, border: `1px solid ${FT.goldBorder}` }}
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute start-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white"
+              className="absolute start-3 top-1/2 -translate-y-1/2 transition-colors"
+              style={{ color: FT.textMuted }}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -461,13 +409,19 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
         {/* Active filter pills */}
         <div className="flex flex-wrap gap-2 min-h-[1px]">
           {activeCategory && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-400/15 border border-sky-400/30 text-sky-300 text-[11px] font-bold">
+            <span
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
+              style={{ background: FT.goldMid, border: `1px solid ${FT.goldBorder}`, color: FT.gold }}
+            >
               {activeCategory}
               <button onClick={() => setActiveCategory(null)}><X className="h-3 w-3" /></button>
             </span>
           )}
           {searchFilter.type !== "none" && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-white/60 text-[11px] font-bold">
+            <span
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
+              style={{ background: FT.brownDim, border: `1px solid ${FT.brownBorder}`, color: FT.textMuted }}
+            >
               {searchFilter.type === "gt" && `> ₪${fmt(searchFilter.amount)}`}
               {searchFilter.type === "lt" && `< ₪${fmt(searchFilter.amount)}`}
               {searchFilter.type === "text" && `"${searchFilter.query}"`}
@@ -478,26 +432,26 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
       </div>
 
       {/* Transaction List */}
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-4 space-y-3">
+      <div className="rounded-3xl p-4 space-y-3" style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}>
         <div className="flex items-center justify-between">
-          <p className="text-xs font-black text-white/50" style={{ letterSpacing: 0 }}>
+          <p className="text-xs font-black" style={{ color: FT.textMuted, letterSpacing: 0 }}>
             📋 תנועות
           </p>
           <div className="flex items-center gap-2">
             {anomalyCount > 0 && (
-              <span className="flex items-center gap-1 text-[11px] text-amber-400 font-bold">
+              <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: "#d4b264" }}>
                 <AlertTriangle className="h-3 w-3" />
                 {anomalyCount} חריגות
               </span>
             )}
-            <span className="text-[10px] text-white/25">
+            <span className="text-[10px]" style={{ color: FT.textFaint }}>
               {filtered.length} מתוך {allTransactions.length}
             </span>
           </div>
         </div>
 
         {filtered.length === 0 ? (
-          <p className="text-center text-white/25 text-sm py-8" style={{ letterSpacing: 0 }}>
+          <p className="text-center text-sm py-8" style={{ color: FT.textFaint, letterSpacing: 0 }}>
             {allTransactions.length === 0 ? "אין תנועות לחודש זה" : "אין תוצאות לחיפוש זה"}
           </p>
         ) : (
@@ -519,19 +473,27 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
         <button
           onClick={() => exportCSV(allTransactions, year, month)}
           disabled={allTransactions.length === 0}
-          className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-400 text-sm font-black hover:bg-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ letterSpacing: 0 }}
+          className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+          style={{
+            letterSpacing: 0,
+            background: FT.goldDim,
+            border: `1px solid ${FT.goldBorder}`,
+            color: FT.gold,
+          }}
         >
           <Download className="h-4 w-4" />
           ייצוא CSV
         </button>
         <button
-          onClick={() =>
-            exportPDF(allTransactions, year, month, fin.totalIncome, fin.totalExpenses, fin.balance, anomalyIds)
-          }
+          onClick={() => exportPDF(allTransactions, year, month, fin.totalIncome, fin.totalExpenses, fin.balance, anomalyIds)}
           disabled={allTransactions.length === 0}
-          className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-sky-500/15 border border-sky-400/30 text-sky-400 text-sm font-black hover:bg-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ letterSpacing: 0 }}
+          className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+          style={{
+            letterSpacing: 0,
+            background: FT.brownDim,
+            border: `1px solid ${FT.brownBorder}`,
+            color: FT.brown,
+          }}
         >
           <Printer className="h-4 w-4" />
           ייצוא PDF
