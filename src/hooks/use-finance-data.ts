@@ -163,6 +163,7 @@ export function useAddFixedExpense() {
       charge_day: number;
       is_active?: boolean;
       is_recurring?: boolean;
+      notes?: string | null;
     }) => {
       const userId = await getUserId();
       const { error } = await supabase.from("fixed_expenses").insert({
