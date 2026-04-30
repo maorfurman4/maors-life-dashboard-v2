@@ -5,28 +5,25 @@ import { FinanceDashboardTab } from "@/components/finance/FinanceDashboardTab";
 import { FinanceOperationsTab } from "@/components/finance/FinanceOperationsTab";
 import { FinanceHistoryTab } from "@/components/finance/FinanceHistoryTab";
 import { FinanceDebtsTab } from "@/components/finance/FinanceDebtsTab";
+import { FT } from "@/lib/finance-theme";
 
 export const Route = createFileRoute("/_app/finance")({
   component: FinancePage,
 });
 
 type Tab = "dashboard" | "operations" | "history" | "debts";
-
-interface MonthState {
-  year: number;
-  month: number;
-}
+interface MonthState { year: number; month: number; }
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "dashboard",  label: "מצב כללי" },
-  { key: "operations", label: "תזרים וקבועות" },
-  { key: "history",    label: "היסטוריה וניתוח" },
-  { key: "debts",      label: "חובות והלוואות" },
+  { key: "operations", label: "תזרים" },
+  { key: "history",    label: "היסטוריה" },
+  { key: "debts",      label: "חובות" },
 ];
 
 const MONTHS_HE = [
-  "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
-  "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+  "ינואר","פברואר","מרץ","אפריל","מאי","יוני",
+  "יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר",
 ];
 
 function FinancePage() {
@@ -37,47 +34,59 @@ function FinancePage() {
     month: now.getMonth() + 1,
   });
 
-  function prevMonth() {
-    setCurrentMonth(({ year, month }) =>
-      month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 }
-    );
-  }
+  const prevMonth = () => setCurrentMonth(({ year, month }) =>
+    month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 });
 
-  function nextMonth() {
-    setCurrentMonth(({ year, month }) =>
-      month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
-    );
-  }
+  const nextMonth = () => setCurrentMonth(({ year, month }) =>
+    month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 });
 
   const isCurrentMonth =
     currentMonth.year === now.getFullYear() &&
     currentMonth.month === now.getMonth() + 1;
 
   return (
-    <div dir="rtl" className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 bg-[#080b12] min-h-screen relative">
-      {/* Ambient glow orbs */}
+    <div
+      dir="rtl"
+      className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 min-h-screen relative"
+      style={{ background: FT.bg }}
+    >
+      {/* Warm ambient glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-emerald-500/10 blur-[140px]" />
-        <div className="absolute bottom-40 -left-20 h-64 w-64 rounded-full bg-sky-500/8 blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-80 w-80 rounded-full bg-emerald-500/5 blur-[120px]" />
+        <div
+          className="absolute -top-40 -right-24 h-80 w-80 rounded-full blur-[130px]"
+          style={{ background: "rgba(244,226,140,0.07)" }}
+        />
+        <div
+          className="absolute top-1/3 -left-16 h-56 w-56 rounded-full blur-[100px]"
+          style={{ background: "rgba(140,117,85,0.09)" }}
+        />
+        <div
+          className="absolute bottom-40 right-1/3 h-48 w-48 rounded-full blur-[90px]"
+          style={{ background: "rgba(244,226,140,0.05)" }}
+        />
       </div>
 
       <div className="relative z-10 pb-32">
         {/* Header */}
-        <div className="px-4 pt-5 pb-3 flex items-center gap-3">
-          <div className="h-11 w-11 rounded-2xl bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <Wallet className="h-5 w-5 text-emerald-400" />
+        <div className="px-4 pt-6 pb-4 flex items-center gap-3">
+          <div
+            className="h-11 w-11 rounded-[20px] flex items-center justify-center shrink-0"
+            style={{ background: FT.goldDim, border: `1px solid ${FT.goldBorder}` }}
+          >
+            <Wallet className="h-5 w-5" style={{ color: FT.gold }} />
           </div>
           <div>
             <h1 className="text-2xl font-black text-white" style={{ letterSpacing: 0 }}>
-              כספים 💰
+              כספים
             </h1>
-            <p className="text-[11px] text-white/40 mt-0.5">עדכון בזמן אמת</p>
+            <p className="text-[11px] mt-0.5" style={{ color: FT.textSub }}>
+              ניהול פיננסי חכם
+            </p>
           </div>
         </div>
 
         {/* Month Navigator */}
-        <FinanceMonthNav
+        <MonthNav
           year={currentMonth.year}
           month={currentMonth.month}
           isCurrentMonth={isCurrentMonth}
@@ -86,18 +95,32 @@ function FinancePage() {
         />
 
         {/* Sticky Tab Bar */}
-        <div className="sticky top-0 z-20 px-4 py-2 bg-[#080b12]/80 backdrop-blur-xl border-b border-white/5">
-          <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl scrollbar-hide overflow-x-auto">
+        <div
+          className="sticky top-0 z-20 px-4 py-2.5"
+          style={{
+            background: `${FT.bg}cc`,
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            borderBottom: `1px solid ${FT.goldBorder}`,
+          }}
+        >
+          <div
+            className="flex gap-1 p-1 rounded-full"
+            style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}
+          >
             {TABS.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
-                className={`flex-1 py-2 px-1 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all duration-200 min-w-0 ${
-                  activeTab === t.key
-                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
-                    : "text-white/40 hover:text-white/70"
-                }`}
-                style={{ letterSpacing: 0 }}
+                className="flex-1 py-2.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all duration-200"
+                style={{
+                  letterSpacing: 0,
+                  background: activeTab === t.key ? FT.gold : "transparent",
+                  color: activeTab === t.key ? FT.bg : FT.textMuted,
+                  boxShadow: activeTab === t.key
+                    ? `0 2px 16px ${FT.goldGlow}`
+                    : "none",
+                }}
               >
                 {t.label}
               </button>
@@ -107,43 +130,34 @@ function FinancePage() {
 
         {/* Tab Content */}
         <div className="px-4 pt-4">
-          {activeTab === "dashboard"  && <DashboardTab  year={currentMonth.year} month={currentMonth.month} />}
-          {activeTab === "operations" && <OperationsTab year={currentMonth.year} month={currentMonth.month} />}
-          {activeTab === "history"    && <HistoryTab    year={currentMonth.year} month={currentMonth.month} />}
-          {activeTab === "debts"      && <DebtsTab      year={currentMonth.year} month={currentMonth.month} />}
+          {activeTab === "dashboard"  && <FinanceDashboardTab  year={currentMonth.year} month={currentMonth.month} />}
+          {activeTab === "operations" && <FinanceOperationsTab year={currentMonth.year} month={currentMonth.month} />}
+          {activeTab === "history"    && <FinanceHistoryTab    year={currentMonth.year} month={currentMonth.month} />}
+          {activeTab === "debts"      && <FinanceDebtsTab      year={currentMonth.year} month={currentMonth.month} />}
         </div>
       </div>
-
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
     </div>
   );
 }
 
-// ─── Month Navigator ───────────────────────────────────────────────────────────
+// ─── Month Navigator ──────────────────────────────────────────────────────────
 
-function FinanceMonthNav({
-  year,
-  month,
-  isCurrentMonth,
-  onPrev,
-  onNext,
+function MonthNav({
+  year, month, isCurrentMonth, onPrev, onNext,
 }: {
-  year: number;
-  month: number;
-  isCurrentMonth: boolean;
-  onPrev: () => void;
-  onNext: () => void;
+  year: number; month: number; isCurrentMonth: boolean;
+  onPrev: () => void; onNext: () => void;
 }) {
   return (
-    <div className="mx-4 mb-3 flex items-center justify-between rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 px-4 py-3">
-      {/* RTL: right arrow = go back in time (earlier month) */}
+    <div
+      className="mx-4 mb-3 flex items-center justify-between rounded-full px-3 py-2.5"
+      style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}
+    >
       <button
         onClick={onPrev}
         aria-label="חודש קודם"
-        className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:text-white active:scale-90 transition-all"
+        className="h-8 w-8 rounded-full flex items-center justify-center transition-all active:scale-90"
+        style={{ background: FT.goldDim, color: "rgba(255,255,255,0.6)" }}
       >
         <ChevronRight className="h-4 w-4" />
       </button>
@@ -153,37 +167,21 @@ function FinanceMonthNav({
           {MONTHS_HE[month - 1]} {year}
         </p>
         {isCurrentMonth && (
-          <p className="text-[9px] text-emerald-400 font-bold mt-0.5">חודש נוכחי</p>
+          <p className="text-[9px] font-bold mt-0.5" style={{ color: FT.gold }}>
+            חודש נוכחי
+          </p>
         )}
       </div>
 
-      {/* RTL: left arrow = go forward in time (later month) */}
       <button
         onClick={onNext}
         disabled={isCurrentMonth}
         aria-label="חודש הבא"
-        className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:text-white active:scale-90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        className="h-8 w-8 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
+        style={{ background: FT.goldDim, color: "rgba(255,255,255,0.6)" }}
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
     </div>
   );
-}
-
-// ─── Placeholder Tab Components ───────────────────────────────────────────────
-
-function DashboardTab({ year, month }: { year: number; month: number }) {
-  return <FinanceDashboardTab year={year} month={month} />;
-}
-
-function OperationsTab({ year, month }: { year: number; month: number }) {
-  return <FinanceOperationsTab year={year} month={month} />;
-}
-
-function HistoryTab({ year, month }: { year: number; month: number }) {
-  return <FinanceHistoryTab year={year} month={month} />;
-}
-
-function DebtsTab({ year, month }: { year: number; month: number }) {
-  return <FinanceDebtsTab year={year} month={month} />;
 }

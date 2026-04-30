@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Plus, Minus, Check, X, RotateCcw, Sparkles } from "lucide-react";
+import { Plus, Minus, Check, X, RotateCcw, Sparkles, CreditCard as CardIcon, TrendingUp, TrendingDown } from "lucide-react";
 import {
   useMonthlyFinance,
   useAddExpense,
@@ -9,6 +9,7 @@ import {
   useFinanceSettings,
   DEFAULT_EXPENSE_CATEGORIES,
 } from "@/hooks/use-finance-data";
+import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
 
 const fmt = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
@@ -51,7 +52,93 @@ function computeHealthScore(
   return Math.round(Math.min(100, Math.max(0, s + b + f + 10)));
 }
 
-// ─── Health Score Gauge (SVG arc) ─────────────────────────────────────────────
+// ─── Gold Credit Card ─────────────────────────────────────────────────────────
+
+function GoldCreditCard({
+  balance, totalIncome, totalExpenses, month, year,
+}: {
+  balance: number; totalIncome: number; totalExpenses: number;
+  month: number; year: number;
+}) {
+  const mm = String(month).padStart(2, "0");
+  const yy = String(year).slice(-2);
+
+  return (
+    <div
+      className="relative rounded-[28px] p-5 overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, #3d2e18 0%, #5a4228 40%, #3d2e18 80%, #4a3520 100%)",
+        boxShadow: "0 10px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(244,226,140,0.18)",
+      }}
+    >
+      {/* Gold shimmer radial */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at 15% 15%, rgba(244,226,140,0.18) 0%, transparent 55%), " +
+            "radial-gradient(ellipse at 85% 85%, rgba(140,117,85,0.12) 0%, transparent 50%)",
+        }}
+      />
+
+      {/* Top row */}
+      <div className="relative flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <div
+            className="h-8 w-8 rounded-xl flex items-center justify-center"
+            style={{ background: "rgba(244,226,140,0.18)", border: "1px solid rgba(244,226,140,0.3)" }}
+          >
+            <CardIcon className="h-4 w-4" style={{ color: FT.gold }} />
+          </div>
+          <p className="text-[10px] font-bold" style={{ color: "rgba(244,226,140,0.55)", letterSpacing: 0 }}>
+            יתרה חודשית
+          </p>
+        </div>
+        <p className="text-[10px] font-mono tracking-widest" style={{ color: "rgba(244,226,140,0.35)" }}>
+          ●●●● {mm}/{yy}
+        </p>
+      </div>
+
+      {/* Balance */}
+      <div className="relative mb-5">
+        <p
+          className="text-[34px] font-black tabular-nums leading-none"
+          style={{ color: FT.gold, letterSpacing: 0 }}
+          dir="ltr"
+        >
+          ₪{fmt(Math.abs(balance))}
+        </p>
+        <p className="text-[10px] mt-1.5 font-medium" style={{ color: balance < 0 ? FT.danger : "rgba(244,226,140,0.45)", letterSpacing: 0 }}>
+          {balance < 0 ? "גירעון חודשי" : "מאזן חיובי"}
+        </p>
+      </div>
+
+      {/* Income / Expenses */}
+      <div className="relative flex justify-between items-end">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-3.5 w-3.5" style={{ color: FT.success }} />
+          <div>
+            <p className="text-[9px]" style={{ color: "rgba(244,226,140,0.35)", letterSpacing: 0 }}>הכנסות</p>
+            <p className="text-sm font-black tabular-nums" style={{ color: FT.success, letterSpacing: 0 }} dir="ltr">
+              +₪{fmt(totalIncome)}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-end">
+            <p className="text-[9px]" style={{ color: "rgba(244,226,140,0.35)", letterSpacing: 0 }}>הוצאות</p>
+            <p className="text-sm font-black tabular-nums" style={{ color: FT.danger, letterSpacing: 0 }} dir="ltr">
+              -₪{fmt(totalExpenses)}
+            </p>
+          </div>
+          <TrendingDown className="h-3.5 w-3.5" style={{ color: FT.danger }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Health Score Gauge (SVG arc) — gold palette ──────────────────────────────
 
 function HealthScoreGauge({ score }: { score: number }) {
   const R = 44, CX = 56, CY = 58, SW = 10;
@@ -65,8 +152,8 @@ function HealthScoreGauge({ score }: { score: number }) {
   }
 
   const scoreAngle = START + (score / 100) * SWEEP;
-  const color = score >= 70 ? "#34d399" : score >= 40 ? "#f59e0b" : "#f43f5e";
-  const label = score >= 70 ? "מצויין 💪" : score >= 40 ? "סביר ⚡" : "זקוק שיפור 🔴";
+  const color = score >= 70 ? FT.gold : score >= 40 ? FT.brown : FT.danger;
+  const label = score >= 70 ? "מצויין" : score >= 40 ? "סביר" : "זקוק שיפור";
 
   return (
     <div className="flex flex-col items-center gap-1.5">
@@ -74,7 +161,7 @@ function HealthScoreGauge({ score }: { score: number }) {
         <path
           d={arc(START, START + SWEEP)}
           fill="none"
-          stroke="rgba(255,255,255,0.08)"
+          stroke="rgba(255,255,255,0.07)"
           strokeWidth={SW}
           strokeLinecap="round"
         />
@@ -85,7 +172,7 @@ function HealthScoreGauge({ score }: { score: number }) {
             stroke={color}
             strokeWidth={SW}
             strokeLinecap="round"
-            style={{ filter: `drop-shadow(0 0 8px ${color}99)` }}
+            style={{ filter: `drop-shadow(0 0 8px ${color}88)` }}
           />
         )}
         <text
@@ -102,7 +189,7 @@ function HealthScoreGauge({ score }: { score: number }) {
         <text
           x={CX} y={CY + 19}
           textAnchor="middle"
-          fill="rgba(255,255,255,0.3)"
+          fill="rgba(255,255,255,0.25)"
           fontSize="9"
           fontFamily="system-ui, sans-serif"
         >
@@ -114,36 +201,30 @@ function HealthScoreGauge({ score }: { score: number }) {
   );
 }
 
-// ─── Apple-style Goal Rings ───────────────────────────────────────────────────
+// ─── Apple-style Goal Rings — gold/brown palette ──────────────────────────────
 
 function GoalRings({
-  savingsPct,
-  savingsGoal,
-  expensePct,
-  balancePct,
+  savingsPct, savingsGoal, expensePct, balancePct,
 }: {
-  savingsPct: number;
-  savingsGoal: number;
-  expensePct: number;
-  balancePct: number;
+  savingsPct: number; savingsGoal: number; expensePct: number; balancePct: number;
 }) {
   const rings = [
     {
       r: 48,
       pct: Math.min(1, savingsPct / Math.max(savingsGoal, 1)),
-      color: savingsPct >= savingsGoal ? "#34d399" : savingsPct >= savingsGoal * 0.5 ? "#f59e0b" : "#f43f5e",
+      color: savingsPct >= savingsGoal ? FT.gold : savingsPct >= savingsGoal * 0.5 ? FT.brown : FT.danger,
       label: "חיסכון",
     },
     {
       r: 33,
       pct: Math.min(1, expensePct),
-      color: expensePct > 0.9 ? "#f43f5e" : expensePct > 0.75 ? "#f59e0b" : "#38bdf8",
+      color: expensePct > 0.9 ? FT.danger : expensePct > 0.75 ? FT.brown : FT.success,
       label: "הוצאות",
     },
     {
       r: 18,
       pct: Math.max(0, Math.min(1, balancePct)),
-      color: balancePct > 0.15 ? "#34d399" : balancePct > 0 ? "#f59e0b" : "#f43f5e",
+      color: balancePct > 0.15 ? FT.gold : balancePct > 0 ? FT.brown : FT.danger,
       label: "מאזן",
     },
   ];
@@ -155,26 +236,14 @@ function GoalRings({
           const circ = 2 * Math.PI * r;
           return (
             <g key={r} transform="rotate(-90 56 56)">
-              <circle
-                cx={56} cy={56} r={r}
-                fill="none"
-                stroke="rgba(255,255,255,0.07)"
-                strokeWidth={9}
-                strokeLinecap="round"
-              />
+              <circle cx={56} cy={56} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={9} strokeLinecap="round" />
               {pct > 0.01 && (
                 <circle
-                  cx={56} cy={56} r={r}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth={9}
-                  strokeLinecap="round"
+                  cx={56} cy={56} r={r} fill="none"
+                  stroke={color} strokeWidth={9} strokeLinecap="round"
                   strokeDasharray={circ}
                   strokeDashoffset={circ * (1 - pct)}
-                  style={{
-                    filter: `drop-shadow(0 0 5px ${color}99)`,
-                    transition: "stroke-dashoffset 1s ease",
-                  }}
+                  style={{ filter: `drop-shadow(0 0 5px ${color}88)`, transition: "stroke-dashoffset 1s ease" }}
                 />
               )}
             </g>
@@ -185,7 +254,7 @@ function GoalRings({
         {rings.map(({ r, color, label }) => (
           <div key={r} className="flex items-center gap-1">
             <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-            <span className="text-[9px] text-white/40" style={{ letterSpacing: 0 }}>{label}</span>
+            <span className="text-[9px]" style={{ color: FT.textMuted, letterSpacing: 0 }}>{label}</span>
           </div>
         ))}
       </div>
@@ -193,24 +262,10 @@ function GoalRings({
   );
 }
 
-// ─── Summary Cards ────────────────────────────────────────────────────────────
-
-function SummaryCard({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 space-y-1.5">
-      <p className="text-[10px] text-white/40" style={{ letterSpacing: 0 }}>{label}</p>
-      <p className={`text-sm font-black tabular-nums ${color}`} dir="ltr">
-        ₪{fmt(Math.abs(value))}
-      </p>
-    </div>
-  );
-}
-
 // ─── Medals Row ───────────────────────────────────────────────────────────────
 
 const MONTHS_SHORT_HE = [
-  "ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יונ׳",
-  "יול׳", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳",
+  "ינו׳","פבר׳","מרץ","אפר׳","מאי","יונ׳","יול׳","אוג׳","ספט׳","אוק׳","נוב׳","דצמ׳",
 ];
 
 function useMedals(savingsGoal: number) {
@@ -220,15 +275,8 @@ function useMedals(savingsGoal: number) {
   return useMemo(() => {
     const expM: Record<string, number> = {};
     const incM: Record<string, number> = {};
-
-    (expH || []).forEach((e: any) => {
-      const k = e.date.slice(0, 7);
-      expM[k] = (expM[k] || 0) + Number(e.amount);
-    });
-    (incH || []).forEach((i: any) => {
-      const k = i.date.slice(0, 7);
-      incM[k] = (incM[k] || 0) + Number(i.amount);
-    });
+    (expH || []).forEach((e: any) => { const k = e.date.slice(0, 7); expM[k] = (expM[k] || 0) + Number(e.amount); });
+    (incH || []).forEach((i: any) => { const k = i.date.slice(0, 7); incM[k] = (incM[k] || 0) + Number(i.amount); });
 
     const now = new Date();
     return Array.from({ length: 6 }, (_, i) => {
@@ -244,7 +292,6 @@ function useMedals(savingsGoal: number) {
 
 function MedalsRow({ savingsGoal }: { savingsGoal: number }) {
   const months = useMedals(savingsGoal);
-
   let streak = 0;
   for (let i = months.length - 1; i >= 0; i--) {
     if (months[i].metGoal) streak++;
@@ -252,12 +299,15 @@ function MedalsRow({ savingsGoal }: { savingsGoal: number }) {
   }
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-4">
+    <div
+      className="rounded-3xl p-4"
+      style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}
+    >
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-black text-white/70" style={{ letterSpacing: 0 }}>
+        <p className="text-xs font-black" style={{ color: FT.gold, letterSpacing: 0 }}>
           {streak >= 2 ? `🏆 ${streak} חודשים רצופים!` : streak === 1 ? "🥇 חודש ראשון!" : "מדליות חיסכון"}
         </p>
-        <p className="text-[10px] text-white/25">6 חודשים אחרונים</p>
+        <p className="text-[10px]" style={{ color: FT.textFaint }}>6 חודשים אחרונים</p>
       </div>
       <div className="flex justify-between">
         {months.map((m) => (
@@ -265,7 +315,7 @@ function MedalsRow({ savingsGoal }: { savingsGoal: number }) {
             <span className={`text-xl leading-none ${m.metGoal ? "" : "opacity-15 grayscale"}`}>
               {m.metGoal ? "🥇" : "⭕"}
             </span>
-            <p className="text-[9px] text-white/30" style={{ letterSpacing: 0 }}>
+            <p className="text-[9px]" style={{ color: FT.textFaint, letterSpacing: 0 }}>
               {MONTHS_SHORT_HE[m.monthIdx]}
             </p>
           </div>
@@ -306,18 +356,15 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
 
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const saveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const addExpense = useAddExpense();
   const addIncome = useAddIncome();
 
-  // AI categorize on vendor change
   useEffect(() => {
     const s = aiCategorize(vendor);
     setAiSuggestion(s);
     if (s && entryType === "expense") setCategory(s);
   }, [vendor, entryType]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
@@ -344,50 +391,31 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
 
     const day = String(new Date().getDate()).padStart(2, "0");
     const date = `${year}-${String(month).padStart(2, "0")}-${day}`;
-    const entry: PendingEntry = {
-      type: entryType,
-      amount: num,
-      category,
-      description: vendor.trim() || undefined,
-      date,
-    };
+    const entry: PendingEntry = { type: entryType, amount: num, category, description: vendor.trim() || undefined, date };
 
     setPending(entry);
     setCountdown(3);
     setOpen(false);
     resetForm();
 
-    // Tick countdown
     tickRef.current = setInterval(() => {
       setCountdown((p) => {
-        if (p <= 1) {
-          if (tickRef.current) clearInterval(tickRef.current);
-          return 0;
-        }
+        if (p <= 1) { if (tickRef.current) clearInterval(tickRef.current); return 0; }
         return p - 1;
       });
     }, 1000);
 
-    // Commit after 3.1s
     saveRef.current = setTimeout(async () => {
       try {
         if (entry.type === "expense") {
           await addExpense.mutateAsync({
-            amount: entry.amount,
-            category: entry.category,
-            description: entry.description,
-            date: entry.date,
-            expense_type: "variable",
-            is_recurring: false,
-            needs_review: false,
+            amount: entry.amount, category: entry.category, description: entry.description,
+            date: entry.date, expense_type: "variable", is_recurring: false, needs_review: false,
           });
         } else {
           await addIncome.mutateAsync({
-            amount: entry.amount,
-            category: entry.category,
-            description: entry.description,
-            source: "manual",
-            date: entry.date,
+            amount: entry.amount, category: entry.category,
+            description: entry.description, source: "manual", date: entry.date,
           });
         }
         toast.success(`₪${fmt(entry.amount)} נשמר בהצלחה ✓`);
@@ -406,37 +434,35 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
     toast.info("ביטלת את ההוספה");
   }
 
-  const cats =
-    entryType === "expense"
-      ? DEFAULT_EXPENSE_CATEGORIES
-      : INCOME_SOURCES;
+  const cats = entryType === "expense" ? DEFAULT_EXPENSE_CATEGORIES : INCOME_SOURCES;
 
   return (
     <>
       {/* 3-second Undo Banner */}
       {pending && (
         <div
-          className="fixed bottom-24 inset-x-4 z-50 rounded-2xl bg-[#161b2a]/98 backdrop-blur-xl border border-white/15 px-4 py-3 shadow-2xl"
+          className="fixed bottom-24 inset-x-4 z-50 rounded-[24px] px-4 py-3 shadow-2xl"
           dir="rtl"
+          style={{ background: FT.card, border: `1px solid ${FT.goldBorder}`, boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div
-                className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                  pending.type === "expense" ? "bg-rose-500/20" : "bg-emerald-500/20"
-                }`}
+                className="h-9 w-9 rounded-2xl flex items-center justify-center shrink-0"
+                style={{
+                  background: pending.type === "expense" ? FT.dangerDim : FT.successDim,
+                  border: `1px solid ${pending.type === "expense" ? "rgba(217,107,107,0.3)" : "rgba(124,191,142,0.3)"}`,
+                }}
               >
-                {pending.type === "expense" ? (
-                  <Minus className="h-4 w-4 text-rose-400" />
-                ) : (
-                  <Plus className="h-4 w-4 text-emerald-400" />
-                )}
+                {pending.type === "expense"
+                  ? <Minus className="h-4 w-4" style={{ color: FT.danger }} />
+                  : <Plus className="h-4 w-4" style={{ color: FT.success }} />}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-black text-white truncate" style={{ letterSpacing: 0 }}>
                   ₪{fmt(pending.amount)} · {pending.category}
                 </p>
-                <p className="text-[10px] text-white/40 mt-0.5">
+                <p className="text-[10px] mt-0.5" style={{ color: FT.textMuted }}>
                   {countdown > 0
                     ? `נשמר בעוד ${countdown} ${countdown === 1 ? "שנייה" : "שניות"}`
                     : "שומר..."}
@@ -445,59 +471,58 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
             </div>
             <button
               onClick={handleUndo}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 text-white text-xs font-bold hover:bg-white/20 active:scale-95 transition-all shrink-0"
-              style={{ letterSpacing: 0 }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold active:scale-95 transition-all shrink-0"
+              style={{ background: FT.goldDim, color: FT.gold, border: `1px solid ${FT.goldBorder}`, letterSpacing: 0 }}
             >
               <RotateCcw className="h-3 w-3" />
               בטל
             </button>
           </div>
-          {/* Progress bar draining to zero */}
-          <div className="mt-3 h-0.5 rounded-full bg-white/10 overflow-hidden">
+          {/* Gold progress bar draining to zero */}
+          <div className="mt-3 h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
             <div
-              className="h-full bg-emerald-400 rounded-full transition-all ease-linear"
-              style={{ width: `${(countdown / 3) * 100}%`, transitionDuration: "990ms" }}
+              className="h-full rounded-full transition-all ease-linear"
+              style={{ width: `${(countdown / 3) * 100}%`, background: FT.gold, transitionDuration: "990ms" }}
             />
           </div>
         </div>
       )}
 
-      {/* FAB */}
+      {/* Gold FAB */}
       {!open && !pending && (
         <button
           onClick={() => setOpen(true)}
           aria-label="הוסף פעולה פיננסית"
-          className="fixed bottom-24 right-4 z-40 h-14 w-14 rounded-2xl bg-emerald-500 shadow-xl shadow-emerald-500/40 flex items-center justify-center text-white hover:bg-emerald-400 active:scale-90 transition-all"
+          className="fixed bottom-24 right-4 z-40 h-14 w-14 rounded-full flex items-center justify-center transition-all active:scale-90 hover:brightness-110"
+          style={{
+            background: FT.gold,
+            color: FT.bg,
+            boxShadow: `0 4px 20px ${FT.goldGlow}`,
+          }}
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-6 w-6" strokeWidth={2.5} />
         </button>
       )}
 
       {/* Quick Add Slide-up Panel */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-end" dir="rtl">
-          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setOpen(false)}
-          />
-
-          {/* Panel */}
-          <div
-            className="relative w-full max-h-[88vh] overflow-y-auto rounded-t-3xl bg-[#0e1320]/98 backdrop-blur-2xl border-t border-white/10 px-5 pt-4 pb-10 space-y-4 shadow-2xl"
+            className="relative w-full max-h-[88vh] overflow-y-auto rounded-t-[32px] px-5 pt-4 pb-10 space-y-4 shadow-2xl"
+            style={{ background: FT.bg, borderTop: `1px solid ${FT.goldBorder}` }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle */}
-            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-1" />
+            <div className="w-10 h-1 rounded-full mx-auto mb-1" style={{ background: "rgba(244,226,140,0.2)" }} />
 
             {/* Header */}
             <div className="flex items-center justify-between">
-              <p className="text-base font-black text-white" style={{ letterSpacing: 0 }}>
-                הוספה מהירה
-              </p>
+              <p className="text-base font-black text-white" style={{ letterSpacing: 0 }}>הוספה מהירה</p>
               <button
                 onClick={() => setOpen(false)}
-                className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors"
+                className="h-8 w-8 rounded-full flex items-center justify-center transition-colors"
+                style={{ background: FT.goldDim, color: FT.textMuted }}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -509,14 +534,19 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
                 <button
                   key={t}
                   onClick={() => handleTypeChange(t)}
-                  className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition-all ${
-                    entryType === t
-                      ? t === "expense"
-                        ? "bg-rose-500/20 border border-rose-400/40 text-rose-400"
-                        : "bg-emerald-500/20 border border-emerald-400/40 text-emerald-400"
-                      : "bg-white/5 border border-white/10 text-white/40"
-                  }`}
-                  style={{ letterSpacing: 0 }}
+                  className="flex items-center justify-center gap-2 py-3 rounded-[18px] text-sm font-bold transition-all"
+                  style={{
+                    letterSpacing: 0,
+                    background: entryType === t
+                      ? t === "expense" ? FT.dangerDim : FT.successDim
+                      : FT.brownDim,
+                    border: entryType === t
+                      ? `1px solid ${t === "expense" ? "rgba(217,107,107,0.35)" : "rgba(124,191,142,0.35)"}`
+                      : `1px solid ${FT.brownBorder}`,
+                    color: entryType === t
+                      ? t === "expense" ? FT.danger : FT.success
+                      : FT.textMuted,
+                  }}
                 >
                   {t === "expense" ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                   {t === "expense" ? "הוצאה" : "הכנסה"}
@@ -526,15 +556,17 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
 
             {/* Amount */}
             <div className="relative">
-              <span className="absolute end-4 top-1/2 -translate-y-1/2 text-xl font-black text-white/30">
-                ₪
-              </span>
+              <span className="absolute end-4 top-1/2 -translate-y-1/2 text-xl font-black" style={{ color: FT.textFaint }}>₪</span>
               <input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                className="w-full pe-12 ps-4 py-4 rounded-2xl bg-white/8 border border-white/10 text-2xl font-black text-white placeholder:text-white/20 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all"
+                className="w-full pe-12 ps-4 py-4 rounded-[18px] text-2xl font-black text-white placeholder:text-white/15 focus:outline-none transition-all"
+                style={{
+                  background: FT.card,
+                  border: `1px solid ${FT.goldBorder}`,
+                }}
                 dir="ltr"
                 autoFocus
                 inputMode="decimal"
@@ -548,13 +580,14 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
                 value={vendor}
                 onChange={(e) => setVendor(e.target.value)}
                 placeholder="שם ספק / תיאור — AI יזהה קטגוריה אוטומטית"
-                className="w-full px-4 py-3 rounded-2xl bg-white/8 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-sky-500/40 focus:bg-white/10 transition-all"
+                className="w-full px-4 py-3 rounded-[18px] text-sm text-white placeholder:text-white/25 focus:outline-none transition-all"
+                style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}
               />
               {aiSuggestion && entryType === "expense" && (
                 <div className="flex items-center gap-1.5 mt-2 px-1">
-                  <Sparkles className="h-3 w-3 text-sky-400 shrink-0" />
-                  <p className="text-[11px] text-sky-400" style={{ letterSpacing: 0 }}>
-                    AI זיהה: <span className="font-black">{aiSuggestion}</span> — נבחר אוטומטית
+                  <Sparkles className="h-3 w-3 shrink-0" style={{ color: FT.gold }} />
+                  <p className="text-[11px]" style={{ color: FT.textSub, letterSpacing: 0 }}>
+                    AI זיהה: <span className="font-black" style={{ color: FT.gold }}>{aiSuggestion}</span> — נבחר אוטומטית
                   </p>
                 </div>
               )}
@@ -566,14 +599,13 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
                 <button
                   key={cat.name}
                   onClick={() => setCategory(cat.name)}
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-                    category === cat.name
-                      ? entryType === "expense"
-                        ? "border-rose-400/50 bg-rose-400/15 text-rose-300"
-                        : "border-emerald-400/50 bg-emerald-400/15 text-emerald-300"
-                      : "border-white/10 bg-white/5 text-white/40"
-                  }`}
-                  style={{ letterSpacing: 0 }}
+                  className="px-3 py-1.5 rounded-full text-[11px] font-bold transition-all"
+                  style={{
+                    letterSpacing: 0,
+                    background: category === cat.name ? FT.goldMid : FT.brownDim,
+                    border: `1px solid ${category === cat.name ? FT.goldBorder : FT.brownBorder}`,
+                    color: category === cat.name ? FT.gold : FT.textMuted,
+                  }}
                 >
                   {cat.icon ? `${cat.icon} ` : ""}{cat.name}
                 </button>
@@ -584,12 +616,15 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
             <button
               onClick={handleSubmit}
               disabled={!amount}
-              className={`w-full py-4 rounded-2xl font-black text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                entryType === "expense"
-                  ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30 hover:bg-rose-400 active:scale-[0.98]"
-                  : "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 active:scale-[0.98]"
-              }`}
-              style={{ letterSpacing: 0 }}
+              className="w-full py-4 rounded-[18px] font-black text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+              style={{
+                letterSpacing: 0,
+                background: entryType === "expense" ? FT.danger : FT.gold,
+                color: entryType === "expense" ? "#fff" : FT.bg,
+                boxShadow: entryType === "expense"
+                  ? `0 4px 20px ${FT.dangerDim}`
+                  : `0 4px 20px ${FT.goldGlow}`,
+              }}
             >
               <span className="flex items-center justify-center gap-2">
                 <Check className="h-4 w-4" />
@@ -610,21 +645,27 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
   const { data: settings } = useFinanceSettings();
   const savingsGoal = settings?.savings_goal_pct ?? fin.savingsGoal;
 
-  const score = computeHealthScore(
-    fin.savingsPct,
-    savingsGoal,
-    fin.balance,
-    fin.forecastBalance,
-    fin.totalIncome
-  );
+  const score = computeHealthScore(fin.savingsPct, savingsGoal, fin.balance, fin.forecastBalance, fin.totalIncome);
   const expensePct = fin.forecastExpenses > 0 ? fin.totalExpenses / fin.forecastExpenses : 0;
   const balancePct = fin.totalIncome > 0 ? Math.max(0, fin.balance / fin.totalIncome) : 0;
 
   return (
     <div className="space-y-4">
+      {/* Gold Credit Card — balance hero */}
+      <GoldCreditCard
+        balance={fin.balance}
+        totalIncome={fin.totalIncome}
+        totalExpenses={fin.totalExpenses}
+        month={month}
+        year={year}
+      />
+
       {/* Health Score + Goal Rings */}
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-5">
-        <p className="text-[11px] font-bold text-white/40 mb-4" style={{ letterSpacing: 0 }}>
+      <div
+        className="rounded-3xl p-5"
+        style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}
+      >
+        <p className="text-[11px] font-bold mb-4" style={{ color: FT.textMuted, letterSpacing: 0 }}>
           ציון בריאות פיננסית
         </p>
         <div className="flex items-start justify-around gap-2">
@@ -638,21 +679,10 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-2">
-        <SummaryCard label="הכנסות" value={fin.totalIncome} color="text-emerald-400" />
-        <SummaryCard label="הוצאות" value={fin.totalExpenses} color="text-rose-400" />
-        <SummaryCard
-          label="מאזן"
-          value={fin.balance}
-          color={fin.balance >= 0 ? "text-sky-400" : "text-rose-400"}
-        />
-      </div>
-
       {/* Medals */}
       <MedalsRow savingsGoal={savingsGoal} />
 
-      {/* Floating Quick Add — fixed, unmounts when leaving dashboard tab */}
+      {/* Floating Quick Add */}
       <FloatingQuickAdd year={year} month={month} />
     </div>
   );
