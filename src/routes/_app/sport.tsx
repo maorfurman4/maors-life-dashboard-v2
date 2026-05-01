@@ -473,7 +473,7 @@ function WorkoutBuilderTab() {
   };
 
   return (
-    <div className="px-4 pt-4 space-y-4">
+    <div className="px-4 pt-8 space-y-4">
       {/* Sub-tab switcher */}
       <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5">
         {([["custom", "🏗️ בנה אימון"], ["ai", "🤖 AI Planner"]] as const).map(([k, l]) => (
@@ -700,7 +700,7 @@ function ExerciseLibraryTab() {
   const [selectedEx, setSelectedEx]       = useState<LibraryExercise | null>(null);
 
   return (
-    <div className="px-4 pt-4 space-y-4">
+    <div className="px-4 pt-8 space-y-4">
       {!selectedGroup ? (
         <>
           <p className="text-sm font-black text-white">בחר קבוצת שרירים</p>
@@ -948,7 +948,7 @@ function WorkoutHistoryStrip() {
 
 function ProgressTab() {
   return (
-    <div className="px-4 pt-4 space-y-4">
+    <div className="px-4 pt-8 space-y-4">
       <WeightChart />
       <PRSection />
       <WorkoutHistoryStrip />
@@ -987,16 +987,16 @@ function SportPage() {
           minHeight: "100vh",
         }}
       >
-        <div className="absolute inset-0 bg-black/78 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-emerald-500/15 blur-[120px]" />
           <div className="absolute bottom-40 -left-16 h-60 w-60 rounded-full bg-blue-500/10 blur-[100px]" />
         </div>
 
-        <div className="relative z-10 pb-32">
+        <div className="relative z-10 pb-32 pt-8">
 
           {/* Sticky Tab Bar */}
-          <div className="sticky top-0 z-20 px-4 py-2 bg-black/60 backdrop-blur-xl">
+          <div className="relative z-10 px-4 py-2 bg-black/25 backdrop-blur-xl">
             <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
               {TABS.map((t) => (
                 <button key={t.key} onClick={() => setActiveTab(t.key)}
@@ -1010,7 +1010,7 @@ function SportPage() {
 
           {/* TAB 1 */}
           {activeTab === "dashboard" && (
-            <div className="px-4 pt-4 space-y-5">
+            <div className="px-4 pt-8 space-y-5">
               <DayStatusBanner isTraining={isTraining} onToggle={() => setIsTraining((v) => !v)} />
               <QuickAddRow />
               <div className="space-y-2">

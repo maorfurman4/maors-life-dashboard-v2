@@ -51,7 +51,7 @@ function FinancePage() {
       style={{ backgroundImage: "url('/piggy-bg.jpg')" }}
     >
       {/* Heavy dark earthy overlay — keeps cards readable */}
-      <div className="absolute inset-0" style={{ background: "rgba(22,19,17,0.86)", zIndex: 0 }} />
+      <div className="absolute inset-0" style={{ background: "rgba(22,19,17,0.44)", zIndex: 0 }} />
 
       {/* Warm ambient glows — above overlay */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
@@ -82,7 +82,7 @@ function FinancePage() {
 
         {/* Sticky Tab Bar */}
         <div
-          className="sticky top-0 z-20 px-4 py-2.5"
+          className="relative z-10 px-4 py-2.5"
           style={{
             background: "rgba(22,19,17,0.80)",
             backdropFilter: "blur(28px)",
@@ -115,7 +115,7 @@ function FinancePage() {
         </div>
 
         {/* Tab Content */}
-        <div className="px-4 pt-4">
+        <div className="px-4 pt-8">
           {activeTab === "dashboard"  && <FinanceDashboardTab  year={currentMonth.year} month={currentMonth.month} />}
           {activeTab === "operations" && <FinanceOperationsTab year={currentMonth.year} month={currentMonth.month} />}
           {activeTab === "history"    && <FinanceHistoryTab    year={currentMonth.year} month={currentMonth.month} />}

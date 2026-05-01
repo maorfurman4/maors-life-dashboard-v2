@@ -243,14 +243,14 @@ function NutritionPage() {
         }}
       >
         {/* ── Dark overlay — absolute, sits over the image ── */}
-        <div className="absolute inset-0 bg-[#080b12]/80 pointer-events-none" />
+        <div className="absolute inset-0 bg-[#080b12]/42 pointer-events-none" />
 
         {/* ── All content — relative z-10 so it's above the overlay ── */}
-        <div className="relative z-10 pb-32">
+        <div className="relative z-10 pb-32 pt-8">
 
 
         {/* ── Glass tab bar — sticky ── */}
-        <div className="sticky top-0 z-20 px-4 py-2 bg-[#080b12]/60 backdrop-blur-xl">
+        <div className="relative z-10 px-4 py-2 bg-black/25 backdrop-blur-xl">
           <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
             {TABS.map((t) => (
               <button
@@ -272,7 +272,7 @@ function NutritionPage() {
             TAB 1 — DASHBOARD
         ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "dashboard" && (
-          <div className="px-4 pt-4 space-y-4">
+          <div className="px-4 pt-8 space-y-4">
 
             {/* Training Day Toggle */}
             <TrainingToggle

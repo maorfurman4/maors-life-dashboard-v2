@@ -27,7 +27,7 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
 
       {/* Content bar — centering math is isolated to this 56px strip */}
       <div className="relative w-full h-14 pointer-events-auto flex items-center">
-        {/* Hamburger — end-4 resolves to physical right in both LTR and RTL */}
+        {/* Hamburger — right-4 = physical right regardless of dir=rtl */}
         <div className="absolute right-4 md:hidden">
           <button
             onClick={onMenuOpen}
