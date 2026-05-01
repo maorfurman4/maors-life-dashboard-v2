@@ -29,16 +29,20 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
         WebkitBackdropFilter: "blur(16px)",
       }}
     >
-      {/* Page title — true mathematical center, slightly below top edge */}
-      <h1 className="absolute left-1/2 -translate-x-1/2 bottom-3 whitespace-nowrap text-xl font-black text-white pointer-events-none drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
+      {/* Page title — centered in the visible area below safe-area */}
+      <h1
+        className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-xl font-black text-white pointer-events-none drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]"
+        style={{ bottom: "0.75rem" }}
+      >
         {current?.displayLabel ?? current?.label ?? ""}
       </h1>
 
-      {/* Hamburger — absolute inline-end (right in RTL), vertically centered, mobile only */}
+      {/* Hamburger — top-right corner, just below safe-area, mobile only */}
       <button
         onClick={onMenuOpen}
         aria-label="פתח תפריט"
-        className="md:hidden absolute end-4 bottom-2 h-9 w-9 rounded-xl bg-white/10 border border-white/15 backdrop-blur-md flex items-center justify-center text-white/80 hover:text-white hover:bg-white/18 transition-colors z-10"
+        className="md:hidden absolute end-4 h-9 w-9 rounded-xl bg-white/10 border border-white/15 backdrop-blur-md flex items-center justify-center text-white/80 hover:text-white hover:bg-white/18 transition-colors z-10"
+        style={{ top: "calc(env(safe-area-inset-top, 0.5rem) + 4px)" }}
       >
         <Menu className="h-5 w-5" />
       </button>
