@@ -45,6 +45,7 @@ export function SettingsSport() {
 
   const [draft, setDraft] = useState({
     sport_types: [] as string[],
+    custom_sport: "",
     sport_goals: [] as string[],
     muscle_focus: [] as string[],
     sport_frequency: "",
@@ -56,6 +57,7 @@ export function SettingsSport() {
     if (!profile) return;
     setDraft({
       sport_types: profile.sport_types ?? [],
+      custom_sport: profile.custom_sport ?? "",
       sport_goals: profile.sport_goals ?? [],
       muscle_focus: profile.muscle_focus ?? [],
       sport_frequency: profile.sport_frequency ?? "",
@@ -68,6 +70,7 @@ export function SettingsSport() {
     updateProfile(
       {
         sport_types: draft.sport_types,
+        custom_sport: draft.custom_sport || null,
         sport_goals: draft.sport_goals,
         muscle_focus: draft.muscle_focus,
         sport_frequency: draft.sport_frequency || null,
@@ -97,6 +100,17 @@ export function SettingsSport() {
                 onClick={() => setDraft((d) => ({ ...d, sport_types: toggle(d.sport_types, s) }))} />
             ))}
           </div>
+          {draft.sport_types.includes("ספורט אחר") && (
+            <input
+              type="text"
+              value={draft.custom_sport}
+              onChange={(e) => setDraft((d) => ({ ...d, custom_sport: e.target.value }))}
+              placeholder="פרט/י כאן..."
+              dir="rtl"
+              autoFocus
+              className="mt-2 w-full rounded-none bg-white/5 border border-white/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white focus:bg-white/10 min-h-[44px] transition-colors"
+            />
+          )}
         </div>
 
         <div>

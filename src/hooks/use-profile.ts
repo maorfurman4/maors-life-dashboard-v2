@@ -20,8 +20,10 @@ export type UserProfile = {
   sport_goals: string[]
   muscle_focus: string[]
   diet_type: string | null
+  custom_diet: string | null
   food_allergies: string[]
   macro_preference: string | null
+  custom_sport: string | null
   monthly_income: number | null
   monthly_budget: number | null
   savings_goal_percent: number | null
