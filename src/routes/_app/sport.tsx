@@ -987,7 +987,7 @@ function SportPage() {
           minHeight: "100vh",
         }}
       >
-        <div className="absolute inset-0 bg-black/55 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-emerald-500/15 blur-[120px]" />
           <div className="absolute bottom-40 -left-16 h-60 w-60 rounded-full bg-blue-500/10 blur-[100px]" />
@@ -996,7 +996,7 @@ function SportPage() {
         <div className="relative z-10 pb-32">
 
           {/* Sticky Tab Bar */}
-          <div className="sticky top-[4.5rem] z-20 px-4 py-2 bg-black/25 backdrop-blur-xl">
+          <div className="relative z-10 px-4 py-2 bg-black/25 backdrop-blur-xl">
             <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
               {TABS.map((t) => (
                 <button key={t.key} onClick={() => setActiveTab(t.key)}

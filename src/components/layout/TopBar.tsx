@@ -20,8 +20,14 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
   return (
     <header
       role="banner"
-      className="sticky top-0 z-50 relative shrink-0 bg-transparent border-none"
-      style={{ minHeight: "4.5rem", paddingTop: "env(safe-area-inset-top, 0.5rem)" }}
+      className="sticky top-0 z-50 relative shrink-0 border-none"
+      style={{
+        minHeight: "4.5rem",
+        paddingTop: "env(safe-area-inset-top, 0.5rem)",
+        background: "rgba(255,255,255,0.06)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+      }}
     >
       {/* Page title — true mathematical center, slightly below top edge */}
       <h1 className="absolute left-1/2 -translate-x-1/2 bottom-3 whitespace-nowrap text-xl font-black text-white pointer-events-none drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
