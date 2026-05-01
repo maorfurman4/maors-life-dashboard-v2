@@ -12,7 +12,7 @@ export function AppLayout() {
       <DesktopSidebar />
       <div className="flex-1 flex flex-col min-h-screen min-w-0">
         <TopBar onMenuOpen={() => setNavOpen(true)} />
-        <main id="main-content" role="main" aria-label="תוכן ראשי" className="flex-1 p-3 md:p-6">
+        <main id="main-content" role="main" aria-label="תוכן ראשי" className="flex-1 p-3 md:p-6 -mt-14">
           <Outlet />
         </main>
       </div>
