@@ -246,7 +246,7 @@ function NutritionPage() {
         <div className="absolute inset-0 bg-[#080b12]/42 pointer-events-none" />
 
         {/* ── All content — relative z-10 so it's above the overlay ── */}
-        <div className="relative z-10 pb-32">
+        <div className="relative z-10 pb-32 pt-8">
 
 
         {/* ── Glass tab bar — sticky ── */}
@@ -272,7 +272,7 @@ function NutritionPage() {
             TAB 1 — DASHBOARD
         ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "dashboard" && (
-          <div className="px-4 pt-16 space-y-4">
+          <div className="px-4 pt-8 space-y-4">
 
             {/* Training Day Toggle */}
             <TrainingToggle

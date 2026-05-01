@@ -115,7 +115,7 @@ function FinancePage() {
         </div>
 
         {/* Tab Content */}
-        <div className="px-4 pt-16">
+        <div className="px-4 pt-8">
           {activeTab === "dashboard"  && <FinanceDashboardTab  year={currentMonth.year} month={currentMonth.month} />}
           {activeTab === "operations" && <FinanceOperationsTab year={currentMonth.year} month={currentMonth.month} />}
           {activeTab === "history"    && <FinanceHistoryTab    year={currentMonth.year} month={currentMonth.month} />}

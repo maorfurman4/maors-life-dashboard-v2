@@ -594,7 +594,7 @@ function FinanceTab({ payslip, shifts, monthlyGoal, onGoalChange }: {
   ].filter(r => r.val > 0);
 
   return (
-    <div className="px-4 pt-16 space-y-4">
+    <div className="px-4 pt-8 space-y-4">
 
       {/* Monthly target */}
       <div className="rounded-3xl border border-sky-500/20 bg-white/5 backdrop-blur-xl p-4 space-y-3">
@@ -758,7 +758,7 @@ function ReportsTab({ shifts, settings, monthLabel }: {
   ];
 
   return (
-    <div className="px-4 pt-16 space-y-4">
+    <div className="px-4 pt-8 space-y-4">
 
       {/* FIX 4: Monthly Summary — no rights, Adverse big-number grid */}
       <div className="rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-xl overflow-hidden">
@@ -873,7 +873,7 @@ function SettingsTab({ settings }: { settings: PayrollSettings }) {
   );
 
   return (
-    <div className="px-4 pt-16 space-y-4 pb-8">
+    <div className="px-4 pt-8 space-y-4 pb-8">
       <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
         <p className="text-sm font-black text-white">תעריפים שעתיים 💰</p>
         <div className="grid grid-cols-2 gap-3">
@@ -958,7 +958,7 @@ function WorkPage() {
           <div className="absolute bottom-40 -left-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-[100px]" />
         </div>
 
-        <div className="relative z-10 pb-32">
+        <div className="relative z-10 pb-32 pt-8">
           {/* Monthly gross summary */}
           <div className="px-4 pt-4 pb-2 flex justify-end">
             <div className="rounded-2xl border border-sky-500/20 bg-sky-500/8 backdrop-blur-xl px-3 py-2 text-center shrink-0">
