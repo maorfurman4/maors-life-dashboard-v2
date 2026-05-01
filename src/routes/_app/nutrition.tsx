@@ -272,7 +272,7 @@ function NutritionPage() {
             TAB 1 — DASHBOARD
         ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "dashboard" && (
-          <div className="px-4 pt-4 space-y-4">
+          <div className="px-4 pt-8 space-y-4">
 
             {/* Training Day Toggle */}
             <TrainingToggle

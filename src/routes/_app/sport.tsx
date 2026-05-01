@@ -473,7 +473,7 @@ function WorkoutBuilderTab() {
   };
 
   return (
-    <div className="px-4 pt-4 space-y-4">
+    <div className="px-4 pt-8 space-y-4">
       {/* Sub-tab switcher */}
       <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5">
         {([["custom", "🏗️ בנה אימון"], ["ai", "🤖 AI Planner"]] as const).map(([k, l]) => (
@@ -700,7 +700,7 @@ function ExerciseLibraryTab() {
   const [selectedEx, setSelectedEx]       = useState<LibraryExercise | null>(null);
 
   return (
-    <div className="px-4 pt-4 space-y-4">
+    <div className="px-4 pt-8 space-y-4">
       {!selectedGroup ? (
         <>
           <p className="text-sm font-black text-white">בחר קבוצת שרירים</p>
@@ -948,7 +948,7 @@ function WorkoutHistoryStrip() {
 
 function ProgressTab() {
   return (
-    <div className="px-4 pt-4 space-y-4">
+    <div className="px-4 pt-8 space-y-4">
       <WeightChart />
       <PRSection />
       <WorkoutHistoryStrip />
@@ -1010,7 +1010,7 @@ function SportPage() {
 
           {/* TAB 1 */}
           {activeTab === "dashboard" && (
-            <div className="px-4 pt-4 space-y-5">
+            <div className="px-4 pt-8 space-y-5">
               <DayStatusBanner isTraining={isTraining} onToggle={() => setIsTraining((v) => !v)} />
               <QuickAddRow />
               <div className="space-y-2">
