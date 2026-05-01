@@ -1,14 +1,26 @@
+import { useLocation } from "@tanstack/react-router";
+import { mainNavItems, settingsNavItem } from "@/lib/navigation";
 import { Menu } from "lucide-react";
+
+const allItems = [...mainNavItems, settingsNavItem];
 
 interface TopBarProps {
   onMenuOpen: () => void;
 }
 
 export function TopBar({ onMenuOpen }: TopBarProps) {
+  const location = useLocation();
+
+  const current = allItems.find((item) =>
+    item.to === "/"
+      ? location.pathname === "/"
+      : location.pathname.startsWith(item.to)
+  );
+
   return (
     <header
       role="banner"
-      className="sticky top-0 z-50 bg-transparent flex items-center px-4 shrink-0 safe-area-top"
+      className="sticky top-0 z-50 bg-transparent flex items-center justify-between px-4 shrink-0 safe-area-top"
       style={{ minHeight: "3.5rem" }}
     >
       {/* Hamburger — mobile only */}
@@ -19,6 +31,14 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
       >
         <Menu className="h-5 w-5" />
       </button>
+
+      {/* Page title — centered */}
+      <h1 className="absolute inset-x-0 text-center text-lg font-bold text-white pointer-events-none">
+        {current?.label ?? ""}
+      </h1>
+
+      {/* Spacer to balance hamburger */}
+      <div className="md:hidden h-9 w-9" aria-hidden="true" />
     </header>
   );
 }
