@@ -20,7 +20,7 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
   return (
     <header
       role="banner"
-      className="border-b border-border bg-card/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0 safe-area-top gap-3"
+      className="sticky top-0 z-50 bg-black/10 backdrop-blur-md flex items-center justify-between px-4 shrink-0 safe-area-top gap-3"
       style={{ minHeight: "3.5rem" }}
     >
       {/* Hamburger — mobile only */}

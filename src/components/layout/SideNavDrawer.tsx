@@ -7,21 +7,6 @@ import { useProfile } from "@/hooks/use-profile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const ICON_BG: Record<string, string> = {
-  home:      "bg-white/15",
-  sport:     "bg-sport/20",
-  nutrition: "bg-nutrition/20",
-  finance:   "bg-finance/20",
-  work:      "bg-work/20",
-};
-
-const ACTIVE_ROW: Record<string, string> = {
-  home:      "bg-white/8 border-white/10",
-  sport:     "bg-sport/10 border-sport/20",
-  nutrition: "bg-nutrition/10 border-nutrition/20",
-  finance:   "bg-finance/10 border-finance/20",
-  work:      "bg-work/10 border-work/20",
-};
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -112,7 +97,7 @@ export function SideNavDrawer({ open, onClose }: SideNavDrawerProps) {
         </div>
 
         {/* ── Nav Items ── */}
-        <nav className="flex-1 overflow-y-auto px-4 py-5 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-4 py-5 space-y-3">
           {mainNavItems.map((item) => {
             const active = isActive(item.to);
             return (
@@ -121,22 +106,37 @@ export function SideNavDrawer({ open, onClose }: SideNavDrawerProps) {
                 to={item.to}
                 onClick={onClose}
                 className={cn(
-                  "flex items-center gap-4 px-4 py-3.5 rounded-2xl border transition-all min-h-[60px]",
+                  "relative h-28 w-full rounded-[24px] overflow-hidden block",
+                  "border-2 transition-all duration-200",
                   active
-                    ? `${ACTIVE_ROW[item.id] ?? "bg-white/8 border-white/10"} ${item.colorClass}`
-                    : "border-transparent text-white/50 hover:text-white hover:bg-white/5"
+                    ? "border-amber-400/70 shadow-[0_0_20px_rgba(251,191,36,0.2)]"
+                    : "border-white/0 hover:border-white/15"
                 )}
               >
-                <div className={cn(
-                  "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                  active ? (ICON_BG[item.id] ?? "bg-white/10") : "bg-white/5"
-                )}>
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <span className="text-lg font-bold">{item.label}</span>
-                {active && (
-                  <div className="mr-auto h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+                {/* Background image */}
+                {item.bgImage && (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${item.bgImage})` }}
+                  />
                 )}
+                {/* Glass overlay */}
+                <div className={cn(
+                  "absolute inset-0 backdrop-blur-md",
+                  item.bgImage ? "bg-black/55" : "bg-white/6"
+                )} />
+                {/* Content */}
+                <div className="relative z-10 flex items-center justify-between p-5 h-full">
+                  <div className="flex items-center gap-4">
+                    <div className="h-11 w-11 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+                      <item.icon className={cn("h-6 w-6", item.colorClass)} />
+                    </div>
+                    <span className="text-xl font-black text-white">{item.label}</span>
+                  </div>
+                  {active && (
+                    <div className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]" />
+                  )}
+                </div>
               </Link>
             );
           })}
