@@ -19,10 +19,10 @@ const MACRO_OPTIONS = [
 function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick}
-      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+      className={`px-3 py-1.5 text-xs font-semibold transition-all border rounded-none ${
         selected
-          ? "bg-nutrition/20 border-nutrition text-nutrition"
-          : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+          ? "bg-white text-black font-bold border-white"
+          : "bg-white/5 border-white/20 text-gray-300 hover:bg-white/10 hover:text-white"
       }`}>
       {label}
     </button>
@@ -74,27 +74,28 @@ export function SettingsNutrition() {
   };
 
   const numFields: { key: keyof typeof goals; label: string; unit: string }[] = [
-    { key: "calories", label: "קלוריות — יום מנוחה", unit: "kcal" },
-    { key: "trainingCalories", label: "קלוריות — יום אימון", unit: "kcal" },
-    { key: "protein", label: "חלבון — יום מנוחה", unit: "g" },
-    { key: "trainingProtein", label: "חלבון — יום אימון", unit: "g" },
-    { key: "carbs", label: "פחמימות", unit: "g" },
-    { key: "fat", label: "שומן", unit: "g" },
-    { key: "waterMl", label: "מים יומי", unit: "ml" },
-    { key: "waterGlasses", label: "כוסות מים", unit: "כוסות" },
+    { key: "calories",         label: "קלוריות — יום מנוחה",  unit: "kcal"   },
+    { key: "trainingCalories", label: "קלוריות — יום אימון",   unit: "kcal"   },
+    { key: "protein",          label: "חלבון — יום מנוחה",     unit: "g"      },
+    { key: "trainingProtein",  label: "חלבון — יום אימון",      unit: "g"      },
+    { key: "carbs",            label: "פחמימות",                unit: "g"      },
+    { key: "fat",              label: "שומן",                   unit: "g"      },
+    { key: "waterMl",          label: "מים יומי",               unit: "ml"     },
+    { key: "waterGlasses",     label: "כוסות מים",              unit: "כוסות" },
   ];
 
+  const numInputCls = "w-20 rounded-none bg-white/5 border border-white/20 px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white focus:bg-white/10 min-h-[44px] transition-colors";
+
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 md:p-5 space-y-4">
+    <div className="bg-black/50 backdrop-blur-2xl border border-white/10 rounded-none p-4 md:p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <Apple className="h-4 w-4 text-nutrition" />
-        <h3 className="text-sm font-semibold">תזונה</h3>
+        <Apple className="h-4 w-4 text-white/70" />
+        <h3 className="text-sm font-semibold text-white uppercase tracking-widest">תזונה</h3>
       </div>
 
       <div className="space-y-4">
-        {/* Diet type */}
         <div>
-          <label className="block text-xs text-muted-foreground mb-1.5">סוג תזונה</label>
+          <label className="block text-xs text-white/50 mb-1.5">סוג תזונה</label>
           <div className="flex flex-wrap gap-2">
             {DIET_TYPES.map((d) => (
               <Chip key={d} label={d} selected={draft.diet_type === d}
@@ -103,9 +104,8 @@ export function SettingsNutrition() {
           </div>
         </div>
 
-        {/* Allergies */}
         <div>
-          <label className="block text-xs text-muted-foreground mb-1.5">אלרגיות למזון</label>
+          <label className="block text-xs text-white/50 mb-1.5">אלרגיות למזון</label>
           <div className="flex flex-wrap gap-2">
             {ALLERGY_OPTIONS.map((a) => (
               <Chip key={a} label={a} selected={draft.food_allergies.includes(a)}
@@ -114,9 +114,8 @@ export function SettingsNutrition() {
           </div>
         </div>
 
-        {/* Macro preference */}
         <div>
-          <label className="block text-xs text-muted-foreground mb-1.5">העדפת מאקרו</label>
+          <label className="block text-xs text-white/50 mb-1.5">העדפת מאקרו</label>
           <div className="flex flex-wrap gap-2">
             {MACRO_OPTIONS.map((m) => (
               <Chip key={m} label={m} selected={draft.macro_preference === m}
@@ -126,27 +125,21 @@ export function SettingsNutrition() {
         </div>
 
         <button onClick={handleSave} disabled={isPending}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-nutrition/15 text-nutrition text-sm font-medium hover:bg-nutrition/25 transition-colors disabled:opacity-50 min-h-[44px]">
+          className="flex items-center gap-2 px-4 py-2.5 rounded-none bg-white text-black text-sm font-bold hover:bg-white/90 transition-colors disabled:opacity-50 min-h-[44px]">
           <Save className="h-4 w-4" />
           {isPending ? "שומר..." : "שמור העדפות תזונה"}
         </button>
 
-        {/* Numerical goals — local only for now */}
-        <div className="pt-2 border-t border-border space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground">יעדים כמותיים</p>
+        <div className="pt-2 border-t border-white/10 space-y-3">
+          <p className="text-xs font-semibold text-white/50 uppercase tracking-widest">יעדים כמותיים</p>
           {numFields.map((f) => (
             <div key={f.key} className="flex items-center justify-between gap-3">
-              <label className="text-sm text-muted-foreground">{f.label}</label>
+              <label className="text-sm text-white/50">{f.label}</label>
               <div className="flex items-center gap-1.5">
-                <input
-                  type="number"
-                  value={goals[f.key]}
+                <input type="number" value={goals[f.key]}
                   onChange={(e) => setGoals((g) => ({ ...g, [f.key]: e.target.value }))}
-                  placeholder="—"
-                  className="w-20 rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm text-left placeholder:text-muted-foreground/30 focus:outline-none focus:ring-1 focus:ring-nutrition min-h-[44px]"
-                  dir="ltr"
-                />
-                <span className="text-xs text-muted-foreground w-12">{f.unit}</span>
+                  placeholder="—" className={numInputCls} dir="ltr" />
+                <span className="text-xs text-white/40 w-12">{f.unit}</span>
               </div>
             </div>
           ))}

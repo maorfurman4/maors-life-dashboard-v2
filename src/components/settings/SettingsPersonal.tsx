@@ -8,15 +8,12 @@ const LIMITATION_OPTIONS = ["כתף", "גב תחתון", "ברך", "מרפק", "
 
 function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+    <button type="button" onClick={onClick}
+      className={`px-3 py-1.5 text-xs font-semibold transition-all border rounded-none ${
         selected
-          ? "bg-primary/20 border-primary text-primary"
-          : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
-      }`}
-    >
+          ? "bg-white text-black font-bold border-white"
+          : "bg-white/5 border-white/20 text-gray-300 hover:bg-white/10 hover:text-white"
+      }`}>
       {label}
     </button>
   );
@@ -78,77 +75,60 @@ export function SettingsPersonal() {
     );
   };
 
+  const inputCls = "w-full rounded-none bg-white/5 border border-white/20 px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white focus:bg-white/10 min-h-[44px] transition-colors";
+
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 md:p-5 space-y-4">
+    <div className="bg-black/50 backdrop-blur-2xl border border-white/10 rounded-none p-4 md:p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <User className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold">פרטים אישיים</h3>
+        <User className="h-4 w-4 text-white/70" />
+        <h3 className="text-sm font-semibold text-white uppercase tracking-widest">פרטים אישיים</h3>
       </div>
 
       <div className="space-y-3">
-        {/* Name + City */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">שם מלא</label>
-            <input
-              type="text"
-              value={draft.full_name}
+            <label className="block text-xs text-white/50 mb-1">שם מלא</label>
+            <input type="text" value={draft.full_name}
               onChange={(e) => setDraft((d) => ({ ...d, full_name: e.target.value }))}
-              placeholder="מאור"
-              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
-            />
+              placeholder="מאור" className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">עיר</label>
-            <input
-              type="text"
-              value={draft.city}
+            <label className="block text-xs text-white/50 mb-1">עיר</label>
+            <input type="text" value={draft.city}
               onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
-              placeholder="תל אביב"
-              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
-            />
+              placeholder="תל אביב" className={inputCls} />
           </div>
         </div>
 
-        {/* Age + Height + Weight + Target */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">גיל</label>
+            <label className="block text-xs text-white/50 mb-1">גיל</label>
             <input type="number" value={draft.age}
               onChange={(e) => setDraft((d) => ({ ...d, age: e.target.value }))}
-              placeholder="25" dir="ltr"
-              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
-            />
+              placeholder="25" dir="ltr" className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">גובה (ס"מ)</label>
+            <label className="block text-xs text-white/50 mb-1">גובה (ס"מ)</label>
             <input type="number" value={draft.height_cm}
               onChange={(e) => setDraft((d) => ({ ...d, height_cm: e.target.value }))}
-              placeholder="175" dir="ltr"
-              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
-            />
+              placeholder="175" dir="ltr" className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">משקל (ק"ג)</label>
+            <label className="block text-xs text-white/50 mb-1">משקל (ק"ג)</label>
             <input type="number" value={draft.weight_kg}
               onChange={(e) => setDraft((d) => ({ ...d, weight_kg: e.target.value }))}
-              placeholder="75" dir="ltr"
-              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
-            />
+              placeholder="75" dir="ltr" className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs text-muted-foreground mb-1">משקל יעד (ק"ג)</label>
+            <label className="block text-xs text-white/50 mb-1">משקל יעד (ק"ג)</label>
             <input type="number" value={draft.target_weight_kg}
               onChange={(e) => setDraft((d) => ({ ...d, target_weight_kg: e.target.value }))}
-              placeholder="70" dir="ltr"
-              className="w-full rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary min-h-[44px]"
-            />
+              placeholder="70" dir="ltr" className={inputCls} />
           </div>
         </div>
 
-        {/* Gender */}
         <div>
-          <label className="block text-xs text-muted-foreground mb-1.5">מגדר</label>
+          <label className="block text-xs text-white/50 mb-1.5">מגדר</label>
           <div className="flex flex-wrap gap-2">
             {GENDER_OPTIONS.map((g) => (
               <Chip key={g} label={g} selected={draft.gender === g}
@@ -157,9 +137,8 @@ export function SettingsPersonal() {
           </div>
         </div>
 
-        {/* Physical limitations */}
         <div>
-          <label className="block text-xs text-muted-foreground mb-1.5">מגבלות גופניות</label>
+          <label className="block text-xs text-white/50 mb-1.5">מגבלות גופניות</label>
           <div className="flex flex-wrap gap-2">
             {LIMITATION_OPTIONS.map((l) => (
               <Chip key={l} label={l} selected={draft.physical_limitations.includes(l)}
@@ -170,7 +149,7 @@ export function SettingsPersonal() {
       </div>
 
       <button onClick={handleSave} disabled={isPending}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25 transition-colors disabled:opacity-50 min-h-[44px]">
+        className="flex items-center gap-2 px-4 py-2.5 rounded-none bg-white text-black text-sm font-bold hover:bg-white/90 transition-colors disabled:opacity-50 min-h-[44px]">
         <Save className="h-4 w-4" />
         {isPending ? "שומר..." : "שמור פרטים"}
       </button>

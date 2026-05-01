@@ -32,46 +32,42 @@ export function SettingsFinance() {
   };
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 md:p-5 space-y-4">
+    <div className="bg-black/50 backdrop-blur-2xl border border-white/10 rounded-none p-4 md:p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <Wallet className="h-4 w-4 text-finance" />
-        <h3 className="text-sm font-semibold">כלכלה</h3>
+        <Wallet className="h-4 w-4 text-white/70" />
+        <h3 className="text-sm font-semibold text-white uppercase tracking-widest">כלכלה</h3>
       </div>
 
       <div className="space-y-3">
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-medium text-muted-foreground">יעד חיסכון</label>
-            <span className="text-sm font-bold text-finance">{savingsGoal}%</span>
+            <label className="text-xs font-medium text-white/50">יעד חיסכון</label>
+            <span className="text-sm font-bold text-white">{savingsGoal}%</span>
           </div>
-          <input
-            type="range" min="0" max="60" step="1"
+          <input type="range" min="0" max="60" step="1"
             value={savingsGoal} onChange={(e) => setSavingsGoal(e.target.value)}
-            className="w-full accent-finance"
-          />
+            className="w-full accent-white" />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-2 block">סנכרון שכר מעבודה</label>
+          <label className="text-xs font-medium text-white/50 mb-2 block">סנכרון שכר מעבודה</label>
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => setSyncMode("net")}
-              className={`px-3 py-2.5 rounded-xl border text-xs font-medium transition-colors ${
-                syncMode === "net" ? "border-finance bg-finance/10 text-finance" : "border-border text-foreground"
-              }`}>
-              נטו
-            </button>
-            <button onClick={() => setSyncMode("bank")}
-              className={`px-3 py-2.5 rounded-xl border text-xs font-medium transition-colors ${
-                syncMode === "bank" ? "border-finance bg-finance/10 text-finance" : "border-border text-foreground"
-              }`}>
-              סכום בבנק
-            </button>
+            {(["net", "bank"] as const).map((mode) => (
+              <button key={mode} onClick={() => setSyncMode(mode)}
+                className={`px-3 py-2.5 rounded-none border text-xs font-semibold transition-colors min-h-[44px] ${
+                  syncMode === mode
+                    ? "bg-white text-black border-white"
+                    : "bg-white/5 border-white/20 text-gray-300 hover:bg-white/10 hover:text-white"
+                }`}>
+                {mode === "net" ? "נטו" : "סכום בבנק"}
+              </button>
+            ))}
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1">בחר מה ייכנס כהכנסה מהעבודה במודול הכלכלה</p>
+          <p className="text-[10px] text-white/30 mt-1">בחר מה ייכנס כהכנסה מהעבודה במודול הכלכלה</p>
         </div>
 
         <button onClick={handleSave} disabled={save.isPending}
-          className="w-full py-2.5 rounded-xl bg-finance/15 text-finance font-medium text-sm hover:bg-finance/25 transition-colors disabled:opacity-50 min-h-[44px]">
+          className="w-full py-2.5 rounded-none bg-white text-black font-bold text-sm hover:bg-white/90 transition-colors disabled:opacity-50 min-h-[44px]">
           {save.isPending ? "שומר..." : "שמור הגדרות כלכלה"}
         </button>
       </div>

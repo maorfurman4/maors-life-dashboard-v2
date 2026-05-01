@@ -25,10 +25,10 @@ const LEVEL_OPTIONS = ["מתחיל", "בינוני", "מתקדם", "ספורטא
 function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick}
-      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+      className={`px-3 py-1.5 text-xs font-semibold transition-all border rounded-none ${
         selected
-          ? "bg-sport/20 border-sport text-sport"
-          : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
+          ? "bg-white text-black font-bold border-white"
+          : "bg-white/5 border-white/20 text-gray-300 hover:bg-white/10 hover:text-white"
       }`}>
       {label}
     </button>
@@ -82,15 +82,15 @@ export function SettingsSport() {
   };
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 md:p-5 space-y-4">
+    <div className="bg-black/50 backdrop-blur-2xl border border-white/10 rounded-none p-4 md:p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <Dumbbell className="h-4 w-4 text-sport" />
-        <h3 className="text-sm font-semibold">ספורט ואימונים</h3>
+        <Dumbbell className="h-4 w-4 text-white/70" />
+        <h3 className="text-sm font-semibold text-white uppercase tracking-widest">ספורט ואימונים</h3>
       </div>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-xs text-muted-foreground mb-1.5">סוגי ספורט</label>
+          <label className="block text-xs text-white/50 mb-1.5">סוגי ספורט</label>
           <div className="flex flex-wrap gap-2">
             {SPORT_TYPES.map((s) => (
               <Chip key={s} label={s} selected={draft.sport_types.includes(s)}
@@ -100,7 +100,7 @@ export function SettingsSport() {
         </div>
 
         <div>
-          <label className="block text-xs text-muted-foreground mb-1.5">יעדי ספורט</label>
+          <label className="block text-xs text-white/50 mb-1.5">יעדי ספורט</label>
           <div className="flex flex-wrap gap-2">
             {SPORT_GOALS.map((g) => (
               <Chip key={g} label={g} selected={draft.sport_goals.includes(g)}
@@ -110,7 +110,7 @@ export function SettingsSport() {
         </div>
 
         <div>
-          <label className="block text-xs text-muted-foreground mb-1.5">שרירים לשיפור</label>
+          <label className="block text-xs text-white/50 mb-1.5">שרירים לשיפור</label>
           <div className="flex flex-wrap gap-2">
             {MUSCLE_FOCUS.map((m) => (
               <Chip key={m} label={m} selected={draft.muscle_focus.includes(m)}
@@ -121,7 +121,7 @@ export function SettingsSport() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-muted-foreground mb-1.5">תדירות</label>
+            <label className="block text-xs text-white/50 mb-1.5">תדירות</label>
             <div className="flex flex-col gap-1.5">
               {FREQUENCY_OPTIONS.map((f) => (
                 <Chip key={f} label={f} selected={draft.sport_frequency === f}
@@ -131,7 +131,7 @@ export function SettingsSport() {
           </div>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs text-muted-foreground mb-1.5">מקום</label>
+              <label className="block text-xs text-white/50 mb-1.5">מקום</label>
               <div className="flex flex-col gap-1.5">
                 {LOCATION_OPTIONS.map((l) => (
                   <Chip key={l} label={l} selected={draft.sport_location === l}
@@ -140,7 +140,7 @@ export function SettingsSport() {
               </div>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1.5">רמה</label>
+              <label className="block text-xs text-white/50 mb-1.5">רמה</label>
               <div className="flex flex-col gap-1.5">
                 {LEVEL_OPTIONS.map((l) => (
                   <Chip key={l} label={l} selected={draft.sport_level === l}
@@ -153,7 +153,7 @@ export function SettingsSport() {
       </div>
 
       <button onClick={handleSave} disabled={isPending}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sport/15 text-sport text-sm font-medium hover:bg-sport/25 transition-colors disabled:opacity-50 min-h-[44px]">
+        className="flex items-center gap-2 px-4 py-2.5 rounded-none bg-white text-black text-sm font-bold hover:bg-white/90 transition-colors disabled:opacity-50 min-h-[44px]">
         <Save className="h-4 w-4" />
         {isPending ? "שומר..." : "שמור ספורט"}
       </button>
