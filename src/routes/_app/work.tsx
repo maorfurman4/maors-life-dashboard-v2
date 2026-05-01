@@ -594,7 +594,7 @@ function FinanceTab({ payslip, shifts, monthlyGoal, onGoalChange }: {
   ].filter(r => r.val > 0);
 
   return (
-    <div className="px-4 pt-8 space-y-4">
+    <div className="px-4 pt-16 space-y-4">
 
       {/* Monthly target */}
       <div className="rounded-3xl border border-sky-500/20 bg-white/5 backdrop-blur-xl p-4 space-y-3">
@@ -758,7 +758,7 @@ function ReportsTab({ shifts, settings, monthLabel }: {
   ];
 
   return (
-    <div className="px-4 pt-8 space-y-4">
+    <div className="px-4 pt-16 space-y-4">
 
       {/* FIX 4: Monthly Summary — no rights, Adverse big-number grid */}
       <div className="rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-xl overflow-hidden">
@@ -873,7 +873,7 @@ function SettingsTab({ settings }: { settings: PayrollSettings }) {
   );
 
   return (
-    <div className="px-4 pt-8 space-y-4 pb-8">
+    <div className="px-4 pt-16 space-y-4 pb-8">
       <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
         <p className="text-sm font-black text-white">תעריפים שעתיים 💰</p>
         <div className="grid grid-cols-2 gap-3">
