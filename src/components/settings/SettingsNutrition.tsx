@@ -39,6 +39,7 @@ export function SettingsNutrition() {
 
   const [draft, setDraft] = useState({
     diet_type: "",
+    custom_diet: "",
     food_allergies: [] as string[],
     macro_preference: "",
   });
@@ -54,6 +55,7 @@ export function SettingsNutrition() {
     if (!profile) return;
     setDraft({
       diet_type: profile.diet_type ?? "",
+      custom_diet: profile.custom_diet ?? "",
       food_allergies: profile.food_allergies ?? [],
       macro_preference: profile.macro_preference ?? "",
     });
@@ -63,6 +65,7 @@ export function SettingsNutrition() {
     updateProfile(
       {
         diet_type: draft.diet_type || null,
+        custom_diet: draft.custom_diet || null,
         food_allergies: draft.food_allergies,
         macro_preference: draft.macro_preference || null,
       },
@@ -102,6 +105,17 @@ export function SettingsNutrition() {
                 onClick={() => setDraft((s) => ({ ...s, diet_type: d }))} />
             ))}
           </div>
+          {draft.diet_type === "אחר" && (
+            <input
+              type="text"
+              value={draft.custom_diet}
+              onChange={(e) => setDraft((s) => ({ ...s, custom_diet: e.target.value }))}
+              placeholder="פרט/י כאן..."
+              dir="rtl"
+              autoFocus
+              className="mt-2 w-full rounded-none bg-white/5 border border-white/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white focus:bg-white/10 min-h-[44px] transition-colors"
+            />
+          )}
         </div>
 
         <div>
