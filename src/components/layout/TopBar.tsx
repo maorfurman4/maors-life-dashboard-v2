@@ -20,7 +20,7 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
   return (
     <header
       role="banner"
-      className="fixed top-0 inset-x-0 z-50 pointer-events-none flex flex-col"
+      className="absolute top-0 inset-x-0 z-50 bg-transparent pointer-events-none flex flex-col"
     >
       {/* Notch spacer — clears iOS Dynamic Island, never used for centering */}
       <div className="w-full h-12 md:h-14" />
