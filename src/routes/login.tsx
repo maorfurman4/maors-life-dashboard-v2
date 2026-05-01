@@ -115,8 +115,8 @@ function AuthScreen() {
         <div className="w-full max-w-sm space-y-6">
           {/* Logo + Title */}
           <div className="text-center space-y-2">
-            <div className="mx-auto mb-4 h-20 w-20 rounded-3xl backdrop-blur-md bg-white/10 border border-white/20 flex items-center justify-center">
-              <span className="text-4xl font-black text-white">M</span>
+            <div className="mx-auto mb-4 h-20 w-20 rounded-3xl overflow-hidden">
+              <img src="/icon-192.png" alt="My Life" className="h-full w-full object-cover" />
             </div>
             <h1 className="text-4xl font-black text-white">My Life</h1>
             <p className="text-sm text-white/70">הניהול האישי שלך במקום אחד</p>
