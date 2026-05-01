@@ -42,7 +42,7 @@ export function OnboardingFlow({ onComplete }: Props) {
       case 1:
         return <StepBody draft={draft} setField={setField} toggleArrayItem={toggleArrayItem} />;
       case 2:
-        return <StepSport draft={draft} toggleArrayItem={toggleArrayItem} />;
+        return <StepSport draft={draft} setField={setField} toggleArrayItem={toggleArrayItem} />;
       case 3:
         return <StepNutrition draft={draft} setField={setField} toggleArrayItem={toggleArrayItem} />;
       case 4:

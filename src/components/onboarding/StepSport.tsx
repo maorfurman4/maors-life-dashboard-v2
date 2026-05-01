@@ -1,4 +1,5 @@
 import { OptionPill } from "./OptionPill";
+import { OptionPillGroup } from "./OptionPillGroup";
 import type { OnboardingDraft } from "@/hooks/useOnboardingSync";
 
 const SPORT_TYPES = [
@@ -32,11 +33,11 @@ const MAX_MUSCLE = 4;
 
 interface Props {
   draft: OnboardingDraft;
+  setField: <K extends keyof OnboardingDraft>(key: K, value: OnboardingDraft[K]) => void;
   toggleArrayItem: (key: keyof OnboardingDraft, item: string) => void;
 }
 
-export function StepSport({ draft, toggleArrayItem }: Props) {
-  const sportMaxed = draft.sport_types.length >= MAX_SPORT;
+export function StepSport({ draft, setField, toggleArrayItem }: Props) {
   const muscleMaxed = draft.muscle_focus.length >= MAX_MUSCLE;
 
   return (
@@ -46,31 +47,25 @@ export function StepSport({ draft, toggleArrayItem }: Props) {
         <p className="text-sm text-white/60">מה הפעילות שאתה אוהב? בחר עד {MAX_SPORT}</p>
       </div>
 
-      {/* Sport types */}
+      {/* Sport types — uses OptionPillGroup for "ספורט אחר" detection */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-sm font-bold text-white/80">סוגי ספורט</label>
-          {sportMaxed && (
+          {draft.sport_types.length >= MAX_SPORT && (
             <span className="text-xs text-white/40 animate-in fade-in duration-200">
               הגעת למקסימום
             </span>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
-          {SPORT_TYPES.map((opt) => {
-            const isActive = draft.sport_types.includes(opt);
-            const isDisabled = !isActive && sportMaxed;
-            return (
-              <OptionPill
-                key={opt}
-                label={opt}
-                active={isActive}
-                disabled={isDisabled}
-                onClick={() => toggleArrayItem("sport_types", opt)}
-              />
-            );
-          })}
-        </div>
+        <OptionPillGroup
+          mode="multi"
+          options={SPORT_TYPES}
+          selected={draft.sport_types}
+          onToggle={(item) => toggleArrayItem("sport_types", item)}
+          customValue={draft.custom_sport}
+          onCustomChange={(text) => setField("custom_sport", text)}
+          maxSelect={MAX_SPORT}
+        />
       </div>
 
       {/* Muscle focus */}

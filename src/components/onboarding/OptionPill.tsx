@@ -1,4 +1,4 @@
-interface OptionPillProps {
+export interface OptionPillProps {
   label: string;
   active: boolean;
   disabled?: boolean;

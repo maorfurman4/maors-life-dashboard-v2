@@ -207,10 +207,10 @@ function NumericTrigger({
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 const NUMERIC_FIELDS: Record<string, DrawerConfig> = {
-  age:              { field: "age",              label: "גיל",           unit: "שנים", min: 13,  max: 100, step: 1   },
-  height_cm:        { field: "height_cm",        label: "גובה",          unit: "ס״מ",  min: 130, max: 230, step: 1   },
-  weight_kg:        { field: "weight_kg",        label: "משקל",          unit: "ק״ג",  min: 30,  max: 200, step: 0.5 },
-  target_weight_kg: { field: "target_weight_kg", label: "משקל יעד",      unit: "ק״ג",  min: 30,  max: 200, step: 0.5 },
+  age:              { field: "age",              label: "גיל",      unit: "שנים", min: 13,  max: 100, step: 1   },
+  height_cm:        { field: "height_cm",        label: "גובה",     unit: "ס״מ",  min: 130, max: 230, step: 1   },
+  weight_kg:        { field: "weight_kg",        label: "משקל",     unit: "ק״ג",  min: 30,  max: 200, step: 0.5 },
+  target_weight_kg: { field: "target_weight_kg", label: "משקל יעד", unit: "ק״ג",  min: 30,  max: 200, step: 0.5 },
 };
 
 export function SettingsPersonal() {

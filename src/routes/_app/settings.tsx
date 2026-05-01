@@ -6,7 +6,6 @@ import { SettingsSport } from "@/components/settings/SettingsSport";
 import { SettingsWork } from "@/components/settings/SettingsWork";
 import { SettingsFinance } from "@/components/settings/SettingsFinance";
 import { SettingsFinanceCategories } from "@/components/settings/SettingsFinanceCategories";
-import { SettingsModules } from "@/components/settings/SettingsModules";
 
 export const Route = createFileRoute("/_app/settings")({
   component: SettingsPage,
@@ -31,8 +30,6 @@ function SettingsPage() {
         <SettingsFinance />
         <SettingsFinanceCategories />
         <SettingsWork />
-        <SettingsModules />
-
         <div className="bg-black/50 backdrop-blur-2xl border border-white/10 rounded-none p-4 md:p-5 space-y-3">
           <h3 className="text-sm font-semibold text-white/70 uppercase tracking-widest">כללי</h3>
           <div className="flex items-center justify-between py-1 border-b border-white/5">

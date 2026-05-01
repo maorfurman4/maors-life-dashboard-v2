@@ -7,15 +7,18 @@ import type { UserProfile } from "@/hooks/use-profile";
 export type OnboardingDraft = {
   // Step 1 — Profile
   full_name: string;
+  age: number | null;
   city: string;
   gender: string;
 
   // Step 2 — Body
   height_cm: number | null;
   weight_kg: number | null;
+  lifestyle: string;
   physical_limitations: string[];
 
   // Step 3 — Sport
+  custom_sport: string;
   sport_types: string[];
   sport_frequency: string;
   sport_location: string;
@@ -24,6 +27,7 @@ export type OnboardingDraft = {
   muscle_focus: string[];
 
   // Step 4 — Nutrition
+  custom_diet: string;
   diet_type: string;
   food_allergies: string[];
   macro_preference: string;
@@ -35,17 +39,21 @@ export type OnboardingDraft = {
 
 const INITIAL_DRAFT: OnboardingDraft = {
   full_name: "",
+  age: null,
   city: "",
   gender: "",
   height_cm: null,
   weight_kg: null,
+  lifestyle: "",
   physical_limitations: [],
+  custom_sport: "",
   sport_types: [],
   sport_frequency: "",
   sport_location: "",
   sport_level: "",
   sport_goals: [],
   muscle_focus: [],
+  custom_diet: "",
   diet_type: "",
   food_allergies: [],
   macro_preference: "",

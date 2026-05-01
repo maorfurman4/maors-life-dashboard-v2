@@ -7,6 +7,7 @@ export type UserProfile = {
   full_name: string | null
   age: number | null
   gender: string | null
+  lifestyle: string | null
   city: string | null
   height_cm: number | null
   weight_kg: number | null

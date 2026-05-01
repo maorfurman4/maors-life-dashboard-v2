@@ -1,4 +1,4 @@
-import { OptionPill } from "./OptionPill";
+import { OptionPillGroup } from "./OptionPillGroup";
 import { ContextTooltip } from "./ContextTooltip";
 import type { OnboardingDraft } from "@/hooks/useOnboardingSync";
 
@@ -24,8 +24,6 @@ const ALLERGY_OPTIONS = [
   "אין אלרגיות",
 ];
 
-const NONE_ALLERGY = "אין אלרגיות";
-
 interface Props {
   draft: OnboardingDraft;
   setField: <K extends keyof OnboardingDraft>(key: K, value: OnboardingDraft[K]) => void;
@@ -33,8 +31,6 @@ interface Props {
 }
 
 export function StepNutrition({ draft, setField, toggleArrayItem }: Props) {
-  const hasNoAllergy = draft.food_allergies.includes(NONE_ALLERGY);
-
   return (
     <div className="space-y-8 pt-4" dir="rtl">
       <div className="space-y-1">
@@ -42,44 +38,35 @@ export function StepNutrition({ draft, setField, toggleArrayItem }: Props) {
         <p className="text-sm text-white/60">כדי להמליץ על תפריטים שמתאימים לך</p>
       </div>
 
-      {/* Diet type */}
+      {/* Diet type — single select, "אחר" reveals custom input */}
       <div className="space-y-3">
         <label className="text-sm font-bold text-white/80">סוג תזונה</label>
-        <div className="flex flex-wrap gap-2">
-          {DIET_TYPES.map((opt) => (
-            <OptionPill
-              key={opt}
-              label={opt}
-              active={draft.diet_type === opt}
-              onClick={() => setField("diet_type", draft.diet_type === opt ? "" : opt)}
-            />
-          ))}
-        </div>
+        <OptionPillGroup
+          mode="single"
+          options={DIET_TYPES}
+          value={draft.diet_type}
+          onChange={(v) => setField("diet_type", v)}
+          customValue={draft.custom_diet}
+          onCustomChange={(text) => setField("custom_diet", text)}
+        />
       </div>
 
-      {/* Allergies */}
+      {/* Allergies — multi select with mutual exclusivity */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <label className="text-sm font-bold text-white/80">אלרגיות</label>
           <ContextTooltip text="נסנן מהמלצות המזון כל מוצר שמכיל רכיבים שאתה אלרגי אליהם." />
         </div>
-        <div className="flex flex-wrap gap-2">
-          {ALLERGY_OPTIONS.map((opt) => {
-            const isNone = opt === NONE_ALLERGY;
-            const isActive = draft.food_allergies.includes(opt);
-            const isDisabled = !isNone && !isActive && hasNoAllergy;
-            return (
-              <OptionPill
-                key={opt}
-                label={opt}
-                active={isActive}
-                disabled={isDisabled}
-                variant={isNone ? "none" : "allergy"}
-                onClick={() => toggleArrayItem("food_allergies", opt)}
-              />
-            );
-          })}
-        </div>
+        <OptionPillGroup
+          mode="multi"
+          options={ALLERGY_OPTIONS}
+          selected={draft.food_allergies}
+          onToggle={(item) => toggleArrayItem("food_allergies", item)}
+          customValue=""
+          onCustomChange={() => {}}
+          variant="allergy"
+          disabledWhen="אין אלרגיות"
+        />
       </div>
     </div>
   );
