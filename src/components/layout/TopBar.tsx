@@ -20,25 +20,31 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
   return (
     <header
       role="banner"
-      className="sticky top-0 z-50 bg-transparent flex items-center justify-between px-4 shrink-0 safe-area-top"
-      style={{ minHeight: "3.5rem" }}
+      className="fixed top-0 inset-x-0 z-50 pointer-events-none flex flex-col"
     >
-      {/* Hamburger — mobile only */}
-      <button
-        onClick={onMenuOpen}
-        aria-label="פתח תפריט"
-        className="md:hidden h-9 w-9 rounded-xl bg-white/6 border border-white/8 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-white/12 transition-colors"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
+      {/* Notch spacer — clears iOS Dynamic Island, never used for centering */}
+      <div className="w-full h-12 md:h-14" />
 
-      {/* Page title — centered */}
-      <h1 className="absolute inset-x-0 text-center text-xl font-black text-white pointer-events-none">
-        {current?.displayLabel ?? current?.label ?? ""}
-      </h1>
+      {/* Content bar — centering math is isolated to this 56px strip */}
+      <div className="relative w-full h-14 pointer-events-auto flex items-center">
+        {/* Hamburger — end-4 resolves to physical right in both LTR and RTL */}
+        <div className="absolute right-4 md:hidden">
+          <button
+            onClick={onMenuOpen}
+            aria-label="פתח תפריט"
+            className="h-9 w-9 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
 
-      {/* Spacer to balance hamburger */}
-      <div className="md:hidden h-9 w-9" aria-hidden="true" />
+        {/* Title — true center of the content bar */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-max text-center pointer-events-none">
+          <h1 className="text-xl font-black text-white">
+            {current?.displayLabel ?? current?.label ?? ""}
+          </h1>
+        </div>
+      </div>
     </header>
   );
 }
