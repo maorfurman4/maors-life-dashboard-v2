@@ -9,7 +9,7 @@ const DIET_TYPES = [
 ];
 const ALLERGY_OPTIONS = [
   "בוטנים", "אגוזים", "חלב", "ביצים",
-  "גלוטן", "סויה", "דגים / פירות ים", "אין אלרגיות",
+  "גלוטן", "סויה", "דגים / פירות ים", "אחר", "אין אלרגיות",
 ];
 const MACRO_OPTIONS = [
   "גבוה חלבון (30%+)", "מאוזן (40/30/30)",
@@ -41,6 +41,7 @@ export function SettingsNutrition() {
     diet_type: "",
     custom_diet: "",
     food_allergies: [] as string[],
+    custom_allergy: "",
     macro_preference: "",
   });
 
@@ -57,6 +58,7 @@ export function SettingsNutrition() {
       diet_type: profile.diet_type ?? "",
       custom_diet: profile.custom_diet ?? "",
       food_allergies: profile.food_allergies ?? [],
+      custom_allergy: profile.custom_allergy ?? "",
       macro_preference: profile.macro_preference ?? "",
     });
   }, [profile]);
@@ -67,6 +69,7 @@ export function SettingsNutrition() {
         diet_type: draft.diet_type || null,
         custom_diet: draft.custom_diet || null,
         food_allergies: draft.food_allergies,
+        custom_allergy: draft.custom_allergy || null,
         macro_preference: draft.macro_preference || null,
       },
       {
@@ -126,6 +129,17 @@ export function SettingsNutrition() {
                 onClick={() => setDraft((s) => ({ ...s, food_allergies: toggle(s.food_allergies, a) }))} />
             ))}
           </div>
+          {draft.food_allergies.includes("אחר") && (
+            <input
+              type="text"
+              value={draft.custom_allergy}
+              onChange={(e) => setDraft((s) => ({ ...s, custom_allergy: e.target.value }))}
+              placeholder="פרט/י כאן..."
+              dir="rtl"
+              autoFocus
+              className="mt-2 w-full rounded-none bg-white/5 border border-white/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white focus:bg-white/10 min-h-[44px] transition-colors"
+            />
+          )}
         </div>
 
         <div>

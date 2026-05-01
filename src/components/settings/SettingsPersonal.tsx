@@ -4,7 +4,7 @@ import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { toast } from "sonner";
 
 const GENDER_OPTIONS = ["זכר", "נקבה", "אחר", "מעדיף/ה לא לציין"];
-const LIMITATION_OPTIONS = ["כתף", "גב תחתון", "ברך", "מרפק", "ירך", "קרסול", "אין מגבלות"];
+const LIMITATION_OPTIONS = ["כתף", "גב תחתון", "ברך", "מרפק", "ירך", "קרסול", "אחר", "אין מגבלות"];
 
 function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
@@ -226,6 +226,7 @@ export function SettingsPersonal() {
     weight_kg: "",
     target_weight_kg: "",
     physical_limitations: [] as string[],
+    custom_limitation: "",
   });
 
   const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
@@ -241,6 +242,7 @@ export function SettingsPersonal() {
       weight_kg: profile.weight_kg != null ? String(profile.weight_kg) : "",
       target_weight_kg: profile.target_weight_kg != null ? String(profile.target_weight_kg) : "",
       physical_limitations: profile.physical_limitations ?? [],
+      custom_limitation: profile.custom_limitation ?? "",
     });
   }, [profile]);
 
@@ -263,6 +265,7 @@ export function SettingsPersonal() {
         weight_kg: draft.weight_kg ? Number(draft.weight_kg) : null,
         target_weight_kg: draft.target_weight_kg ? Number(draft.target_weight_kg) : null,
         physical_limitations: draft.physical_limitations,
+        custom_limitation: draft.custom_limitation || null,
       },
       {
         onSuccess: () => toast.success("פרטים אישיים נשמרו"),
@@ -333,6 +336,17 @@ export function SettingsPersonal() {
                   onClick={() => toggleLimitation(l)} />
               ))}
             </div>
+            {draft.physical_limitations.includes("אחר") && (
+              <input
+                type="text"
+                value={draft.custom_limitation}
+                onChange={(e) => setDraft((d) => ({ ...d, custom_limitation: e.target.value }))}
+                placeholder="פרט/י כאן..."
+                dir="rtl"
+                autoFocus
+                className="mt-2 w-full rounded-none bg-white/5 border border-white/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white focus:bg-white/10 min-h-[44px] transition-colors"
+              />
+            )}
           </div>
         </div>
 

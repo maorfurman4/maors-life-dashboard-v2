@@ -24,6 +24,8 @@ export type UserProfile = {
   food_allergies: string[]
   macro_preference: string | null
   custom_sport: string | null
+  custom_limitation: string | null
+  custom_allergy: string | null
   monthly_income: number | null
   monthly_budget: number | null
   savings_goal_percent: number | null
