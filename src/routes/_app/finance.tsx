@@ -82,7 +82,7 @@ function FinancePage() {
 
         {/* Sticky Tab Bar */}
         <div
-          className="sticky top-14 z-20 px-4 py-2.5"
+          className="sticky top-[4.5rem] z-20 px-4 py-2.5"
           style={{
             background: "rgba(22,19,17,0.80)",
             backdropFilter: "blur(28px)",
