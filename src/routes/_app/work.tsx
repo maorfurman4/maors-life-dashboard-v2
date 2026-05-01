@@ -952,7 +952,7 @@ function WorkPage() {
           minHeight: "100vh",
         }}
       >
-        <div className="absolute inset-0 bg-[#080b12]/85 pointer-events-none" />
+        <div className="absolute inset-0 bg-[#080b12]/55 pointer-events-none" />
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-sky-500/12 blur-[140px]" />
           <div className="absolute bottom-40 -left-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-[100px]" />
@@ -980,7 +980,7 @@ function WorkPage() {
           )}
 
           {/* Sticky Tab Bar */}
-          <div className="sticky top-14 z-20 px-4 py-2 bg-black/60 backdrop-blur-xl">
+          <div className="sticky top-14 z-20 px-4 py-2 bg-black/25 backdrop-blur-xl">
             <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
               {TABS.map(t => (
                 <button key={t.key} onClick={() => setActiveTab(t.key)}

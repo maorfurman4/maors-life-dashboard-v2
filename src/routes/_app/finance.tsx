@@ -51,7 +51,7 @@ function FinancePage() {
       style={{ backgroundImage: "url('/piggy-bg.jpg')" }}
     >
       {/* Heavy dark earthy overlay — keeps cards readable */}
-      <div className="absolute inset-0" style={{ background: "rgba(22,19,17,0.86)", zIndex: 0 }} />
+      <div className="absolute inset-0" style={{ background: "rgba(22,19,17,0.58)", zIndex: 0 }} />
 
       {/* Warm ambient glows — above overlay */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
