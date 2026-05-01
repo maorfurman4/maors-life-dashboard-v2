@@ -248,11 +248,6 @@ function NutritionPage() {
         {/* ── All content — relative z-10 so it's above the overlay ── */}
         <div className="relative z-10 pb-32">
 
-        {/* ── Page header ── */}
-        <div className="px-4 pt-5 pb-3">
-          <h1 className="text-2xl font-black text-white tracking-tight">תזונה חכמה 🥗</h1>
-          <p className="text-[11px] text-white/40 mt-0.5">מבוסס מדע · מסונכרן עם ספורט</p>
-        </div>
 
         {/* ── Glass tab bar — sticky ── */}
         <div className="sticky top-0 z-20 px-4 py-2 bg-[#080b12]/60 backdrop-blur-xl">
