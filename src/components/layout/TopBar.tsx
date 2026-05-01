@@ -20,8 +20,11 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
   return (
     <header
       role="banner"
-      className="sticky top-0 z-50 bg-transparent flex items-center justify-between px-4 shrink-0 safe-area-top"
-      style={{ minHeight: "3.5rem" }}
+      className="sticky top-0 z-50 flex items-center justify-between px-4 shrink-0 safe-area-top"
+      style={{
+        minHeight: "3.5rem",
+        background: "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.18) 60%, transparent 100%)",
+      }}
     >
       {/* Hamburger — mobile only */}
       <button
