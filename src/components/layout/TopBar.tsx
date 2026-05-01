@@ -20,25 +20,22 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
   return (
     <header
       role="banner"
-      className="sticky top-0 z-50 flex items-center justify-between px-4 shrink-0 safe-area-top bg-transparent border-none"
+      className="sticky top-0 z-50 relative flex items-center shrink-0 safe-area-top bg-transparent border-none"
       style={{ minHeight: "3.5rem" }}
     >
-      {/* Hamburger — mobile only */}
-      <button
-        onClick={onMenuOpen}
-        aria-label="פתח תפריט"
-        className="md:hidden h-9 w-9 rounded-xl bg-white/6 border border-white/8 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-white/12 transition-colors"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-
-      {/* Page title — centered */}
-      <h1 className="absolute inset-x-0 text-center text-xl font-black text-white pointer-events-none">
+      {/* Page title — always perfectly centered */}
+      <h1 className="absolute inset-x-0 text-center text-xl font-black text-white pointer-events-none drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
         {current?.displayLabel ?? current?.label ?? ""}
       </h1>
 
-      {/* Spacer to balance hamburger */}
-      <div className="md:hidden h-9 w-9" aria-hidden="true" />
+      {/* Hamburger — absolute on inline-end (right in RTL), mobile only */}
+      <button
+        onClick={onMenuOpen}
+        aria-label="פתח תפריט"
+        className="md:hidden absolute end-4 top-1/2 -translate-y-1/2 h-9 w-9 rounded-xl bg-white/10 border border-white/15 backdrop-blur-md flex items-center justify-center text-white/80 hover:text-white hover:bg-white/18 transition-colors z-10"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
     </header>
   );
 }
