@@ -14,39 +14,49 @@ export const Route = createFileRoute("/_app/settings")({
 
 function SettingsPage() {
   return (
-    <div className="space-y-5 pb-8 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
-          <Settings className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold">הגדרות</h1>
-          <p className="text-xs text-muted-foreground">פרופיל, יעדים והעדפות</p>
-        </div>
-      </div>
+    <div className="relative -m-3 md:-m-6 min-h-[calc(100vh+3.5rem)]">
+      {/* Background image — fixed so it doesn't scroll */}
+      <div className="fixed inset-0 bg-[url('/settings-bg.jpg')] bg-cover bg-center" style={{ zIndex: 0 }} />
+      {/* Dark overlay */}
+      <div className="fixed inset-0 bg-black/70" style={{ zIndex: 0 }} />
 
-      <SettingsPersonal />
-      <SettingsSport />
-      <SettingsNutrition />
-      <SettingsFinance />
-      <SettingsFinanceCategories />
-      <SettingsWork />
-
-      <SettingsModules />
-
-      <div className="rounded-2xl bg-card border border-border p-4 md:p-5 space-y-3">
-        <h3 className="text-sm font-semibold">כללי</h3>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">שפה</span>
-          <span className="text-sm font-medium">עברית</span>
+      {/* Content */}
+      <div
+        className="relative space-y-5 pb-24 max-w-4xl mx-auto px-3 md:px-6"
+        style={{ zIndex: 1, paddingTop: "calc(3.5rem + 1.25rem)" }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 flex items-center justify-center">
+            <Settings className="h-6 w-6 text-white/70" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white">הגדרות</h1>
+            <p className="text-xs text-white/40">פרופיל, יעדים והעדפות</p>
+          </div>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">ערכת נושא</span>
-          <span className="text-sm font-medium">כהה</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">גרסה</span>
-          <span className="text-sm font-medium text-muted-foreground" dir="ltr">1.0.0</span>
+
+        <SettingsPersonal />
+        <SettingsSport />
+        <SettingsNutrition />
+        <SettingsFinance />
+        <SettingsFinanceCategories />
+        <SettingsWork />
+        <SettingsModules />
+
+        <div className="bg-black/50 backdrop-blur-2xl border border-white/10 rounded-none p-4 md:p-5 space-y-3">
+          <h3 className="text-sm font-semibold text-white/70 uppercase tracking-widest">כללי</h3>
+          <div className="flex items-center justify-between py-1 border-b border-white/5">
+            <span className="text-sm text-white/50">שפה</span>
+            <span className="text-sm font-medium text-white">עברית</span>
+          </div>
+          <div className="flex items-center justify-between py-1 border-b border-white/5">
+            <span className="text-sm text-white/50">ערכת נושא</span>
+            <span className="text-sm font-medium text-white">כהה</span>
+          </div>
+          <div className="flex items-center justify-between py-1">
+            <span className="text-sm text-white/50">גרסה</span>
+            <span className="text-sm font-medium text-white/40" dir="ltr">1.0.0</span>
+          </div>
         </div>
       </div>
     </div>

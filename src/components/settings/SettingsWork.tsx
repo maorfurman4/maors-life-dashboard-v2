@@ -14,10 +14,10 @@ export function SettingsWork() {
   }, [settings]);
 
   const update = <K extends keyof PayrollSettings>(key: K, value: string) => {
-    if (key === 'income_sync_mode') {
-      setForm(prev => ({ ...prev, [key]: value as 'net' | 'bank' }));
+    if (key === "income_sync_mode") {
+      setForm((prev) => ({ ...prev, [key]: value as "net" | "bank" }));
     } else {
-      setForm(prev => ({ ...prev, [key]: parseFloat(value) || 0 }));
+      setForm((prev) => ({ ...prev, [key]: parseFloat(value) || 0 }));
     }
   };
 
@@ -29,130 +29,90 @@ export function SettingsWork() {
   };
 
   const rateFields: { key: keyof PayrollSettings; label: string; unit: string }[] = [
-    { key: "base_hourly_rate", label: "שכר בסיס (שעתי)", unit: "₪" },
-    { key: "alt_hourly_rate", label: "שכר אחראי (שעתי)", unit: "₪" },
-    { key: "recovery_per_hour", label: "הבראה לשעה", unit: "₪" },
-    { key: "excellence_per_hour", label: "מצוינות לשעה", unit: "₪" },
-    { key: "shabbat_hourly_rate", label: "שבת לשעה", unit: "₪" },
-    { key: "travel_per_shift", label: "נסיעות למשמרת", unit: "₪" },
-    { key: "briefing_per_shift", label: "תדרוך למשמרת", unit: "₪" },
+    { key: "base_hourly_rate",    label: "שכר בסיס (שעתי)",      unit: "₪" },
+    { key: "alt_hourly_rate",     label: "שכר אחראי (שעתי)",     unit: "₪" },
+    { key: "recovery_per_hour",   label: "הבראה לשעה",            unit: "₪" },
+    { key: "excellence_per_hour", label: "מצוינות לשעה",          unit: "₪" },
+    { key: "shabbat_hourly_rate", label: "שבת לשעה",              unit: "₪" },
+    { key: "travel_per_shift",    label: "נסיעות למשמרת",         unit: "₪" },
+    { key: "briefing_per_shift",  label: "תדרוך למשמרת",          unit: "₪" },
   ];
 
   const mandatoryFields: { key: keyof PayrollSettings; label: string }[] = [
     { key: "national_insurance_pct", label: "ביטוח לאומי" },
-    { key: "health_insurance_pct", label: "ביטוח בריאות" },
+    { key: "health_insurance_pct",   label: "ביטוח בריאות" },
   ];
 
   const officeFields: { key: keyof PayrollSettings; label: string; unit: string }[] = [
-    { key: "lunch_deduction", label: "השתתפות ארוחות צהר", unit: "₪" },
-    { key: "union_national_deduction", label: "הסתדרות לאומית", unit: "₪" },
+    { key: "lunch_deduction",          label: "השתתפות ארוחות צהר", unit: "₪" },
+    { key: "union_national_deduction", label: "הסתדרות לאומית",     unit: "₪" },
   ];
 
   const pensionFields: { key: keyof PayrollSettings; label: string }[] = [
-    { key: "harel_savings_pct", label: "ניכוי הראל ש'" },
-    { key: "harel_study_pct", label: "ניכוי הראל קר" },
-    { key: "harel_travel_pct", label: "ניכוי האל נסיע" },
-    { key: "extra_harel_pct", label: "ניכוי הראל ש' (נוסף)" },
+    { key: "harel_savings_pct", label: "ניכוי הראל ש'"       },
+    { key: "harel_study_pct",   label: "ניכוי הראל קר"       },
+    { key: "harel_travel_pct",  label: "ניכוי האל נסיע"      },
+    { key: "extra_harel_pct",   label: "ניכוי הראל ש' (נוסף)" },
   ];
+
+  const inputCls = "w-24 rounded-none bg-white/5 border border-white/20 px-3 py-2 text-sm text-white focus:outline-none focus:border-white focus:bg-white/10 min-h-[44px] transition-colors";
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl bg-card border border-border p-4 md:p-5 flex items-center justify-center h-40">
-        <Loader2 className="h-5 w-5 text-work animate-spin" />
+      <div className="bg-black/50 backdrop-blur-2xl border border-white/10 rounded-none p-4 md:p-5 flex items-center justify-center h-40">
+        <Loader2 className="h-5 w-5 text-white/50 animate-spin" />
       </div>
     );
   }
 
+  const SectionRow = ({ label, fieldKey, unit }: { label: string; fieldKey: keyof PayrollSettings; unit: string }) => (
+    <div className="flex items-center justify-between gap-3">
+      <label className="text-sm text-white/50">{label}</label>
+      <div className="flex items-center gap-1.5">
+        <input type="number" step="0.01" value={form[fieldKey] as number}
+          onChange={(e) => update(fieldKey, e.target.value)}
+          className={inputCls} dir="ltr" />
+        <span className="text-xs text-white/40 w-6">{unit}</span>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 md:p-5 space-y-4">
+    <div className="bg-black/50 backdrop-blur-2xl border border-white/10 rounded-none p-4 md:p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <Briefcase className="h-4 w-4 text-work" />
-        <h3 className="text-sm font-semibold">חוזה עבודה ותעריפים</h3>
+        <Briefcase className="h-4 w-4 text-white/70" />
+        <h3 className="text-sm font-semibold text-white uppercase tracking-widest">חוזה עבודה ותעריפים</h3>
       </div>
 
-      {/* Rates */}
       <div className="space-y-3">
-        <p className="text-xs text-muted-foreground font-medium">תעריפים</p>
-        {rateFields.map((f) => (
-          <div key={f.key} className="flex items-center justify-between gap-3">
-            <label className="text-sm text-muted-foreground">{f.label}</label>
-            <div className="flex items-center gap-1.5">
-              <input type="number" step="0.01"
-                value={form[f.key] as number}
-                onChange={(e) => update(f.key, e.target.value)}
-                className="w-24 rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm text-left focus:outline-none focus:ring-1 focus:ring-work min-h-[44px]"
-                dir="ltr" />
-              <span className="text-xs text-muted-foreground w-6">{f.unit}</span>
-            </div>
-          </div>
-        ))}
+        <p className="text-xs text-white/40 font-medium uppercase tracking-widest">תעריפים</p>
+        {rateFields.map((f) => <SectionRow key={f.key} label={f.label} fieldKey={f.key} unit={f.unit} />)}
       </div>
 
-      {/* Mandatory */}
-      <div className="space-y-3 border-t border-border pt-3">
-        <p className="text-xs text-muted-foreground font-medium">ניכויי חובה (%)</p>
-        {mandatoryFields.map((f) => (
-          <div key={f.key} className="flex items-center justify-between gap-3">
-            <label className="text-sm text-muted-foreground">{f.label}</label>
-            <div className="flex items-center gap-1.5">
-              <input type="number" step="0.01"
-                value={form[f.key] as number}
-                onChange={(e) => update(f.key, e.target.value)}
-                className="w-24 rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm text-left focus:outline-none focus:ring-1 focus:ring-work min-h-[44px]"
-                dir="ltr" />
-              <span className="text-xs text-muted-foreground w-6">%</span>
-            </div>
-          </div>
-        ))}
+      <div className="space-y-3 border-t border-white/10 pt-3">
+        <p className="text-xs text-white/40 font-medium uppercase tracking-widest">ניכויי חובה (%)</p>
+        {mandatoryFields.map((f) => <SectionRow key={f.key} label={f.label} fieldKey={f.key} unit="%" />)}
       </div>
 
-      {/* Office */}
-      <div className="space-y-3 border-t border-border pt-3">
-        <p className="text-xs text-muted-foreground font-medium">ניכויי משרד</p>
-        {officeFields.map((f) => (
-          <div key={f.key} className="flex items-center justify-between gap-3">
-            <label className="text-sm text-muted-foreground">{f.label}</label>
-            <div className="flex items-center gap-1.5">
-              <input type="number" step="0.01"
-                value={form[f.key] as number}
-                onChange={(e) => update(f.key, e.target.value)}
-                className="w-24 rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm text-left focus:outline-none focus:ring-1 focus:ring-work min-h-[44px]"
-                dir="ltr" />
-              <span className="text-xs text-muted-foreground w-6">{f.unit}</span>
-            </div>
-          </div>
-        ))}
+      <div className="space-y-3 border-t border-white/10 pt-3">
+        <p className="text-xs text-white/40 font-medium uppercase tracking-widest">ניכויי משרד</p>
+        {officeFields.map((f) => <SectionRow key={f.key} label={f.label} fieldKey={f.key} unit={f.unit} />)}
       </div>
 
-      {/* Pension */}
-      <div className="space-y-3 border-t border-border pt-3">
-        <p className="text-xs text-muted-foreground font-medium">ניכויי חו״ז (%)</p>
-        {pensionFields.map((f) => (
-          <div key={f.key} className="flex items-center justify-between gap-3">
-            <label className="text-sm text-muted-foreground">{f.label}</label>
-            <div className="flex items-center gap-1.5">
-              <input type="number" step="0.01"
-                value={form[f.key] as number}
-                onChange={(e) => update(f.key, e.target.value)}
-                className="w-24 rounded-lg bg-secondary/40 border border-border px-3 py-2 text-sm text-left focus:outline-none focus:ring-1 focus:ring-work min-h-[44px]"
-                dir="ltr" />
-              <span className="text-xs text-muted-foreground w-6">%</span>
-            </div>
-          </div>
-        ))}
+      <div className="space-y-3 border-t border-white/10 pt-3">
+        <p className="text-xs text-white/40 font-medium uppercase tracking-widest">ניכויי חו״ז (%)</p>
+        {pensionFields.map((f) => <SectionRow key={f.key} label={f.label} fieldKey={f.key} unit="%" />)}
       </div>
 
-      {/* Sync mode */}
-      <div className="space-y-3 border-t border-border pt-3">
-        <p className="text-xs text-muted-foreground font-medium">סנכרון הכנסה לכלכלה</p>
+      <div className="space-y-3 border-t border-white/10 pt-3">
+        <p className="text-xs text-white/40 font-medium uppercase tracking-widest">סנכרון הכנסה לכלכלה</p>
         <div className="grid grid-cols-2 gap-2">
-          {[
-            { value: 'net' as const, label: 'נטו' },
-            { value: 'bank' as const, label: 'סכום בבנק' },
-          ].map((opt) => (
-            <button key={opt.value} onClick={() => update('income_sync_mode', opt.value)}
-              className={`px-3 py-2.5 rounded-xl border transition-colors text-xs font-medium min-h-[44px] ${
-                form.income_sync_mode === opt.value ? "border-work bg-work/10 text-work" : "border-border bg-card hover:bg-secondary/40 text-foreground"
+          {([{ value: "net", label: "נטו" }, { value: "bank", label: "סכום בבנק" }] as const).map((opt) => (
+            <button key={opt.value} onClick={() => update("income_sync_mode", opt.value)}
+              className={`px-3 py-2.5 rounded-none border transition-colors text-xs font-semibold min-h-[44px] ${
+                form.income_sync_mode === opt.value
+                  ? "bg-white text-black border-white"
+                  : "bg-white/5 border-white/20 text-gray-300 hover:bg-white/10 hover:text-white"
               }`}>
               {opt.label}
             </button>
@@ -161,7 +121,7 @@ export function SettingsWork() {
       </div>
 
       <button onClick={handleSave} disabled={saveSettings.isPending}
-        className="w-full py-3 rounded-xl bg-work text-work-foreground font-bold text-sm hover:opacity-90 transition-opacity min-h-[44px] flex items-center justify-center gap-2 disabled:opacity-50">
+        className="w-full py-3 rounded-none bg-white text-black font-bold text-sm hover:bg-white/90 transition-colors min-h-[44px] flex items-center justify-center gap-2 disabled:opacity-50">
         {saveSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         {saveSettings.isPending ? "שומר..." : "שמור הגדרות עבודה"}
       </button>
