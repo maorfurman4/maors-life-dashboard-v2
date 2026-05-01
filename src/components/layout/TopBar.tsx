@@ -33,8 +33,8 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
       </button>
 
       {/* Page title — centered */}
-      <h1 className="absolute inset-x-0 text-center text-lg font-bold text-white pointer-events-none">
-        {current?.label ?? ""}
+      <h1 className="absolute inset-x-0 text-center text-xl font-black text-white pointer-events-none">
+        {current?.displayLabel ?? current?.label ?? ""}
       </h1>
 
       {/* Spacer to balance hamburger */}

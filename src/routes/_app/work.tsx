@@ -959,17 +959,8 @@ function WorkPage() {
         </div>
 
         <div className="relative z-10 pb-32">
-          {/* Header */}
-          <div className="px-4 pt-5 pb-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-2xl bg-sky-500/20 backdrop-blur-md border border-sky-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.25)]">
-                <Briefcase className="h-5 w-5 text-sky-400" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-black text-white tracking-tight">עבודה 💼</h1>
-                <p className="text-[11px] text-white/40 mt-0.5">{monthLabel} · {resolvedShifts.length} משמרות</p>
-              </div>
-            </div>
+          {/* Monthly gross summary */}
+          <div className="px-4 pt-4 pb-2 flex justify-end">
             <div className="rounded-2xl border border-sky-500/20 bg-sky-500/8 backdrop-blur-xl px-3 py-2 text-center shrink-0">
               <p className="text-[9px] text-white/35 font-medium">ברוטו חודש</p>
               <p className="text-sm font-black text-sky-300">{fmtNis(payslip.totalGross + couponTotal)}</p>

@@ -994,16 +994,6 @@ function SportPage() {
         </div>
 
         <div className="relative z-10 pb-32">
-          {/* Header */}
-          <div className="px-4 pt-5 pb-3 flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.25)]">
-              <Dumbbell className="h-5 w-5 text-emerald-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-white tracking-tight">ספורט 💪</h1>
-              <p className="text-[11px] text-white/40 mt-0.5">עקוב · תכנן · השתפר</p>
-            </div>
-          </div>
 
           {/* Sticky Tab Bar */}
           <div className="sticky top-0 z-20 px-4 py-2 bg-black/60 backdrop-blur-xl">

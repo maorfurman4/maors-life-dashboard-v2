@@ -70,23 +70,6 @@ function FinancePage() {
       </div>
 
       <div className="relative pb-32" style={{ zIndex: 2 }}>
-        {/* Header */}
-        <div className="px-4 pt-6 pb-4 flex items-center gap-3">
-          <div
-            className="h-11 w-11 rounded-[20px] flex items-center justify-center shrink-0"
-            style={{ background: FT.goldDim, border: `1px solid ${FT.goldBorder}` }}
-          >
-            <Wallet className="h-5 w-5" style={{ color: FT.gold }} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-white" style={{ letterSpacing: 0 }}>
-              כספים
-            </h1>
-            <p className="text-[11px] mt-0.5" style={{ color: FT.textSub }}>
-              ניהול פיננסי חכם
-            </p>
-          </div>
-        </div>
 
         {/* Month Navigator */}
         <MonthNav

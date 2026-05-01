@@ -25,16 +25,6 @@ function SettingsPage() {
         className="relative space-y-5 pb-24 max-w-4xl mx-auto px-3 md:px-6"
         style={{ zIndex: 1, paddingTop: "calc(3.5rem + 1.25rem)" }}
       >
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 flex items-center justify-center">
-            <Settings className="h-6 w-6 text-white/70" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">הגדרות</h1>
-            <p className="text-xs text-white/40">פרופיל, יעדים והעדפות</p>
-          </div>
-        </div>
-
         <SettingsPersonal />
         <SettingsSport />
         <SettingsNutrition />
