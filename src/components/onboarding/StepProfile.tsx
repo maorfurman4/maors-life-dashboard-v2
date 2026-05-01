@@ -44,6 +44,22 @@ export function StepProfile({ draft, setField }: Props) {
         )}
       </div>
 
+      {/* Age */}
+      <div className="space-y-2">
+        <label className="text-sm font-bold text-white/80">גיל</label>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={13}
+          max={100}
+          value={draft.age ?? ""}
+          onChange={(e) => setField("age", e.target.value === "" ? null : Number(e.target.value))}
+          placeholder="למשל: 25"
+          dir="ltr"
+          className="w-full rounded-2xl backdrop-blur-md bg-white/10 border border-white/15 px-4 py-3.5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+        />
+      </div>
+
       {/* City */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-white/80">עיר מגורים</label>

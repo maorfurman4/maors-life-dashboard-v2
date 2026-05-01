@@ -7,12 +7,14 @@ import type { UserProfile } from "@/hooks/use-profile";
 export type OnboardingDraft = {
   // Step 1 — Profile
   full_name: string;
+  age: number | null;
   city: string;
   gender: string;
 
   // Step 2 — Body
   height_cm: number | null;
   weight_kg: number | null;
+  lifestyle: string;
   physical_limitations: string[];
 
   // Step 3 — Sport
@@ -35,10 +37,12 @@ export type OnboardingDraft = {
 
 const INITIAL_DRAFT: OnboardingDraft = {
   full_name: "",
+  age: null,
   city: "",
   gender: "",
   height_cm: null,
   weight_kg: null,
+  lifestyle: "",
   physical_limitations: [],
   sport_types: [],
   sport_frequency: "",
