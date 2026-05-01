@@ -250,7 +250,7 @@ function NutritionPage() {
 
 
         {/* ── Glass tab bar — sticky ── */}
-        <div className="sticky top-0 z-20 px-4 py-2 bg-[#080b12]/60 backdrop-blur-xl">
+        <div className="sticky top-14 z-20 px-4 py-2 bg-[#080b12]/60 backdrop-blur-xl">
           <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
             {TABS.map((t) => (
               <button
