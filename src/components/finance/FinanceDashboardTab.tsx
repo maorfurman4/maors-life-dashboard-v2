@@ -641,7 +641,7 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
 
 // ─── Savings Goal Settings ────────────────────────────────────────────────────
 
-function SavingsGoalSettings() {
+function SavingsGoalSettings({ fin }: { fin: ReturnType<typeof useMonthlyFinance> }) {
   const { data: settings } = useFinanceSettings();
   const saveSettings = useSaveFinanceSettings();
   const [open, setOpen] = useState(false);
@@ -678,29 +678,80 @@ function SavingsGoalSettings() {
     }
   }
 
-  const currentGoal = settings?.savings_goal_amount != null
-    ? `₪${fmt(settings.savings_goal_amount)}`
-    : `${settings?.savings_goal_pct ?? 35}%`;
+  const progressPct = Math.min(100, fin.savingsTarget > 0 ? (fin.savings / fin.savingsTarget) * 100 : 0);
+  const statusMeta = {
+    on_target: { label: "עומד ביעד ✅", color: FT.success, dim: FT.successDim },
+    close:     { label: "קרוב ליעד ⚡", color: FT.gold,    dim: FT.goldDim    },
+    far:       { label: "רחוק מהיעד ⚠️", color: FT.danger,  dim: FT.dangerDim  },
+  }[fin.savingsStatus];
+
+  const barColor = progressPct >= 100 ? FT.success : progressPct >= 50 ? FT.gold : FT.danger;
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }} dir="rtl">
+    <div className="rounded-3xl p-4 space-y-3" style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }} dir="rtl">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Target className="h-4 w-4" style={{ color: FT.gold }} />
           <p className="text-xs font-black" style={{ color: FT.textMuted, letterSpacing: 0 }}>יעד חיסכון חודשי</p>
-          <span className="text-xs font-black" style={{ color: FT.gold }}>{currentGoal}</span>
         </div>
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="h-7 w-7 flex items-center justify-center rounded-xl transition-all active:scale-90"
-          style={{ background: FT.goldDim, color: FT.gold }}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] px-2 py-0.5 rounded-full font-bold" style={{ background: statusMeta.dim, color: statusMeta.color }}>
+            {statusMeta.label}
+          </span>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="h-7 w-7 flex items-center justify-center rounded-xl transition-all active:scale-90"
+            style={{ background: FT.goldDim, color: FT.gold }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Savings meter */}
+      <div className="space-y-2">
+        {/* ₪ amounts row */}
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[10px] mb-0.5" style={{ color: FT.textFaint, letterSpacing: 0 }}>נחסך עד כה</p>
+            <p className="text-2xl font-black" style={{ color: barColor, letterSpacing: 0 }} dir="ltr">
+              ₪{fmt(fin.savings)}
+            </p>
+            <p className="text-[11px] font-bold" style={{ color: FT.textMuted, letterSpacing: 0 }} dir="ltr">
+              {fin.savingsPct.toFixed(1)}% מהכנסה
+            </p>
+          </div>
+          <div className="text-end">
+            <p className="text-[10px] mb-0.5" style={{ color: FT.textFaint, letterSpacing: 0 }}>יעד</p>
+            <p className="text-sm font-black" style={{ color: FT.textMuted, letterSpacing: 0 }} dir="ltr">
+              ₪{fmt(fin.savingsTarget)}
+            </p>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-3 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${progressPct}%`, background: barColor, boxShadow: `0 0 8px ${barColor}60` }}
+          />
+        </div>
+
+        {/* Gap label */}
+        {fin.savingsGap > 0 ? (
+          <p className="text-[11px]" style={{ color: FT.danger, letterSpacing: 0 }}>
+            חסרים עוד ₪{fmt(fin.savingsGap)} להשלמת היעד
+          </p>
+        ) : (
+          <p className="text-[11px]" style={{ color: FT.success, letterSpacing: 0 }}>
+            עודף של ₪{fmt(Math.abs(fin.savingsGap))} מעל היעד 🎯
+          </p>
+        )}
       </div>
 
       {open && (
-        <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="space-y-3 pt-2 border-t animate-in fade-in slide-in-from-top-2 duration-200" style={{ borderColor: FT.goldBorder }}>
           {/* Mode toggle */}
           <div className="grid grid-cols-2 gap-2">
             {(["pct", "amount"] as const).map((m) => (
@@ -814,7 +865,7 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
       <MedalsRow savingsGoal={savingsGoal} />
 
       {/* Savings Goal Settings */}
-      <SavingsGoalSettings />
+      <SavingsGoalSettings fin={fin} />
 
       {/* Floating Quick Add */}
       <FloatingQuickAdd year={year} month={month} />
