@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Search, Download, Printer, X, AlertTriangle, ArrowDownRight, ArrowUpRight, Trash2 } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { Search, Download, Printer, X, AlertTriangle, ArrowDownRight, ArrowUpRight, Trash2, RefreshCw } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import {
   useMonthlyFinance,
@@ -96,7 +96,7 @@ function exportCSV(transactions: any[], year: number, month: number) {
   const header = ["תאריך", "סוג", "קטגוריה", "תיאור", "סכום"].join(",");
   const rows = transactions.map((t) => [
     t.date,
-    t._type === "expense" ? "הוצאה" : "הכנסה",
+    t._type === "expense" ? "הוצאה" : t._type === "fixed" ? "קבועה" : "הכנסה",
     t.category,
     (t.description ?? "").replace(/,/g, " "),
     Number(t.amount).toFixed(2),
@@ -120,10 +120,10 @@ function exportPDF(
   const rows = transactions.map((t) => `
     <tr class="${anomalyIds.has(t.id) ? "anomaly" : ""}">
       <td>${t.date}</td>
-      <td class="${t._type === "expense" ? "expense" : "income"}">${t._type === "expense" ? "הוצאה" : "הכנסה"}</td>
+      <td class="${t._type === "expense" || t._type === "fixed" ? "expense" : "income"}">${t._type === "expense" ? "הוצאה" : t._type === "fixed" ? "קבועה" : "הכנסה"}</td>
       <td>${t.category}</td>
       <td>${t.description ?? "-"}</td>
-      <td dir="ltr" style="text-align:left">${t._type === "expense" ? "-" : "+"}₪${fmt(Number(t.amount))}${anomalyIds.has(t.id) ? " ⚠️" : ""}</td>
+      <td dir="ltr" style="text-align:left">${t._type !== "income" ? "-" : "+"}₪${fmt(Number(t.amount))}${anomalyIds.has(t.id) ? " ⚠️" : ""}</td>
     </tr>`).join("");
 
   const html = `<!DOCTYPE html>
@@ -255,15 +255,18 @@ function DonutChart({
 // ─── Transaction Row ──────────────────────────────────────────────────────────
 
 function TransactionRow({ item, isAnomaly, onDelete }: {
-  item: any; isAnomaly: boolean; onDelete: () => void;
+  item: any; isAnomaly: boolean; onDelete?: () => void;
 }) {
+  const isFixed = item._type === "fixed";
   const isExpense = item._type === "expense";
+  const isIncome = item._type === "income";
+
   return (
     <div
       className="flex items-center gap-3 px-3 py-2.5 rounded-2xl group transition-all"
       style={{
         background: isAnomaly ? "rgba(212,178,100,0.08)" : FT.cardLight,
-        border: `1px solid ${isAnomaly ? "rgba(212,178,100,0.22)" : FT.brownBorder}`,
+        border: `1px solid ${isAnomaly ? "rgba(212,178,100,0.22)" : isFixed ? "rgba(139,170,255,0.15)" : FT.brownBorder}`,
       }}
       dir="rtl"
     >
@@ -272,23 +275,28 @@ function TransactionRow({ item, isAnomaly, onDelete }: {
         className="h-7 w-7 rounded-xl flex items-center justify-center shrink-0"
         style={{
           background: isAnomaly ? "rgba(212,178,100,0.15)" :
+            isFixed ? "rgba(139,170,255,0.12)" :
             isExpense ? FT.dangerDim : FT.successDim,
         }}
       >
         {isAnomaly
           ? <AlertTriangle className="h-3.5 w-3.5" style={{ color: "#d4b264" }} aria-label="חריגה" />
-          : isExpense
-            ? <ArrowDownRight className="h-3.5 w-3.5" style={{ color: FT.danger }} />
-            : <ArrowUpRight className="h-3.5 w-3.5" style={{ color: FT.success }} />}
+          : isFixed
+            ? <RefreshCw className="h-3.5 w-3.5" style={{ color: "#8baaf0" }} />
+            : isExpense
+              ? <ArrowDownRight className="h-3.5 w-3.5" style={{ color: FT.danger }} />
+              : <ArrowUpRight className="h-3.5 w-3.5" style={{ color: FT.success }} />}
       </div>
 
       {/* Details */}
       <div className="flex-1 min-w-0">
         <p className="text-xs font-bold text-white truncate" style={{ letterSpacing: 0 }}>
-          {item.description || item.category}
+          {item.description || item.name || item.category}
         </p>
         <p className="text-[10px] mt-0.5" style={{ color: FT.textMuted }}>
-          {item.category} · {item.date}
+          {item.category}
+          {isFixed && <span style={{ color: "#8baaf0" }} className="me-1"> · קבועה</span>}
+          {" · "}{item.date}
           {isAnomaly && <span style={{ color: "#d4b264" }} className="me-1"> · חריג מהממוצע</span>}
         </p>
       </div>
@@ -296,21 +304,23 @@ function TransactionRow({ item, isAnomaly, onDelete }: {
       {/* Amount */}
       <span
         className="text-sm font-black shrink-0 tabular-nums"
-        style={{ color: isExpense ? FT.danger : FT.success }}
+        style={{ color: isIncome ? FT.success : isFixed ? "#8baaf0" : FT.danger }}
         dir="ltr"
       >
-        {isExpense ? "-" : "+"}₪{fmt(Number(item.amount))}
+        {isIncome ? "+" : "-"}₪{fmt(Number(item.amount))}
       </span>
 
-      {/* Delete */}
-      <button
-        onClick={onDelete}
-        className="opacity-0 group-hover:opacity-100 h-6 w-6 rounded-lg flex items-center justify-center transition-all shrink-0"
-        style={{ background: FT.dangerDim, color: FT.danger }}
-        aria-label="מחק"
-      >
-        <Trash2 className="h-3 w-3" />
-      </button>
+      {/* Delete — only for variable expenses and income */}
+      {onDelete && (
+        <button
+          onClick={onDelete}
+          className="opacity-0 group-hover:opacity-100 h-6 w-6 rounded-lg flex items-center justify-center transition-all shrink-0"
+          style={{ background: FT.dangerDim, color: FT.danger }}
+          aria-label="מחק"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+      )}
     </div>
   );
 }
@@ -324,14 +334,21 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
 
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const transactionsRef = useRef<HTMLDivElement>(null);
 
   const searchFilter = parseSearch(search);
 
   const allTransactions = useMemo(() => [
     ...(fin.expenses || []).map((e: any) => ({ ...e, _type: "expense" as const })),
     ...(fin.incomes  || []).map((i: any) => ({ ...i, _type: "income"  as const })),
+    ...(fin.fixedExpenses || []).map((f: any) => ({
+      ...f,
+      _type: "fixed" as const,
+      date: `${year}-${String(month).padStart(2, "0")}-${String(f.charge_day).padStart(2, "0")}`,
+      description: f.notes || f.name,
+    })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-  [fin.expenses, fin.incomes]);
+  [fin.expenses, fin.incomes, fin.fixedExpenses, year, month]);
 
   const anomalyIds = useAnomalyIds(fin.expenses || [], year, month);
 
@@ -340,20 +357,26 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
     (fin.expenses || []).forEach((e: any) => {
       breakdown[e.category] = (breakdown[e.category] || 0) + Number(e.amount);
     });
+    (fin.fixedExpenses || []).forEach((f: any) => {
+      breakdown[f.category] = (breakdown[f.category] || 0) + Number(f.amount);
+    });
     return Object.entries(breakdown).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [fin.expenses]);
+  }, [fin.expenses, fin.fixedExpenses]);
 
   const filtered = applyFilter(allTransactions, searchFilter, activeCategory);
 
   function handleSliceClick(name: string) {
     setActiveCategory((prev) => (prev === name ? null : name));
     setSearch("");
+    setTimeout(() => {
+      transactionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   }
 
   function handleDelete(item: any) {
     if (item._type === "expense") {
       deleteExpense.mutate(item.id, { onSuccess: () => toast.success("הוצאה נמחקה") });
-    } else {
+    } else if (item._type === "income") {
       deleteIncome.mutate(item.id, { onSuccess: () => toast.success("הכנסה נמחקה") });
     }
   }
@@ -381,6 +404,9 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
           )}
         </div>
         <DonutChart data={donutData} activeCategory={activeCategory} onSliceClick={handleSliceClick} />
+        <p className="text-[10px] text-center" style={{ color: FT.textFaint }}>
+          לחץ על קטגוריה כדי לסנן את ההוצאות
+        </p>
       </div>
 
       {/* Smart Search */}
@@ -432,10 +458,10 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
       </div>
 
       {/* Transaction List */}
-      <div className="rounded-3xl p-4 space-y-3" style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}>
+      <div ref={transactionsRef} className="rounded-3xl p-4 space-y-3" style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}>
         <div className="flex items-center justify-between">
           <p className="text-xs font-black" style={{ color: FT.textMuted, letterSpacing: 0 }}>
-            📋 תנועות
+            📋 תנועות{activeCategory ? ` — ${activeCategory}` : ""}
           </p>
           <div className="flex items-center gap-2">
             {anomalyCount > 0 && (
@@ -458,10 +484,10 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
           <div className="space-y-1.5 max-h-80 overflow-y-auto">
             {filtered.map((item: any) => (
               <TransactionRow
-                key={item.id}
+                key={item._type === "fixed" ? `fixed-${item.id}` : item.id}
                 item={item}
                 isAnomaly={anomalyIds.has(item.id)}
-                onDelete={() => handleDelete(item)}
+                onDelete={item._type !== "fixed" ? () => handleDelete(item) : undefined}
               />
             ))}
           </div>
