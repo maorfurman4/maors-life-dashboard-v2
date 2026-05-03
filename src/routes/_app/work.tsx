@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Briefcase, Play, Square, Coffee, Plus, Clock,
   TrendingUp, Target, FileText, Calendar, Download,
   HeartPulse, Shield, Save, ChevronDown, ChevronUp,
-  Wallet, BarChart2, Zap,
+  Wallet, BarChart2, Zap, Trash2,
 } from "lucide-react";
 import {
-  useAddShift, usePayrollSettings, useWorkShifts,
+  useAddShift, useDeleteShift, usePayrollSettings, useWorkShifts,
   useSavePayrollSettings,
 } from "@/hooks/use-work-data";
 import {
@@ -37,6 +37,7 @@ interface ShiftCardDef {
   key: string; label: string; sublabel: string; emoji: string; image: string;
   type: string; isShabbat: boolean; color: string;
   bonusLabel: string | null; bonusAmount: number | null; hasBriefing: boolean;
+  isCustomHours?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -48,16 +49,24 @@ const TABS: { key: WorkTab; label: string }[] = [
 ];
 
 const SHIFT_CARDS: ShiftCardDef[] = [
-  { key: "morning",  label: "בוקר",       sublabel: "07:00 – 15:00", emoji: "🌅", image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",  type: "morning",   isShabbat: false, color: "#f97316", bonusLabel: "+68₪ נסיעות",  bonusAmount: 68,   hasBriefing: false },
-  { key: "evening",  label: "ערב / לילה", sublabel: "15:00 – 07:00", emoji: "🌙", image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&q=80", type: "afternoon", isShabbat: false, color: "#6366f1", bonusLabel: null,           bonusAmount: null, hasBriefing: false },
-  { key: "shabbat",  label: "שבת / חג",   sublabel: "שכר 150%",      emoji: "✨", image: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=600&q=80",  type: "morning",   isShabbat: true,  color: "#f59e0b", bonusLabel: "150% תעריף",   bonusAmount: null, hasBriefing: false },
-  { key: "briefing", label: "רענון",       sublabel: "06:00 – 19:00", emoji: "📋", image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80",  type: "briefing",  isShabbat: false, color: "#10b981", bonusLabel: "תוספת רענון", bonusAmount: null, hasBriefing: true  },
+  { key: "morning",           label: "בוקר",             sublabel: "07:00 – 15:00", emoji: "🌅", image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",  type: "morning",      isShabbat: false, color: "#f97316", bonusLabel: "+68₪ ארוחה",  bonusAmount: 68,   hasBriefing: false },
+  { key: "afternoon",         label: "אחהצ / ערב",       sublabel: "15:00 – 23:00", emoji: "🌆", image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&q=80", type: "afternoon",    isShabbat: false, color: "#6366f1", bonusLabel: null,           bonusAmount: null, hasBriefing: false },
+  { key: "night",             label: "ערב",               sublabel: "23:00 – 07:00", emoji: "🌙", image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&q=80", type: "night",        isShabbat: false, color: "#4f46e5", bonusLabel: null,           bonusAmount: null, hasBriefing: false },
+  { key: "long_morning",      label: "ארוכה בוקר",       sublabel: "07:00 – 19:00", emoji: "☀️", image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",  type: "long_morning", isShabbat: false, color: "#fb923c", bonusLabel: "+68₪ ארוחה",  bonusAmount: 68,   hasBriefing: false },
+  { key: "long_night",        label: "ארוכה לילה",       sublabel: "19:00 – 07:00", emoji: "🌃", image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&q=80", type: "long_night",   isShabbat: false, color: "#818cf8", bonusLabel: null,           bonusAmount: null, hasBriefing: false },
+  { key: "shabbat",           label: "שבת / חג",         sublabel: "שכר 150%",      emoji: "✨", image: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=600&q=80",  type: "morning",      isShabbat: true,  color: "#f59e0b", bonusLabel: "150% תעריף",  bonusAmount: null, hasBriefing: false },
+  { key: "long_morning_shab", label: "ארוכה בוקר שבת",  sublabel: "07:00 – 19:00 · 150%", emoji: "☀️✨", image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",  type: "long_morning", isShabbat: true,  color: "#f59e0b", bonusLabel: "+68₪ ארוחה",  bonusAmount: 68,   hasBriefing: false },
+  { key: "long_night_shab",   label: "ארוכה לילה שבת",  sublabel: "19:00 – 07:00 · 150%", emoji: "🌃✨", image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&q=80", type: "long_night",   isShabbat: true,  color: "#f59e0b", bonusLabel: "150% תעריף",  bonusAmount: null, hasBriefing: false },
+  { key: "briefing",          label: "רענון",             sublabel: "06:00 – 19:00", emoji: "📋", image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80",  type: "briefing",     isShabbat: false, color: "#10b981", bonusLabel: "תוספת רענון", bonusAmount: null, hasBriefing: true  },
+  { key: "custom",            label: "שעות ידני",         sublabel: "הכנס מספר שעות", emoji: "⏱️", image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80",  type: "morning",      isShabbat: false, color: "#06b6d4", bonusLabel: null,           bonusAmount: null, hasBriefing: false, isCustomHours: true },
 ];
 
 const SHIFT_TYPE_COLORS: Record<string, string> = {
   morning: "#f97316",
   afternoon: "#6366f1",
-  night: "#6366f1",
+  night: "#4f46e5",
+  long_morning: "#fb923c",
+  long_night: "#818cf8",
   briefing: "#10b981",
 };
 
@@ -68,7 +77,7 @@ const PIE_COLORS = ["#0ea5e9", "#f59e0b", "#10b981", "#8b5cf6", "#f97316"];
 const fmt2   = (n: number) => String(n).padStart(2, "0");
 const fmtNis = (n: number) => `₪${n.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const today  = () => new Date().toISOString().slice(0, 10);
-const hasCoupon = (s: ShiftRow) => !!(s.notes?.includes("נסיעות +"));
+const hasCoupon = (s: ShiftRow) => !!(s.notes?.includes("ארוחה +") || s.notes?.includes("נסיעות +"));
 
 // ─── ICS / Export helpers ─────────────────────────────────────────────────────
 function generateICS(shifts: ShiftRow[], monthLabel: string): string {
@@ -225,7 +234,7 @@ function LiveTracker({ live, settings, onStop }: { live: LiveShiftState; setting
   }, [live.startMs]);
 
   const hours  = elapsed / 3600;
-  const effH   = live.noBreak ? hours : Math.max(0, hours - 0.5);
+  const effH   = hours;
   const rate   = live.isShabbat ? settings.shabbat_hourly_rate : (live.role === "shift_manager" ? settings.alt_hourly_rate : settings.base_hourly_rate);
   const earned = effH * (rate + settings.recovery_per_hour + settings.excellence_per_hour);
 
@@ -248,7 +257,7 @@ function LiveTracker({ live, settings, onStop }: { live: LiveShiftState; setting
         <p className="text-5xl font-black text-white tracking-wider font-mono">
           {fmt2(Math.floor(elapsed/3600))}:{fmt2(Math.floor((elapsed%3600)/60))}:{fmt2(elapsed%60)}
         </p>
-        <p className="text-[10px] text-white/35 mt-1.5">{live.noBreak ? "ללא הפסקה" : "כולל ניכוי 30 דק׳"}</p>
+        <p className="text-[10px] text-white/35 mt-1.5">מד זמן פעיל</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-sky-500/10 border border-sky-500/15 p-3 text-center">
@@ -264,31 +273,72 @@ function LiveTracker({ live, settings, onStop }: { live: LiveShiftState; setting
   );
 }
 
-function BreakToggle({ noBreak, onChange }: { noBreak: boolean; onChange: (v: boolean) => void }) {
+// ─── Drum Picker ──────────────────────────────────────────────────────────────
+const ITEM_H = 48;
+const VISIBLE = 5;
+const PAD = ITEM_H * Math.floor(VISIBLE / 2);
+
+function DrumPicker({ values, selectedIndex, onSelect, accent }: {
+  values: string[]; selectedIndex: number;
+  onSelect: (i: number) => void; accent?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [snapIdx, setSnapIdx] = useState(selectedIndex);
+
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = selectedIndex * ITEM_H;
+  }, []);
+
+  const onScroll = () => {
+    if (!ref.current) return;
+    setSnapIdx(Math.round(ref.current.scrollTop / ITEM_H));
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      if (!ref.current) return;
+      const idx = Math.max(0, Math.min(Math.round(ref.current.scrollTop / ITEM_H), values.length - 1));
+      ref.current.scrollTo({ top: idx * ITEM_H, behavior: "smooth" });
+      onSelect(idx);
+    }, 120);
+  };
+
   return (
-    <button onClick={() => onChange(!noBreak)}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border backdrop-blur-xl transition-all duration-200 ${noBreak ? "border-sky-500/30 bg-sky-500/8" : "border-white/10 bg-white/5"}`}>
-      <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${noBreak ? "bg-sky-500/20" : "bg-white/8"}`}>
-        <Coffee className={`h-4 w-4 ${noBreak ? "text-sky-400" : "text-white/30"}`} />
+    <div className="relative flex-1" style={{ height: ITEM_H * VISIBLE }}>
+      <div ref={ref} onScroll={onScroll}
+        className="absolute inset-0 overflow-y-scroll scrollbar-hide"
+        style={{ scrollSnapType: "y mandatory" }}>
+        <div style={{ height: PAD }} />
+        {values.map((v, i) => (
+          <div key={v} style={{ height: ITEM_H, scrollSnapAlign: "center" }}
+            className="flex items-center justify-center select-none">
+            <span className="text-2xl font-black transition-all duration-150"
+              style={{ color: i === snapIdx ? (accent ?? "#ffffff") : "rgba(255,255,255,0.2)", transform: i === snapIdx ? "scale(1.15)" : "scale(0.85)" }}>
+              {v}
+            </span>
+          </div>
+        ))}
+        <div style={{ height: PAD }} />
       </div>
-      <div className="flex-1 text-right">
-        <p className="text-sm font-bold text-white">{noBreak ? "עבדתי רצוף — ללא הפסקה" : "עם הפסקה (30 דק׳ מנוכות)"}</p>
-        <p className="text-[10px] text-white/35 mt-0.5">לחץ להחלפה בין מצבים</p>
-      </div>
-      <div className={`relative w-11 h-6 rounded-full shrink-0 transition-colors duration-200 ${noBreak ? "bg-sky-500" : "bg-white/15"}`}>
-        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${noBreak ? "translate-x-5" : "translate-x-0.5"}`} />
-      </div>
-    </button>
+      {/* fade top */}
+      <div className="absolute top-0 left-0 right-0 pointer-events-none z-10"
+        style={{ height: PAD, background: "linear-gradient(to bottom, #0f1117 40%, transparent)" }} />
+      {/* fade bottom */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-10"
+        style={{ height: PAD, background: "linear-gradient(to top, #0f1117 40%, transparent)" }} />
+      {/* selection bar */}
+      <div className="absolute left-0 right-0 pointer-events-none z-10"
+        style={{ top: PAD, height: ITEM_H, borderTop: "1px solid rgba(255,255,255,0.18)", borderBottom: "1px solid rgba(255,255,255,0.18)" }} />
+    </div>
   );
 }
 
 // ─── Shift Card (image-backed quick-add) ──────────────────────────────────────
-function ShiftCard({ card, noBreak, settings, onLog, onStart }: {
-  card: ShiftCardDef; noBreak: boolean; settings: PayrollSettings;
+function ShiftCard({ card, settings, onLog, onStart }: {
+  card: ShiftCardDef; settings: PayrollSettings;
   onLog: (c: ShiftCardDef) => void; onStart: (c: ShiftCardDef) => void;
 }) {
   const baseH = SHIFT_HOURS[card.type] ?? 8;
-  const effH  = noBreak ? baseH : baseH - 0.5;
+  const effH  = baseH;
   const rate  = card.isShabbat ? settings.shabbat_hourly_rate : settings.base_hourly_rate;
   // FIX 2: gross does NOT include bonusAmount (coupon)
   const gross = effH * (rate + settings.recovery_per_hour + settings.excellence_per_hour)
@@ -333,7 +383,7 @@ function ShiftCard({ card, noBreak, settings, onLog, onStart }: {
 }
 
 // ─── N99-inspired premium ShiftTicket ────────────────────────────────────────
-function ShiftTicket({ shift, settings }: { shift: ShiftRow; settings: PayrollSettings }) {
+function ShiftTicket({ shift, settings, onDelete }: { shift: ShiftRow; settings: PayrollSettings; onDelete?: (id: string) => void }) {
   const bd    = calcShiftBreakdown(shift, settings);
   const hours = shift.hours ?? (SHIFT_HOURS[shift.type] ?? 8);
   const times = SHIFT_TIMES[shift.type] ?? { start: "—", end: "—" };
@@ -345,6 +395,16 @@ function ShiftTicket({ shift, settings }: { shift: ShiftRow; settings: PayrollSe
     <div className="relative rounded-3xl overflow-hidden border border-white/8 bg-white/[0.04] backdrop-blur-xl">
       {/* N99-style colored top accent strip */}
       <div className="h-[3px]" style={{ background: `linear-gradient(90deg, ${accent}, ${accent}30)` }} />
+      {onDelete && (
+        <button
+          onClick={() => {
+            if (window.confirm("למחוק את המשמרת?")) onDelete(shift.id);
+          }}
+          className="absolute top-3 left-3 p-1.5 rounded-xl text-white/25 hover:text-red-400 hover:bg-red-500/10 transition-colors z-10"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
 
       <div className="flex items-stretch">
         {/* Date column */}
@@ -359,11 +419,6 @@ function ShiftTicket({ shift, settings }: { shift: ShiftRow; settings: PayrollSe
             <span className="mt-1.5 text-[7px] px-1.5 py-0.5 rounded-full font-black"
               style={{ background: "#f59e0b18", color: "#f59e0b" }}>שבת</span>
           )}
-        </div>
-
-        {/* Punch-out circle */}
-        <div className="relative w-0 overflow-visible flex items-center">
-          <div className="absolute -translate-x-1/2 h-5 w-5 rounded-full bg-[#080b12]" />
         </div>
 
         {/* Shift details */}
@@ -383,7 +438,7 @@ function ShiftTicket({ shift, settings }: { shift: ShiftRow; settings: PayrollSe
             {coupon > 0 && (
               <span className="inline-flex items-center gap-1 mt-1.5 text-[8px] px-2 py-0.5 rounded-full font-bold"
                 style={{ background: "#f9731614", color: "#f97316", border: "1px solid #f9731630" }}>
-                +₪68 נסיעות
+                +₪68 ארוחה
               </span>
             )}
           </div>
@@ -413,7 +468,8 @@ function StatsStrip({ shifts, settings }: { shifts: ShiftRow[]; settings: Payrol
   const stats = [
     { value: String(payslip.totalShifts), label: "משמרות" },
     { value: String(payslip.totalHours),  label: "שעות" },
-    { value: fmtNis(payslip.totalGross + couponTotal), label: "ברוטו", accent: true },
+    { value: fmtNis(payslip.totalGross + couponTotal), label: "ברוטו", accent: "text-sky-300" },
+    { value: fmtNis(payslip.netPay + couponTotal),     label: "נטו",   accent: "text-emerald-300" },
   ];
 
   return (
@@ -423,7 +479,7 @@ function StatsStrip({ shifts, settings }: { shifts: ShiftRow[]; settings: Payrol
           <>
             {i > 0 && <div key={`div-${i}`} className="w-px h-8 bg-white/10" />}
             <div key={s.label} className="text-center px-2">
-              <p className={`text-2xl font-black leading-none ${s.accent ? "text-sky-300" : "text-white"}`}>{s.value}</p>
+              <p className={`text-2xl font-black leading-none ${s.accent ?? "text-white"}`}>{s.value}</p>
               <p className="text-[9px] text-white/35 mt-1 font-semibold">{s.label}</p>
             </div>
           </>
@@ -436,36 +492,50 @@ function StatsStrip({ shifts, settings }: { shifts: ShiftRow[]; settings: Payrol
 // ═══════════════════════════════════════════════════════════════════════
 //  TAB 1 — DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════
-function DashboardTab({ liveShift, setLiveShift, noBreak, setNoBreak, settings, shifts }: {
+function DashboardTab({ liveShift, setLiveShift, settings, shifts }: {
   liveShift: LiveShiftState | null; setLiveShift: (s: LiveShiftState | null) => void;
-  noBreak: boolean; setNoBreak: (v: boolean) => void;
   settings: PayrollSettings; shifts: ShiftRow[];
 }) {
   const addShift = useAddShift();
+  const deleteShift = useDeleteShift();
   const [showAll, setShowAll] = useState(false);
+  const [pendingCard, setPendingCard] = useState<ShiftCardDef | null>(null);
+  const [customDate, setCustomDate] = useState(today());
+  const [showCustomDate, setShowCustomDate] = useState(false);
+  const [pickerHours, setPickerHours] = useState(4);
+  const [pickerMinutes, setPickerMinutes] = useState(0);
+  const [showHoursStep, setShowHoursStep] = useState(false);
 
-  // FIX 1 + FIX 2: Proper error handling, gross without coupon amount
-  const handleLog = async (card: ShiftCardDef) => {
-    const baseH = SHIFT_HOURS[card.type] ?? 8;
-    const hours = noBreak ? baseH : baseH - 0.5;
+  const HOUR_VALUES = Array.from({ length: 24 }, (_, i) => String(i));
+  const MIN_VALUES  = ["00","05","10","15","20","25","30","35","40","45","50","55"];
+
+  const handleDelete = (id: string) => {
+    deleteShift.mutate(id, {
+      onSuccess: () => toast.success("משמרת נמחקה"),
+      onError: () => toast.error("שגיאה במחיקה"),
+    });
+  };
+
+  const handleLog = async (card: ShiftCardDef, date: string, hoursOverride?: number) => {
+    const hours = hoursOverride ?? SHIFT_HOURS[card.type] ?? 8;
     const payload = {
-      date: today(),
+      date,
       type: card.type,
-      role: "caregiver",
+      role: "guard",
       is_shabbat_holiday: card.isShabbat,
       has_briefing: card.hasBriefing,
       hours,
-      notes: card.bonusAmount ? `נסיעות +${card.bonusAmount}₪` : null,
+      notes: card.bonusAmount ? `ארוחה +${card.bonusAmount}₪` : null,
     };
     try {
       await addShift.mutateAsync(payload);
       const gross = calcShiftBreakdown(
-        { id: "", date: today(), type: card.type, role: "caregiver",
+        { id: "", date, type: card.type, role: "guard",
           is_shabbat_holiday: card.isShabbat, has_briefing: card.hasBriefing,
           hours, notes: null },
         settings
       ).totalGross;
-      const bonusNote = card.bonusAmount ? ` + ₪${card.bonusAmount} נסיעות` : "";
+      const bonusNote = card.bonusAmount ? ` + ₪${card.bonusAmount} ארוחה` : "";
       toast.success(`✅ ${card.label} נרשמה — ${fmtNis(gross)} ברוטו${bonusNote}`);
     } catch (err: unknown) {
       const msg = (err as Error)?.message ?? "שגיאה לא ידועה";
@@ -474,16 +544,36 @@ function DashboardTab({ liveShift, setLiveShift, noBreak, setNoBreak, settings, 
     }
   };
 
+  const openDatePicker = (card: ShiftCardDef) => {
+    setPendingCard(card);
+    setCustomDate(today());
+    setShowCustomDate(false);
+    setPickerHours(4);
+    setPickerMinutes(0);
+    setShowHoursStep(card.isCustomHours ?? false);
+  };
+
+  const confirmDate = async (date: string) => {
+    if (!pendingCard) return;
+    const hoursOverride = pendingCard.isCustomHours
+      ? pickerHours + pickerMinutes / 60
+      : undefined;
+    setPendingCard(null);
+    setShowCustomDate(false);
+    setShowHoursStep(false);
+    await handleLog(pendingCard, date, hoursOverride);
+  };
+
   const handleStart = (card: ShiftCardDef) => {
     if (liveShift) { toast.error("סיים את המשמרת הפעילה קודם"); return; }
-    setLiveShift({ type: card.type, startMs: Date.now(), isShabbat: card.isShabbat, noBreak, role: "caregiver" });
+    setLiveShift({ type: card.type, startMs: Date.now(), isShabbat: card.isShabbat, noBreak: true, role: "guard" });
     toast.success(`🟢 ${card.label} — מד זמן פעיל!`);
   };
 
   const handleStop = async () => {
     if (!liveShift) return;
     const elapsed = (Date.now() - liveShift.startMs) / 3600000;
-    const hours   = parseFloat((liveShift.noBreak ? elapsed : Math.max(0, elapsed - 0.5)).toFixed(2));
+    const hours   = parseFloat(elapsed.toFixed(2));
     try {
       await addShift.mutateAsync({
         date: today(), type: liveShift.type, role: liveShift.role,
@@ -506,7 +596,6 @@ function DashboardTab({ liveShift, setLiveShift, noBreak, setNoBreak, settings, 
 
       <div className="px-4 space-y-4">
         {liveShift && <LiveTracker live={liveShift} settings={settings} onStop={handleStop} />}
-        <BreakToggle noBreak={noBreak} onChange={setNoBreak} />
 
         {/* Quick-add shift cards */}
         <div className="space-y-2">
@@ -515,7 +604,7 @@ function DashboardTab({ liveShift, setLiveShift, noBreak, setNoBreak, settings, 
             style={{ scrollSnapType: "x mandatory" }}>
             {SHIFT_CARDS.map((card) => (
               <div key={card.key} style={{ scrollSnapAlign: "start" }}>
-                <ShiftCard card={card} noBreak={noBreak} settings={settings} onLog={handleLog} onStart={handleStart} />
+                <ShiftCard card={card} settings={settings} onLog={openDatePicker} onStart={handleStart} />
               </div>
             ))}
           </div>
@@ -542,7 +631,7 @@ function DashboardTab({ liveShift, setLiveShift, noBreak, setNoBreak, settings, 
             </div>
           ) : (
             <div className="space-y-2.5">
-              {displayedShifts.map((s) => <ShiftTicket key={s.id} shift={s} settings={settings} />)}
+              {displayedShifts.map((s) => <ShiftTicket key={s.id} shift={s} settings={settings} onDelete={handleDelete} />)}
             </div>
           )}
 
@@ -554,6 +643,95 @@ function DashboardTab({ liveShift, setLiveShift, noBreak, setNoBreak, settings, 
           )}
         </div>
       </div>
+
+      {/* Date / Hours picker modal */}
+      {pendingCard && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setPendingCard(null)}>
+          <div className="w-full max-w-md rounded-t-3xl bg-[#0f1117] border-t border-white/10 p-6 space-y-4"
+            onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto" />
+            <p className="text-base font-black text-white text-center">
+              {pendingCard.emoji} {pendingCard.label}
+            </p>
+
+            {/* Step 1: drum picker (custom card only) */}
+            {showHoursStep ? (
+              <>
+                <p className="text-xs text-white/40 text-center">כמה שעות עבדת?</p>
+                <div className="flex items-center gap-2">
+                  <DrumPicker
+                    values={HOUR_VALUES}
+                    selectedIndex={pickerHours}
+                    onSelect={setPickerHours}
+                    accent={pendingCard.color}
+                  />
+                  <span className="text-2xl font-black text-white/40 shrink-0">:</span>
+                  <DrumPicker
+                    values={MIN_VALUES}
+                    selectedIndex={pickerMinutes / 5}
+                    onSelect={i => setPickerMinutes(i * 5)}
+                    accent={pendingCard.color}
+                  />
+                </div>
+                <p className="text-[10px] text-white/30 text-center">
+                  {pickerHours}ש׳ {pickerMinutes > 0 ? `${String(pickerMinutes).padStart(2,"0")}ד׳` : ""}
+                </p>
+                <button
+                  onClick={() => setShowHoursStep(false)}
+                  disabled={pickerHours === 0 && pickerMinutes === 0}
+                  className="w-full py-3.5 rounded-2xl font-black text-sm text-white disabled:opacity-40"
+                  style={{ background: pendingCard.color }}>
+                  המשך לתאריך ←
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-white/40 text-center">באיזה תאריך להוסיף?</p>
+                {!showCustomDate ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => confirmDate(today())}
+                      className="py-3.5 rounded-2xl font-black text-sm text-white"
+                      style={{ background: pendingCard.color }}>
+                      היום
+                    </button>
+                    <button
+                      onClick={() => setShowCustomDate(true)}
+                      className="py-3.5 rounded-2xl font-black text-sm text-white/70 border border-white/15 bg-white/8">
+                      תאריך אחר
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <input
+                      type="date"
+                      value={customDate}
+                      max={today()}
+                      onChange={e => setCustomDate(e.target.value)}
+                      className="w-full px-4 py-3 rounded-2xl bg-white/8 border border-white/15 text-white text-sm focus:outline-none focus:border-white/40"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setShowCustomDate(false)}
+                        className="py-3 rounded-2xl text-sm text-white/50 border border-white/10 bg-white/4">
+                        חזור
+                      </button>
+                      <button
+                        onClick={() => confirmDate(customDate)}
+                        disabled={!customDate}
+                        className="py-3 rounded-2xl font-black text-sm text-white disabled:opacity-40"
+                        style={{ background: pendingCard.color }}>
+                        שמור
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -665,7 +843,7 @@ function FinanceTab({ payslip, shifts, monthlyGoal, onGoalChange }: {
         <div className="rounded-3xl border border-orange-500/20 bg-orange-500/8 backdrop-blur-xl p-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-black text-white">הכנסה נוספת 🎫</p>
-            <p className="text-[10px] text-white/40 mt-0.5">{couponCount} קופוני נסיעות × ₪68</p>
+            <p className="text-[10px] text-white/40 mt-0.5">{couponCount} קופוני ארוחה × ₪68</p>
           </div>
           <p className="text-xl font-black text-orange-300">+{fmtNis(couponTotal)}</p>
         </div>
@@ -919,7 +1097,6 @@ function SettingsTab({ settings }: { settings: PayrollSettings }) {
 // ═══════════════════════════════════════════════════════════════════════
 function WorkPage() {
   const [activeTab,   setActiveTab]   = useState<WorkTab>("dashboard");
-  const [noBreak,     setNoBreak]     = useState(false);
   const [liveShift,   setLiveShift]   = useState<LiveShiftState | null>(null);
   const [monthlyGoal, setMonthlyGoal] = useState(() => Number(localStorage.getItem("work_monthly_goal") || "10000"));
 
@@ -996,7 +1173,6 @@ function WorkPage() {
           {activeTab === "dashboard" && (
             <DashboardTab
               liveShift={liveShift} setLiveShift={setLiveShift}
-              noBreak={noBreak} setNoBreak={setNoBreak}
               settings={resolvedSettings} shifts={resolvedShifts}
             />
           )}
