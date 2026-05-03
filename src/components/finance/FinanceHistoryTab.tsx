@@ -314,11 +314,11 @@ function TransactionRow({ item, isAnomaly, onDelete }: {
       {onDelete && (
         <button
           onClick={onDelete}
-          className="opacity-0 group-hover:opacity-100 h-6 w-6 rounded-lg flex items-center justify-center transition-all shrink-0"
+          className="h-7 w-7 rounded-lg flex items-center justify-center transition-all shrink-0 active:scale-90"
           style={{ background: FT.dangerDim, color: FT.danger }}
           aria-label="מחק"
         >
-          <Trash2 className="h-3 w-3" />
+          <Trash2 className="h-3.5 w-3.5" />
         </button>
       )}
     </div>
