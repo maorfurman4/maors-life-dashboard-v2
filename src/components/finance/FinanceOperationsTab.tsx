@@ -12,6 +12,7 @@ import {
   useDeleteFixedExpense,
   DEFAULT_EXPENSE_CATEGORIES,
 } from "@/hooks/use-finance-data";
+import { FinanceFixedIncome } from "@/components/finance/FinanceFixedIncome";
 import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
 
@@ -619,6 +620,7 @@ export function FinanceOperationsTab({ year, month }: { year: number; month: num
     <div className="space-y-4">
       <LogEntryForm year={year} month={month} />
       <FixedSection year={year} month={month} />
+      <FinanceFixedIncome />
     </div>
   );
 }

@@ -204,15 +204,17 @@ export function useFinanceSettings() {
     queryKey: ["finance-settings"],
     queryFn: async () => {
       const userId = await getUserId();
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("user_settings")
-        .select("savings_goal_pct, income_sync_mode")
+        .select("savings_goal_pct, income_sync_mode, savings_goal_amount")
         .eq("user_id", userId)
         .maybeSingle();
       if (error) throw error;
+      const row = data as { savings_goal_pct?: number; income_sync_mode?: string; savings_goal_amount?: number | null } | null;
       return {
-        savings_goal_pct: data?.savings_goal_pct ?? 35,
-        income_sync_mode: (data?.income_sync_mode as "net" | "bank") ?? "net",
+        savings_goal_pct: row?.savings_goal_pct ?? 35,
+        income_sync_mode: (row?.income_sync_mode as "net" | "bank") ?? "net",
+        savings_goal_amount: (row?.savings_goal_amount ?? null) as number | null,
       };
     },
   });
@@ -221,21 +223,21 @@ export function useFinanceSettings() {
 export function useSaveFinanceSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (updates: { savings_goal_pct?: number; income_sync_mode?: "net" | "bank" }) => {
+    mutationFn: async (updates: { savings_goal_pct?: number; income_sync_mode?: "net" | "bank"; savings_goal_amount?: number | null }) => {
       const userId = await getUserId();
-      const { data: existing } = await supabase
+      const { data: existing } = await db
         .from("user_settings")
         .select("id")
         .eq("user_id", userId)
         .maybeSingle();
       if (existing) {
-        const { error } = await supabase
+        const { error } = await db
           .from("user_settings")
           .update(updates)
           .eq("user_id", userId);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await db
           .from("user_settings")
           .insert({ user_id: userId, ...updates });
         if (error) throw error;
@@ -302,11 +304,14 @@ export function useMonthlyFinance(year: number, month: number) {
   const { data: expenses } = useExpenseEntries(year, month);
   const { data: incomes } = useIncomeEntries(year, month);
   const { data: fixedExpenses } = useFixedExpenses();
+  const { data: fixedIncome } = useFixedIncome();
+  const { data: debts } = useDebts();
   const { data: financeSettings } = useFinanceSettings();
   const { payslip, settings: workSettings } = useMonthlyPayslip(year, month);
 
   return useMemo(() => {
     const savingsGoal = financeSettings?.savings_goal_pct ?? 35;
+    const savingsGoalAmount = financeSettings?.savings_goal_amount ?? null;
     const syncMode = financeSettings?.income_sync_mode ?? "net";
 
     // Work income
@@ -316,12 +321,21 @@ export function useMonthlyFinance(year: number, month: number) {
     const grossFromWork = payslip?.totalGross ?? 0;
     const netFromWork = payslip?.netPay ?? 0;
 
-    // Manual income
+    // Manual income entries
     const manualIncome = (incomes || [])
       .filter((i: any) => (i.source ?? "manual") === "manual")
       .reduce((sum: number, e: any) => sum + Number(e.amount), 0);
 
-    const totalIncome = workIncome + manualIncome;
+    // Fixed income (active, already credited this month)
+    const today = new Date();
+    const currentDay = today.getDate();
+    const activeFixedIncome = (fixedIncome || []).filter((f: any) => f.is_active);
+    const totalFixedIncomeMonthly = activeFixedIncome.reduce((sum: number, f: any) => sum + Number(f.amount), 0);
+    const fixedIncomeAlreadyCredited = activeFixedIncome
+      .filter((f: any) => f.day_of_month <= currentDay)
+      .reduce((sum: number, f: any) => sum + Number(f.amount), 0);
+
+    const totalIncome = workIncome + manualIncome + fixedIncomeAlreadyCredited;
 
     // Variable expenses
     const variableExpenses = (expenses || []).reduce((sum: number, e: any) => sum + Number(e.amount), 0);
@@ -329,28 +343,29 @@ export function useMonthlyFinance(year: number, month: number) {
     // Fixed expenses (active)
     const activeFixed = (fixedExpenses || []).filter((f: any) => f.is_active);
     const totalFixedMonthly = activeFixed.reduce((sum: number, f: any) => sum + Number(f.amount), 0);
-
-    // Which fixed expenses already passed this month
-    const today = new Date();
-    const currentDay = today.getDate();
     const fixedAlreadyCharged = activeFixed
       .filter((f: any) => f.charge_day <= currentDay)
       .reduce((sum: number, f: any) => sum + Number(f.amount), 0);
     const fixedRemaining = totalFixedMonthly - fixedAlreadyCharged;
 
-    const totalExpenses = variableExpenses + fixedAlreadyCharged;
+    // Debt monthly payments (auto-deducted)
+    const activeDebts = (debts || []).filter((d: any) => d.is_active !== false);
+    const totalDebtMonthly = activeDebts.reduce((sum: number, d: any) => sum + Number(d.monthly_payment), 0);
+
+    const totalExpenses = variableExpenses + fixedAlreadyCharged + totalDebtMonthly;
     const balance = totalIncome - totalExpenses;
 
     // Savings
     const savings = totalIncome > 0 ? balance : 0;
     const savingsPct = totalIncome > 0 ? (savings / totalIncome) * 100 : 0;
-    const savingsTarget = totalIncome * (savingsGoal / 100);
+    const savingsTarget = savingsGoalAmount ?? (totalIncome * (savingsGoal / 100));
     const savingsGap = savingsTarget - savings;
 
-    // Forecast
-    const forecastExpenses = variableExpenses + totalFixedMonthly;
-    const forecastBalance = totalIncome - forecastExpenses;
-    const forecastSavingsPct = totalIncome > 0 ? (forecastBalance / totalIncome) * 100 : 0;
+    // Forecast (full month)
+    const forecastExpenses = variableExpenses + totalFixedMonthly + totalDebtMonthly;
+    const forecastIncome = workIncome + manualIncome + totalFixedIncomeMonthly;
+    const forecastBalance = forecastIncome - forecastExpenses;
+    const forecastSavingsPct = forecastIncome > 0 ? (forecastBalance / forecastIncome) * 100 : 0;
 
     // Status
     let savingsStatus: "on_target" | "close" | "far" = "far";
@@ -363,7 +378,6 @@ export function useMonthlyFinance(year: number, month: number) {
       return acc;
     }, {} as Record<string, number>);
 
-    // Average daily expense
     const daysInMonth = new Date(year, month, 0).getDate();
     const avgDailyExpense = totalExpenses / Math.max(currentDay, 1);
     const avgDailyIncome = totalIncome / Math.max(currentDay, 1);
@@ -378,11 +392,15 @@ export function useMonthlyFinance(year: number, month: number) {
       totalFixedMonthly,
       fixedAlreadyCharged,
       fixedRemaining,
+      totalDebtMonthly,
+      totalFixedIncomeMonthly,
+      fixedIncomeAlreadyCredited,
       totalExpenses,
       balance,
       savings: Math.max(savings, 0),
       savingsPct: Math.max(savingsPct, 0),
       savingsGoal,
+      savingsGoalAmount,
       savingsTarget,
       savingsGap,
       savingsStatus,
@@ -396,8 +414,10 @@ export function useMonthlyFinance(year: number, month: number) {
       expenses: expenses || [],
       incomes: incomes || [],
       fixedExpenses: activeFixed,
+      fixedIncome: activeFixedIncome,
+      debts: activeDebts,
     };
-  }, [expenses, incomes, fixedExpenses, payslip, financeSettings, workSettings, year, month]);
+  }, [expenses, incomes, fixedExpenses, fixedIncome, debts, payslip, financeSettings, workSettings, year, month]);
 }
 
 // ─── Historical data for trends (6 months) ───
@@ -434,3 +454,116 @@ export function useIncomeHistory(months: number = 6) {
     },
   });
 }
+
+// ─── Fixed Income ───
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
+
+export function useFixedIncome() {
+  return useQuery({
+    queryKey: ["fixed-income"],
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("fixed_income")
+        .select("*")
+        .order("day_of_month", { ascending: true });
+      if (error) throw error;
+      return (data || []) as Record<string, unknown>[];
+    },
+  });
+}
+
+export function useAddFixedIncome() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (income: {
+      name: string;
+      amount: number;
+      category: string;
+      day_of_month: number;
+      is_active?: boolean;
+      notes?: string | null;
+    }) => {
+      const userId = await getUserId();
+      const { error } = await db.from("fixed_income").insert({ ...income, user_id: userId });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-income"] }),
+  });
+}
+
+export function useUpdateFixedIncome() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; amount?: number; category?: string; day_of_month?: number; is_active?: boolean; notes?: string }) => {
+      const { error } = await db.from("fixed_income").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-income"] }),
+  });
+}
+
+export function useDeleteFixedIncome() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await db.from("fixed_income").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-income"] }),
+  });
+}
+
+// ─── Debts (Supabase) ───
+export function useDebts() {
+  return useQuery({
+    queryKey: ["debts"],
+    queryFn: async () => {
+      const { data, error } = await db
+        .from("debts")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data || []) as Record<string, unknown>[];
+    },
+  });
+}
+
+export function useAddDebt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (debt: {
+      name: string;
+      type: string;
+      principal: number;
+      monthly_payment: number;
+      annual_interest_rate: number;
+      months_elapsed: number;
+    }) => {
+      const userId = await getUserId();
+      const { error } = await db.from("debts").insert({ ...debt, user_id: userId });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["debts"] }),
+  });
+}
+
+export function useDeleteDebt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await db.from("debts").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["debts"] }),
+  });
+}
+
+export const INCOME_CATEGORIES_FIXED = [
+  { name: "משכורת",   icon: "💼" },
+  { name: "פרילנס",   icon: "💻" },
+  { name: "שיעורים",  icon: "📚" },
+  { name: "שכ״ד",    icon: "🏠" },
+  { name: "קצבה",    icon: "📋" },
+  { name: "אחר",     icon: "💰" },
+];

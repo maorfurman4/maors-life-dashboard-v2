@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Plus, ChevronDown, ChevronUp, Trash2,
   Building2, Car, CreditCard, Zap, X, Check,
@@ -8,6 +8,7 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { projectDebt, type DebtInput } from "@/lib/finance-utils";
+import { useDebts, useAddDebt, useDeleteDebt } from "@/hooks/use-finance-data";
 import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
 
@@ -339,7 +340,7 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
 
 const DEBT_TYPES: DebtType[] = ["משכנתא", "הלוואה", "חוב"];
 
-function AddDebtForm({ onAdd, onCancel }: { onAdd: (d: Debt) => void; onCancel: () => void }) {
+function AddDebtForm({ onAdd, onCancel }: { onAdd: (d: Omit<Debt, "id">) => void; onCancel: () => void }) {
   const [name, setName] = useState("");
   const [type, setType] = useState<DebtType>("הלוואה");
   const [principal, setPrincipal] = useState("");
@@ -352,7 +353,7 @@ function AddDebtForm({ onAdd, onCancel }: { onAdd: (d: Debt) => void; onCancel: 
     const p = parseFloat(principal), m = parseFloat(monthly), r = parseFloat(rate);
     if (!p || !m || !r) { toast.error("ערכים לא תקינים"); return; }
     if (m <= p * (r / 100 / 12)) { toast.error("התשלום החודשי נמוך מדי לכסות ריבית"); return; }
-    onAdd({ id: crypto.randomUUID(), name: name.trim(), type, principal: p, monthly_payment: m, annual_interest_rate: r, months_elapsed: parseInt(elapsed) || 0 });
+    onAdd({ name: name.trim(), type, principal: p, monthly_payment: m, annual_interest_rate: r, months_elapsed: parseInt(elapsed) || 0 });
   }
 
   const fields = [
@@ -480,22 +481,28 @@ function DebtsSummary({ debts }: { debts: Debt[] }) {
 // ─── Main Export ──────────────────────────────────────────────────────────────
 
 export function FinanceDebtsTab(_: { year: number; month: number }) {
-  const [debts, setDebts] = useState<Debt[]>(loadDebts);
+  const { data: debtsData, isLoading } = useDebts();
+  const addDebt = useAddDebt();
+  const deleteDebt = useDeleteDebt();
   const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify(debts));
-  }, [debts]);
+  const debts = useMemo(() => (debtsData || []) as unknown as Debt[], [debtsData]);
 
-  function handleAdd(debt: Debt) {
-    setDebts((prev) => [...prev, debt]);
-    setShowForm(false);
-    toast.success(`"${debt.name}" נוסף`);
+  function handleAdd(debt: Omit<Debt, "id">) {
+    addDebt.mutate(
+      { name: debt.name, type: debt.type, principal: debt.principal, monthly_payment: debt.monthly_payment, annual_interest_rate: debt.annual_interest_rate, months_elapsed: debt.months_elapsed },
+      {
+        onSuccess: () => { toast.success(`"${debt.name}" נוסף`); setShowForm(false); },
+        onError: (e) => toast.error("שגיאה: " + (e as Error).message),
+      }
+    );
   }
 
   function handleDelete(id: string) {
-    setDebts((prev) => prev.filter((d) => d.id !== id));
-    toast.success("חוב נמחק");
+    deleteDebt.mutate(id, {
+      onSuccess: () => toast.success("חוב נמחק"),
+      onError: (e) => toast.error("שגיאה: " + (e as Error).message),
+    });
   }
 
   return (
@@ -522,31 +529,40 @@ export function FinanceDebtsTab(_: { year: number; month: number }) {
 
       {showForm && <AddDebtForm onAdd={handleAdd} onCancel={() => setShowForm(false)} />}
 
-      {debts.length > 1 && <DebtsSummary debts={debts} />}
-
-      {debts.length === 0 && !showForm ? (
-        <button
-          onClick={() => setShowForm(true)}
-          className="w-full rounded-3xl border-2 border-dashed p-8 text-center transition-all group"
-          style={{ borderColor: FT.goldBorder }}
-        >
-          <Building2
-            className="h-8 w-8 mx-auto mb-3 transition-colors"
-            style={{ color: FT.textFaint }}
-          />
-          <p className="text-sm font-bold transition-colors" style={{ color: FT.textMuted, letterSpacing: 0 }}>
-            הוסף משכנתא, הלוואה או חוב
-          </p>
-          <p className="text-[11px] mt-1" style={{ color: FT.textFaint, letterSpacing: 0 }}>
-            תקבל גרף שחיקה + סימולטור ריבית
-          </p>
-        </button>
-      ) : (
-        <div className="space-y-3">
-          {debts.map((debt) => (
-            <DebtCard key={debt.id} debt={debt} onDelete={() => handleDelete(debt.id)} />
-          ))}
+      {isLoading ? (
+        <div className="flex justify-center py-6">
+          <div className="h-5 w-5 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: `${FT.goldBorder} ${FT.goldBorder} ${FT.goldBorder} ${FT.gold}` }} />
         </div>
+      ) : (
+        <>
+          {debts.length > 1 && <DebtsSummary debts={debts} />}
+
+          {debts.length === 0 && !showForm ? (
+            <button
+              onClick={() => setShowForm(true)}
+              className="w-full rounded-3xl border-2 border-dashed p-8 text-center transition-all group"
+              style={{ borderColor: FT.goldBorder }}
+            >
+              <Building2
+                className="h-8 w-8 mx-auto mb-3 transition-colors"
+                style={{ color: FT.textFaint }}
+              />
+              <p className="text-sm font-bold transition-colors" style={{ color: FT.textMuted, letterSpacing: 0 }}>
+                הוסף משכנתא, הלוואה או חוב
+              </p>
+              <p className="text-[11px] mt-1" style={{ color: FT.textFaint, letterSpacing: 0 }}>
+                תקבל גרף שחיקה + סימולטור ריבית
+              </p>
+            </button>
+          ) : (
+            <div className="space-y-3">
+              {debts.map((debt) => (
+                <DebtCard key={debt.id} debt={debt} onDelete={() => handleDelete(debt.id)} />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
