@@ -138,6 +138,7 @@ function BurnDownChart({ debt, extra }: { debt: Debt; extra: number }) {
 function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [simExtra, setSimExtra] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const simNum = parseFloat(simExtra) || 0;
 
   const proj = useMemo(() => projectDebt(debt), [debt]);
@@ -156,11 +157,8 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
       dir="rtl"
     >
       {/* Card Header */}
-      <button
-        className="w-full flex items-center gap-3 p-4 transition-colors"
-        style={{ background: "transparent" }}
-        onClick={() => setExpanded((v) => !v)}
-      >
+      <div className="flex items-center gap-2 p-4">
+        {/* Type icon */}
         <div
           className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0"
           style={{ background: meta.dimBg, border: `1px solid ${meta.border}` }}
@@ -168,7 +166,11 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
           <Icon className="h-5 w-5" style={{ color: meta.color }} />
         </div>
 
-        <div className="flex-1 text-right min-w-0">
+        {/* Info — tappable to expand */}
+        <button
+          className="flex-1 text-right min-w-0"
+          onClick={() => setExpanded((v) => !v)}
+        >
           <div className="flex items-center gap-2 mb-0.5">
             <p className="text-sm font-black text-white truncate" style={{ letterSpacing: 0 }}>
               {debt.name}
@@ -203,12 +205,46 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
             </div>
             <span className="text-[9px] shrink-0" style={{ color: FT.textFaint }}>{paidPct}%</span>
           </div>
-        </div>
+        </button>
 
-        {expanded
-          ? <ChevronUp  className="h-4 w-4 shrink-0" style={{ color: FT.textMuted }} />
-          : <ChevronDown className="h-4 w-4 shrink-0" style={{ color: FT.textMuted }} />}
-      </button>
+        {/* Right side: delete + expand */}
+        <div className="flex flex-col items-center gap-1.5 shrink-0">
+          {confirmDelete ? (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={onDelete}
+                className="h-7 w-7 rounded-lg flex items-center justify-center active:scale-90 transition-all"
+                style={{ background: FT.dangerDim, color: FT.danger }}
+                aria-label="אשר מחיקה"
+              >
+                <Check className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="h-7 w-7 rounded-lg flex items-center justify-center active:scale-90 transition-all"
+                style={{ background: FT.brownDim, color: FT.textMuted }}
+                aria-label="ביטול"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="h-7 w-7 rounded-lg flex items-center justify-center active:scale-90 transition-all"
+              style={{ background: FT.dangerDim, color: FT.danger }}
+              aria-label="מחק חוב"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <button onClick={() => setExpanded((v) => !v)} style={{ color: FT.textMuted }}>
+            {expanded
+              ? <ChevronUp  className="h-4 w-4" />
+              : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
 
       {/* Expanded Content */}
       {expanded && (
@@ -293,17 +329,6 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
             )}
           </div>
 
-          {/* Delete */}
-          <button
-            onClick={onDelete}
-            className="flex items-center gap-1.5 text-[11px] transition-colors"
-            style={{ color: FT.textFaint, letterSpacing: 0 }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = FT.danger)}
-            onMouseLeave={(e) => (e.currentTarget.style.color = FT.textFaint)}
-          >
-            <Trash2 className="h-3 w-3" />
-            מחק חוב זה
-          </button>
         </div>
       )}
     </div>
