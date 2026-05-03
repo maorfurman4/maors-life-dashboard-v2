@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Plus, Minus, Check, X, RotateCcw, Sparkles, CreditCard as CardIcon, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, Minus, Check, X, RotateCcw, Sparkles, CreditCard as CardIcon, TrendingUp, TrendingDown, Target, Pencil } from "lucide-react";
 import {
   useMonthlyFinance,
   useAddExpense,
@@ -7,6 +7,7 @@ import {
   useExpenseHistory,
   useIncomeHistory,
   useFinanceSettings,
+  useSaveFinanceSettings,
   DEFAULT_EXPENSE_CATEGORIES,
 } from "@/hooks/use-finance-data";
 import { FT } from "@/lib/finance-theme";
@@ -638,6 +639,136 @@ function FloatingQuickAdd({ year, month }: { year: number; month: number }) {
   );
 }
 
+// ─── Savings Goal Settings ────────────────────────────────────────────────────
+
+function SavingsGoalSettings() {
+  const { data: settings } = useFinanceSettings();
+  const saveSettings = useSaveFinanceSettings();
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"pct" | "amount">("pct");
+  const [pctInput, setPctInput] = useState("");
+  const [amountInput, setAmountInput] = useState("");
+
+  useEffect(() => {
+    if (!settings) return;
+    if (settings.savings_goal_amount != null) {
+      setMode("amount");
+      setAmountInput(String(settings.savings_goal_amount));
+    } else {
+      setMode("pct");
+      setPctInput(String(settings.savings_goal_pct ?? 35));
+    }
+  }, [settings]);
+
+  function handleSave() {
+    if (mode === "pct") {
+      const pct = parseInt(pctInput);
+      if (!pct || pct < 1 || pct > 100) { toast.error("הזן % תקין (1-100)"); return; }
+      saveSettings.mutate({ savings_goal_pct: pct, savings_goal_amount: null }, {
+        onSuccess: () => { toast.success("יעד חיסכון נשמר"); setOpen(false); },
+        onError: (e) => toast.error("שגיאה: " + (e as Error).message),
+      });
+    } else {
+      const amt = parseFloat(amountInput);
+      if (!amt || amt <= 0) { toast.error("הזן סכום תקין"); return; }
+      saveSettings.mutate({ savings_goal_amount: amt }, {
+        onSuccess: () => { toast.success("יעד חיסכון נשמר"); setOpen(false); },
+        onError: (e) => toast.error("שגיאה: " + (e as Error).message),
+      });
+    }
+  }
+
+  const currentGoal = settings?.savings_goal_amount != null
+    ? `₪${fmt(settings.savings_goal_amount)}`
+    : `${settings?.savings_goal_pct ?? 35}%`;
+
+  return (
+    <div className="rounded-3xl p-4" style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }} dir="rtl">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Target className="h-4 w-4" style={{ color: FT.gold }} />
+          <p className="text-xs font-black" style={{ color: FT.textMuted, letterSpacing: 0 }}>יעד חיסכון חודשי</p>
+          <span className="text-xs font-black" style={{ color: FT.gold }}>{currentGoal}</span>
+        </div>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="h-7 w-7 flex items-center justify-center rounded-xl transition-all active:scale-90"
+          style={{ background: FT.goldDim, color: FT.gold }}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {open && (
+        <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          {/* Mode toggle */}
+          <div className="grid grid-cols-2 gap-2">
+            {(["pct", "amount"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className="py-2 rounded-xl text-xs font-bold transition-all"
+                style={{
+                  letterSpacing: 0,
+                  background: mode === m ? FT.goldMid : FT.brownDim,
+                  border: `1px solid ${mode === m ? FT.goldBorder : FT.brownBorder}`,
+                  color: mode === m ? FT.gold : FT.textMuted,
+                }}
+              >
+                {m === "pct" ? "% מהכנסה" : "סכום קבוע ₪"}
+              </button>
+            ))}
+          </div>
+
+          {mode === "pct" ? (
+            <div className="relative">
+              <span className="absolute end-3 top-1/2 -translate-y-1/2 text-sm font-black" style={{ color: FT.textFaint }}>%</span>
+              <input
+                type="number" inputMode="numeric" min="1" max="100"
+                value={pctInput} onChange={(e) => setPctInput(e.target.value)}
+                placeholder="35"
+                className="w-full pe-8 ps-4 py-3 rounded-xl text-xl font-black text-white placeholder:text-white/20 focus:outline-none"
+                style={{ background: FT.cardLight, border: `1px solid ${FT.goldBorder}` }}
+                dir="ltr" autoFocus
+              />
+            </div>
+          ) : (
+            <div className="relative">
+              <span className="absolute end-3 top-1/2 -translate-y-1/2 text-sm font-black" style={{ color: FT.textFaint }}>₪</span>
+              <input
+                type="number" inputMode="numeric"
+                value={amountInput} onChange={(e) => setAmountInput(e.target.value)}
+                placeholder="3000"
+                className="w-full pe-8 ps-4 py-3 rounded-xl text-xl font-black text-white placeholder:text-white/20 focus:outline-none"
+                style={{ background: FT.cardLight, border: `1px solid ${FT.goldBorder}` }}
+                dir="ltr" autoFocus
+              />
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setOpen(false)}
+              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+              style={{ background: FT.brownDim, border: `1px solid ${FT.brownBorder}`, color: FT.textMuted, letterSpacing: 0 }}
+            >
+              ביטול
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saveSettings.isPending}
+              className="flex-1 py-2.5 rounded-xl text-xs font-black transition-all disabled:opacity-50 active:scale-[0.98]"
+              style={{ background: FT.gold, color: FT.bg, letterSpacing: 0 }}
+            >
+              שמור
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Export ──────────────────────────────────────────────────────────────
 
 export function FinanceDashboardTab({ year, month }: { year: number; month: number }) {
@@ -681,6 +812,9 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
 
       {/* Medals */}
       <MedalsRow savingsGoal={savingsGoal} />
+
+      {/* Savings Goal Settings */}
+      <SavingsGoalSettings />
 
       {/* Floating Quick Add */}
       <FloatingQuickAdd year={year} month={month} />
