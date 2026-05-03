@@ -132,16 +132,20 @@ function getShiftHours(shift: ShiftRow): number {
 
 export function calcShiftBreakdown(shift: ShiftRow, settings: PayrollSettings): ShiftBreakdown {
   const hours = getShiftHours(shift);
-  const rate = shift.role === 'shift_manager' ? settings.alt_hourly_rate : settings.base_hourly_rate;
+
+  // Shabbat rate replaces (not adds to) base rate
+  const rate = shift.is_shabbat_holiday
+    ? settings.shabbat_hourly_rate
+    : (shift.role === 'shift_manager' ? settings.alt_hourly_rate : settings.base_hourly_rate);
 
   const basePay = hours * rate;
   const recovery = hours * settings.recovery_per_hour;
   const excellence = hours * settings.excellence_per_hour;
-  const shabbatPay = shift.is_shabbat_holiday ? hours * settings.shabbat_hourly_rate : 0;
+  const shabbatPay = 0; // already reflected in basePay
   const travel = settings.travel_per_shift;
   const briefingPay = shift.has_briefing ? settings.briefing_per_shift : 0;
 
-  const totalGross = basePay + recovery + excellence + shabbatPay + travel + briefingPay;
+  const totalGross = basePay + recovery + excellence + travel + briefingPay;
 
   return { basePay, recovery, excellence, shabbatPay, travel, briefingPay, totalGross };
 }
