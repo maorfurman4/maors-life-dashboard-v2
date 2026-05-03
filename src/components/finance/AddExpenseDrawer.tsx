@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { useAddExpense, DEFAULT_EXPENSE_CATEGORIES } from "@/hooks/use-finance-data";
+import { AmountScrollPicker } from "./AmountScrollPicker";
 import { toast } from "sonner";
 
 interface AddExpenseDrawerProps {
@@ -10,20 +11,20 @@ interface AddExpenseDrawerProps {
 
 export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
   const [category, setCategory] = useState("מזון");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState<number | null>(null);
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [isRecurring, setIsRecurring] = useState(false);
   const addExpense = useAddExpense();
 
   const handleSave = () => {
-    if (!amount || Number(amount) <= 0) {
+    if (!amount || amount <= 0) {
       toast.error("הזן סכום תקין");
       return;
     }
     addExpense.mutate(
       {
-        amount: Number(amount),
+        amount,
         category,
         description: description || undefined,
         date,
@@ -35,7 +36,7 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
         onSuccess: () => {
           toast.success("הוצאה נשמרה");
           onClose();
-          setAmount("");
+          setAmount(null);
           setDescription("");
           setCategory("מזון");
           setIsRecurring(false);
@@ -67,9 +68,8 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
         </div>
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">סכום (₪)</label>
-          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0"
-            className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-finance" dir="ltr" />
+          <label className="text-xs font-medium text-muted-foreground mb-2 block">סכום (₪)</label>
+          <AmountScrollPicker value={amount} onChange={setAmount} color="expense" />
         </div>
 
         <div>
