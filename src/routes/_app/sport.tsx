@@ -5,12 +5,13 @@ import {
   Target, Zap, ChevronRight, Plus, RotateCcw, Minus,
   ChevronDown, ChevronUp, Loader2, Star, X, BookOpen,
   TrendingUp, Scale, Medal, BarChart3, Camera,
+  Pencil, Check, Trash2,
 } from "lucide-react";
 import {
   usePersonalRecords, useAddPersonalRecord,
   useWorkoutTemplates, useAddWorkoutTemplate, useDeleteWorkoutTemplate,
   useWeekWorkouts, useAddWorkout,
-  useWeightEntries, useAddWeight,
+  useWeightEntries, useAddWeight, useDeleteWeight, useUpdateWeight,
 } from "@/hooks/use-sport-data";
 import { generateWorkoutPlan, type WorkoutPlan } from "@/lib/ai-service";
 import { toast } from "sonner";
@@ -123,6 +124,66 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   },
 ];
 
+const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
+  {
+    key: "chest", label: "חזה", emoji: "💪", color: "#3b82f6",
+    exercises: [
+      { name: "שכיבות סמיכה", muscles: "חזה, טריצפס, ליבה", tips: ["גוף קרש ישר", "מרפקים 45° מהגוף", "ירידה עד הרצפה"], defaultSets: 4, defaultReps: "12-15", equipment: "ללא", youtubeQuery: "push+up+perfect+form" },
+      { name: "שכיבות יהלום", muscles: "טריצפס, חזה פנימי", tips: ["ידיים בצורת יהלום מתחת לחזה", "מרפקים צמודים לגוף", "גוף ישר"], defaultSets: 3, defaultReps: "8-12", equipment: "ללא", youtubeQuery: "diamond+push+up+form" },
+      { name: "שכיבות רחבות", muscles: "חזה חיצוני, כתפיים", tips: ["ידיים רחבות מהכתפיים", "ירידה עמוקה", "בקרה בעלייה"], defaultSets: 3, defaultReps: "12-15", equipment: "ללא", youtubeQuery: "wide+push+up+form" },
+      { name: "שכיבות ארצ'ר", muscles: "חזה, טריצפס, כתפיים", tips: ["הרחב יד אחת לצד", "שמור על יד ישרה", "מתקדמות לשכיבת יד אחת"], defaultSets: 3, defaultReps: "6-8 כל צד", equipment: "ללא", youtubeQuery: "archer+push+up+form" },
+      { name: "שכיבות פייק", muscles: "כתפיים, טריצפס, חזה עליון", tips: ["ישבן גבוה בצורת V", "ירידה לכיוון הראש", "הכנה להנדסטנד"], defaultSets: 3, defaultReps: "10-12", equipment: "ללא", youtubeQuery: "pike+push+up+form" },
+    ],
+  },
+  {
+    key: "back", label: "גב", emoji: "🦾", color: "#8b5cf6",
+    exercises: [
+      { name: "מתח (Pull-up)", muscles: "גב רחב, ביצפס, ליבה", tips: ["תלייה מלאה בתחתית", "הוצא חזה אל הבר", "אל תתנועע"], defaultSets: 4, defaultReps: "5-10", equipment: "מוט מתח", youtubeQuery: "pull+up+perfect+form" },
+      { name: "מתח אחיזה הפוכה (Chin-up)", muscles: "ביצפס, גב רחב", tips: ["כפות ידיים כלפיך", "משוך מרפקים לצלעות", "תלייה מלאה"], defaultSets: 3, defaultReps: "5-8", equipment: "מוט מתח", youtubeQuery: "chin+up+form+tutorial" },
+      { name: "מתח אוסטרלי (Row)", muscles: "גב אמצע, ביצפס, כתף אחורית", tips: ["גוף קרש ישר", "משוך חזה לבר", "שמור על תנוחת גוף"], defaultSets: 3, defaultReps: "10-15", equipment: "מוט נמוך / שולחן", youtubeQuery: "australian+pull+up+form" },
+      { name: "L-Sit Pull-up", muscles: "גב, ליבה, ביצפס", tips: ["שמור רגליים ישרות קדמה", "מתקדם — בנה קודם L-sit", "כוח ליבה קריטי"], defaultSets: 3, defaultReps: "3-6", equipment: "מוט מתח", youtubeQuery: "l+sit+pull+up+form" },
+    ],
+  },
+  {
+    key: "shoulders", label: "כתפיים", emoji: "🏋️", color: "#f97316",
+    exercises: [
+      { name: "שכיבות פייק", muscles: "דלטואיד קדמי ואמצע, טריצפס", tips: ["ישבן גבוה — V הפוך", "ירידה לכיוון הראש", "בסיס להנדסטנד"], defaultSets: 3, defaultReps: "10-12", equipment: "ללא", youtubeQuery: "pike+push+up+form" },
+      { name: "הנדסטנד Push-up (בקיר)", muscles: "כתפיים, טריצפס, ליבה", tips: ["גב לקיר", "ירידה מבוקרת", "פתח מרפקים כלפי חוץ"], defaultSets: 3, defaultReps: "5-8", equipment: "קיר", youtubeQuery: "handstand+push+up+wall+form" },
+      { name: "כפפות כתפיים (Shoulder Taps)", muscles: "כתפיים, ליבה, יציבות", tips: ["גוף ישר בפלנק", "הרם יד לכתף שנייה", "הימנע מנדנוד"], defaultSets: 3, defaultReps: "10 כל צד", equipment: "ללא", youtubeQuery: "shoulder+tap+push+up+form" },
+      { name: "שכיבות ארצ'ר", muscles: "כתפיים, חזה, יציבות", tips: ["רחב יד אחת לצד", "שמור יד ישרה", "בקרה בתנועה"], defaultSets: 3, defaultReps: "6-8 כל צד", equipment: "ללא", youtubeQuery: "archer+push+up+form" },
+    ],
+  },
+  {
+    key: "arms", label: "ידיים", emoji: "💪", color: "#ec4899",
+    exercises: [
+      { name: "מקבילים (Dips)", muscles: "טריצפס, חזה תחתון", tips: ["כסא / מקבילים", "הורד עד מרפק 90°", "עלה בלחיצת טריצפס"], defaultSets: 3, defaultReps: "10-15", equipment: "כסא / מקבילים", youtubeQuery: "tricep+dips+bench+form" },
+      { name: "שכיבות יהלום", muscles: "טריצפס, חזה פנימי", tips: ["ידיים בצורת יהלום", "מרפקים צמודים", "גוף ישר"], defaultSets: 3, defaultReps: "8-12", equipment: "ללא", youtubeQuery: "diamond+push+up+form" },
+      { name: "מתח אחיזה הפוכה", muscles: "ביצפס, גב", tips: ["כפות ידיים כלפיך", "תנועה מבוקרת", "תלייה מלאה"], defaultSets: 3, defaultReps: "6-10", equipment: "מוט מתח", youtubeQuery: "chin+up+form+tutorial" },
+      { name: "Tricep Push-up", muscles: "טריצפס בעיקר", tips: ["מרפקים צמודים לגוף", "לא פתוחים לצד", "ירידה עמוקה"], defaultSets: 3, defaultReps: "10-12", equipment: "ללא", youtubeQuery: "tricep+pushup+close+grip+form" },
+    ],
+  },
+  {
+    key: "legs", label: "רגליים", emoji: "🦵", color: "#eab308",
+    exercises: [
+      { name: "סקוואט משקל גוף", muscles: "קוואדריצפס, ישבן, המסטרינג", tips: ["ברכיים מעל אצבעות", "ירד עד מקביל", "גב ישר — חובה"], defaultSets: 4, defaultReps: "15-20", equipment: "ללא", youtubeQuery: "bodyweight+squat+form" },
+      { name: "לאנג' (Lunges)", muscles: "קוואדריצפס, ישבן, המסטרינג", tips: ["פסיעה ארוכה", "ברך קדמית לא תחצה", "גב ישר"], defaultSets: 3, defaultReps: "12 כל צד", equipment: "ללא", youtubeQuery: "lunges+form+tutorial" },
+      { name: "סקוואט קפיצה (Jump Squat)", muscles: "כל הרגל, סיבולת", tips: ["נחת בעדינות", "ירד ל-90° לפני הקפיצה", "ברכיים לא פנימה"], defaultSets: 3, defaultReps: "10-12", equipment: "ללא", youtubeQuery: "jump+squat+form" },
+      { name: "ישיבת קיר (Wall Sit)", muscles: "קוואדריצפס, יציבות", tips: ["גב שטוח לקיר", "ברכיים 90°", "החזק כמה שיותר"], defaultSets: 3, defaultReps: "30-60 שניות", equipment: "קיר", youtubeQuery: "wall+sit+exercise+form" },
+      { name: "Bulgarian Split Squat", muscles: "קוואדריצפס, ישבן, יציבות", tips: ["רגל אחורית על כסא", "ירד ישר למטה", "גוף זקוף"], defaultSets: 3, defaultReps: "10 כל צד", equipment: "כסא", youtubeQuery: "bulgarian+split+squat+form" },
+    ],
+  },
+  {
+    key: "core", label: "ליבה", emoji: "🎯", color: "#06b6d4",
+    exercises: [
+      { name: "פלנק (Plank)", muscles: "ליבה, כתפיים, ישבן", tips: ["גוף קרש ישר", "אל תרים ישבן", "נשום בשלווה"], defaultSets: 3, defaultReps: "45-60 שניות", equipment: "ללא", youtubeQuery: "plank+form+tutorial" },
+      { name: "Hollow Body Hold", muscles: "ליבה עמוק, בטן", tips: ["גב תחתון מרוסק לרצפה", "ידיים ורגליים מורמות", "בסיס לכל תרגיל גימנסטיקה"], defaultSets: 3, defaultReps: "20-30 שניות", equipment: "ללא", youtubeQuery: "hollow+body+hold+form" },
+      { name: "L-Sit (בין כסאות)", muscles: "ליבה, טריצפס, כתפיים", tips: ["רגליים ישרות קדימה", "הרם גוף בלחיצת ידיים", "בנה הדרגתית"], defaultSets: 3, defaultReps: "5-15 שניות", equipment: "2 כסאות / מקבילים", youtubeQuery: "l+sit+between+chairs+form" },
+      { name: "הרמות ברכיים תלויות", muscles: "בטן תחתונה, Hip Flexors", tips: ["תלה ממוט", "הרם ברכיים לחזה", "אל תנועע"], defaultSets: 3, defaultReps: "10-15", equipment: "מוט מתח", youtubeQuery: "hanging+knee+raise+form" },
+      { name: "Dead Bug", muscles: "ליבה עמוק, גב תחתון", tips: ["גב תחתון צמוד לרצפה", "תנועה מנוגדת — יד ורגל", "נשום החוצה"], defaultSets: 3, defaultReps: "10 כל צד", equipment: "ללא", youtubeQuery: "dead+bug+exercise+form" },
+    ],
+  },
+];
+
 // ─── Weekly day strip ─────────────────────────────────────────────────────────
 const DAYS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
 const TODAY_IDX = new Date().getDay();
@@ -147,18 +208,18 @@ function DayStatusBanner({ isTraining, onToggle }: { isTraining: boolean; onTogg
   return (
     <button
       onClick={onToggle}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border backdrop-blur-xl transition-all duration-300 text-right ${
-        isTraining ? "border-emerald-500/40 bg-emerald-500/10" : "border-white/10 bg-white/5"
+      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-all duration-300 text-right ${
+        isTraining ? "border-emerald-500/30 bg-emerald-500/8" : "border-border bg-card"
       }`}
     >
-      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isTraining ? "bg-emerald-500/25" : "bg-white/10"}`}>
-        {isTraining ? <Flame className="h-5 w-5 text-emerald-400" /> : <RotateCcw className="h-5 w-5 text-white/40" />}
+      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isTraining ? "bg-emerald-500/20" : "bg-secondary/50"}`}>
+        {isTraining ? <Flame className="h-5 w-5 text-emerald-500" /> : <RotateCcw className="h-5 w-5 text-muted-foreground" />}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-black text-white leading-tight">{isTraining ? "🔥 יום אימון" : "😴 יום מנוחה"}</p>
-        <p className="text-[11px] text-white/40 mt-0.5">{isTraining ? "כל הכבוד — לכו על זה!" : "מנוחה = התאוששות = גדילה"}</p>
+        <p className="text-sm font-black text-foreground leading-tight">{isTraining ? "🔥 יום אימון" : "😴 יום מנוחה"}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">{isTraining ? "כל הכבוד — לכו על זה!" : "מנוחה = התאוששות = גדילה"}</p>
       </div>
-      <div className={`relative w-12 h-6 rounded-full shrink-0 transition-colors duration-300 ${isTraining ? "bg-emerald-500" : "bg-white/15"}`}>
+      <div className={`relative w-12 h-6 rounded-full shrink-0 transition-colors duration-300 ${isTraining ? "bg-emerald-500" : "bg-secondary/70"}`}>
         <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-300 ${isTraining ? "translate-x-6" : "translate-x-0.5"}`} />
       </div>
     </button>
@@ -201,9 +262,9 @@ function QuickAddRow() {
   };
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between px-0.5">
-        <p className="text-sm font-black text-white">הוסף מהיר</p>
-        <button className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/70 transition-colors">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-foreground">הוסף מהיר</p>
+        <button className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
           <span>כל האימונים</span><ChevronRight className="h-3 w-3" />
         </button>
       </div>
@@ -221,44 +282,44 @@ function QuickAddRow() {
 function TodayPlanCard({ isTraining }: { isTraining: boolean }) {
   const [started, setStarted] = useState(false);
   if (!isTraining) return (
-    <div className="rounded-3xl border border-white/8 bg-white/3 backdrop-blur-xl p-5 text-center space-y-2">
+    <div className="rounded-2xl border border-border bg-card p-5 text-center space-y-2">
       <span className="text-4xl">🌙</span>
-      <p className="text-sm font-black text-white/60">יום מנוחה</p>
-      <p className="text-[11px] text-white/30">מתאושש היום — האימון הבא מחר</p>
+      <p className="text-sm font-bold text-muted-foreground">יום מנוחה</p>
+      <p className="text-[11px] text-muted-foreground/60">מתאושש היום — האימון הבא מחר</p>
     </div>
   );
   return (
-    <div className={`rounded-3xl border backdrop-blur-xl p-5 space-y-4 transition-all ${started ? "border-emerald-500/40 bg-emerald-500/8" : "border-white/10 bg-white/5"}`}>
+    <div className={`rounded-2xl border p-4 space-y-4 transition-all ${started ? "border-sport/30 bg-sport/5" : "border-border bg-card"}`}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-2xl bg-emerald-500/20 border border-emerald-500/25 flex items-center justify-center">
-            <Dumbbell className="h-4 w-4 text-emerald-400" />
+          <div className="h-9 w-9 rounded-xl bg-sport/15 border border-sport/20 flex items-center justify-center">
+            <Dumbbell className="h-4 w-4 text-sport" />
           </div>
           <div>
-            <p className="text-sm font-black text-white">{TODAY_PLAN.name}</p>
-            <p className="text-[11px] text-white/40">{TODAY_NAME}</p>
+            <p className="text-sm font-bold text-foreground">{TODAY_PLAN.name}</p>
+            <p className="text-[11px] text-muted-foreground">{TODAY_NAME}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-[11px] text-white/40">
+        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
           <Clock className="h-3.5 w-3.5" />{TODAY_PLAN.duration} דק׳
         </div>
       </div>
-      <div className="rounded-2xl bg-white/4 border border-white/8 divide-y divide-white/5">
+      <div className="rounded-xl bg-secondary/30 border border-border/50 divide-y divide-border/50">
         {TODAY_PLAN.exercises.map((ex) => (
           <div key={ex.name} className="flex items-center justify-between px-4 py-2.5">
-            <span className="text-xs font-semibold text-white/80">{ex.name}</span>
-            <span className="text-[10px] text-white/40 font-mono">{ex.sets}×{ex.reps}</span>
+            <span className="text-xs font-semibold text-foreground/80">{ex.name}</span>
+            <span className="text-[10px] text-muted-foreground font-mono">{ex.sets}×{ex.reps}</span>
           </div>
         ))}
       </div>
       {!started ? (
-        <button onClick={() => setStarted(true)} className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-emerald-500 text-white font-black text-sm min-h-[48px] hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)]">
+        <button onClick={() => setStarted(true)} className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl bg-sport text-sport-foreground font-bold text-sm min-h-[44px] hover:opacity-90 active:scale-[0.98] transition-all">
           <Play className="h-4 w-4" />התחל אימון
         </button>
       ) : (
-        <div className="flex items-center justify-center gap-2 py-3 text-emerald-400">
+        <div className="flex items-center justify-center gap-2 py-3 text-sport">
           <CheckCircle2 className="h-5 w-5" />
-          <span className="text-sm font-black">האימון רץ — כל הכבוד! 💪</span>
+          <span className="text-sm font-bold">האימון רץ — כל הכבוד! 💪</span>
         </div>
       )}
     </div>
@@ -281,13 +342,13 @@ function StatsStrip() {
   return (
     <div className="grid grid-cols-4 gap-2">
       {stats.map(({ label, value, sub, icon: Icon, color }) => (
-        <div key={label} className="rounded-2xl border border-white/8 bg-white/5 backdrop-blur-xl p-3 text-center space-y-1.5">
-          <div className="h-7 w-7 rounded-xl mx-auto flex items-center justify-center" style={{ background: color + "22" }}>
+        <div key={label} className="rounded-xl border border-border bg-card p-3 text-center space-y-1.5">
+          <div className="h-7 w-7 rounded-lg mx-auto flex items-center justify-center" style={{ background: color + "18" }}>
             <Icon className="h-3.5 w-3.5" style={{ color }} />
           </div>
-          <p className="text-lg font-black text-white leading-none">{value}</p>
-          <p className="text-[9px] text-white/35 font-medium">{label}</p>
-          <p className="text-[8px] text-white/20">{sub}</p>
+          <p className="text-lg font-black text-foreground leading-none">{value}</p>
+          <p className="text-[9px] text-muted-foreground font-medium">{label}</p>
+          <p className="text-[8px] text-muted-foreground/60">{sub}</p>
         </div>
       ))}
     </div>
@@ -305,13 +366,13 @@ function WeekStrip() {
   const goal = 3;
   const pct  = Math.min(100, (done / goal) * 100);
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
+    <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-emerald-400" /><p className="text-sm font-black text-white">שבוע אימונים</p></div>
-        <span className="text-[11px] font-semibold text-white/40">{done}/{goal} אימונים</span>
+        <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-sport" /><p className="text-sm font-bold text-foreground">שבוע אימונים</p></div>
+        <span className="text-[11px] font-semibold text-muted-foreground">{done}/{goal} אימונים</span>
       </div>
-      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-        <div className="h-full rounded-full bg-emerald-500 transition-all duration-700 shadow-[0_0_8px_rgba(16,185,129,0.5)]" style={{ width: `${pct}%` }} />
+      <div className="h-1.5 rounded-full bg-secondary/60 overflow-hidden">
+        <div className="h-full rounded-full bg-sport transition-all duration-700" style={{ width: `${pct}%` }} />
       </div>
       <div className="flex justify-between">
         {DAYS.map((day, i) => {
@@ -319,10 +380,10 @@ function WeekStrip() {
           const completed = completedDays.includes(i);
           return (
             <div key={i} className="flex flex-col items-center gap-1.5">
-              <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-black transition-all ${
-                completed ? "bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                : isToday  ? "border-2 border-emerald-500/60 text-emerald-400 bg-emerald-500/10"
-                : "border border-white/10 text-white/20"}`}>
+              <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold transition-all ${
+                completed ? "bg-sport text-sport-foreground"
+                : isToday  ? "border-2 border-sport/60 text-sport bg-sport/10"
+                : "border border-border text-muted-foreground/40"}`}>
                 {completed ? "✓" : day}
               </div>
             </div>
@@ -344,15 +405,15 @@ function Stepper({ value, onChange, min = 0, max = 999, step = 1, suffix = "" }:
   return (
     <div className="flex items-center gap-1.5">
       <button onClick={() => onChange(Math.max(min, value - step))}
-        className="h-8 w-8 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center text-white/70 hover:bg-white/15 active:scale-95 transition-all">
+        className="h-8 w-8 rounded-xl bg-secondary/50 border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary active:scale-95 transition-all">
         <Minus className="h-3.5 w-3.5" />
       </button>
       <div className="w-14 text-center">
-        <span className="text-sm font-black text-white">{value}</span>
-        {suffix && <span className="text-[10px] text-white/40 ml-0.5">{suffix}</span>}
+        <span className="text-sm font-black text-foreground">{value}</span>
+        {suffix && <span className="text-[10px] text-muted-foreground ml-0.5">{suffix}</span>}
       </div>
       <button onClick={() => onChange(Math.min(max, value + step))}
-        className="h-8 w-8 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center text-white/70 hover:bg-white/15 active:scale-95 transition-all">
+        className="h-8 w-8 rounded-xl bg-secondary/50 border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary active:scale-95 transition-all">
         <Plus className="h-3.5 w-3.5" />
       </button>
     </div>
@@ -365,30 +426,30 @@ function BuilderExerciseRow({ ex, onChange, onRemove, idx }: {
   ex: BuilderEx; onChange: (v: BuilderEx) => void; onRemove: () => void; idx: number;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3 space-y-3">
+    <div className="rounded-xl border border-border bg-card p-3 space-y-3">
       <div className="flex items-center gap-2">
-        <div className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-[10px] font-black text-emerald-400 shrink-0">
+        <div className="h-6 w-6 rounded-lg bg-sport/15 flex items-center justify-center text-[10px] font-black text-sport shrink-0">
           {idx + 1}
         </div>
         <input value={ex.name} onChange={(e) => onChange({ ...ex, name: e.target.value })}
           placeholder="שם תרגיל..."
-          className="flex-1 bg-transparent text-sm font-semibold text-white placeholder:text-white/25 outline-none border-b border-white/10 pb-0.5"
+          className="flex-1 bg-transparent text-sm font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none border-b border-border pb-0.5"
           dir="rtl" />
-        <button onClick={onRemove} className="h-6 w-6 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 shrink-0">
+        <button onClick={onRemove} className="h-6 w-6 rounded-lg bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 shrink-0">
           <X className="h-3 w-3" />
         </button>
       </div>
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="space-y-1">
-          <p className="text-[9px] text-white/40 font-medium">סטים</p>
+          <p className="text-[9px] text-muted-foreground font-medium">סטים</p>
           <Stepper value={ex.sets} onChange={(v) => onChange({ ...ex, sets: v })} min={1} max={10} />
         </div>
         <div className="space-y-1">
-          <p className="text-[9px] text-white/40 font-medium">חזרות</p>
+          <p className="text-[9px] text-muted-foreground font-medium">חזרות</p>
           <Stepper value={ex.reps} onChange={(v) => onChange({ ...ex, reps: v })} min={1} max={50} />
         </div>
         <div className="space-y-1">
-          <p className="text-[9px] text-white/40 font-medium">משקל</p>
+          <p className="text-[9px] text-muted-foreground font-medium">משקל</p>
           <Stepper value={ex.weight_kg} onChange={(v) => onChange({ ...ex, weight_kg: v })} min={0} max={300} step={2.5} suffix="kg" />
         </div>
       </div>
@@ -401,10 +462,8 @@ const EQUIPMENT_OPTS = ["חדר כושר", "ביתי", "ללא ציוד"];
 const DAYS_OPTS = [3, 4, 5, 6];
 
 function WorkoutBuilderTab() {
-  // Sub-tab: ai | custom
   const [subTab, setSubTab] = useState<"ai" | "custom">("custom");
 
-  // ── Custom builder state ──
   const [workoutName, setWorkoutName]   = useState("");
   const [exercises, setExercises]       = useState<BuilderEx[]>([
     { name: "", sets: 3, reps: 10, weight_kg: 0 },
@@ -446,7 +505,6 @@ function WorkoutBuilderTab() {
     toast.info(`טעינת תבנית: ${t.name}`);
   };
 
-  // ── AI Planner state ──
   const [aiGoal, setAiGoal]       = useState(BUILDER_GOALS[0]);
   const [aiDays, setAiDays]       = useState(4);
   const [aiEquip, setAiEquip]     = useState(EQUIPMENT_OPTS[0]);
@@ -473,12 +531,12 @@ function WorkoutBuilderTab() {
   };
 
   return (
-    <div className="px-4 pt-8 space-y-4">
+    <div className="px-4 pt-4 space-y-4">
       {/* Sub-tab switcher */}
-      <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5">
+      <div className="flex gap-1 p-1 rounded-xl border border-border bg-secondary/30">
         {([["custom", "🏗️ בנה אימון"], ["ai", "🤖 AI Planner"]] as const).map(([k, l]) => (
           <button key={k} onClick={() => setSubTab(k)}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${subTab === k ? "bg-emerald-500 text-white shadow-lg" : "text-white/40"}`}>
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${subTab === k ? "bg-sport text-sport-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
             {l}
           </button>
         ))}
@@ -487,50 +545,45 @@ function WorkoutBuilderTab() {
       {/* ── CUSTOM BUILDER ── */}
       {subTab === "custom" && (
         <div className="space-y-4">
-          {/* Saved templates */}
           {(templates ?? []).length > 0 && (
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-white/40">תבניות שמורות</p>
+              <p className="text-[11px] font-bold text-muted-foreground">תבניות שמורות</p>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {(templates ?? []).map((t: any) => (
-                  <div key={t.id} className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5">
-                    <button onClick={() => handleLoadTemplate(t)} className="text-xs font-semibold text-white/80 hover:text-white whitespace-nowrap">{t.name}</button>
-                    <button onClick={() => deleteTemplate.mutate(t.id)} className="text-red-400/60 hover:text-red-400"><X className="h-3 w-3" /></button>
+                  <div key={t.id} className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card">
+                    <button onClick={() => handleLoadTemplate(t)} className="text-xs font-semibold text-foreground hover:text-sport whitespace-nowrap">{t.name}</button>
+                    <button onClick={() => deleteTemplate.mutate(t.id)} className="text-destructive/60 hover:text-destructive"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Workout name */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-4 py-3">
+          <div className="rounded-xl border border-border bg-card px-4 py-3">
             <input value={workoutName} onChange={(e) => setWorkoutName(e.target.value)}
               placeholder="שם האימון (למשל: כוח עליון)"
-              className="w-full bg-transparent text-sm font-black text-white placeholder:text-white/25 outline-none text-right"
+              className="w-full bg-transparent text-sm font-bold text-foreground placeholder:text-muted-foreground/50 outline-none text-right"
               dir="rtl" />
           </div>
 
-          {/* Exercises */}
           <div className="space-y-3">
             {exercises.map((ex, i) => (
               <BuilderExerciseRow key={i} ex={ex} idx={i} onChange={(v) => updateEx(i, v)} onRemove={() => removeEx(i)} />
             ))}
           </div>
 
-          {/* Add exercise */}
           <button onClick={addEx}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-white/20 text-white/50 hover:border-emerald-500/40 hover:text-emerald-400 transition-all text-sm font-semibold">
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-sport/40 hover:text-sport transition-all text-sm font-semibold">
             <Plus className="h-4 w-4" />הוסף תרגיל
           </button>
 
-          {/* Action buttons */}
           <div className="grid grid-cols-2 gap-3">
             <button onClick={handleSaveTemplate} disabled={addTemplate.isPending}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-white/20 bg-white/8 text-white text-sm font-bold hover:bg-white/12 active:scale-[0.98] transition-all">
-              <Star className="h-4 w-4 text-amber-400" />שמור תבנית
+              className="flex items-center justify-center gap-2 py-3 rounded-xl border border-border bg-card text-foreground text-sm font-bold hover:bg-secondary/50 active:scale-[0.98] transition-all">
+              <Star className="h-4 w-4 text-amber-500" />שמור תבנית
             </button>
             <button onClick={handleLogNow} disabled={addWorkout.isPending}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-emerald-500 text-white text-sm font-black hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-sport text-sport-foreground text-sm font-bold hover:opacity-90 active:scale-[0.98] transition-all">
               <Play className="h-4 w-4" />רשום עכשיו
             </button>
           </div>
@@ -540,89 +593,84 @@ function WorkoutBuilderTab() {
       {/* ── AI PLANNER ── */}
       {subTab === "ai" && (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
-            {/* Goal */}
+          <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-white/50">מטרה</p>
+              <p className="text-[11px] font-bold text-muted-foreground">מטרה</p>
               <div className="grid grid-cols-2 gap-2">
                 {BUILDER_GOALS.map((g) => (
                   <button key={g} onClick={() => setAiGoal(g)}
-                    className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${aiGoal === g ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/50"}`}>
+                    className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${aiGoal === g ? "border-sport/50 bg-sport/10 text-sport" : "border-border bg-secondary/30 text-muted-foreground"}`}>
                     {g}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Days */}
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-white/50">ימי אימון בשבוע</p>
+              <p className="text-[11px] font-bold text-muted-foreground">ימי אימון בשבוע</p>
               <div className="flex gap-2">
                 {DAYS_OPTS.map((d) => (
                   <button key={d} onClick={() => setAiDays(d)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-black border transition-all ${aiDays === d ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/50"}`}>
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-black border transition-all ${aiDays === d ? "border-sport/50 bg-sport/10 text-sport" : "border-border bg-secondary/30 text-muted-foreground"}`}>
                     {d}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Equipment */}
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-white/50">ציוד זמין</p>
+              <p className="text-[11px] font-bold text-muted-foreground">ציוד זמין</p>
               <div className="flex gap-2">
                 {EQUIPMENT_OPTS.map((e) => (
                   <button key={e} onClick={() => setAiEquip(e)}
-                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all ${aiEquip === e ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/50"}`}>
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all ${aiEquip === e ? "border-sport/50 bg-sport/10 text-sport" : "border-border bg-secondary/30 text-muted-foreground"}`}>
                     {e}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Constraints */}
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-white/50">מגבלות / פציעות (אופציונלי)</p>
+              <p className="text-[11px] font-bold text-muted-foreground">מגבלות / פציעות (אופציונלי)</p>
               <input value={aiConstraints} onChange={(e) => setAiConstraints(e.target.value)}
                 placeholder="למשל: כאב בכתף ימין, אין ריצה..."
-                className="w-full rounded-xl border border-white/10 bg-white/8 px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-emerald-500/40"
+                className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-sport/50 focus:ring-1 focus:ring-sport/30"
                 dir="rtl" />
             </div>
 
             <button onClick={handleGeneratePlan} disabled={aiLoading}
-              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-emerald-500 text-white font-black text-sm min-h-[48px] hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)] disabled:opacity-60">
+              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl bg-sport text-sport-foreground font-bold text-sm min-h-[44px] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60">
               {aiLoading ? <><Loader2 className="h-4 w-4 animate-spin" />יוצר תוכנית...</> : <><Zap className="h-4 w-4" />צור תוכנית שבועית</>}
             </button>
           </div>
 
-          {/* AI Plan results */}
           {aiPlan && (
             <div className="space-y-3">
-              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-3">
-                <p className="text-xs text-emerald-300 font-semibold">{aiPlan.summary}</p>
+              <div className="rounded-xl border border-sport/20 bg-sport/5 p-3">
+                <p className="text-xs text-sport font-semibold">{aiPlan.summary}</p>
               </div>
               {aiPlan.workouts.map((w, i) => (
-                <div key={i} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+                <div key={i} className="rounded-xl border border-border bg-card overflow-hidden">
                   <button onClick={() => setExpandedDay(expandedDay === i ? null : i)}
                     className="w-full flex items-center justify-between px-4 py-3.5 text-right">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-xs font-black text-emerald-400">{i + 1}</div>
+                      <div className="h-8 w-8 rounded-xl bg-sport/10 border border-sport/20 flex items-center justify-center text-xs font-black text-sport">{i + 1}</div>
                       <div>
-                        <p className="text-sm font-black text-white">{w.day}</p>
-                        <p className="text-[10px] text-white/40">{w.name} · {w.duration_minutes} דק׳</p>
+                        <p className="text-sm font-bold text-foreground">{w.day}</p>
+                        <p className="text-[10px] text-muted-foreground">{w.name} · {w.duration_minutes} דק׳</p>
                       </div>
                     </div>
-                    {expandedDay === i ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
+                    {expandedDay === i ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                   </button>
                   {expandedDay === i && (
-                    <div className="border-t border-white/8 divide-y divide-white/5">
+                    <div className="border-t border-border divide-y divide-border/50">
                       {w.exercises.map((ex, j) => (
                         <div key={j} className="flex items-center justify-between px-4 py-2.5">
                           <div>
-                            <p className="text-xs font-semibold text-white/80">{ex.name}</p>
-                            {ex.notes && <p className="text-[10px] text-white/35 mt-0.5">{ex.notes}</p>}
+                            <p className="text-xs font-semibold text-foreground/80">{ex.name}</p>
+                            {ex.notes && <p className="text-[10px] text-muted-foreground mt-0.5">{ex.notes}</p>}
                           </div>
-                          <span className="text-[10px] font-mono text-emerald-400">{ex.sets}×{ex.reps}{ex.weight_kg ? ` @ ${ex.weight_kg}kg` : ""}</span>
+                          <span className="text-[10px] font-mono text-sport">{ex.sets}×{ex.reps}{ex.weight_kg ? ` @ ${ex.weight_kg}kg` : ""}</span>
                         </div>
                       ))}
                     </div>
@@ -630,10 +678,10 @@ function WorkoutBuilderTab() {
                 </div>
               ))}
               {aiPlan.tips?.length > 0 && (
-                <div className="rounded-2xl border border-white/8 bg-white/4 p-3 space-y-1.5">
-                  <p className="text-[10px] font-bold text-white/40">טיפים מה-AI</p>
+                <div className="rounded-xl border border-border bg-card p-3 space-y-1.5">
+                  <p className="text-[10px] font-bold text-muted-foreground">טיפים מה-AI</p>
                   {aiPlan.tips.map((tip, i) => (
-                    <p key={i} className="text-xs text-white/60">• {tip}</p>
+                    <p key={i} className="text-xs text-foreground/70">• {tip}</p>
                   ))}
                 </div>
               )}
@@ -651,43 +699,42 @@ function WorkoutBuilderTab() {
 
 function ExerciseModal({ ex, onClose }: { ex: LibraryExercise; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
-      <div className="w-full max-w-lg mx-auto rounded-t-3xl border-t border-x border-white/10 bg-[#0d1117]/95 backdrop-blur-2xl p-5 space-y-4 pb-10"
+    <div className="fixed inset-0 z-50 flex items-end bg-background/80 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-lg mx-auto rounded-t-3xl border-t border-x border-border bg-card p-5 space-y-4 pb-10"
         onClick={(e) => e.stopPropagation()}>
-        {/* Handle */}
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto" />
+        <div className="w-10 h-1 rounded-full bg-border mx-auto" />
 
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-black text-white">{ex.name}</h3>
-            <p className="text-xs text-white/40 mt-0.5">{ex.muscles}</p>
+            <h3 className="text-lg font-bold text-foreground">{ex.name}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{ex.muscles}</p>
           </div>
-          <button onClick={onClose} className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:bg-white/15 shrink-0">
+          <button onClick={onClose} className="h-8 w-8 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground hover:bg-secondary shrink-0">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-center">
           {[["סטים", ex.defaultSets], ["חזרות", ex.defaultReps], ["ציוד", ex.equipment]].map(([label, val]) => (
-            <div key={String(label)} className="rounded-xl border border-white/8 bg-white/5 p-2.5">
-              <p className="text-[9px] text-white/35">{label}</p>
-              <p className="text-sm font-black text-white mt-0.5">{val}</p>
+            <div key={String(label)} className="rounded-xl border border-border bg-secondary/30 p-2.5">
+              <p className="text-[9px] text-muted-foreground">{label}</p>
+              <p className="text-sm font-bold text-foreground mt-0.5">{val}</p>
             </div>
           ))}
         </div>
 
         <div className="space-y-2">
-          <p className="text-[11px] font-bold text-white/50">💡 טיפים לביצוע נכון</p>
+          <p className="text-[11px] font-bold text-muted-foreground">💡 טיפים לביצוע נכון</p>
           {ex.tips.map((tip, i) => (
             <div key={i} className="flex items-start gap-2">
-              <span className="h-5 w-5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-              <p className="text-xs text-white/70">{tip}</p>
+              <span className="h-5 w-5 rounded-full bg-sport/15 text-sport text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+              <p className="text-xs text-foreground/80">{tip}</p>
             </div>
           ))}
         </div>
 
         <a href={`https://www.youtube.com/results?search_query=${ex.youtubeQuery}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-sm hover:bg-red-500/15 transition-all">
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-500 font-bold text-sm hover:bg-red-500/15 transition-all min-h-[44px]">
           <span>▶</span>סרטון הדרכה ב-YouTube
         </a>
       </div>
@@ -695,25 +742,53 @@ function ExerciseModal({ ex, onClose }: { ex: LibraryExercise; onClose: () => vo
   );
 }
 
+type LibraryWorkoutType = "weights" | "calisthenics";
+
 function ExerciseLibraryTab() {
+  const [workoutType, setWorkoutType]     = useState<LibraryWorkoutType>("weights");
   const [selectedGroup, setSelectedGroup] = useState<MuscleGroup | null>(null);
   const [selectedEx, setSelectedEx]       = useState<LibraryExercise | null>(null);
 
+  const groups = workoutType === "weights" ? MUSCLE_GROUPS : CALISTHENICS_MUSCLE_GROUPS;
+
+  const handleTypeChange = (t: LibraryWorkoutType) => {
+    setWorkoutType(t);
+    setSelectedGroup(null);
+    setSelectedEx(null);
+  };
+
   return (
-    <div className="px-4 pt-8 space-y-4">
+    <div className="px-4 pt-4 space-y-4">
+      {/* Workout type tabs */}
+      <div className="flex gap-1 p-1 rounded-xl border border-border bg-secondary/30">
+        {([
+          { key: "weights" as const,      label: "🏋️ חדר כושר"  },
+          { key: "calisthenics" as const, label: "🤸 קלסטניקס"  },
+        ]).map(({ key, label }) => (
+          <button key={key} onClick={() => handleTypeChange(key)}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+              workoutType === key
+                ? "bg-sport text-sport-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       {!selectedGroup ? (
         <>
-          <p className="text-sm font-black text-white">בחר קבוצת שרירים</p>
+          <p className="text-sm font-bold text-foreground">בחר קבוצת שרירים</p>
           <div className="grid grid-cols-2 gap-3">
-            {MUSCLE_GROUPS.map((g) => (
+            {groups.map((g) => (
               <button key={g.key} onClick={() => setSelectedGroup(g)}
-                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.97] transition-all">
-                <div className="h-11 w-11 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ background: g.color + "22" }}>
+                className="rounded-xl border border-border bg-card p-4 text-right flex items-center gap-3 hover:border-sport/30 hover:bg-sport/5 active:scale-[0.97] transition-all">
+                <div className="h-11 w-11 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ background: g.color + "18" }}>
                   {g.emoji}
                 </div>
                 <div>
-                  <p className="text-sm font-black text-white">{g.label}</p>
-                  <p className="text-[10px] text-white/35">{g.exercises.length} תרגילים</p>
+                  <p className="text-sm font-bold text-foreground">{g.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{g.exercises.length} תרגילים</p>
                 </div>
               </button>
             ))}
@@ -723,27 +798,27 @@ function ExerciseLibraryTab() {
         <>
           <div className="flex items-center gap-3">
             <button onClick={() => setSelectedGroup(null)}
-              className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15">
+              className="h-8 w-8 rounded-xl bg-secondary/50 border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary">
               <ChevronRight className="h-4 w-4" />
             </button>
             <div className="flex items-center gap-2">
               <span className="text-xl">{selectedGroup.emoji}</span>
-              <p className="text-sm font-black text-white">{selectedGroup.label}</p>
+              <p className="text-sm font-bold text-foreground">{selectedGroup.label}</p>
             </div>
           </div>
           <div className="space-y-2">
             {selectedGroup.exercises.map((ex) => (
               <button key={ex.name} onClick={() => setSelectedEx(ex)}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center justify-between gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.98] transition-all">
+                className="w-full rounded-xl border border-border bg-card p-4 text-right flex items-center justify-between gap-3 hover:border-sport/30 hover:bg-sport/5 active:scale-[0.98] transition-all">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-white">{ex.name}</p>
-                  <p className="text-[10px] text-white/35 mt-0.5 truncate">{ex.muscles}</p>
+                  <p className="text-sm font-bold text-foreground">{ex.name}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{ex.muscles}</p>
                   <div className="flex gap-2 mt-1.5">
-                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-white/40">{ex.equipment}</span>
-                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 text-emerald-400">{ex.defaultSets}×{ex.defaultReps}</span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-border bg-secondary/30 text-muted-foreground">{ex.equipment}</span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-sport/20 bg-sport/8 text-sport">{ex.defaultSets}×{ex.defaultReps}</span>
                   </div>
                 </div>
-                <BookOpen className="h-4 w-4 text-white/30 shrink-0" />
+                <BookOpen className="h-4 w-4 text-muted-foreground/50 shrink-0" />
               </button>
             ))}
           </div>
@@ -761,9 +836,14 @@ function ExerciseLibraryTab() {
 
 function WeightChart() {
   const { data: entries } = useWeightEntries(30);
-  const addWeight = useAddWeight();
-  const [newWeight, setNewWeight] = useState(75);
-  const [showAdd, setShowAdd]     = useState(false);
+  const addWeight    = useAddWeight();
+  const deleteWeight = useDeleteWeight();
+  const updateWeight = useUpdateWeight();
+  const [newWeight, setNewWeight]   = useState(75);
+  const [showAdd, setShowAdd]       = useState(false);
+  const [showList, setShowList]     = useState(false);
+  const [editingId, setEditingId]   = useState<string | null>(null);
+  const [editValue, setEditValue]   = useState("");
 
   const chartData = [...(entries ?? [])]
     .reverse()
@@ -785,25 +865,44 @@ function WeightChart() {
     } catch { toast.error("שגיאה בשמירה"); }
   };
 
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
+    const val = parseFloat(editValue);
+    if (!val || val <= 0) { toast.error("הזן משקל תקין"); return; }
+    try {
+      await updateWeight.mutateAsync({ id: editingId, weight_kg: val });
+      toast.success("משקל עודכן");
+      setEditingId(null);
+    } catch { toast.error("שגיאה בעדכון"); }
+  };
+
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
+    <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Scale className="h-4 w-4 text-blue-400" />
-          <p className="text-sm font-black text-white">מעקב משקל</p>
+          <Scale className="h-4 w-4 text-blue-500" />
+          <p className="text-sm font-bold text-foreground">מעקב משקל</p>
         </div>
-        <button onClick={() => setShowAdd((v) => !v)}
-          className="h-7 w-7 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500/25">
-          <Plus className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {(entries ?? []).length > 0 && (
+            <button onClick={() => setShowList((v) => !v)}
+              className="text-[10px] text-muted-foreground hover:text-foreground font-semibold transition-colors">
+              {showList ? "הסתר רשימה" : "ערוך / מחק"}
+            </button>
+          )}
+          <button onClick={() => setShowAdd((v) => !v)}
+            className="h-7 w-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 hover:bg-blue-500/20">
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Current weight display */}
       {latest && (
         <div className="flex items-end gap-3">
-          <p className="text-4xl font-black text-white">{latest.weight_kg}<span className="text-lg text-white/40 ml-1">kg</span></p>
+          <p className="text-4xl font-black text-foreground">{latest.weight_kg}<span className="text-lg text-muted-foreground ml-1">kg</span></p>
           {delta !== null && (
-            <span className={`text-sm font-bold mb-1 ${Number(delta) < 0 ? "text-emerald-400" : Number(delta) > 0 ? "text-red-400" : "text-white/40"}`}>
+            <span className={`text-sm font-bold mb-1 ${Number(delta) < 0 ? "text-emerald-500" : Number(delta) > 0 ? "text-destructive" : "text-muted-foreground"}`}>
               {Number(delta) > 0 ? "+" : ""}{delta}kg
             </span>
           )}
@@ -812,7 +911,7 @@ function WeightChart() {
 
       {/* Add weight */}
       {showAdd && (
-        <div className="rounded-2xl border border-blue-500/20 bg-blue-500/8 p-3 flex items-center gap-3">
+        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 flex items-center gap-3">
           <Stepper value={newWeight} onChange={setNewWeight} min={30} max={250} step={0.5} suffix="kg" />
           <button onClick={handleAdd} disabled={addWeight.isPending}
             className="flex-1 py-2 rounded-xl bg-blue-500 text-white font-bold text-sm hover:bg-blue-400 active:scale-95 transition-all">
@@ -821,20 +920,67 @@ function WeightChart() {
         </div>
       )}
 
+      {/* Edit/delete list */}
+      {showList && (
+        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+          {(entries ?? []).map((e: any) => (
+            <div key={e.id} className="flex items-center justify-between px-3 py-2 rounded-xl border border-border bg-secondary/20">
+              {editingId === e.id ? (
+                <>
+                  <input
+                    type="number" step="0.1" value={editValue}
+                    onChange={(ev) => setEditValue(ev.target.value)}
+                    className="w-24 rounded-lg bg-secondary/50 border border-blue-500/40 px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+                    dir="ltr" autoFocus
+                  />
+                  <div className="flex items-center gap-1">
+                    <button onClick={handleSaveEdit} disabled={updateWeight.isPending}
+                      className="h-7 w-7 rounded-lg bg-emerald-500/15 text-emerald-600 flex items-center justify-center hover:bg-emerald-500/25 disabled:opacity-50">
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => setEditingId(null)}
+                      className="h-7 w-7 rounded-lg bg-secondary/50 text-muted-foreground flex items-center justify-center hover:bg-secondary">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-foreground" dir="ltr">{e.weight_kg} kg</span>
+                    <span className="text-[10px] text-muted-foreground">{new Date(e.date).toLocaleDateString("he-IL")}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => { setEditingId(e.id); setEditValue(String(e.weight_kg)); }}
+                      className="h-7 w-7 rounded-lg bg-secondary/30 text-muted-foreground flex items-center justify-center hover:bg-secondary hover:text-sport">
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button onClick={() => deleteWeight.mutate(e.id, { onSuccess: () => toast.success("נמחק") })}
+                      className="h-7 w-7 rounded-lg bg-secondary/30 text-muted-foreground flex items-center justify-center hover:bg-destructive/10 hover:text-destructive">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Chart */}
       {chartData.length > 1 ? (
         <ResponsiveContainer width="100%" height={140}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="date" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9 }} axisLine={false} tickLine={false} />
-            <YAxis domain={["auto", "auto"]} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9 }} axisLine={false} tickLine={false} width={30} />
-            <Tooltip contentStyle={{ background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff", fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} axisLine={false} tickLine={false} />
+            <YAxis domain={["auto", "auto"]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} axisLine={false} tickLine={false} width={30} />
+            <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, color: "hsl(var(--foreground))", fontSize: 11 }} />
             <Line type="monotone" dataKey="kg" stroke="#3b82f6" strokeWidth={2} dot={{ fill: "#3b82f6", r: 3 }} activeDot={{ r: 5 }} />
           </LineChart>
         </ResponsiveContainer>
       ) : (
         <div className="h-[140px] flex items-center justify-center">
-          <p className="text-xs text-white/25">הוסף לפחות 2 מדידות לגרף</p>
+          <p className="text-xs text-muted-foreground">הוסף לפחות 2 מדידות לגרף</p>
         </div>
       )}
     </div>
@@ -859,26 +1005,26 @@ function PRSection() {
   };
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
+    <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Medal className="h-4 w-4 text-amber-400" />
-          <p className="text-sm font-black text-white">שיאים אישיים</p>
+          <Medal className="h-4 w-4 text-amber-500" />
+          <p className="text-sm font-bold text-foreground">שיאים אישיים</p>
         </div>
         <button onClick={() => setShowForm((v) => !v)}
-          className="h-7 w-7 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/25">
+          className="h-7 w-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 hover:bg-amber-500/20">
           <Plus className="h-3.5 w-3.5" />
         </button>
       </div>
 
       {showForm && (
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-3 space-y-3">
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-3">
           <input value={prName} onChange={(e) => setPrName(e.target.value)} placeholder="שם התרגיל..."
-            className="w-full bg-transparent text-sm text-white placeholder:text-white/25 outline-none border-b border-white/10 pb-1" dir="rtl" />
+            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none border-b border-border pb-1" dir="rtl" />
           <div className="flex items-center gap-3">
             <Stepper value={prValue} onChange={setPrValue} min={1} max={999} step={1} suffix={prUnit} />
             <select value={prUnit} onChange={(e) => setPrUnit(e.target.value)}
-              className="bg-white/10 border border-white/10 rounded-xl text-xs text-white px-2 py-1.5 outline-none">
+              className="bg-secondary/50 border border-border rounded-xl text-xs text-foreground px-2 py-1.5 outline-none">
               {["kg", "reps", "km", "min", "sec"].map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
             <button onClick={handleAdd} disabled={addPR.isPending}
@@ -892,19 +1038,19 @@ function PRSection() {
       {(prs ?? []).length === 0 ? (
         <div className="text-center py-6">
           <span className="text-4xl">🏆</span>
-          <p className="text-xs text-white/30 mt-2">אין שיאים עדיין — הוסף את הראשון!</p>
+          <p className="text-xs text-muted-foreground mt-2">אין שיאים עדיין — הוסף את הראשון!</p>
         </div>
       ) : (
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-border/50">
           {(prs ?? []).slice(0, 8).map((pr: any) => (
             <div key={pr.id} className="flex items-center justify-between py-2.5">
               <div className="flex items-center gap-2">
-                <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                <span className="text-xs font-semibold text-white/80">{pr.exercise_name}</span>
+                <Trophy className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                <span className="text-xs font-semibold text-foreground/80">{pr.exercise_name}</span>
               </div>
               <div className="text-left">
-                <span className="text-sm font-black text-amber-400">{pr.value}</span>
-                <span className="text-[10px] text-white/40 ml-1">{pr.unit}</span>
+                <span className="text-sm font-black text-amber-500">{pr.value}</span>
+                <span className="text-[10px] text-muted-foreground ml-1">{pr.unit}</span>
               </div>
             </div>
           ))}
@@ -919,22 +1065,22 @@ function WorkoutHistoryStrip() {
   const list = (workouts ?? []).slice(0, 5) as any[];
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
+    <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <BarChart3 className="h-4 w-4 text-emerald-400" />
-        <p className="text-sm font-black text-white">היסטוריית אימונים</p>
+        <BarChart3 className="h-4 w-4 text-sport" />
+        <p className="text-sm font-bold text-foreground">היסטוריית אימונים</p>
       </div>
       {list.length === 0 ? (
-        <p className="text-xs text-white/25 text-center py-4">אין אימונים השבוע עדיין</p>
+        <p className="text-xs text-muted-foreground text-center py-4">אין אימונים השבוע עדיין</p>
       ) : (
         <div className="space-y-2">
           {list.map((w) => (
-            <div key={w.id} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
+            <div key={w.id} className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
               <div>
-                <p className="text-xs font-bold text-white/80">{w.category}</p>
-                <p className="text-[10px] text-white/35">{new Date(w.date).toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "numeric" })}</p>
+                <p className="text-xs font-bold text-foreground/80">{w.category}</p>
+                <p className="text-[10px] text-muted-foreground">{new Date(w.date).toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "numeric" })}</p>
               </div>
-              <div className="flex items-center gap-1 text-[10px] text-white/40">
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 {w.duration_minutes || "—"} דק׳
               </div>
@@ -948,21 +1094,20 @@ function WorkoutHistoryStrip() {
 
 function ProgressTab() {
   return (
-    <div className="px-4 pt-8 space-y-4">
+    <div className="px-4 pt-4 space-y-4">
       <WeightChart />
       <PRSection />
       <WorkoutHistoryStrip />
 
-      {/* Transformation gallery placeholder */}
-      <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
+      <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Camera className="h-4 w-4 text-violet-400" />
-          <p className="text-sm font-black text-white">גלריית טרנספורמציה</p>
+          <Camera className="h-4 w-4 text-violet-500" />
+          <p className="text-sm font-bold text-foreground">גלריית טרנספורמציה</p>
         </div>
-        <div className="h-24 rounded-2xl border border-dashed border-white/15 flex items-center justify-center">
+        <div className="h-24 rounded-xl border border-dashed border-border flex items-center justify-center">
           <div className="text-center">
-            <Camera className="h-6 w-6 text-white/20 mx-auto mb-1" />
-            <p className="text-xs text-white/25">העלאת תמונות — בקרוב</p>
+            <Camera className="h-6 w-6 text-muted-foreground/30 mx-auto mb-1" />
+            <p className="text-xs text-muted-foreground/50">העלאת תמונות — בקרוב</p>
           </div>
         </div>
       </div>
@@ -979,42 +1124,29 @@ function SportPage() {
 
   return (
     <>
-      <div
-        dir="rtl"
-        className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 relative bg-cover bg-center"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2000&auto=format&fit=crop')`,
-          minHeight: "100vh",
-        }}
-      >
-        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-emerald-500/15 blur-[120px]" />
-          <div className="absolute bottom-40 -left-16 h-60 w-60 rounded-full bg-blue-500/10 blur-[100px]" />
+      <div dir="rtl" className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 min-h-screen bg-background">
+
+        {/* Sticky Tab Bar */}
+        <div className="sticky top-0 z-10 px-4 py-2 bg-background/95 backdrop-blur-sm border-b border-border">
+          <div className="flex gap-1 p-1 rounded-xl bg-secondary/30">
+            {TABS.map((t) => (
+              <button key={t.key} onClick={() => setActiveTab(t.key)}
+                className={`flex-1 py-2 px-1 rounded-lg text-[11px] font-bold transition-all duration-200 ${
+                  activeTab === t.key ? "bg-sport text-sport-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="relative z-10 pb-32 pt-8">
-
-          {/* Sticky Tab Bar */}
-          <div className="relative z-10 px-4 py-2 bg-black/25 backdrop-blur-xl">
-            <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
-              {TABS.map((t) => (
-                <button key={t.key} onClick={() => setActiveTab(t.key)}
-                  className={`flex-1 py-2 px-1 rounded-xl text-[11px] font-bold transition-all duration-200 ${
-                    activeTab === t.key ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30" : "text-white/40 hover:text-white/70"}`}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
+        <div className="pb-32">
           {/* TAB 1 */}
           {activeTab === "dashboard" && (
-            <div className="px-4 pt-8 space-y-5">
+            <div className="px-4 pt-4 space-y-4">
               <DayStatusBanner isTraining={isTraining} onToggle={() => setIsTraining((v) => !v)} />
               <QuickAddRow />
               <div className="space-y-2">
-                <p className="text-sm font-black text-white">אימון היום</p>
+                <p className="text-sm font-bold text-foreground">אימון היום</p>
                 <TodayPlanCard isTraining={isTraining} />
               </div>
               <StatsStrip />
@@ -1034,7 +1166,6 @@ function SportPage() {
       </div>
 
       <style>{`
-        @keyframes sportPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
