@@ -11,6 +11,7 @@ import {
   useUpdateFixedExpense,
   useDeleteFixedExpense,
   DEFAULT_EXPENSE_CATEGORIES,
+  useActiveExpenseCategories,
 } from "@/hooks/use-finance-data";
 import { FinanceFixedIncome } from "@/components/finance/FinanceFixedIncome";
 import { FT } from "@/lib/finance-theme";
@@ -67,9 +68,11 @@ function LogEntryForm({ year, month }: { year: number; month: number }) {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(DEFAULT_EXPENSE_CATEGORIES[0].name);
+  const [customCategory, setCustomCategory] = useState("");
   const [date, setDate] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const activeExpenseCats = useActiveExpenseCategories();
   const addExpense = useAddExpense();
   const addIncome = useAddIncome();
 
@@ -82,26 +85,28 @@ function LogEntryForm({ year, month }: { year: number; month: number }) {
 
   function handleTypeChange(t: EntryType) {
     setType(t);
-    setCategory(t === "expense" ? DEFAULT_EXPENSE_CATEGORIES[0].name : INCOME_CATS[0].name);
+    setCategory(t === "expense" ? activeExpenseCats[0]?.name ?? DEFAULT_EXPENSE_CATEGORIES[0].name : INCOME_CATS[0].name);
+    setCustomCategory("");
   }
 
   async function handleSave() {
     const num = parseFloat(amount);
     if (!num || num <= 0) { toast.error("הזן סכום תקין"); return; }
+    const effectiveCategory = category === "אחר" && customCategory.trim() ? customCategory.trim() : category;
     setSaving(true);
     try {
       if (type === "expense") {
         await addExpense.mutateAsync({
-          amount: num, category, description: description.trim() || undefined,
+          amount: num, category: effectiveCategory, description: description.trim() || undefined,
           date, expense_type: "variable", is_recurring: false, needs_review: false,
         });
       } else {
         await addIncome.mutateAsync({
-          amount: num, category, description: description.trim() || undefined, source: "manual", date,
+          amount: num, category: effectiveCategory, description: description.trim() || undefined, source: "manual", date,
         });
       }
       toast.success(`₪${fmt(num)} נשמר בהצלחה ✓`);
-      setAmount(""); setDescription("");
+      setAmount(""); setDescription(""); setCustomCategory("");
     } catch (e: any) {
       toast.error("שגיאה: " + e.message);
     } finally {
@@ -109,7 +114,7 @@ function LogEntryForm({ year, month }: { year: number; month: number }) {
     }
   }
 
-  const cats = type === "expense" ? DEFAULT_EXPENSE_CATEGORIES : INCOME_CATS;
+  const cats = type === "expense" ? activeExpenseCats : INCOME_CATS;
 
   return (
     <div className="rounded-3xl p-5 space-y-4" dir="rtl"
@@ -187,6 +192,13 @@ function LogEntryForm({ year, month }: { year: number; month: number }) {
           </button>
         ))}
       </div>
+      {category === "אחר" && (
+        <input
+          type="text" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)}
+          placeholder="שם קטגוריה מותאם..."
+          className={inputCls} style={inputStyle}
+        />
+      )}
 
       {/* Save */}
       <button
@@ -215,6 +227,7 @@ type FixedType = "recurring" | "installment";
 
 function AddFixedForm({ onDone }: { onDone: () => void }) {
   const now = new Date();
+  const activeExpenseCats = useActiveExpenseCategories();
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [chargeDay, setChargeDay] = useState(1);
@@ -284,7 +297,7 @@ function AddFixedForm({ onDone }: { onDone: () => void }) {
           className="flex-1 px-3 py-2 rounded-xl text-sm text-white focus:outline-none transition-all"
           style={{ ...subInputStyle, color: "#fff" }}
         >
-          {DEFAULT_EXPENSE_CATEGORIES.map((c) => (
+          {activeExpenseCats.map((c) => (
             <option key={c.name} value={c.name} style={{ background: FT.bg, color: "#fff" }}>
               {c.icon} {c.name}
             </option>

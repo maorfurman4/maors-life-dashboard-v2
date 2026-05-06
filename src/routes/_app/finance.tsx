@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Wallet, ChevronLeft, ChevronRight } from "lucide-react";
+import { Wallet, ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { FinanceDashboardTab } from "@/components/finance/FinanceDashboardTab";
 import { FinanceOperationsTab } from "@/components/finance/FinanceOperationsTab";
 import { FinanceHistoryTab } from "@/components/finance/FinanceHistoryTab";
 import { FinanceDebtsTab } from "@/components/finance/FinanceDebtsTab";
 import { FT } from "@/lib/finance-theme";
+import { FinanceCategorySettings } from "@/components/finance/FinanceCategorySettings";
 
 export const Route = createFileRoute("/_app/finance")({
   component: FinancePage,
@@ -33,6 +34,7 @@ function FinancePage() {
     year: now.getFullYear(),
     month: now.getMonth() + 1,
   });
+  const [catSettingsOpen, setCatSettingsOpen] = useState(false);
 
   const prevMonth = () => setCurrentMonth(({ year, month }) =>
     month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 });
@@ -78,6 +80,7 @@ function FinancePage() {
           isCurrentMonth={isCurrentMonth}
           onPrev={prevMonth}
           onNext={nextMonth}
+          onSettings={() => setCatSettingsOpen(true)}
         />
 
         {/* Sticky Tab Bar */}
@@ -121,6 +124,8 @@ function FinancePage() {
           {activeTab === "history"    && <FinanceHistoryTab    year={currentMonth.year} month={currentMonth.month} />}
           {activeTab === "debts"      && <FinanceDebtsTab      year={currentMonth.year} month={currentMonth.month} />}
         </div>
+
+        <FinanceCategorySettings open={catSettingsOpen} onClose={() => setCatSettingsOpen(false)} />
       </div>
     </div>
   );
@@ -129,10 +134,10 @@ function FinancePage() {
 // ─── Month Navigator ──────────────────────────────────────────────────────────
 
 function MonthNav({
-  year, month, isCurrentMonth, onPrev, onNext,
+  year, month, isCurrentMonth, onPrev, onNext, onSettings,
 }: {
   year: number; month: number; isCurrentMonth: boolean;
-  onPrev: () => void; onNext: () => void;
+  onPrev: () => void; onNext: () => void; onSettings: () => void;
 }) {
   return (
     <div
@@ -158,6 +163,15 @@ function MonthNav({
           </p>
         )}
       </div>
+
+      <button
+        onClick={onSettings}
+        aria-label="הגדרות קטגוריות"
+        className="h-8 w-8 rounded-full flex items-center justify-center transition-all active:scale-90"
+        style={{ background: FT.goldDim, color: "rgba(255,255,255,0.6)" }}
+      >
+        <Settings className="h-3.5 w-3.5" />
+      </button>
 
       <button
         onClick={onNext}

@@ -24,6 +24,16 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
   { name: "אחר", icon: "📦" },
 ];
 
+export function useActiveExpenseCategories() {
+  const { data: dbCats } = useExpenseCategories();
+  return useMemo(() => {
+    if (dbCats && dbCats.length > 0) {
+      return dbCats.map((c: any) => ({ name: c.name, icon: c.icon || "📦" }));
+    }
+    return DEFAULT_EXPENSE_CATEGORIES;
+  }, [dbCats]);
+}
+
 export const INCOME_CATEGORIES = [
   { value: "salary", label: "משכורת" },
   { value: "private_lessons", label: "שיעורים פרטיים" },

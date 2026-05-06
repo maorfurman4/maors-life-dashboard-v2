@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
-import { useAddExpense, DEFAULT_EXPENSE_CATEGORIES } from "@/hooks/use-finance-data";
+import { useAddExpense, DEFAULT_EXPENSE_CATEGORIES, useActiveExpenseCategories } from "@/hooks/use-finance-data";
 import { AmountScrollPicker } from "./AmountScrollPicker";
 import { toast } from "sonner";
 
@@ -11,10 +11,12 @@ interface AddExpenseDrawerProps {
 
 export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
   const [category, setCategory] = useState("מזון");
+  const [customCategory, setCustomCategory] = useState("");
   const [amount, setAmount] = useState<number | null>(null);
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [isRecurring, setIsRecurring] = useState(false);
+  const activeCategories = useActiveExpenseCategories();
   const addExpense = useAddExpense();
 
   const handleSave = () => {
@@ -22,10 +24,11 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
       toast.error("הזן סכום תקין");
       return;
     }
+    const effectiveCategory = category === "אחר" && customCategory.trim() ? customCategory.trim() : category;
     addExpense.mutate(
       {
         amount,
-        category,
+        category: effectiveCategory,
         description: description || undefined,
         date,
         expense_type: "variable",
@@ -39,6 +42,7 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
           setAmount(null);
           setDescription("");
           setCategory("מזון");
+          setCustomCategory("");
           setIsRecurring(false);
         },
         onError: (err) => {
@@ -55,7 +59,7 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-2 block">קטגוריה</label>
           <div className="grid grid-cols-3 gap-2">
-            {DEFAULT_EXPENSE_CATEGORIES.map((cat) => (
+            {activeCategories.map((cat) => (
               <button key={cat.name} onClick={() => setCategory(cat.name)}
                 className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border transition-colors text-xs font-medium ${
                   category === cat.name ? "border-finance bg-finance/10 text-finance" : "border-border bg-card hover:bg-secondary/40 text-foreground"
@@ -65,6 +69,10 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
               </button>
             ))}
           </div>
+          {category === "אחר" && (
+            <input type="text" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} placeholder="שם קטגוריה מותאם..."
+              className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-finance mt-2" />
+          )}
         </div>
 
         <div>
