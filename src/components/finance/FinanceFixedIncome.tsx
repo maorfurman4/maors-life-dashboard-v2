@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TrendingUp, Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { TrendingUp, Plus, Trash2, ToggleLeft, ToggleRight, ChevronDown, ChevronUp } from "lucide-react";
 import {
   useFixedIncome,
   useAddFixedIncome,
@@ -21,6 +21,7 @@ export function FinanceFixedIncome() {
   const deleteFixed = useDeleteFixedIncome();
 
   const [showForm, setShowForm] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("משכורת");
@@ -171,46 +172,57 @@ export function FinanceFixedIncome() {
           הוסף משכורת, שכ״ד, פרילנס קבוע ועוד
         </button>
       ) : (
-        <div className="space-y-2">
-          {(fixedIncome || []).map((f: any) => (
-            <div
-              key={f.id}
-              className="flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all"
-              style={{
-                background: f.is_active ? FT.cardLight : FT.brownDim,
-                border: `1px solid ${f.is_active ? "rgba(124,191,142,0.15)" : FT.brownBorder}`,
-                opacity: f.is_active ? 1 : 0.55,
-              }}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-white truncate" style={{ letterSpacing: 0 }}>{f.name}</p>
-                <p className="text-[10px]" style={{ color: FT.textFaint }}>
-                  {f.category} · יום {f.day_of_month} לחודש
-                </p>
+        <>
+          <div className="space-y-2">
+            {(showAll ? (fixedIncome || []) : (fixedIncome || []).slice(0, 2)).map((f: any) => (
+              <div
+                key={f.id}
+                className="flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all"
+                style={{
+                  background: f.is_active ? FT.cardLight : FT.brownDim,
+                  border: `1px solid ${f.is_active ? "rgba(124,191,142,0.15)" : FT.brownBorder}`,
+                  opacity: f.is_active ? 1 : 0.55,
+                }}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-white truncate" style={{ letterSpacing: 0 }}>{f.name}</p>
+                  <p className="text-[10px]" style={{ color: FT.textFaint }}>
+                    {f.category} · יום {f.day_of_month} לחודש
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-black" style={{ color: FT.success }} dir="ltr">
+                    +₪{fmt(Number(f.amount))}
+                  </span>
+                  <button
+                    onClick={() => toggleActive(f.id, f.is_active)}
+                    style={{ color: f.is_active ? FT.success : FT.textFaint }}
+                  >
+                    {f.is_active
+                      ? <ToggleRight className="h-4 w-4" />
+                      : <ToggleLeft  className="h-4 w-4" />}
+                  </button>
+                  <button
+                    onClick={() => deleteFixed.mutate(f.id, { onSuccess: () => toast.success("נמחק") })}
+                    className="h-6 w-6 flex items-center justify-center rounded-lg transition-all active:scale-90"
+                    style={{ background: FT.dangerDim, color: FT.danger }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs font-black" style={{ color: FT.success }} dir="ltr">
-                  +₪{fmt(Number(f.amount))}
-                </span>
-                <button
-                  onClick={() => toggleActive(f.id, f.is_active)}
-                  style={{ color: f.is_active ? FT.success : FT.textFaint }}
-                >
-                  {f.is_active
-                    ? <ToggleRight className="h-4 w-4" />
-                    : <ToggleLeft  className="h-4 w-4" />}
-                </button>
-                <button
-                  onClick={() => deleteFixed.mutate(f.id, { onSuccess: () => toast.success("נמחק") })}
-                  className="h-6 w-6 flex items-center justify-center rounded-lg transition-all active:scale-90"
-                  style={{ background: FT.dangerDim, color: FT.danger }}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          {(fixedIncome || []).length > 2 && (
+            <button onClick={() => setShowAll((v) => !v)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold transition-all"
+              style={{ color: FT.textMuted, letterSpacing: 0 }}>
+              {showAll
+                ? <><ChevronUp className="h-3.5 w-3.5" /> הסתר</>
+                : <><ChevronDown className="h-3.5 w-3.5" /> הצג הכל ({(fixedIncome || []).length})</>}
+            </button>
+          )}
+        </>
       )}
     </div>
   );
