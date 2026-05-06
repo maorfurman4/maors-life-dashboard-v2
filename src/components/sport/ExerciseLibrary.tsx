@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, Library, ShieldCheck, Filter, Timer, Dumbbell } from "lucide-react";
+import { Search, Library, ShieldCheck, Timer, Youtube } from "lucide-react";
 import { EXERCISE_LIBRARY, MUSCLE_LABELS, searchExercises, type MuscleGroup, type LibraryExercise } from "@/lib/exercise-library";
 import { RestTimer } from "@/components/sport/RestTimer";
 
@@ -12,7 +12,15 @@ const DIFFICULTY_COLOR = {
   advanced: "bg-rose-400/15 text-rose-400",
 } as const;
 
+type WorkoutType = "weights" | "calisthenics";
+
+const WORKOUT_TYPES: { key: WorkoutType; label: string }[] = [
+  { key: "weights", label: "🏋️ חדר כושר" },
+  { key: "calisthenics", label: "🤸 קלסטניקס" },
+];
+
 export function ExerciseLibrary() {
+  const [workoutType, setWorkoutType] = useState<WorkoutType>("weights");
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState<MuscleGroup | "all">("all");
   const [shoulderSafe, setShoulderSafe] = useState(true);
@@ -21,8 +29,11 @@ export function ExerciseLibrary() {
   const [timerSeconds, setTimerSeconds] = useState(60);
 
   const results = useMemo(
-    () => searchExercises(query, muscle === "all" ? undefined : muscle, shoulderSafe),
-    [query, muscle, shoulderSafe]
+    () =>
+      searchExercises(query, muscle === "all" ? undefined : muscle, shoulderSafe).filter(
+        (ex) => ex.category === workoutType || ex.category === "combined"
+      ),
+    [query, muscle, shoulderSafe, workoutType]
   );
 
   const startTimer = (sec: number) => {
@@ -44,6 +55,21 @@ export function ExerciseLibrary() {
         >
           <Timer className="h-3 w-3" /> טיימר
         </button>
+      </div>
+
+      {/* Workout type tabs */}
+      <div className="flex gap-1 p-1 rounded-xl bg-secondary/30">
+        {WORKOUT_TYPES.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => { setWorkoutType(key); setMuscle("all"); setQuery(""); }}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+              workoutType === key ? "bg-sport text-sport-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Search */}
@@ -115,6 +141,11 @@ export function ExerciseLibrary() {
                     <ShieldCheck className="h-2.5 w-2.5" /> כתף
                   </span>
                 )}
+                {ex.youtube_link && (
+                  <span className="px-1.5 py-0.5 rounded bg-red-500/10 text-[9px] text-red-400 flex items-center gap-0.5">
+                    <Youtube className="h-2.5 w-2.5" /> סרטון
+                  </span>
+                )}
               </div>
               <div className="flex items-center justify-between mt-1.5 text-[10px] text-muted-foreground">
                 <span>{ex.defaultSets} × {ex.defaultReps}</span>
@@ -172,6 +203,16 @@ export function ExerciseLibrary() {
             >
               <Timer className="h-4 w-4" /> התחל טיימר מנוחה
             </button>
+            {selected.youtube_link && (
+              <a
+                href={selected.youtube_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 rounded-xl bg-red-500/15 text-red-400 font-bold text-sm flex items-center justify-center gap-2 min-h-[44px]"
+              >
+                <Youtube className="h-4 w-4" /> צפה בסרטון הדרכה
+              </a>
+            )}
           </div>
         </div>
       )}
