@@ -12,6 +12,7 @@ import {
 } from "@/hooks/use-finance-data";
 import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
+import { FinanceTransactions } from "@/components/finance/FinanceTransactions";
 
 const fmt = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
 
@@ -866,6 +867,9 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
 
       {/* Savings Goal Settings */}
       <SavingsGoalSettings fin={fin} />
+
+      {/* Recent Transactions */}
+      <FinanceTransactions />
 
       {/* Floating Quick Add */}
       <FloatingQuickAdd year={year} month={month} />

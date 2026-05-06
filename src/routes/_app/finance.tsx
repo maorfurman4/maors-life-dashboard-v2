@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Wallet, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { Wallet, ChevronLeft, ChevronRight, Tags } from "lucide-react";
 import { FinanceDashboardTab } from "@/components/finance/FinanceDashboardTab";
 import { FinanceOperationsTab } from "@/components/finance/FinanceOperationsTab";
 import { FinanceHistoryTab } from "@/components/finance/FinanceHistoryTab";
@@ -80,7 +80,6 @@ function FinancePage() {
           isCurrentMonth={isCurrentMonth}
           onPrev={prevMonth}
           onNext={nextMonth}
-          onSettings={() => setCatSettingsOpen(true)}
         />
 
         {/* Sticky Tab Bar */}
@@ -106,14 +105,25 @@ function FinancePage() {
                   letterSpacing: 0,
                   background: activeTab === t.key ? FT.gold : "transparent",
                   color: activeTab === t.key ? FT.bg : FT.textMuted,
-                  boxShadow: activeTab === t.key
-                    ? `0 2px 16px ${FT.goldGlow}`
-                    : "none",
+                  boxShadow: activeTab === t.key ? `0 2px 16px ${FT.goldGlow}` : "none",
                 }}
               >
                 {t.label}
               </button>
             ))}
+            <button
+              onClick={() => setCatSettingsOpen(true)}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-full text-[10px] font-bold whitespace-nowrap transition-all duration-200 active:scale-95"
+              style={{
+                letterSpacing: 0,
+                background: catSettingsOpen ? FT.goldMid : "transparent",
+                color: catSettingsOpen ? FT.bg : FT.textMuted,
+                border: `1px solid ${catSettingsOpen ? FT.goldBorder : "transparent"}`,
+              }}
+            >
+              <Tags className="h-3 w-3" />
+              קטגוריות
+            </button>
           </div>
         </div>
 
@@ -134,10 +144,10 @@ function FinancePage() {
 // ─── Month Navigator ──────────────────────────────────────────────────────────
 
 function MonthNav({
-  year, month, isCurrentMonth, onPrev, onNext, onSettings,
+  year, month, isCurrentMonth, onPrev, onNext,
 }: {
   year: number; month: number; isCurrentMonth: boolean;
-  onPrev: () => void; onNext: () => void; onSettings: () => void;
+  onPrev: () => void; onNext: () => void;
 }) {
   return (
     <div
@@ -163,15 +173,6 @@ function MonthNav({
           </p>
         )}
       </div>
-
-      <button
-        onClick={onSettings}
-        aria-label="הגדרות קטגוריות"
-        className="h-8 w-8 rounded-full flex items-center justify-center transition-all active:scale-90"
-        style={{ background: FT.goldDim, color: "rgba(255,255,255,0.6)" }}
-      >
-        <Settings className="h-3.5 w-3.5" />
-      </button>
 
       <button
         onClick={onNext}
