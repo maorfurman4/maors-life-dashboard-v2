@@ -551,12 +551,14 @@ function FixedExpenseCard({ item, year, month }: { item: FixedItem; year: number
 function FixedSection({ year, month }: { year: number; month: number }) {
   const { data: fixed, isLoading } = useFixedExpenses();
   const [showForm, setShowForm] = useState(false);
+  const [showAllActive, setShowAllActive] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
 
   const items = (fixed || []) as FixedItem[];
   const active = items.filter((f) => f.is_active);
   const inactive = items.filter((f) => !f.is_active);
   const totalMonthly = active.reduce((s, f) => s + Number(f.amount), 0);
+  const displayedActive = showAllActive ? active : active.slice(0, 2);
 
   return (
     <div className="rounded-3xl p-5 space-y-4" dir="rtl"
@@ -599,9 +601,22 @@ function FixedSection({ year, month }: { year: number; month: number }) {
           אין קבועות פעילות · לחץ "הוסף" להוספה ראשונה
         </p>
       ) : (
-        <div className="space-y-2">
-          {active.map((f) => <FixedExpenseCard key={f.id} item={f} year={year} month={month} />)}
-        </div>
+        <>
+          <div className="space-y-2">
+            {displayedActive.map((f) => <FixedExpenseCard key={f.id} item={f} year={year} month={month} />)}
+          </div>
+          {active.length > 2 && (
+            <button
+              onClick={() => setShowAllActive((v) => !v)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold transition-all"
+              style={{ color: FT.textMuted, letterSpacing: 0 }}
+            >
+              {showAllActive
+                ? <><ChevronUp className="h-3.5 w-3.5" /> הסתר</>
+                : <><ChevronDown className="h-3.5 w-3.5" /> הצג הכל ({active.length})</>}
+            </button>
+          )}
+        </>
       )}
 
       {/* Show/hide inactive */}
