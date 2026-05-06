@@ -218,6 +218,17 @@ export function useDeleteWeight() {
   });
 }
 
+export function useUpdateWeight() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, weight_kg }: { id: string; weight_kg: number }) => {
+      const { error } = await supabase.from("weight_entries").update({ weight_kg }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["weight-entries"] }),
+  });
+}
+
 // ─── Nutrition Entries ───
 export function useNutritionEntries(date?: string) {
   const targetDate = date || new Date().toISOString().slice(0, 10);
