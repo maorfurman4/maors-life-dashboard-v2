@@ -1124,10 +1124,22 @@ function SportPage() {
 
   return (
     <>
-      <div dir="rtl" className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 min-h-screen bg-background">
+      <div
+        dir="rtl"
+        className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 relative bg-cover bg-center"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2000&auto=format&fit=crop')`,
+          minHeight: "100vh",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-emerald-500/15 blur-[120px]" />
+          <div className="absolute bottom-40 -left-16 h-60 w-60 rounded-full bg-blue-500/10 blur-[100px]" />
+        </div>
 
         {/* Sticky Tab Bar */}
-        <div className="sticky top-0 z-10 px-4 py-2 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="sticky top-0 z-10 px-4 py-2 bg-black/30 backdrop-blur-xl border-b border-white/10">
           <div className="flex gap-1 p-1 rounded-xl bg-secondary/30">
             {TABS.map((t) => (
               <button key={t.key} onClick={() => setActiveTab(t.key)}
@@ -1139,7 +1151,7 @@ function SportPage() {
           </div>
         </div>
 
-        <div className="pb-32">
+        <div className="relative z-10 pb-32">
           {/* TAB 1 */}
           {activeTab === "dashboard" && (
             <div className="px-4 pt-4 space-y-4">
