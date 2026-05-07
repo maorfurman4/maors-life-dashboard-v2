@@ -208,18 +208,18 @@ function DayStatusBanner({ isTraining, onToggle }: { isTraining: boolean; onTogg
   return (
     <button
       onClick={onToggle}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-all duration-300 text-right ${
-        isTraining ? "border-emerald-500/30 bg-emerald-500/8" : "border-border bg-card"
+      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border backdrop-blur-xl transition-all duration-300 text-right ${
+        isTraining ? "border-emerald-500/40 bg-emerald-500/10" : "border-white/10 bg-white/5"
       }`}
     >
-      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isTraining ? "bg-emerald-500/20" : "bg-secondary/50"}`}>
-        {isTraining ? <Flame className="h-5 w-5 text-emerald-500" /> : <RotateCcw className="h-5 w-5 text-muted-foreground" />}
+      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isTraining ? "bg-emerald-500/25" : "bg-white/10"}`}>
+        {isTraining ? <Flame className="h-5 w-5 text-emerald-400" /> : <RotateCcw className="h-5 w-5 text-white/40" />}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-black text-foreground leading-tight">{isTraining ? "🔥 יום אימון" : "😴 יום מנוחה"}</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">{isTraining ? "כל הכבוד — לכו על זה!" : "מנוחה = התאוששות = גדילה"}</p>
+        <p className="text-sm font-black text-white leading-tight">{isTraining ? "🔥 יום אימון" : "😴 יום מנוחה"}</p>
+        <p className="text-[11px] text-white/40 mt-0.5">{isTraining ? "כל הכבוד — לכו על זה!" : "מנוחה = התאוששות = גדילה"}</p>
       </div>
-      <div className={`relative w-12 h-6 rounded-full shrink-0 transition-colors duration-300 ${isTraining ? "bg-emerald-500" : "bg-secondary/70"}`}>
+      <div className={`relative w-12 h-6 rounded-full shrink-0 transition-colors duration-300 ${isTraining ? "bg-emerald-500" : "bg-white/15"}`}>
         <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-300 ${isTraining ? "translate-x-6" : "translate-x-0.5"}`} />
       </div>
     </button>
@@ -262,9 +262,9 @@ function QuickAddRow() {
   };
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-foreground">הוסף מהיר</p>
-        <button className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+      <div className="flex items-center justify-between px-0.5">
+        <p className="text-sm font-black text-white">הוסף מהיר</p>
+        <button className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/70 transition-colors">
           <span>כל האימונים</span><ChevronRight className="h-3 w-3" />
         </button>
       </div>
@@ -282,44 +282,44 @@ function QuickAddRow() {
 function TodayPlanCard({ isTraining }: { isTraining: boolean }) {
   const [started, setStarted] = useState(false);
   if (!isTraining) return (
-    <div className="rounded-2xl border border-border bg-card p-5 text-center space-y-2">
+    <div className="rounded-3xl border border-white/8 bg-white/3 backdrop-blur-xl p-5 text-center space-y-2">
       <span className="text-4xl">🌙</span>
-      <p className="text-sm font-bold text-muted-foreground">יום מנוחה</p>
-      <p className="text-[11px] text-muted-foreground/60">מתאושש היום — האימון הבא מחר</p>
+      <p className="text-sm font-black text-white/60">יום מנוחה</p>
+      <p className="text-[11px] text-white/30">מתאושש היום — האימון הבא מחר</p>
     </div>
   );
   return (
-    <div className={`rounded-2xl border p-4 space-y-4 transition-all ${started ? "border-sport/30 bg-sport/5" : "border-border bg-card"}`}>
+    <div className={`rounded-3xl border backdrop-blur-xl p-5 space-y-4 transition-all ${started ? "border-emerald-500/40 bg-emerald-500/8" : "border-white/10 bg-white/5"}`}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-sport/15 border border-sport/20 flex items-center justify-center">
-            <Dumbbell className="h-4 w-4 text-sport" />
+          <div className="h-9 w-9 rounded-2xl bg-emerald-500/20 border border-emerald-500/25 flex items-center justify-center">
+            <Dumbbell className="h-4 w-4 text-emerald-400" />
           </div>
           <div>
-            <p className="text-sm font-bold text-foreground">{TODAY_PLAN.name}</p>
-            <p className="text-[11px] text-muted-foreground">{TODAY_NAME}</p>
+            <p className="text-sm font-black text-white">{TODAY_PLAN.name}</p>
+            <p className="text-[11px] text-white/40">{TODAY_NAME}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-1 text-[11px] text-white/40">
           <Clock className="h-3.5 w-3.5" />{TODAY_PLAN.duration} דק׳
         </div>
       </div>
-      <div className="rounded-xl bg-secondary/30 border border-border/50 divide-y divide-border/50">
+      <div className="rounded-2xl bg-white/4 border border-white/8 divide-y divide-white/5">
         {TODAY_PLAN.exercises.map((ex) => (
           <div key={ex.name} className="flex items-center justify-between px-4 py-2.5">
-            <span className="text-xs font-semibold text-foreground/80">{ex.name}</span>
-            <span className="text-[10px] text-muted-foreground font-mono">{ex.sets}×{ex.reps}</span>
+            <span className="text-xs font-semibold text-white/80">{ex.name}</span>
+            <span className="text-[10px] text-white/40 font-mono">{ex.sets}×{ex.reps}</span>
           </div>
         ))}
       </div>
       {!started ? (
-        <button onClick={() => setStarted(true)} className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl bg-sport text-sport-foreground font-bold text-sm min-h-[44px] hover:opacity-90 active:scale-[0.98] transition-all">
+        <button onClick={() => setStarted(true)} className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-emerald-500 text-white font-black text-sm min-h-[48px] hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)]">
           <Play className="h-4 w-4" />התחל אימון
         </button>
       ) : (
-        <div className="flex items-center justify-center gap-2 py-3 text-sport">
+        <div className="flex items-center justify-center gap-2 py-3 text-emerald-400">
           <CheckCircle2 className="h-5 w-5" />
-          <span className="text-sm font-bold">האימון רץ — כל הכבוד! 💪</span>
+          <span className="text-sm font-black">האימון רץ — כל הכבוד! 💪</span>
         </div>
       )}
     </div>
@@ -342,13 +342,13 @@ function StatsStrip() {
   return (
     <div className="grid grid-cols-4 gap-2">
       {stats.map(({ label, value, sub, icon: Icon, color }) => (
-        <div key={label} className="rounded-xl border border-border bg-card p-3 text-center space-y-1.5">
-          <div className="h-7 w-7 rounded-lg mx-auto flex items-center justify-center" style={{ background: color + "18" }}>
+        <div key={label} className="rounded-2xl border border-white/8 bg-white/5 backdrop-blur-xl p-3 text-center space-y-1.5">
+          <div className="h-7 w-7 rounded-xl mx-auto flex items-center justify-center" style={{ background: color + "22" }}>
             <Icon className="h-3.5 w-3.5" style={{ color }} />
           </div>
-          <p className="text-lg font-black text-foreground leading-none">{value}</p>
-          <p className="text-[9px] text-muted-foreground font-medium">{label}</p>
-          <p className="text-[8px] text-muted-foreground/60">{sub}</p>
+          <p className="text-lg font-black text-white leading-none">{value}</p>
+          <p className="text-[9px] text-white/35 font-medium">{label}</p>
+          <p className="text-[8px] text-white/20">{sub}</p>
         </div>
       ))}
     </div>
@@ -366,13 +366,13 @@ function WeekStrip() {
   const goal = 3;
   const pct  = Math.min(100, (done / goal) * 100);
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
+    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-sport" /><p className="text-sm font-bold text-foreground">שבוע אימונים</p></div>
-        <span className="text-[11px] font-semibold text-muted-foreground">{done}/{goal} אימונים</span>
+        <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-emerald-400" /><p className="text-sm font-black text-white">שבוע אימונים</p></div>
+        <span className="text-[11px] font-semibold text-white/40">{done}/{goal} אימונים</span>
       </div>
-      <div className="h-1.5 rounded-full bg-secondary/60 overflow-hidden">
-        <div className="h-full rounded-full bg-sport transition-all duration-700" style={{ width: `${pct}%` }} />
+      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+        <div className="h-full rounded-full bg-emerald-500 transition-all duration-700 shadow-[0_0_8px_rgba(16,185,129,0.5)]" style={{ width: `${pct}%` }} />
       </div>
       <div className="flex justify-between">
         {DAYS.map((day, i) => {
@@ -380,10 +380,10 @@ function WeekStrip() {
           const completed = completedDays.includes(i);
           return (
             <div key={i} className="flex flex-col items-center gap-1.5">
-              <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-bold transition-all ${
-                completed ? "bg-sport text-sport-foreground"
-                : isToday  ? "border-2 border-sport/60 text-sport bg-sport/10"
-                : "border border-border text-muted-foreground/40"}`}>
+              <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-black transition-all ${
+                completed ? "bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                : isToday  ? "border-2 border-emerald-500/60 text-emerald-400 bg-emerald-500/10"
+                : "border border-white/10 text-white/20"}`}>
                 {completed ? "✓" : day}
               </div>
             </div>
@@ -395,25 +395,24 @@ function WeekStrip() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  TAB 2 — BUILDER  (AI Planner + Custom Workout)
+//  TAB 2 — BUILDER
 // ═══════════════════════════════════════════════════════════════════════
 
-/** Smart stepper button */
 function Stepper({ value, onChange, min = 0, max = 999, step = 1, suffix = "" }: {
   value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number; suffix?: string;
 }) {
   return (
     <div className="flex items-center gap-1.5">
       <button onClick={() => onChange(Math.max(min, value - step))}
-        className="h-8 w-8 rounded-xl bg-secondary/50 border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary active:scale-95 transition-all">
+        className="h-8 w-8 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center text-white/70 hover:bg-white/15 active:scale-95 transition-all">
         <Minus className="h-3.5 w-3.5" />
       </button>
       <div className="w-14 text-center">
-        <span className="text-sm font-black text-foreground">{value}</span>
-        {suffix && <span className="text-[10px] text-muted-foreground ml-0.5">{suffix}</span>}
+        <span className="text-sm font-black text-white">{value}</span>
+        {suffix && <span className="text-[10px] text-white/40 ml-0.5">{suffix}</span>}
       </div>
       <button onClick={() => onChange(Math.min(max, value + step))}
-        className="h-8 w-8 rounded-xl bg-secondary/50 border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary active:scale-95 transition-all">
+        className="h-8 w-8 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center text-white/70 hover:bg-white/15 active:scale-95 transition-all">
         <Plus className="h-3.5 w-3.5" />
       </button>
     </div>
@@ -426,30 +425,30 @@ function BuilderExerciseRow({ ex, onChange, onRemove, idx }: {
   ex: BuilderEx; onChange: (v: BuilderEx) => void; onRemove: () => void; idx: number;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3 space-y-3">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-3 space-y-3">
       <div className="flex items-center gap-2">
-        <div className="h-6 w-6 rounded-lg bg-sport/15 flex items-center justify-center text-[10px] font-black text-sport shrink-0">
+        <div className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-[10px] font-black text-emerald-400 shrink-0">
           {idx + 1}
         </div>
         <input value={ex.name} onChange={(e) => onChange({ ...ex, name: e.target.value })}
           placeholder="שם תרגיל..."
-          className="flex-1 bg-transparent text-sm font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none border-b border-border pb-0.5"
+          className="flex-1 bg-transparent text-sm font-semibold text-white placeholder:text-white/25 outline-none border-b border-white/10 pb-0.5"
           dir="rtl" />
-        <button onClick={onRemove} className="h-6 w-6 rounded-lg bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 shrink-0">
+        <button onClick={onRemove} className="h-6 w-6 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 shrink-0">
           <X className="h-3 w-3" />
         </button>
       </div>
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="space-y-1">
-          <p className="text-[9px] text-muted-foreground font-medium">סטים</p>
+          <p className="text-[9px] text-white/40 font-medium">סטים</p>
           <Stepper value={ex.sets} onChange={(v) => onChange({ ...ex, sets: v })} min={1} max={10} />
         </div>
         <div className="space-y-1">
-          <p className="text-[9px] text-muted-foreground font-medium">חזרות</p>
+          <p className="text-[9px] text-white/40 font-medium">חזרות</p>
           <Stepper value={ex.reps} onChange={(v) => onChange({ ...ex, reps: v })} min={1} max={50} />
         </div>
         <div className="space-y-1">
-          <p className="text-[9px] text-muted-foreground font-medium">משקל</p>
+          <p className="text-[9px] text-white/40 font-medium">משקל</p>
           <Stepper value={ex.weight_kg} onChange={(v) => onChange({ ...ex, weight_kg: v })} min={0} max={300} step={2.5} suffix="kg" />
         </div>
       </div>
@@ -463,11 +462,8 @@ const DAYS_OPTS = [3, 4, 5, 6];
 
 function WorkoutBuilderTab() {
   const [subTab, setSubTab] = useState<"ai" | "custom">("custom");
-
   const [workoutName, setWorkoutName]   = useState("");
-  const [exercises, setExercises]       = useState<BuilderEx[]>([
-    { name: "", sets: 3, reps: 10, weight_kg: 0 },
-  ]);
+  const [exercises, setExercises]       = useState<BuilderEx[]>([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
   const addTemplate   = useAddWorkoutTemplate();
   const addWorkout    = useAddWorkout();
   const { data: templates } = useWorkoutTemplates();
@@ -518,159 +514,143 @@ function WorkoutBuilderTab() {
     setAiLoading(true); setAiPlan(null);
     try {
       const plan = await generateWorkoutPlan({
-        goal: aiGoal,
-        daysPerWeek: aiDays,
-        equipment: aiEquip,
+        goal: aiGoal, daysPerWeek: aiDays, equipment: aiEquip,
         constraints: aiConstraints || "אין",
         recentPRs: (prs ?? []).slice(0, 5).map((p: any) => ({ exercise_name: p.exercise_name, value: p.value, unit: p.unit })),
       });
-      setAiPlan(plan);
-      setExpandedDay(0);
+      setAiPlan(plan); setExpandedDay(0);
     } catch { toast.error("שגיאה ביצירת תוכנית, נסה שנית"); }
     finally { setAiLoading(false); }
   };
 
   return (
-    <div className="px-4 pt-4 space-y-4">
-      {/* Sub-tab switcher */}
-      <div className="flex gap-1 p-1 rounded-xl border border-border bg-secondary/30">
+    <div className="px-4 pt-8 space-y-4">
+      <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5">
         {([["custom", "🏗️ בנה אימון"], ["ai", "🤖 AI Planner"]] as const).map(([k, l]) => (
           <button key={k} onClick={() => setSubTab(k)}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${subTab === k ? "bg-sport text-sport-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${subTab === k ? "bg-emerald-500 text-white shadow-lg" : "text-white/40"}`}>
             {l}
           </button>
         ))}
       </div>
 
-      {/* ── CUSTOM BUILDER ── */}
       {subTab === "custom" && (
         <div className="space-y-4">
           {(templates ?? []).length > 0 && (
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-muted-foreground">תבניות שמורות</p>
+              <p className="text-[11px] font-bold text-white/40">תבניות שמורות</p>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {(templates ?? []).map((t: any) => (
-                  <div key={t.id} className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card">
-                    <button onClick={() => handleLoadTemplate(t)} className="text-xs font-semibold text-foreground hover:text-sport whitespace-nowrap">{t.name}</button>
-                    <button onClick={() => deleteTemplate.mutate(t.id)} className="text-destructive/60 hover:text-destructive"><X className="h-3 w-3" /></button>
+                  <div key={t.id} className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5">
+                    <button onClick={() => handleLoadTemplate(t)} className="text-xs font-semibold text-white/80 hover:text-white whitespace-nowrap">{t.name}</button>
+                    <button onClick={() => deleteTemplate.mutate(t.id)} className="text-red-400/60 hover:text-red-400"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          <div className="rounded-xl border border-border bg-card px-4 py-3">
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-4 py-3">
             <input value={workoutName} onChange={(e) => setWorkoutName(e.target.value)}
               placeholder="שם האימון (למשל: כוח עליון)"
-              className="w-full bg-transparent text-sm font-bold text-foreground placeholder:text-muted-foreground/50 outline-none text-right"
-              dir="rtl" />
+              className="w-full bg-transparent text-sm font-black text-white placeholder:text-white/25 outline-none text-right" dir="rtl" />
           </div>
-
           <div className="space-y-3">
             {exercises.map((ex, i) => (
               <BuilderExerciseRow key={i} ex={ex} idx={i} onChange={(v) => updateEx(i, v)} onRemove={() => removeEx(i)} />
             ))}
           </div>
-
           <button onClick={addEx}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:border-sport/40 hover:text-sport transition-all text-sm font-semibold">
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-white/20 text-white/50 hover:border-emerald-500/40 hover:text-emerald-400 transition-all text-sm font-semibold">
             <Plus className="h-4 w-4" />הוסף תרגיל
           </button>
-
           <div className="grid grid-cols-2 gap-3">
             <button onClick={handleSaveTemplate} disabled={addTemplate.isPending}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl border border-border bg-card text-foreground text-sm font-bold hover:bg-secondary/50 active:scale-[0.98] transition-all">
-              <Star className="h-4 w-4 text-amber-500" />שמור תבנית
+              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-white/20 bg-white/8 text-white text-sm font-bold hover:bg-white/12 active:scale-[0.98] transition-all">
+              <Star className="h-4 w-4 text-amber-400" />שמור תבנית
             </button>
             <button onClick={handleLogNow} disabled={addWorkout.isPending}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl bg-sport text-sport-foreground text-sm font-bold hover:opacity-90 active:scale-[0.98] transition-all">
+              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-emerald-500 text-white text-sm font-black hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]">
               <Play className="h-4 w-4" />רשום עכשיו
             </button>
           </div>
         </div>
       )}
 
-      {/* ── AI PLANNER ── */}
       {subTab === "ai" && (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-muted-foreground">מטרה</p>
+              <p className="text-[11px] font-bold text-white/50">מטרה</p>
               <div className="grid grid-cols-2 gap-2">
                 {BUILDER_GOALS.map((g) => (
                   <button key={g} onClick={() => setAiGoal(g)}
-                    className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${aiGoal === g ? "border-sport/50 bg-sport/10 text-sport" : "border-border bg-secondary/30 text-muted-foreground"}`}>
+                    className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${aiGoal === g ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/50"}`}>
                     {g}
                   </button>
                 ))}
               </div>
             </div>
-
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-muted-foreground">ימי אימון בשבוע</p>
+              <p className="text-[11px] font-bold text-white/50">ימי אימון בשבוע</p>
               <div className="flex gap-2">
                 {DAYS_OPTS.map((d) => (
                   <button key={d} onClick={() => setAiDays(d)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-black border transition-all ${aiDays === d ? "border-sport/50 bg-sport/10 text-sport" : "border-border bg-secondary/30 text-muted-foreground"}`}>
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-black border transition-all ${aiDays === d ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/50"}`}>
                     {d}
                   </button>
                 ))}
               </div>
             </div>
-
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-muted-foreground">ציוד זמין</p>
+              <p className="text-[11px] font-bold text-white/50">ציוד זמין</p>
               <div className="flex gap-2">
                 {EQUIPMENT_OPTS.map((e) => (
                   <button key={e} onClick={() => setAiEquip(e)}
-                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all ${aiEquip === e ? "border-sport/50 bg-sport/10 text-sport" : "border-border bg-secondary/30 text-muted-foreground"}`}>
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all ${aiEquip === e ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/50"}`}>
                     {e}
                   </button>
                 ))}
               </div>
             </div>
-
             <div className="space-y-2">
-              <p className="text-[11px] font-bold text-muted-foreground">מגבלות / פציעות (אופציונלי)</p>
+              <p className="text-[11px] font-bold text-white/50">מגבלות / פציעות (אופציונלי)</p>
               <input value={aiConstraints} onChange={(e) => setAiConstraints(e.target.value)}
                 placeholder="למשל: כאב בכתף ימין, אין ריצה..."
-                className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-sport/50 focus:ring-1 focus:ring-sport/30"
+                className="w-full rounded-xl border border-white/10 bg-white/8 px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-emerald-500/40"
                 dir="rtl" />
             </div>
-
             <button onClick={handleGeneratePlan} disabled={aiLoading}
-              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl bg-sport text-sport-foreground font-bold text-sm min-h-[44px] hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60">
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-emerald-500 text-white font-black text-sm min-h-[48px] hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)] disabled:opacity-60">
               {aiLoading ? <><Loader2 className="h-4 w-4 animate-spin" />יוצר תוכנית...</> : <><Zap className="h-4 w-4" />צור תוכנית שבועית</>}
             </button>
           </div>
-
           {aiPlan && (
             <div className="space-y-3">
-              <div className="rounded-xl border border-sport/20 bg-sport/5 p-3">
-                <p className="text-xs text-sport font-semibold">{aiPlan.summary}</p>
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-3">
+                <p className="text-xs text-emerald-300 font-semibold">{aiPlan.summary}</p>
               </div>
               {aiPlan.workouts.map((w, i) => (
-                <div key={i} className="rounded-xl border border-border bg-card overflow-hidden">
+                <div key={i} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
                   <button onClick={() => setExpandedDay(expandedDay === i ? null : i)}
                     className="w-full flex items-center justify-between px-4 py-3.5 text-right">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-xl bg-sport/10 border border-sport/20 flex items-center justify-center text-xs font-black text-sport">{i + 1}</div>
+                      <div className="h-8 w-8 rounded-xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-xs font-black text-emerald-400">{i + 1}</div>
                       <div>
-                        <p className="text-sm font-bold text-foreground">{w.day}</p>
-                        <p className="text-[10px] text-muted-foreground">{w.name} · {w.duration_minutes} דק׳</p>
+                        <p className="text-sm font-black text-white">{w.day}</p>
+                        <p className="text-[10px] text-white/40">{w.name} · {w.duration_minutes} דק׳</p>
                       </div>
                     </div>
-                    {expandedDay === i ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    {expandedDay === i ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
                   </button>
                   {expandedDay === i && (
-                    <div className="border-t border-border divide-y divide-border/50">
+                    <div className="border-t border-white/8 divide-y divide-white/5">
                       {w.exercises.map((ex, j) => (
                         <div key={j} className="flex items-center justify-between px-4 py-2.5">
                           <div>
-                            <p className="text-xs font-semibold text-foreground/80">{ex.name}</p>
-                            {ex.notes && <p className="text-[10px] text-muted-foreground mt-0.5">{ex.notes}</p>}
+                            <p className="text-xs font-semibold text-white/80">{ex.name}</p>
+                            {ex.notes && <p className="text-[10px] text-white/35 mt-0.5">{ex.notes}</p>}
                           </div>
-                          <span className="text-[10px] font-mono text-sport">{ex.sets}×{ex.reps}{ex.weight_kg ? ` @ ${ex.weight_kg}kg` : ""}</span>
+                          <span className="text-[10px] font-mono text-emerald-400">{ex.sets}×{ex.reps}{ex.weight_kg ? ` @ ${ex.weight_kg}kg` : ""}</span>
                         </div>
                       ))}
                     </div>
@@ -678,11 +658,9 @@ function WorkoutBuilderTab() {
                 </div>
               ))}
               {aiPlan.tips?.length > 0 && (
-                <div className="rounded-xl border border-border bg-card p-3 space-y-1.5">
-                  <p className="text-[10px] font-bold text-muted-foreground">טיפים מה-AI</p>
-                  {aiPlan.tips.map((tip, i) => (
-                    <p key={i} className="text-xs text-foreground/70">• {tip}</p>
-                  ))}
+                <div className="rounded-2xl border border-white/8 bg-white/4 p-3 space-y-1.5">
+                  <p className="text-[10px] font-bold text-white/40">טיפים מה-AI</p>
+                  {aiPlan.tips.map((tip, i) => <p key={i} className="text-xs text-white/60">• {tip}</p>)}
                 </div>
               )}
             </div>
@@ -699,42 +677,38 @@ function WorkoutBuilderTab() {
 
 function ExerciseModal({ ex, onClose }: { ex: LibraryExercise; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-background/80 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-lg mx-auto rounded-t-3xl border-t border-x border-border bg-card p-5 space-y-4 pb-10"
+    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
+      <div className="w-full max-w-lg mx-auto rounded-t-3xl border-t border-x border-white/10 bg-[#0d1117]/95 backdrop-blur-2xl p-5 space-y-4 pb-10"
         onClick={(e) => e.stopPropagation()}>
-        <div className="w-10 h-1 rounded-full bg-border mx-auto" />
-
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto" />
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-bold text-foreground">{ex.name}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">{ex.muscles}</p>
+            <h3 className="text-lg font-black text-white">{ex.name}</h3>
+            <p className="text-xs text-white/40 mt-0.5">{ex.muscles}</p>
           </div>
-          <button onClick={onClose} className="h-8 w-8 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground hover:bg-secondary shrink-0">
+          <button onClick={onClose} className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:bg-white/15 shrink-0">
             <X className="h-4 w-4" />
           </button>
         </div>
-
         <div className="grid grid-cols-3 gap-2 text-center">
           {[["סטים", ex.defaultSets], ["חזרות", ex.defaultReps], ["ציוד", ex.equipment]].map(([label, val]) => (
-            <div key={String(label)} className="rounded-xl border border-border bg-secondary/30 p-2.5">
-              <p className="text-[9px] text-muted-foreground">{label}</p>
-              <p className="text-sm font-bold text-foreground mt-0.5">{val}</p>
+            <div key={String(label)} className="rounded-xl border border-white/8 bg-white/5 p-2.5">
+              <p className="text-[9px] text-white/35">{label}</p>
+              <p className="text-sm font-black text-white mt-0.5">{val}</p>
             </div>
           ))}
         </div>
-
         <div className="space-y-2">
-          <p className="text-[11px] font-bold text-muted-foreground">💡 טיפים לביצוע נכון</p>
+          <p className="text-[11px] font-bold text-white/50">💡 טיפים לביצוע נכון</p>
           {ex.tips.map((tip, i) => (
             <div key={i} className="flex items-start gap-2">
-              <span className="h-5 w-5 rounded-full bg-sport/15 text-sport text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-              <p className="text-xs text-foreground/80">{tip}</p>
+              <span className="h-5 w-5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+              <p className="text-xs text-white/70">{tip}</p>
             </div>
           ))}
         </div>
-
         <a href={`https://www.youtube.com/results?search_query=${ex.youtubeQuery}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-500 font-bold text-sm hover:bg-red-500/15 transition-all min-h-[44px]">
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-sm hover:bg-red-500/15 transition-all">
           <span>▶</span>סרטון הדרכה ב-YouTube
         </a>
       </div>
@@ -752,24 +726,20 @@ function ExerciseLibraryTab() {
   const groups = workoutType === "weights" ? MUSCLE_GROUPS : CALISTHENICS_MUSCLE_GROUPS;
 
   const handleTypeChange = (t: LibraryWorkoutType) => {
-    setWorkoutType(t);
-    setSelectedGroup(null);
-    setSelectedEx(null);
+    setWorkoutType(t); setSelectedGroup(null); setSelectedEx(null);
   };
 
   return (
-    <div className="px-4 pt-4 space-y-4">
+    <div className="px-4 pt-8 space-y-4">
       {/* Workout type tabs */}
-      <div className="flex gap-1 p-1 rounded-xl border border-border bg-secondary/30">
+      <div className="flex gap-1 p-1 rounded-2xl bg-white/5 border border-white/8">
         {([
-          { key: "weights" as const,      label: "🏋️ חדר כושר"  },
-          { key: "calisthenics" as const, label: "🤸 קלסטניקס"  },
+          { key: "weights" as const,      label: "🏋️ חדר כושר" },
+          { key: "calisthenics" as const, label: "🤸 קלסטניקס" },
         ]).map(({ key, label }) => (
           <button key={key} onClick={() => handleTypeChange(key)}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-              workoutType === key
-                ? "bg-sport text-sport-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+              workoutType === key ? "bg-white/15 text-white shadow-sm" : "text-white/35 hover:text-white/60"
             }`}>
             {label}
           </button>
@@ -778,17 +748,17 @@ function ExerciseLibraryTab() {
 
       {!selectedGroup ? (
         <>
-          <p className="text-sm font-bold text-foreground">בחר קבוצת שרירים</p>
+          <p className="text-sm font-black text-white">בחר קבוצת שרירים</p>
           <div className="grid grid-cols-2 gap-3">
             {groups.map((g) => (
               <button key={g.key} onClick={() => setSelectedGroup(g)}
-                className="rounded-xl border border-border bg-card p-4 text-right flex items-center gap-3 hover:border-sport/30 hover:bg-sport/5 active:scale-[0.97] transition-all">
-                <div className="h-11 w-11 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ background: g.color + "18" }}>
+                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.97] transition-all">
+                <div className="h-11 w-11 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ background: g.color + "22" }}>
                   {g.emoji}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-foreground">{g.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{g.exercises.length} תרגילים</p>
+                  <p className="text-sm font-black text-white">{g.label}</p>
+                  <p className="text-[10px] text-white/35">{g.exercises.length} תרגילים</p>
                 </div>
               </button>
             ))}
@@ -798,27 +768,27 @@ function ExerciseLibraryTab() {
         <>
           <div className="flex items-center gap-3">
             <button onClick={() => setSelectedGroup(null)}
-              className="h-8 w-8 rounded-xl bg-secondary/50 border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary">
+              className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15">
               <ChevronRight className="h-4 w-4" />
             </button>
             <div className="flex items-center gap-2">
               <span className="text-xl">{selectedGroup.emoji}</span>
-              <p className="text-sm font-bold text-foreground">{selectedGroup.label}</p>
+              <p className="text-sm font-black text-white">{selectedGroup.label}</p>
             </div>
           </div>
           <div className="space-y-2">
             {selectedGroup.exercises.map((ex) => (
               <button key={ex.name} onClick={() => setSelectedEx(ex)}
-                className="w-full rounded-xl border border-border bg-card p-4 text-right flex items-center justify-between gap-3 hover:border-sport/30 hover:bg-sport/5 active:scale-[0.98] transition-all">
+                className="w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center justify-between gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.98] transition-all">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-foreground">{ex.name}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{ex.muscles}</p>
+                  <p className="text-sm font-black text-white">{ex.name}</p>
+                  <p className="text-[10px] text-white/35 mt-0.5 truncate">{ex.muscles}</p>
                   <div className="flex gap-2 mt-1.5">
-                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-border bg-secondary/30 text-muted-foreground">{ex.equipment}</span>
-                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-sport/20 bg-sport/8 text-sport">{ex.defaultSets}×{ex.defaultReps}</span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-white/40">{ex.equipment}</span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 text-emerald-400">{ex.defaultSets}×{ex.defaultReps}</span>
                   </div>
                 </div>
-                <BookOpen className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                <BookOpen className="h-4 w-4 text-white/30 shrink-0" />
               </button>
             ))}
           </div>
@@ -845,13 +815,10 @@ function WeightChart() {
   const [editingId, setEditingId]   = useState<string | null>(null);
   const [editValue, setEditValue]   = useState("");
 
-  const chartData = [...(entries ?? [])]
-    .reverse()
-    .slice(-14)
-    .map((e: any) => ({
-      date: new Date(e.date).toLocaleDateString("he-IL", { day: "numeric", month: "numeric" }),
-      kg: e.weight_kg,
-    }));
+  const chartData = [...(entries ?? [])].reverse().slice(-14).map((e: any) => ({
+    date: new Date(e.date).toLocaleDateString("he-IL", { day: "numeric", month: "numeric" }),
+    kg: e.weight_kg,
+  }));
 
   const latest = (entries ?? [])[0] as any;
   const prev   = (entries ?? [])[1] as any;
@@ -877,41 +844,39 @@ function WeightChart() {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
+    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Scale className="h-4 w-4 text-blue-500" />
-          <p className="text-sm font-bold text-foreground">מעקב משקל</p>
+          <Scale className="h-4 w-4 text-blue-400" />
+          <p className="text-sm font-black text-white">מעקב משקל</p>
         </div>
         <div className="flex items-center gap-2">
           {(entries ?? []).length > 0 && (
             <button onClick={() => setShowList((v) => !v)}
-              className="text-[10px] text-muted-foreground hover:text-foreground font-semibold transition-colors">
+              className="text-[10px] text-white/40 hover:text-white/70 font-bold transition-colors">
               {showList ? "הסתר רשימה" : "ערוך / מחק"}
             </button>
           )}
           <button onClick={() => setShowAdd((v) => !v)}
-            className="h-7 w-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 hover:bg-blue-500/20">
+            className="h-7 w-7 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500/25">
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Current weight display */}
       {latest && (
         <div className="flex items-end gap-3">
-          <p className="text-4xl font-black text-foreground">{latest.weight_kg}<span className="text-lg text-muted-foreground ml-1">kg</span></p>
+          <p className="text-4xl font-black text-white">{latest.weight_kg}<span className="text-lg text-white/40 ml-1">kg</span></p>
           {delta !== null && (
-            <span className={`text-sm font-bold mb-1 ${Number(delta) < 0 ? "text-emerald-500" : Number(delta) > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+            <span className={`text-sm font-bold mb-1 ${Number(delta) < 0 ? "text-emerald-400" : Number(delta) > 0 ? "text-red-400" : "text-white/40"}`}>
               {Number(delta) > 0 ? "+" : ""}{delta}kg
             </span>
           )}
         </div>
       )}
 
-      {/* Add weight */}
       {showAdd && (
-        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 flex items-center gap-3">
+        <div className="rounded-2xl border border-blue-500/20 bg-blue-500/8 p-3 flex items-center gap-3">
           <Stepper value={newWeight} onChange={setNewWeight} min={30} max={250} step={0.5} suffix="kg" />
           <button onClick={handleAdd} disabled={addWeight.isPending}
             className="flex-1 py-2 rounded-xl bg-blue-500 text-white font-bold text-sm hover:bg-blue-400 active:scale-95 transition-all">
@@ -920,26 +885,25 @@ function WeightChart() {
         </div>
       )}
 
-      {/* Edit/delete list */}
       {showList && (
         <div className="space-y-1.5 max-h-48 overflow-y-auto">
           {(entries ?? []).map((e: any) => (
-            <div key={e.id} className="flex items-center justify-between px-3 py-2 rounded-xl border border-border bg-secondary/20">
+            <div key={e.id} className="flex items-center justify-between px-3 py-2 rounded-xl border border-white/8 bg-white/5">
               {editingId === e.id ? (
                 <>
                   <input
                     type="number" step="0.1" value={editValue}
                     onChange={(ev) => setEditValue(ev.target.value)}
-                    className="w-24 rounded-lg bg-secondary/50 border border-blue-500/40 px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+                    className="w-24 rounded-lg bg-white/10 border border-blue-500/40 px-2 py-1 text-sm text-white focus:outline-none"
                     dir="ltr" autoFocus
                   />
                   <div className="flex items-center gap-1">
                     <button onClick={handleSaveEdit} disabled={updateWeight.isPending}
-                      className="h-7 w-7 rounded-lg bg-emerald-500/15 text-emerald-600 flex items-center justify-center hover:bg-emerald-500/25 disabled:opacity-50">
+                      className="h-7 w-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center hover:bg-emerald-500/30 disabled:opacity-50">
                       <Check className="h-3.5 w-3.5" />
                     </button>
                     <button onClick={() => setEditingId(null)}
-                      className="h-7 w-7 rounded-lg bg-secondary/50 text-muted-foreground flex items-center justify-center hover:bg-secondary">
+                      className="h-7 w-7 rounded-lg bg-white/8 text-white/40 flex items-center justify-center hover:bg-white/15">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -947,16 +911,16 @@ function WeightChart() {
               ) : (
                 <>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-foreground" dir="ltr">{e.weight_kg} kg</span>
-                    <span className="text-[10px] text-muted-foreground">{new Date(e.date).toLocaleDateString("he-IL")}</span>
+                    <span className="text-sm font-black text-white" dir="ltr">{e.weight_kg} kg</span>
+                    <span className="text-[10px] text-white/35">{new Date(e.date).toLocaleDateString("he-IL")}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <button onClick={() => { setEditingId(e.id); setEditValue(String(e.weight_kg)); }}
-                      className="h-7 w-7 rounded-lg bg-secondary/30 text-muted-foreground flex items-center justify-center hover:bg-secondary hover:text-sport">
+                      className="h-7 w-7 rounded-lg bg-white/5 text-white/30 flex items-center justify-center hover:bg-white/15 hover:text-white/70">
                       <Pencil className="h-3 w-3" />
                     </button>
                     <button onClick={() => deleteWeight.mutate(e.id, { onSuccess: () => toast.success("נמחק") })}
-                      className="h-7 w-7 rounded-lg bg-secondary/30 text-muted-foreground flex items-center justify-center hover:bg-destructive/10 hover:text-destructive">
+                      className="h-7 w-7 rounded-lg bg-white/5 text-red-400/50 flex items-center justify-center hover:bg-red-500/15 hover:text-red-400">
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
@@ -967,20 +931,19 @@ function WeightChart() {
         </div>
       )}
 
-      {/* Chart */}
       {chartData.length > 1 ? (
         <ResponsiveContainer width="100%" height={140}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} axisLine={false} tickLine={false} />
-            <YAxis domain={["auto", "auto"]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} axisLine={false} tickLine={false} width={30} />
-            <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, color: "hsl(var(--foreground))", fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis dataKey="date" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9 }} axisLine={false} tickLine={false} />
+            <YAxis domain={["auto", "auto"]} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9 }} axisLine={false} tickLine={false} width={30} />
+            <Tooltip contentStyle={{ background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff", fontSize: 11 }} />
             <Line type="monotone" dataKey="kg" stroke="#3b82f6" strokeWidth={2} dot={{ fill: "#3b82f6", r: 3 }} activeDot={{ r: 5 }} />
           </LineChart>
         </ResponsiveContainer>
       ) : (
         <div className="h-[140px] flex items-center justify-center">
-          <p className="text-xs text-muted-foreground">הוסף לפחות 2 מדידות לגרף</p>
+          <p className="text-xs text-white/25">הוסף לפחות 2 מדידות לגרף</p>
         </div>
       )}
     </div>
@@ -1005,26 +968,25 @@ function PRSection() {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Medal className="h-4 w-4 text-amber-500" />
-          <p className="text-sm font-bold text-foreground">שיאים אישיים</p>
+          <Medal className="h-4 w-4 text-amber-400" />
+          <p className="text-sm font-black text-white">שיאים אישיים</p>
         </div>
         <button onClick={() => setShowForm((v) => !v)}
-          className="h-7 w-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 hover:bg-amber-500/20">
+          className="h-7 w-7 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/25">
           <Plus className="h-3.5 w-3.5" />
         </button>
       </div>
-
       {showForm && (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-3">
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-3 space-y-3">
           <input value={prName} onChange={(e) => setPrName(e.target.value)} placeholder="שם התרגיל..."
-            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none border-b border-border pb-1" dir="rtl" />
+            className="w-full bg-transparent text-sm text-white placeholder:text-white/25 outline-none border-b border-white/10 pb-1" dir="rtl" />
           <div className="flex items-center gap-3">
             <Stepper value={prValue} onChange={setPrValue} min={1} max={999} step={1} suffix={prUnit} />
             <select value={prUnit} onChange={(e) => setPrUnit(e.target.value)}
-              className="bg-secondary/50 border border-border rounded-xl text-xs text-foreground px-2 py-1.5 outline-none">
+              className="bg-white/10 border border-white/10 rounded-xl text-xs text-white px-2 py-1.5 outline-none">
               {["kg", "reps", "km", "min", "sec"].map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
             <button onClick={handleAdd} disabled={addPR.isPending}
@@ -1034,23 +996,22 @@ function PRSection() {
           </div>
         </div>
       )}
-
       {(prs ?? []).length === 0 ? (
         <div className="text-center py-6">
           <span className="text-4xl">🏆</span>
-          <p className="text-xs text-muted-foreground mt-2">אין שיאים עדיין — הוסף את הראשון!</p>
+          <p className="text-xs text-white/30 mt-2">אין שיאים עדיין — הוסף את הראשון!</p>
         </div>
       ) : (
-        <div className="divide-y divide-border/50">
+        <div className="divide-y divide-white/5">
           {(prs ?? []).slice(0, 8).map((pr: any) => (
             <div key={pr.id} className="flex items-center justify-between py-2.5">
               <div className="flex items-center gap-2">
-                <Trophy className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                <span className="text-xs font-semibold text-foreground/80">{pr.exercise_name}</span>
+                <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <span className="text-xs font-semibold text-white/80">{pr.exercise_name}</span>
               </div>
               <div className="text-left">
-                <span className="text-sm font-black text-amber-500">{pr.value}</span>
-                <span className="text-[10px] text-muted-foreground ml-1">{pr.unit}</span>
+                <span className="text-sm font-black text-amber-400">{pr.value}</span>
+                <span className="text-[10px] text-white/40 ml-1">{pr.unit}</span>
               </div>
             </div>
           ))}
@@ -1063,26 +1024,24 @@ function PRSection() {
 function WorkoutHistoryStrip() {
   const { data: workouts } = useWeekWorkouts();
   const list = (workouts ?? []).slice(0, 5) as any[];
-
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <BarChart3 className="h-4 w-4 text-sport" />
-        <p className="text-sm font-bold text-foreground">היסטוריית אימונים</p>
+        <BarChart3 className="h-4 w-4 text-emerald-400" />
+        <p className="text-sm font-black text-white">היסטוריית אימונים</p>
       </div>
       {list.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-4">אין אימונים השבוע עדיין</p>
+        <p className="text-xs text-white/25 text-center py-4">אין אימונים השבוע עדיין</p>
       ) : (
         <div className="space-y-2">
           {list.map((w) => (
-            <div key={w.id} className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
+            <div key={w.id} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
               <div>
-                <p className="text-xs font-bold text-foreground/80">{w.category}</p>
-                <p className="text-[10px] text-muted-foreground">{new Date(w.date).toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "numeric" })}</p>
+                <p className="text-xs font-bold text-white/80">{w.category}</p>
+                <p className="text-[10px] text-white/35">{new Date(w.date).toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "numeric" })}</p>
               </div>
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {w.duration_minutes || "—"} דק׳
+              <div className="flex items-center gap-1 text-[10px] text-white/40">
+                <Clock className="h-3 w-3" />{w.duration_minutes || "—"} דק׳
               </div>
             </div>
           ))}
@@ -1094,20 +1053,19 @@ function WorkoutHistoryStrip() {
 
 function ProgressTab() {
   return (
-    <div className="px-4 pt-4 space-y-4">
+    <div className="px-4 pt-8 space-y-4">
       <WeightChart />
       <PRSection />
       <WorkoutHistoryStrip />
-
-      <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+      <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Camera className="h-4 w-4 text-violet-500" />
-          <p className="text-sm font-bold text-foreground">גלריית טרנספורמציה</p>
+          <Camera className="h-4 w-4 text-violet-400" />
+          <p className="text-sm font-black text-white">גלריית טרנספורמציה</p>
         </div>
-        <div className="h-24 rounded-xl border border-dashed border-border flex items-center justify-center">
+        <div className="h-24 rounded-2xl border border-dashed border-white/15 flex items-center justify-center">
           <div className="text-center">
-            <Camera className="h-6 w-6 text-muted-foreground/30 mx-auto mb-1" />
-            <p className="text-xs text-muted-foreground/50">העלאת תמונות — בקרוב</p>
+            <Camera className="h-6 w-6 text-white/20 mx-auto mb-1" />
+            <p className="text-xs text-white/25">העלאת תמונות — בקרוב</p>
           </div>
         </div>
       </div>
@@ -1138,27 +1096,26 @@ function SportPage() {
           <div className="absolute bottom-40 -left-16 h-60 w-60 rounded-full bg-blue-500/10 blur-[100px]" />
         </div>
 
-        {/* Sticky Tab Bar */}
-        <div className="sticky top-0 z-10 px-4 py-2 bg-black/30 backdrop-blur-xl border-b border-white/10">
-          <div className="flex gap-1 p-1 rounded-xl bg-secondary/30">
-            {TABS.map((t) => (
-              <button key={t.key} onClick={() => setActiveTab(t.key)}
-                className={`flex-1 py-2 px-1 rounded-lg text-[11px] font-bold transition-all duration-200 ${
-                  activeTab === t.key ? "bg-sport text-sport-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                {t.label}
-              </button>
-            ))}
+        <div className="relative z-10 pb-32 pt-2">
+          {/* Sticky Tab Bar */}
+          <div className="sticky top-0 z-10 px-4 py-2 bg-black/25 backdrop-blur-xl">
+            <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+              {TABS.map((t) => (
+                <button key={t.key} onClick={() => setActiveTab(t.key)}
+                  className={`flex-1 py-2 px-1 rounded-xl text-[11px] font-bold transition-all duration-200 ${
+                    activeTab === t.key ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30" : "text-white/40 hover:text-white/70"}`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="relative z-10 pb-32">
-          {/* TAB 1 */}
           {activeTab === "dashboard" && (
-            <div className="px-4 pt-4 space-y-4">
+            <div className="px-4 pt-6 space-y-5">
               <DayStatusBanner isTraining={isTraining} onToggle={() => setIsTraining((v) => !v)} />
               <QuickAddRow />
               <div className="space-y-2">
-                <p className="text-sm font-bold text-foreground">אימון היום</p>
+                <p className="text-sm font-black text-white">אימון היום</p>
                 <TodayPlanCard isTraining={isTraining} />
               </div>
               <StatsStrip />
@@ -1166,18 +1123,14 @@ function SportPage() {
             </div>
           )}
 
-          {/* TAB 2 */}
           {activeTab === "builder" && <WorkoutBuilderTab />}
-
-          {/* TAB 3 */}
           {activeTab === "library" && <ExerciseLibraryTab />}
-
-          {/* TAB 4 */}
           {activeTab === "progress" && <ProgressTab />}
         </div>
       </div>
 
       <style>{`
+        @keyframes sportPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
