@@ -545,35 +545,234 @@ function Stepper({ value, onChange, min = 0, max = 999, step = 1, suffix = "" }:
 
 interface BuilderEx { name: string; sets: number; reps: number; weight_kg: number; }
 
-function BuilderExerciseRow({ ex, onChange, onRemove, idx }: {
-  ex: BuilderEx; onChange: (v: BuilderEx) => void; onRemove: () => void; idx: number;
+function BuilderExerciseRow({
+  ex, onChange, onRemove, onDuplicate, idx,
+}: {
+  ex: BuilderEx;
+  onChange: (v: BuilderEx) => void;
+  onRemove: () => void;
+  onDuplicate: () => void;
+  idx: number;
 }) {
+  // ── Swipe-to-reveal state ────────────────────────────────────────
+  const [swipeX,    setSwipeX]    = useState(0);
+  const [actOpen,   setActOpen]   = useState(false);
+  const touchStartX = useRef(0);
+  const swiping     = useRef(false);
+  const ACTION_W    = 104;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    swiping.current = false;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    const delta = touchStartX.current - e.touches[0].clientX;
+    if (Math.abs(delta) > 6) swiping.current = true;
+    if (delta > 0) setSwipeX(Math.min(delta, ACTION_W));
+    else if (delta < -10) setSwipeX(0);
+  };
+  const onTouchEnd = () => {
+    setSwipeX((prev) => (prev > ACTION_W / 3 ? ACTION_W : 0));
+  };
+
+  // ── Local raw-string state (lets user clear & retype) ────────────
+  const [rawSets,   setRawSets]   = useState(String(ex.sets));
+  const [rawReps,   setRawReps]   = useState(String(ex.reps));
+  const [rawWeight, setRawWeight] = useState(ex.weight_kg > 0 ? String(ex.weight_kg) : "");
+
+  // Sync raw strings when parent updates (button clicks, template load)
+  useEffect(() => setRawSets(String(ex.sets)),       [ex.sets]);
+  useEffect(() => setRawReps(String(ex.reps)),       [ex.reps]);
+  useEffect(() => {
+    setRawWeight(ex.weight_kg > 0 ? String(ex.weight_kg) : "");
+  }, [ex.weight_kg]);
+
+  // ── Tab-to-next navigation via data attributes ───────────────────
+  const focusNext = (field: "sets" | "reps" | "weight") => (e: React.KeyboardEvent) => {
+    if (e.key !== "Tab" || e.shiftKey) return;
+    if (field === "sets") {
+      e.preventDefault();
+      (document.querySelector(`[data-brow="${idx}"][data-bfield="reps"]`) as HTMLInputElement)?.focus();
+    } else if (field === "reps") {
+      e.preventDefault();
+      (document.querySelector(`[data-brow="${idx}"][data-bfield="weight"]`) as HTMLInputElement)?.focus();
+    } else {
+      e.preventDefault();
+      (document.querySelector(`[data-brow="${idx + 1}"][data-bfield="sets"]`) as HTMLInputElement)?.focus();
+    }
+  };
+
+  const autoSel = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
+
+  // ── Quick-increment helpers ──────────────────────────────────────
+  const incSets   = (d: number) => onChange({ ...ex, sets:      Math.max(1,  ex.sets   + d) });
+  const incReps   = (d: number) => onChange({ ...ex, reps:      Math.max(1,  ex.reps   + d) });
+  const incWeight = (d: number) => onChange({ ...ex, weight_kg: parseFloat(Math.max(0, ex.weight_kg + d).toFixed(2)) });
+
+  const inputCls = "w-full h-9 rounded-xl bg-white/10 border border-white/12 text-center text-sm font-black text-white outline-none focus:border-emerald-500/60 focus:bg-emerald-500/8 transition-all";
+  const microBtn = "h-6 rounded-lg text-[9px] font-bold active:scale-95 transition-all flex items-center justify-center";
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3 space-y-3">
-      <div className="flex items-center gap-2">
-        <div className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-[10px] font-black text-emerald-400 shrink-0">
-          {idx + 1}
-        </div>
-        <input value={ex.name} onChange={(e) => onChange({ ...ex, name: e.target.value })}
-          placeholder="שם תרגיל..."
-          className="flex-1 bg-transparent text-sm font-semibold text-white placeholder:text-white/25 outline-none border-b border-white/10 pb-0.5"
-          dir="rtl" />
-        <button onClick={onRemove} className="h-6 w-6 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 shrink-0">
-          <X className="h-3 w-3" />
+    <div
+      className="relative overflow-hidden rounded-2xl select-none"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* ── Swipe action backdrop ─────────────────────────────────── */}
+      <div
+        className="absolute inset-y-0 right-0 flex items-stretch gap-1 p-1.5"
+        style={{ width: ACTION_W }}
+      >
+        <button
+          onClick={() => { onDuplicate(); setSwipeX(0); }}
+          className="flex-1 rounded-xl bg-blue-500/25 text-blue-400 flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold"
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          שכפל
+        </button>
+        <button
+          onClick={() => { onRemove(); setSwipeX(0); }}
+          className="flex-1 rounded-xl bg-red-500/20 text-red-400 flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold"
+        >
+          <Trash2 className="h-4 w-4" />
+          מחק
         </button>
       </div>
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="space-y-1">
-          <p className="text-[9px] text-white/40 font-medium">סטים</p>
-          <Stepper value={ex.sets} onChange={(v) => onChange({ ...ex, sets: v })} min={1} max={10} />
+
+      {/* ── Main card (slides left on swipe) ──────────────────────── */}
+      <div
+        className="rounded-2xl border border-white/10 bg-white/5 p-3 space-y-3"
+        style={{
+          transform: `translateX(-${swipeX}px)`,
+          transition: swiping.current ? "none" : "transform 0.18s ease",
+        }}
+      >
+        {/* Name row */}
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-[10px] font-black text-emerald-400 shrink-0">
+            {idx + 1}
+          </div>
+          <input
+            value={ex.name}
+            onChange={(e) => onChange({ ...ex, name: e.target.value })}
+            placeholder="שם תרגיל..."
+            className="flex-1 bg-transparent text-sm font-semibold text-white placeholder:text-white/25 outline-none border-b border-white/10 pb-0.5"
+            dir="rtl"
+          />
+          {/* ⋮ menu — desktop fallback */}
+          <button
+            onClick={() => setActOpen((v) => !v)}
+            className={`h-6 w-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 transition-all ${
+              actOpen ? "bg-white/15 text-white" : "bg-white/5 text-white/30 hover:bg-white/15 hover:text-white/70"
+            }`}
+          >
+            ⋮
+          </button>
         </div>
-        <div className="space-y-1">
-          <p className="text-[9px] text-white/40 font-medium">חזרות</p>
-          <Stepper value={ex.reps} onChange={(v) => onChange({ ...ex, reps: v })} min={1} max={50} />
-        </div>
-        <div className="space-y-1">
-          <p className="text-[9px] text-white/40 font-medium">משקל</p>
-          <Stepper value={ex.weight_kg} onChange={(v) => onChange({ ...ex, weight_kg: v })} min={0} max={300} step={0.5} suffix="kg" />
+
+        {/* Desktop action row (toggled by ⋮) */}
+        {actOpen && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => { onDuplicate(); setActOpen(false); }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-blue-500/15 text-blue-400 text-xs font-bold hover:bg-blue-500/25 active:scale-[0.98]"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />שכפל
+            </button>
+            <button
+              onClick={onRemove}
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-red-500/12 text-red-400 text-xs font-bold hover:bg-red-500/20 active:scale-[0.98]"
+            >
+              <Trash2 className="h-3.5 w-3.5" />מחק
+            </button>
+          </div>
+        )}
+
+        {/* Inputs grid */}
+        <div className="grid grid-cols-3 gap-2">
+          {/* ── Sets ─────────────────── */}
+          <div className="space-y-1.5">
+            <p className="text-[9px] text-white/40 font-medium text-center">סטים</p>
+            <input
+              data-brow={idx} data-bfield="sets"
+              type="text" inputMode="numeric" pattern="[0-9]*"
+              value={rawSets}
+              onChange={(e) => {
+                setRawSets(e.target.value);
+                const v = parseInt(e.target.value);
+                if (!isNaN(v) && v >= 1) onChange({ ...ex, sets: v });
+              }}
+              onBlur={() => {
+                const v = parseInt(rawSets);
+                if (isNaN(v) || v < 1) setRawSets(String(ex.sets));
+              }}
+              onFocus={autoSel}
+              onKeyDown={focusNext("sets")}
+              className={inputCls}
+            />
+            <div className="flex gap-1 justify-center">
+              <button onClick={() => incSets(-1)}  className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>−1</button>
+              <button onClick={() => incSets(+1)}  className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>+1</button>
+            </div>
+          </div>
+
+          {/* ── Reps ─────────────────── */}
+          <div className="space-y-1.5">
+            <p className="text-[9px] text-white/40 font-medium text-center">חזרות</p>
+            <input
+              data-brow={idx} data-bfield="reps"
+              type="text" inputMode="numeric" pattern="[0-9]*"
+              value={rawReps}
+              onChange={(e) => {
+                setRawReps(e.target.value);
+                const v = parseInt(e.target.value);
+                if (!isNaN(v) && v >= 1) onChange({ ...ex, reps: v });
+              }}
+              onBlur={() => {
+                const v = parseInt(rawReps);
+                if (isNaN(v) || v < 1) setRawReps(String(ex.reps));
+              }}
+              onFocus={autoSel}
+              onKeyDown={focusNext("reps")}
+              className={inputCls}
+            />
+            <div className="flex gap-1 justify-center">
+              <button onClick={() => incReps(-1)}  className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>−1</button>
+              <button onClick={() => incReps(+1)}  className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>+1</button>
+            </div>
+          </div>
+
+          {/* ── Weight ───────────────── */}
+          <div className="space-y-1.5">
+            <p className="text-[9px] text-white/40 font-medium text-center">משקל</p>
+            <div className="relative">
+              <input
+                data-brow={idx} data-bfield="weight"
+                type="text" inputMode="decimal" pattern="[0-9.]*"
+                value={rawWeight}
+                placeholder="0"
+                onChange={(e) => {
+                  setRawWeight(e.target.value);
+                  const v = parseFloat(e.target.value);
+                  if (!isNaN(v) && v >= 0) onChange({ ...ex, weight_kg: parseFloat(v.toFixed(2)) });
+                }}
+                onBlur={() => {
+                  const v = parseFloat(rawWeight);
+                  if (isNaN(v) || v < 0) setRawWeight(ex.weight_kg > 0 ? String(ex.weight_kg) : "");
+                }}
+                onFocus={autoSel}
+                onKeyDown={focusNext("weight")}
+                className={`${inputCls} placeholder:text-white/20`}
+              />
+              <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-white/25 pointer-events-none">kg</span>
+            </div>
+            <div className="flex gap-0.5 justify-center">
+              <button onClick={() => incWeight(-2.5)} className={`${microBtn} px-1.5 bg-white/8 text-white/50 hover:bg-white/15`}>-2.5</button>
+              <button onClick={() => incWeight(+2.5)} className={`${microBtn} px-1.5 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25`}>+2.5</button>
+              <button onClick={() => incWeight(+5)}   className={`${microBtn} px-1.5 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25`}>+5</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -648,6 +847,7 @@ function WorkoutBuilderTab({
 
   const updateEx = (i: number, v: BuilderEx) => setExercises((prev) => prev.map((e, idx) => idx === i ? v : e));
   const removeEx = (i: number) => setExercises((prev) => prev.filter((_, idx) => idx !== i));
+  const dupEx    = (i: number) => setExercises((prev) => { const c = [...prev]; c.splice(i + 1, 0, { ...prev[i] }); return c; });
   const addEx    = () => setExercises((prev) => [...prev, { name: "", sets: 3, reps: 10, weight_kg: 0 }]);
 
   const handleSaveTemplate = async () => {
@@ -745,7 +945,7 @@ function WorkoutBuilderTab({
           </div>
           <div className="space-y-3">
             {exercises.map((ex, i) => (
-              <BuilderExerciseRow key={i} ex={ex} idx={i} onChange={(v) => updateEx(i, v)} onRemove={() => removeEx(i)} />
+              <BuilderExerciseRow key={i} ex={ex} idx={i} onChange={(v) => updateEx(i, v)} onRemove={() => removeEx(i)} onDuplicate={() => dupEx(i)} />
             ))}
           </div>
           <button onClick={addEx}
