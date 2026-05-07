@@ -15,12 +15,15 @@ import {
   useWeightEntries, useAddWeight, useDeleteWeight, useUpdateWeight,
   useUserSettings, useUpdateUserSettings,
   useRunHistory, useBodyProgress, useAddBodyProgress, useDeleteBodyProgress,
+  useUpdatePersonalRecord, useDeletePersonalRecord, useWeeklyVolume,
 } from "@/hooks/use-sport-data";
 import { generateWorkoutPlan, type WorkoutPlan } from "@/lib/ai-service";
 import { toast } from "sonner";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  BarChart, Bar, Cell,
 } from "recharts";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_app/sport")({
   component: SportPage,
@@ -829,6 +832,73 @@ function BuilderExerciseRow({
   );
 }
 
+// ─── Confetti Celebration ─────────────────────────────────────────────────────
+// Uses deterministic positions/delays (no Math.random) to avoid re-render churn.
+function ConfettiCelebration({
+  prs,
+  onDone,
+}: {
+  prs: { name: string; value: number }[];
+  onDone: () => void;
+}) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3800);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  const COLORS = ["#10b981","#f97316","#3b82f6","#eab308","#ec4899","#8b5cf6","#06b6d4","#ef4444"];
+
+  return (
+    <div className="fixed inset-0 z-[60] pointer-events-none overflow-hidden" aria-hidden="true">
+      {/* Confetti particles */}
+      {Array.from({ length: 28 }, (_, i) => (
+        <span
+          key={i}
+          className="absolute"
+          style={{
+            left:            `${((i * 3.7 + 3) % 93) + 3}%`,
+            top:             "-14px",
+            width:           `${7 + (i % 5) * 1.5}px`,
+            height:          `${7 + (i % 5) * 1.5}px`,
+            borderRadius:    i % 3 === 0 ? "50%" : "3px",
+            backgroundColor: COLORS[i % COLORS.length],
+            animation:       `confettiFall ${2.0 + (i % 6) * 0.28}s ${(i % 9) * 0.11}s cubic-bezier(.15,0,.8,1) both`,
+          }}
+        />
+      ))}
+
+      {/* Celebration card */}
+      <div
+        className="absolute inset-0 flex items-center justify-center px-6 pointer-events-auto"
+        onClick={onDone}
+      >
+        <div
+          className="text-center bg-black/93 border border-amber-400/35 backdrop-blur-2xl rounded-3xl p-6 shadow-2xl shadow-amber-400/15 max-w-xs w-full"
+          style={{ animation: "prBounce 0.42s cubic-bezier(.17,.67,.35,1.4) both" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-5xl mb-1" style={{ display: "inline-block", animation: "prSpin 0.4s 0.08s ease-out both" }}>🏆</div>
+          <p className="text-[10px] font-bold tracking-widest text-amber-400/55 uppercase mt-1">Personal Record</p>
+          <p className="text-xl font-black text-amber-400 mt-0.5 mb-3">שיא אישי חדש!</p>
+          <div className="space-y-1.5">
+            {prs.map((pr, idx) => (
+              <div key={idx}
+                className="flex items-center justify-between px-3 py-2 rounded-2xl bg-amber-400/8 border border-amber-400/15"
+              >
+                <span className="text-xs font-bold text-white/75 text-right truncate ml-2">{pr.name}</span>
+                <span className="text-sm font-black text-amber-400 shrink-0">{pr.value} ק״ג</span>
+              </div>
+            ))}
+          </div>
+          <button onClick={onDone} className="mt-4 text-[10px] text-white/25 hover:text-white/45 transition-colors">
+            הקש לסגירה
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const BUILDER_GOALS = ["בניית שריר", "ירידה במשקל", "כוח מקסימלי", "סיבולת"];
 const EQUIPMENT_OPTS = ["חדר כושר", "ביתי", "ללא ציוד"];
 const DAYS_OPTS = [3, 4, 5, 6];
@@ -861,6 +931,9 @@ function WorkoutBuilderTab({
   const addWorkout    = useAddWorkout();
   const { data: templates } = useWorkoutTemplates();
   const deleteTemplate = useDeleteWorkoutTemplate();
+  const autoPR        = useAddPersonalRecord();
+  const qc            = useQueryClient();
+  const [celebPRs, setCelebPRs] = useState<{ name: string; value: number }[]>([]);
 
   // Load template pushed from the dashboard
   useEffect(() => {
@@ -928,7 +1001,32 @@ function WorkoutBuilderTab({
     if (!filled.length) return toast.error("הוסף לפחות תרגיל אחד");
     try {
       await addWorkout.mutateAsync({ category: workoutCategory, exercises: filled, notes: workoutName });
-      toast.success("אימון נרשם! 💪");
+
+      // ── Auto-PR detection: compare each weighted exercise against best known PR ──
+      const withWeight = filled.filter((e) => e.weight_kg > 0);
+      if (withWeight.length > 0) {
+        const cachedPRs: any[] = qc.getQueryData(["personal-records"]) ?? [];
+        const newlyHit: { name: string; value: number }[] = [];
+        for (const ex of withWeight) {
+          const bestKg = cachedPRs
+            .filter((pr: any) => pr.exercise_name === ex.name && pr.unit === "kg")
+            .reduce((best: number, pr: any) => Math.max(best, Number(pr.value)), 0);
+          if (ex.weight_kg > bestKg) {
+            try {
+              await autoPR.mutateAsync({
+                exercise_name: ex.name,
+                value:         ex.weight_kg,
+                unit:          "kg",
+                category:      workoutCategory === "running" ? "mixed" : workoutCategory,
+              });
+              newlyHit.push({ name: ex.name, value: ex.weight_kg });
+            } catch {/* non-critical: PR save failure shouldn't block workout log */}
+          }
+        }
+        if (newlyHit.length > 0) setCelebPRs(newlyHit);
+      }
+
+      if (!withWeight.length || celebPRs.length === 0) toast.success("אימון נרשם! 💪");
       setWorkoutName(""); setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
     } catch { toast.error("שגיאה בשמירה"); }
   };
@@ -1148,6 +1246,11 @@ function WorkoutBuilderTab({
             </div>
           )}
         </div>
+      )}
+
+      {/* Auto-PR Celebration overlay */}
+      {celebPRs.length > 0 && (
+        <ConfettiCelebration prs={celebPRs} onDone={() => setCelebPRs([])} />
       )}
     </div>
   );
@@ -1799,71 +1902,374 @@ function WeightChart() {
   );
 }
 
+// ─── PR mini history chart ────────────────────────────────────────────────────
+function PRHistoryMiniChart({ records, unit }: { records: any[]; unit: string }) {
+  if (records.length < 2) {
+    return (
+      <p className="text-[10px] text-white/25 text-center py-3">
+        הוסף עוד שיאים כדי לראות את ההתקדמות
+      </p>
+    );
+  }
+  const data = [...records]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((r) => ({
+      label: new Date(r.date).toLocaleDateString("he-IL", { day: "numeric", month: "numeric" }),
+      value: Number(r.value),
+    }));
+  return (
+    <div className="h-20 mt-1">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#f59e0b"
+            strokeWidth={2}
+            dot={{ fill: "#f59e0b", r: 2.5 }}
+            activeDot={{ r: 4 }}
+          />
+          <XAxis
+            dataKey="label"
+            tick={{ fill: "rgba(255,255,255,0.28)", fontSize: 9 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis hide domain={["auto", "auto"]} />
+          <Tooltip
+            contentStyle={{
+              background: "rgba(10,10,18,0.92)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              borderRadius: 10,
+              fontSize: 11,
+              color: "#fff",
+            }}
+            formatter={(v: number) => [`${v} ${unit}`, ""]}
+            labelStyle={{ color: "rgba(255,255,255,0.4)", fontSize: 10 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ─── PR Section (enhanced) ────────────────────────────────────────────────────
 function PRSection() {
   const { data: prs } = usePersonalRecords();
-  const addPR = useAddPersonalRecord();
-  const [showForm, setShowForm] = useState(false);
-  const [prName, setPrName]     = useState("");
-  const [prValue, setPrValue]   = useState(100);
-  const [prUnit, setPrUnit]     = useState("kg");
+  const addPR    = useAddPersonalRecord();
+  const updatePR = useUpdatePersonalRecord();
+  const deletePR = useDeletePersonalRecord();
+
+  const [showForm,   setShowForm]   = useState(false);
+  const [prName,     setPrName]     = useState("");
+  const [prValueRaw, setPrValueRaw] = useState("100");
+  const [prUnit,     setPrUnit]     = useState("kg");
+
+  const [editingId,  setEditingId]  = useState<string | null>(null);
+  const [editValue,  setEditValue]  = useState("");
+
+  const [expandedEx, setExpandedEx] = useState<string | null>(null);
+
+  // Group by exercise_name; each group sorted by date asc for charting
+  const prGroups = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const pr of (prs ?? [])) {
+      if (!map[pr.exercise_name]) map[pr.exercise_name] = [];
+      map[pr.exercise_name].push(pr);
+    }
+    return Object.entries(map)
+      .map(([name, recs]) => {
+        const sorted = [...recs].sort((a, b) => a.date.localeCompare(b.date));
+        const best   = recs.reduce((m, r) => Number(r.value) > Number(m.value) ? r : m, recs[0]);
+        return { name, records: sorted, best };
+      })
+      .sort((a, b) => new Date(b.best.date).getTime() - new Date(a.best.date).getTime());
+  }, [prs]);
 
   const handleAdd = async () => {
     if (!prName.trim()) return toast.error("שם התרגיל חסר");
+    const val = parseFloat(prValueRaw) || 0;
+    if (val <= 0) return toast.error("ערך לא תקין");
     try {
-      await addPR.mutateAsync({ exercise_name: prName, value: prValue, unit: prUnit });
-      toast.success(`🏆 שיא חדש: ${prName} ${prValue}${prUnit}`);
-      setPrName(""); setPrValue(100); setShowForm(false);
+      await addPR.mutateAsync({ exercise_name: prName.trim(), value: val, unit: prUnit });
+      toast.success(`🏆 שיא: ${prName} ${val} ${prUnit}`);
+      setPrName(""); setPrValueRaw("100"); setShowForm(false);
     } catch { toast.error("שגיאה בשמירה"); }
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    const val = parseFloat(editValue);
+    if (isNaN(val) || val <= 0) return toast.error("ערך לא תקין");
+    try {
+      await updatePR.mutateAsync({ id, value: val });
+      toast.success("שיא עודכן ✅");
+      setEditingId(null);
+    } catch { toast.error("שגיאה בעדכון"); }
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    toast.error(`מחק שיא — ${name}?`, {
+      action: { label: "מחק", onClick: () => deletePR.mutate(id) },
+      duration: 5000,
+    });
   };
 
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Medal className="h-4 w-4 text-amber-400" />
           <p className="text-sm font-black text-white">שיאים אישיים</p>
+          {prGroups.length > 0 && (
+            <span className="text-[10px] text-white/30 bg-white/8 rounded-lg px-1.5 py-0.5">
+              {prGroups.length}
+            </span>
+          )}
         </div>
-        <button onClick={() => setShowForm((v) => !v)}
-          className="h-7 w-7 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/25">
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="h-7 w-7 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/25 active:scale-90 transition-all"
+        >
           <Plus className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {/* Add form */}
       {showForm && (
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/8 p-3 space-y-3">
-          <input value={prName} onChange={(e) => setPrName(e.target.value)} placeholder="שם התרגיל..."
-            className="w-full bg-transparent text-sm text-white placeholder:text-white/25 outline-none border-b border-white/10 pb-1" dir="rtl" />
-          <div className="flex items-center gap-3">
-            <Stepper value={prValue} onChange={setPrValue} min={1} max={999} step={1} suffix={prUnit} />
-            <select value={prUnit} onChange={(e) => setPrUnit(e.target.value)}
-              className="bg-white/10 border border-white/10 rounded-xl text-xs text-white px-2 py-1.5 outline-none">
-              {["kg", "reps", "km", "min", "sec"].map((u) => <option key={u} value={u}>{u}</option>)}
+          <input
+            value={prName}
+            onChange={(e) => setPrName(e.target.value)}
+            placeholder="שם התרגיל (למשל: לחיצת חזה)..."
+            className="w-full bg-transparent text-sm text-white placeholder:text-white/25 outline-none border-b border-white/10 pb-1.5"
+            dir="rtl"
+          />
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={prValueRaw}
+              onChange={(e) => setPrValueRaw(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              className="w-20 rounded-xl border border-white/10 bg-white/8 text-center text-sm font-bold text-white outline-none py-1.5"
+            />
+            <select
+              value={prUnit}
+              onChange={(e) => setPrUnit(e.target.value)}
+              className="bg-white/10 border border-white/10 rounded-xl text-xs text-white px-2 py-1.5 outline-none"
+            >
+              {["kg", "reps", "km", "min", "sec"].map((u) => (
+                <option key={u} value={u}>{u}</option>
+              ))}
             </select>
-            <button onClick={handleAdd} disabled={addPR.isPending}
-              className="flex-1 py-2 rounded-xl bg-amber-500 text-white font-bold text-xs hover:bg-amber-400 active:scale-95 transition-all">
+            <button
+              onClick={handleAdd}
+              disabled={addPR.isPending}
+              className="flex-1 py-2 rounded-xl bg-amber-500 text-white font-black text-xs hover:bg-amber-400 active:scale-95 transition-all disabled:opacity-50"
+            >
               שמור
+            </button>
+            <button
+              onClick={() => setShowForm(false)}
+              className="h-7 w-7 rounded-xl bg-white/8 flex items-center justify-center"
+            >
+              <X className="h-3.5 w-3.5 text-white/40" />
             </button>
           </div>
         </div>
       )}
-      {(prs ?? []).length === 0 ? (
+
+      {/* PR groups list */}
+      {prGroups.length === 0 ? (
         <div className="text-center py-6">
           <span className="text-4xl">🏆</span>
-          <p className="text-xs text-white/30 mt-2">אין שיאים עדיין — הוסף את הראשון!</p>
+          <p className="text-xs text-white/30 mt-2">אין שיאים עדיין — שמור אימון עם משקל!</p>
         </div>
       ) : (
-        <div className="divide-y divide-white/5">
-          {(prs ?? []).slice(0, 8).map((pr: any) => (
-            <div key={pr.id} className="flex items-center justify-between py-2.5">
-              <div className="flex items-center gap-2">
+        <div className="space-y-1">
+          {prGroups.map((group) => (
+            <div key={group.name} className="rounded-2xl border border-white/8 overflow-hidden">
+              {/* Row */}
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
+                onClick={() => setExpandedEx(expandedEx === group.name ? null : group.name)}
+              >
                 <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                <span className="text-xs font-semibold text-white/80">{pr.exercise_name}</span>
+
+                {/* Name + badge */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-white/80 truncate">{group.name}</p>
+                  {group.records.length > 1 && (
+                    <p className="text-[9px] text-white/30">{group.records.length} רשומות</p>
+                  )}
+                </div>
+
+                {/* Best value + inline edit OR display */}
+                {editingId === group.best.id ? (
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onFocus={(e) => e.target.select()}
+                      className="w-14 rounded-lg border border-amber-500/40 bg-amber-500/10 text-center text-xs font-black text-amber-400 outline-none py-1"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => handleSaveEdit(group.best.id)}
+                      className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center"
+                    >
+                      <Check className="h-3 w-3 text-emerald-400" />
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="h-6 w-6 rounded-lg bg-white/8 flex items-center justify-center"
+                    >
+                      <X className="h-3 w-3 text-white/40" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-sm font-black text-amber-400">
+                      {Number(group.best.value).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-white/35">{group.best.unit}</span>
+                    <button
+                      onClick={() => { setEditingId(group.best.id); setEditValue(String(group.best.value)); }}
+                      className="h-6 w-6 rounded-lg bg-white/6 flex items-center justify-center hover:bg-white/12 transition-all"
+                    >
+                      <Pencil className="h-3 w-3 text-white/35" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(group.best.id, group.name)}
+                      className="h-6 w-6 rounded-lg bg-white/6 flex items-center justify-center hover:bg-red-500/15 transition-all"
+                    >
+                      <Trash2 className="h-3 w-3 text-white/30" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Chevron */}
+                <div className="ml-1 text-white/20">
+                  {expandedEx === group.name
+                    ? <ChevronUp className="h-3.5 w-3.5" />
+                    : <ChevronDown className="h-3.5 w-3.5" />}
+                </div>
               </div>
-              <div className="text-left">
-                <span className="text-sm font-black text-amber-400">{pr.value}</span>
-                <span className="text-[10px] text-white/40 ml-1">{pr.unit}</span>
-              </div>
+
+              {/* Expanded: mini progression chart */}
+              {expandedEx === group.name && (
+                <div className="border-t border-white/5 px-3 pb-3">
+                  <PRHistoryMiniChart records={group.records} unit={group.best.unit} />
+                  {/* All records table */}
+                  {group.records.length > 1 && (
+                    <div className="mt-2 space-y-1">
+                      {[...group.records]
+                        .sort((a, b) => b.date.localeCompare(a.date))
+                        .map((r) => (
+                          <div key={r.id} className="flex items-center justify-between text-[10px] text-white/40">
+                            <span>{new Date(r.date).toLocaleDateString("he-IL", {
+                              day: "numeric", month: "numeric", year: "2-digit",
+                            })}</span>
+                            <span className={`font-bold ${r.id === group.best.id ? "text-amber-400" : "text-white/55"}`}>
+                              {Number(r.value)} {r.unit}
+                              {r.id === group.best.id && " 🏆"}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Weekly Volume Chart ──────────────────────────────────────────────────────
+function getISOWeekStart(date: Date): string {
+  const d = new Date(date);
+  const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
+
+function VolumeChart() {
+  const { data: weekData, isLoading } = useWeeklyVolume(8);
+
+  if (isLoading) return null;
+  const hasData = (weekData ?? []).some((w: any) => w.volume > 0);
+
+  const currentWeek = getISOWeekStart(new Date());
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <BarChart3 className="h-4 w-4 text-blue-400" />
+        <p className="text-sm font-black text-white">נפח אימון שבועי</p>
+        <span className="text-[10px] text-white/30 bg-white/5 rounded-lg px-1.5 py-0.5">ק״ג × חזרות × סטים</span>
+      </div>
+
+      {!hasData ? (
+        <div className="h-36 flex items-center justify-center">
+          <p className="text-xs text-white/25">שמור אימונים עם משקל כדי לראות נפח</p>
+        </div>
+      ) : (
+        <div className="h-44">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={weekData ?? []} barCategoryGap="22%">
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.05)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="label"
+                tick={{ fill: "rgba(255,255,255,0.30)", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "rgba(255,255,255,0.22)", fontSize: 9 }}
+                axisLine={false}
+                tickLine={false}
+                width={36}
+                tickFormatter={(v: number) =>
+                  v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)
+                }
+              />
+              <Tooltip
+                cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                contentStyle={{
+                  background: "rgba(8,12,22,0.92)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  borderRadius: 12,
+                  fontSize: 12,
+                  color: "#fff",
+                }}
+                formatter={(v: number) => [`${v.toLocaleString()} ק״ג`, "נפח"]}
+                labelStyle={{ color: "rgba(255,255,255,0.4)", fontSize: 10 }}
+              />
+              <Bar dataKey="volume" radius={[7, 7, 0, 0]}>
+                {(weekData ?? []).map((entry: any) => (
+                  <Cell
+                    key={entry.week}
+                    fill={
+                      entry.week === currentWeek
+                        ? "#3b82f6"
+                        : "rgba(59,130,246,0.30)"
+                    }
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
     </div>
@@ -2598,6 +3004,7 @@ function ProgressTab() {
       <RunningLogSection />
       <WeightChart />
       <PRSection />
+      <VolumeChart />
       <WorkoutHistoryStrip />
       <BodyProgressGallery />
     </div>
@@ -2683,6 +3090,21 @@ function SportPage() {
         @keyframes sportPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes confettiFall {
+          0%   { transform: translateY(0) rotate(0deg)   scale(1);   opacity: 1; }
+          80%  { opacity: 0.85; }
+          100% { transform: translateY(105vh) rotate(560deg) scale(0.55); opacity: 0; }
+        }
+        @keyframes prBounce {
+          0%   { transform: scale(0.35) translateY(24px); opacity: 0; }
+          62%  { transform: scale(1.07) translateY(-5px); opacity: 1; }
+          100% { transform: scale(1)    translateY(0);    opacity: 1; }
+        }
+        @keyframes prSpin {
+          0%   { transform: rotate(-28deg) scale(0.5); }
+          58%  { transform: rotate(12deg)  scale(1.22); }
+          100% { transform: rotate(0deg)   scale(1); }
+        }
       `}</style>
     </>
   );

@@ -607,6 +607,86 @@ export function useAddPersonalRecord() {
   });
 }
 
+export function useUpdatePersonalRecord() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: number }) => {
+      const { error } = await supabase.from("personal_records").update({ value }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["personal-records"] }),
+  });
+}
+
+export function useDeletePersonalRecord() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("personal_records").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["personal-records"] }),
+  });
+}
+
+// ─── Weekly Training Volume ───
+function _isoWeekStart(date: Date): string {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // back to Monday
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
+
+export function useWeeklyVolume(weeksBack = 8) {
+  return useQuery({
+    queryKey: ["weekly-volume", weeksBack],
+    queryFn: async () => {
+      const userId = await getUserId();
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - weeksBack * 7);
+
+      const { data, error } = await supabase
+        .from("workouts")
+        .select("date, workout_exercises(weight_kg, reps, sets)")
+        .eq("user_id", userId)
+        .gte("date", cutoff.toISOString().slice(0, 10))
+        .order("date", { ascending: true });
+      if (error) throw error;
+
+      // Pre-fill all week slots with 0 (ensures empty weeks still render)
+      const weeks: Record<string, number> = {};
+      for (let i = weeksBack - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i * 7);
+        weeks[_isoWeekStart(d)] = 0;
+      }
+
+      // Accumulate volume: kg × reps × sets
+      for (const w of (data || [])) {
+        const ws = _isoWeekStart(new Date(w.date + "T12:00:00")); // noon avoids TZ shifts
+        if (!(ws in weeks)) continue;
+        for (const ex of ((w as any).workout_exercises || [])) {
+          const wkg = Number(ex.weight_kg) || 0;
+          if (wkg <= 0) continue;
+          weeks[ws] += wkg * (Number(ex.reps) || 1) * (Number(ex.sets) || 1);
+        }
+      }
+
+      return Object.entries(weeks)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([week, volume]) => ({
+          week,
+          label: new Date(week + "T12:00:00").toLocaleDateString("he-IL", {
+            day: "numeric", month: "numeric",
+          }),
+          volume: Math.round(volume),
+        }));
+    },
+  });
+}
+
 // ─── Favorite Meals ───
 export function useFavoriteMeals() {
   return useQuery({
