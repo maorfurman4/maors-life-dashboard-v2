@@ -16,6 +16,7 @@ import {
   useUserSettings, useUpdateUserSettings,
   useRunHistory, useBodyProgress, useAddBodyProgress, useDeleteBodyProgress,
   useUpdatePersonalRecord, useDeletePersonalRecord, useWeeklyVolume,
+  useAddNutrition,
 } from "@/hooks/use-sport-data";
 import { generateWorkoutPlan, type WorkoutPlan } from "@/lib/ai-service";
 import { toast } from "sonner";
@@ -446,6 +447,15 @@ const CATEGORY_IMAGE: Record<string, string> = {
   calisthenics: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80",
   running:      "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80",
   mixed:        "https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=400&q=80",
+};
+
+// MET values per category for calorie estimation
+// Calories = duration_minutes * (MET * 3.5 * weight_kg) / 200
+const MET_MAP: Record<string, number> = {
+  weights:      4.0,
+  calisthenics: 4.0,
+  running:      9.5,
+  mixed:        8.0,
 };
 
 function QuickTemplatesRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
@@ -949,29 +959,36 @@ function WorkoutBuilderTab({
   onExternalTemplateConsumed,
   pendingExercises,
   onPendingExercisesConsumed,
+  onWorkoutComplete,
 }: {
   externalTemplate?: any;
   onExternalTemplateConsumed?: () => void;
   pendingExercises?: LibraryExercise[];
   onPendingExercisesConsumed?: () => void;
+  onWorkoutComplete?: () => void;
 }) {
   const [subTab, setSubTab] = useState<"ai" | "custom">("custom");
   const [workoutName, setWorkoutName]         = useState("");
   const [workoutCategory, setWorkoutCategory] = useState<WorkoutDbCategory>("weights");
   const [exercises, setExercises]             = useState<BuilderEx[]>([{ name: "", sets: 3, reps: 10, weight_kg: 0, group: 0 }]);
   const [groupCounter, setGroupCounter]       = useState(0);
-  const addTemplate   = useAddWorkoutTemplate();
-  const addWorkout    = useAddWorkout();
+  const addTemplate    = useAddWorkoutTemplate();
+  const addWorkout     = useAddWorkout();
+  const addNutrition   = useAddNutrition();
   const { data: templates } = useWorkoutTemplates();
+  const { data: userSettings } = useUserSettings();
   const deleteTemplate = useDeleteWorkoutTemplate();
-  const autoPR        = useAddPersonalRecord();
-  const qc            = useQueryClient();
+  const autoPR         = useAddPersonalRecord();
+  const qc             = useQueryClient();
   const [celebPRs, setCelebPRs] = useState<{ name: string; value: number }[]>([]);
 
   // ── Duration modal (Task 3) ──────────────────────────────────────
   const [showDurationModal, setShowDurationModal] = useState(false);
   const [durationMinutes,   setDurationMinutes]   = useState("45");
   const pendingWorkout = useRef<{ filled: BuilderEx[]; category: string; name: string } | null>(null);
+
+  // ── Workout summary (Task 4) ─────────────────────────────────────
+  const [workoutSummary, setWorkoutSummary] = useState<{ mins: number; calories: number; name: string } | null>(null);
 
   // Load template pushed from the dashboard
   useEffect(() => {
@@ -1043,20 +1060,35 @@ function WorkoutBuilderTab({
     setShowDurationModal(true);
   };
 
-  // ── Step 2: duration confirmed → save to DB (Task 4 completes this) ──
+  // ── Step 2: duration confirmed → calorie engine → DB save → summary ──
   const handleConfirmDuration = async (mins: number) => {
     const pw = pendingWorkout.current;
     if (!pw) return;
     setShowDurationModal(false);
+
+    // ── MET calorie calculation ──────────────────────────────────
+    const met         = MET_MAP[pw.category] ?? 4.0;
+    const bodyWeight  = (userSettings as any)?.weight_kg ?? 75;
+    const calories    = Math.round(mins * (met * 3.5 * bodyWeight) / 200);
+
     try {
+      // ── 1. Save workout row (with calories_burned) ───────────
       await addWorkout.mutateAsync({
         category:         pw.category,
         exercises:        pw.filled,
         notes:            pw.name,
         duration_minutes: mins,
+        calories_burned:  calories,
       });
 
-      // ── Auto-PR detection ────────────────────────────────────────
+      // ── 2. Nutrition sync: push burned cals to today's log ───
+      addNutrition.mutateAsync({
+        name:      `פעילות גופנית — ${pw.name}`,
+        meal_type: "exercise",
+        calories:  calories,
+      }).catch(() => {/* non-critical: don't block summary on failure */});
+
+      // ── 3. Auto-PR detection ─────────────────────────────────
       const withWeight = pw.filled.filter((e) => e.weight_kg > 0);
       if (withWeight.length > 0) {
         const cachedPRs: any[] = qc.getQueryData(["personal-records"]) ?? [];
@@ -1080,9 +1112,11 @@ function WorkoutBuilderTab({
         if (newlyHit.length > 0) setCelebPRs(newlyHit);
       }
 
-      if (!withWeight.length || celebPRs.length === 0) toast.success("אימון נרשם! 💪");
-      setWorkoutName(""); setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
+      // ── 4. Reset builder & show summary overlay ──────────────
+      setWorkoutName("");
+      setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
       pendingWorkout.current = null;
+      setWorkoutSummary({ mins, calories, name: pw.name });
     } catch { toast.error("שגיאה בשמירה"); }
   };
 
@@ -1309,6 +1343,89 @@ function WorkoutBuilderTab({
         <ConfettiCelebration prs={celebPRs} onDone={() => setCelebPRs([])} />
       )}
     </div>
+
+    {/* ── Workout Summary Modal (Task 4) ──────────────────────────── */}
+    {workoutSummary && (
+      <div
+        className="fixed inset-0 z-50 flex items-end justify-center pb-10 px-4"
+        style={{ background: "rgba(0,0,0,0.88)", backdropFilter: "blur(18px)" }}
+      >
+        {/* Confetti particles */}
+        {Array.from({ length: 26 }, (_, i) => {
+          const C = ["#10b981","#f97316","#3b82f6","#eab308","#ec4899","#8b5cf6","#06b6d4"];
+          return (
+            <span
+              key={i}
+              className="absolute pointer-events-none"
+              style={{
+                left:            `${((i * 3.9 + 2) % 92) + 3}%`,
+                top:             "-14px",
+                width:           `${7 + (i % 5) * 1.5}px`,
+                height:          `${7 + (i % 5) * 1.5}px`,
+                borderRadius:    i % 3 === 0 ? "50%" : "3px",
+                backgroundColor: C[i % C.length],
+                animation:       `confettiFall ${2.0 + (i % 6) * 0.28}s ${(i % 9) * 0.12}s cubic-bezier(.15,0,.8,1) both`,
+              }}
+            />
+          );
+        })}
+
+        <div
+          className="w-full max-w-sm rounded-3xl border border-emerald-500/25 bg-[#0d0d0f] p-6 space-y-5 shadow-2xl relative"
+          style={{ animation: "prBounce 0.42s cubic-bezier(.17,.67,.35,1.4) both" }}
+        >
+          {/* Header */}
+          <div className="text-center space-y-1">
+            <div
+              className="text-5xl leading-none select-none"
+              style={{ display: "inline-block", animation: "prSpin 0.4s 0.08s ease-out both" }}
+            >
+              🎉
+            </div>
+            <p className="text-2xl font-black text-white mt-1">אימון הושלם!</p>
+            <p className="text-[11px] text-white/35 line-clamp-1">{workoutSummary.name}</p>
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/8 p-4 text-center space-y-1.5">
+              <Clock className="h-5 w-5 text-blue-400 mx-auto" />
+              <p className="text-3xl font-black text-white tabular-nums">{workoutSummary.mins}</p>
+              <p className="text-[10px] text-white/40 font-semibold">זמן (דקות)</p>
+            </div>
+            <div className="rounded-2xl border border-orange-500/20 bg-orange-500/8 p-4 text-center space-y-1.5">
+              <Flame className="h-5 w-5 text-orange-400 mx-auto" />
+              <p className="text-3xl font-black text-white tabular-nums">{workoutSummary.calories}</p>
+              <p className="text-[10px] text-white/40 font-semibold">קלוריות שנשרפו</p>
+            </div>
+          </div>
+
+          {/* PR badge (shown when PRs were broken in the same session) */}
+          {celebPRs.length > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-amber-400/20 bg-amber-400/8">
+              <span className="text-xl">🏆</span>
+              <p className="text-xs font-black text-amber-300">
+                {celebPRs.length === 1
+                  ? `שיא אישי חדש: ${celebPRs[0].name}!`
+                  : `${celebPRs.length} שיאים אישיים חדשים!`}
+              </p>
+            </div>
+          )}
+
+          {/* CTA */}
+          <button
+            onClick={() => {
+              setWorkoutSummary(null);
+              setCelebPRs([]);
+              onWorkoutComplete?.();
+            }}
+            className="w-full py-4 rounded-2xl bg-emerald-500 text-white text-base font-black active:scale-[0.97] transition-all shadow-[0_0_24px_rgba(16,185,129,0.4)]"
+          >
+            חזור לבית 🏠
+          </button>
+        </div>
+      </div>
+    )}
 
     {/* ── Duration Modal (Task 3) ─────────────────────────────────── */}
     {showDurationModal && (
@@ -3219,6 +3336,7 @@ function SportPage() {
               onExternalTemplateConsumed={() => setLoadedTemplate(null)}
               pendingExercises={pendingExercises}
               onPendingExercisesConsumed={() => setPendingExercises([])}
+              onWorkoutComplete={() => setActiveTab("dashboard")}
             />
           )}
           {activeTab === "library" && <ExerciseLibraryTab onAddToWorkout={handleAddExercisesToWorkout} />}
