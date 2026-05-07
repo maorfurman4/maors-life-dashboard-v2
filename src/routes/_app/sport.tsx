@@ -1125,6 +1125,7 @@ function WorkoutBuilderTab({
 
   // ── Workout summary (Task 4) ─────────────────────────────────────
   const [workoutSummary, setWorkoutSummary] = useState<{ mins: number; calories: number; name: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Load template pushed from the dashboard
   useEffect(() => {
@@ -1305,7 +1306,7 @@ function WorkoutBuilderTab({
                 {(templates ?? []).map((t: any) => (
                   <div key={t.id} className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5">
                     <button onClick={() => handleLoadTemplate(t)} className="text-xs font-semibold text-white/80 hover:text-white whitespace-nowrap">{t.name}</button>
-                    <button onClick={() => deleteTemplate.mutate(t.id)} className="text-red-400/60 hover:text-red-400"><X className="h-3 w-3" /></button>
+                    <button onClick={() => setConfirmDelete({ id: t.id, name: t.name })} className="text-red-400/60 hover:text-red-400"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
               </div>
@@ -1564,6 +1565,42 @@ function WorkoutBuilderTab({
     )}
 
     {/* ── Duration Modal (Task 3) ─────────────────────────────────── */}
+    {confirmDelete && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center px-6"
+        style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(14px)" }}
+        onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null); }}
+      >
+        <div
+          className="w-full max-w-sm rounded-3xl border border-white/12 bg-[#0d0d0f] p-6 space-y-5 shadow-2xl"
+          style={{ animation: "prBounce 0.35s cubic-bezier(.17,.67,.35,1.4) both" }}
+        >
+          <div className="text-center space-y-2">
+            <div className="text-3xl">🗑️</div>
+            <p className="text-base font-black text-white">מחיקת תבנית</p>
+            <p className="text-[12px] text-white/50 leading-relaxed" dir="rtl">
+              האם אתה בטוח שברצונך למחוק תבנית זו?<br/>
+              <span className="text-white/70 font-bold">"{confirmDelete.name}"</span>
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setConfirmDelete(null)}
+              className="py-3.5 rounded-2xl border border-white/15 text-white/50 text-sm font-bold active:scale-[0.97] transition-all"
+            >
+              ביטול
+            </button>
+            <button
+              onClick={() => { deleteTemplate.mutate(confirmDelete.id); setConfirmDelete(null); }}
+              disabled={deleteTemplate.isPending}
+              className="py-3.5 rounded-2xl bg-red-500 text-white text-sm font-black active:scale-[0.97] transition-all shadow-[0_0_20px_rgba(239,68,68,0.35)] disabled:opacity-50"
+            >
+              מחק
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     {showDurationModal && (
       <div
         className="fixed inset-0 z-50 flex items-end justify-center pb-10 px-4"
