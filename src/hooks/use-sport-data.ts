@@ -129,9 +129,47 @@ export function useWorkoutTemplates() {
       const { data, error } = await supabase
         .from("workout_templates")
         .select("*")
-        .order("created_at", { ascending: false });
+        // system templates first, then newest user templates
+        .order("is_system",    { ascending: false })
+        .order("created_at",   { ascending: false });
       if (error) throw error;
       return data || [];
+    },
+  });
+}
+
+// ─── Workout Streak ───
+export function useWorkoutStreak() {
+  return useQuery({
+    queryKey: ["workout-streak"],
+    queryFn: async () => {
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const { data, error } = await supabase
+        .from("workouts")
+        .select("date")
+        .gte("date", ninetyDaysAgo.toISOString().slice(0, 10))
+        .order("date", { ascending: false });
+      if (error) throw error;
+
+      const dates = new Set((data || []).map((w: { date: string }) => w.date));
+      const today = new Date().toISOString().slice(0, 10);
+
+      // Start counting from today; if no workout today, start from yesterday
+      let cursor = new Date();
+      if (!dates.has(today)) cursor.setDate(cursor.getDate() - 1);
+
+      let streak = 0;
+      for (let i = 0; i < 90; i++) {
+        const ds = cursor.toISOString().slice(0, 10);
+        if (dates.has(ds)) {
+          streak++;
+          cursor.setDate(cursor.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      return streak;
     },
   });
 }

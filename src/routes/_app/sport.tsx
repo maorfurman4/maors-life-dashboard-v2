@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dumbbell, Play, CheckCircle2, Trophy, Flame, Clock,
   Target, Zap, ChevronRight, Plus, RotateCcw, Minus,
@@ -10,7 +10,7 @@ import {
 import {
   usePersonalRecords, useAddPersonalRecord,
   useWorkoutTemplates, useAddWorkoutTemplate, useDeleteWorkoutTemplate,
-  useWeekWorkouts, useAddWorkout,
+  useWeekWorkouts, useAddWorkout, useWorkoutStreak,
   useWeightEntries, useAddWeight, useDeleteWeight, useUpdateWeight,
 } from "@/hooks/use-sport-data";
 import { generateWorkoutPlan, type WorkoutPlan } from "@/lib/ai-service";
@@ -189,16 +189,7 @@ const DAYS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
 const TODAY_IDX = new Date().getDay();
 const TODAY_NAME = new Date().toLocaleDateString("he-IL", { weekday: "long" });
 
-const TODAY_PLAN = {
-  name: "כוח עליון — חזה וכתפיים",
-  duration: 60,
-  exercises: [
-    { name: "לחיצת חזה",    sets: 4, reps: "8"     },
-    { name: "לחיצת כתפיים", sets: 3, reps: "10"    },
-    { name: "פרפר",         sets: 3, reps: "12"    },
-    { name: "מקבילים",      sets: 3, reps: "10-12" },
-  ],
-};
+// TODAY_PLAN removed — Task 1: TodayPlanCard replaced by TemplatesSection
 
 // ═══════════════════════════════════════════════════════════════════════
 //  TAB 1 — DASHBOARD sub-components
@@ -279,49 +270,100 @@ function QuickAddRow() {
   );
 }
 
-function TodayPlanCard({ isTraining }: { isTraining: boolean }) {
-  const [started, setStarted] = useState(false);
-  if (!isTraining) return (
-    <div className="rounded-3xl border border-white/8 bg-white/3 backdrop-blur-xl p-5 text-center space-y-2">
-      <span className="text-4xl">🌙</span>
-      <p className="text-sm font-black text-white/60">יום מנוחה</p>
-      <p className="text-[11px] text-white/30">מתאושש היום — האימון הבא מחר</p>
+// ─── StreakBanner ─────────────────────────────────────────────────────────────
+function StreakBanner() {
+  const { data: streak = 0 } = useWorkoutStreak();
+  if (!streak) return null;
+
+  const milestones = [3, 7, 14, 30, 60, 90];
+  const next = milestones.find((m) => m > streak) ?? 100;
+  const pct  = Math.min(100, (streak / next) * 100);
+
+  return (
+    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/8 backdrop-blur-xl px-4 py-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span className="text-2xl leading-none">🔥</span>
+          <div>
+            <p className="text-sm font-black text-white">
+              {streak} {streak === 1 ? "יום" : "ימים"} ברצף!
+            </p>
+            <p className="text-[11px] text-white/40">
+              {next - streak} ימים לאבן הדרך הבאה ({next})
+            </p>
+          </div>
+        </div>
+        <span className="text-2xl font-black text-amber-400 tabular-nums">{streak}</span>
+      </div>
+      <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-amber-400 transition-all duration-700"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   );
+}
+
+// ─── QuickTemplatesRow ────────────────────────────────────────────────────────
+const CATEGORY_META: Record<string, { emoji: string; color: string }> = {
+  weights:      { emoji: "🏋️", color: "#10b981" },
+  calisthenics: { emoji: "🤸", color: "#8b5cf6" },
+  running:      { emoji: "🏃", color: "#f97316" },
+  mixed:        { emoji: "⚡", color: "#eab308" },
+};
+
+function QuickTemplatesRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
+  const { data: templates, isLoading } = useWorkoutTemplates();
+
+  if (isLoading) return null;
+  if (!templates?.length) {
+    return (
+      <div className="rounded-2xl border border-dashed border-white/12 bg-white/3 p-6 text-center space-y-2">
+        <span className="text-4xl">💪</span>
+        <p className="text-sm font-black text-white">בוא נתחיל!</p>
+        <p className="text-[11px] text-white/35 leading-relaxed">
+          הוסף אימון ראשון או בנה תבנית משלך — הכל מתחיל כאן
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className={`rounded-3xl border backdrop-blur-xl p-5 space-y-4 transition-all ${started ? "border-emerald-500/40 bg-emerald-500/8" : "border-white/10 bg-white/5"}`}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-2xl bg-emerald-500/20 border border-emerald-500/25 flex items-center justify-center">
-            <Dumbbell className="h-4 w-4 text-emerald-400" />
-          </div>
-          <div>
-            <p className="text-sm font-black text-white">{TODAY_PLAN.name}</p>
-            <p className="text-[11px] text-white/40">{TODAY_NAME}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 text-[11px] text-white/40">
-          <Clock className="h-3.5 w-3.5" />{TODAY_PLAN.duration} דק׳
-        </div>
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between px-0.5">
+        <p className="text-sm font-black text-white">תבניות</p>
+        <span className="text-[10px] text-white/30">{templates.length} תבניות</span>
       </div>
-      <div className="rounded-2xl bg-white/4 border border-white/8 divide-y divide-white/5">
-        {TODAY_PLAN.exercises.map((ex) => (
-          <div key={ex.name} className="flex items-center justify-between px-4 py-2.5">
-            <span className="text-xs font-semibold text-white/80">{ex.name}</span>
-            <span className="text-[10px] text-white/40 font-mono">{ex.sets}×{ex.reps}</span>
-          </div>
-        ))}
+      <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
+        {templates.map((t: any) => {
+          const meta = CATEGORY_META[t.category] ?? { emoji: "💪", color: "#10b981" };
+          const exCount = Array.isArray(t.exercises) ? t.exercises.length : 0;
+          return (
+            <button
+              key={t.id}
+              onClick={() => onLoadTemplate(t)}
+              className="flex-shrink-0 flex flex-col gap-2 w-36 p-3 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl text-right active:scale-95 transition-all hover:border-white/20"
+            >
+              <div className="flex items-center justify-between">
+                <div
+                  className="h-8 w-8 rounded-xl flex items-center justify-center text-base"
+                  style={{ background: meta.color + "22" }}
+                >
+                  <span>{meta.emoji}</span>
+                </div>
+                {t.is_system && (
+                  <Star className="h-3 w-3 text-amber-400/70" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-black text-white leading-tight line-clamp-2">{t.name}</p>
+                <p className="text-[9px] text-white/35 mt-0.5">{exCount} תרגילים · {t.estimated_duration_minutes ?? "—"} דק׳</p>
+              </div>
+            </button>
+          );
+        })}
       </div>
-      {!started ? (
-        <button onClick={() => setStarted(true)} className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-emerald-500 text-white font-black text-sm min-h-[48px] hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)]">
-          <Play className="h-4 w-4" />התחל אימון
-        </button>
-      ) : (
-        <div className="flex items-center justify-center gap-2 py-3 text-emerald-400">
-          <CheckCircle2 className="h-5 w-5" />
-          <span className="text-sm font-black">האימון רץ — כל הכבוד! 💪</span>
-        </div>
-      )}
     </div>
   );
 }
@@ -471,7 +513,13 @@ const WORKOUT_CATEGORIES: { value: WorkoutDbCategory; label: string }[] = [
   { value: "mixed",        label: "⚡ HIIT"       },
 ];
 
-function WorkoutBuilderTab() {
+function WorkoutBuilderTab({
+  externalTemplate,
+  onExternalTemplateConsumed,
+}: {
+  externalTemplate?: any;
+  onExternalTemplateConsumed?: () => void;
+}) {
   const [subTab, setSubTab] = useState<"ai" | "custom">("custom");
   const [workoutName, setWorkoutName]         = useState("");
   const [workoutCategory, setWorkoutCategory] = useState<WorkoutDbCategory>("weights");
@@ -480,6 +528,20 @@ function WorkoutBuilderTab() {
   const addWorkout    = useAddWorkout();
   const { data: templates } = useWorkoutTemplates();
   const deleteTemplate = useDeleteWorkoutTemplate();
+
+  // Load template pushed from the dashboard
+  useEffect(() => {
+    if (!externalTemplate) return;
+    setWorkoutName(externalTemplate.name ?? "");
+    setWorkoutCategory((externalTemplate.category as WorkoutDbCategory) ?? "weights");
+    setExercises(
+      (externalTemplate.exercises ?? []).map((e: any) => ({
+        name: e.name, sets: e.sets ?? 3, reps: e.reps ?? 10, weight_kg: e.weight_kg ?? 0,
+      }))
+    );
+    setSubTab("custom");
+    onExternalTemplateConsumed?.();
+  }, [externalTemplate]);
 
   const updateEx = (i: number, v: BuilderEx) => setExercises((prev) => prev.map((e, idx) => idx === i ? v : e));
   const removeEx = (i: number) => setExercises((prev) => prev.filter((_, idx) => idx !== i));
@@ -1101,8 +1163,14 @@ function ProgressTab() {
 //  MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════
 function SportPage() {
-  const [activeTab,  setActiveTab]  = useState<Tab>("dashboard");
-  const [isTraining, setIsTraining] = useState(true);
+  const [activeTab,       setActiveTab]       = useState<Tab>("dashboard");
+  const [isTraining,      setIsTraining]      = useState(true);
+  const [loadedTemplate,  setLoadedTemplate]  = useState<any>(null);
+
+  const handleLoadTemplate = (t: any) => {
+    setLoadedTemplate(t);
+    setActiveTab("builder");
+  };
 
   return (
     <>
@@ -1137,17 +1205,22 @@ function SportPage() {
           {activeTab === "dashboard" && (
             <div className="px-4 pt-6 space-y-5">
               <DayStatusBanner isTraining={isTraining} onToggle={() => setIsTraining((v) => !v)} />
-              <QuickAddRow />
-              <div className="space-y-2">
-                <p className="text-sm font-black text-white">אימון היום</p>
-                <TodayPlanCard isTraining={isTraining} />
+              <StreakBanner />
+              <div className="space-y-4">
+                <QuickAddRow />
+                <QuickTemplatesRow onLoadTemplate={handleLoadTemplate} />
               </div>
               <StatsStrip />
               <WeekStrip />
             </div>
           )}
 
-          {activeTab === "builder" && <WorkoutBuilderTab />}
+          {activeTab === "builder" && (
+            <WorkoutBuilderTab
+              externalTemplate={loadedTemplate}
+              onExternalTemplateConsumed={() => setLoadedTemplate(null)}
+            />
+          )}
           {activeTab === "library" && <ExerciseLibraryTab />}
           {activeTab === "progress" && <ProgressTab />}
         </div>
