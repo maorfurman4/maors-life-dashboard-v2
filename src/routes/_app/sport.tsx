@@ -31,12 +31,13 @@ export const Route = createFileRoute("/_app/sport")({
 });
 
 // ─── types ───────────────────────────────────────────────────────────────────
-type Tab = "dashboard" | "builder" | "library" | "progress";
+type Tab = "dashboard" | "builder" | "library" | "running" | "progress";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "dashboard", label: "בית"        },
   { key: "builder",   label: "אימונים"    },
   { key: "library",   label: "ספרייה"     },
+  { key: "running",   label: "🏃 ריצה"    },
   { key: "progress",  label: "התקדמות"    },
 ];
 
@@ -346,24 +347,22 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { data: templates, isLoading } = useWorkoutTemplates();
 
-  // Pinned user-template IDs — persisted to localStorage, no DB migration needed
-  const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("qw-pinned") ?? "[]"); } catch { return []; }
+  // Opt-out model: hiddenIds lists templates the user has explicitly removed.
+  // All templates (system + user) appear by default; hiding is per-ID.
+  const [hiddenIds, setHiddenIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("qw-hidden") ?? "[]"); } catch { return []; }
   });
   const [showEdit, setShowEdit] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem("qw-pinned", JSON.stringify(pinnedIds));
-  }, [pinnedIds]);
+    localStorage.setItem("qw-hidden", JSON.stringify(hiddenIds));
+  }, [hiddenIds]);
 
-  const allTemplates   = templates ?? [];
-  const systemTemplates = allTemplates.filter((t: any) =>  t.is_system);
-  const userTemplates   = allTemplates.filter((t: any) => !t.is_system);
-  const pinnedTemplates = userTemplates.filter((t: any) => pinnedIds.includes(t.id));
-  const carouselItems   = [...systemTemplates, ...pinnedTemplates];
+  const allTemplates  = templates ?? [];
+  const carouselItems = allTemplates.filter((t: any) => !hiddenIds.includes(t.id));
 
-  const togglePin = (id: string) =>
-    setPinnedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  const toggleHidden = (id: string) =>
+    setHiddenIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
   const RichCard = ({ t }: { t: any }) => {
     const meta  = CATEGORY_META[t.category]  ?? { emoji: "💪", color: "#10b981" };
@@ -388,7 +387,7 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
           className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-black text-white transition-all active:scale-95"
           style={{ background: meta.color + "cc", backdropFilter: "blur(8px)" }}
         >
-          <ChevronRight className="h-3 w-3" />טען
+          <ChevronRight className="h-3 w-3" />הוסף
         </button>
       </div>
     );
@@ -434,8 +433,10 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
           style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(14px)" }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowEdit(false); }}
         >
-          <div className="w-full max-w-sm rounded-3xl border border-white/12 bg-[#0d0d0f] shadow-2xl flex flex-col"
-            style={{ maxHeight: "75vh" }}>
+          <div
+            className="w-full max-w-sm rounded-3xl border border-white/12 bg-[#0d0d0f] shadow-2xl flex flex-col"
+            style={{ maxHeight: "75vh" }}
+          >
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/8">
               <div>
@@ -450,52 +451,49 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
               </button>
             </div>
 
-            {/* Template list */}
+            {/* Template list — ALL templates (system + user) */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
-              {userTemplates.length === 0 ? (
+              {allTemplates.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 space-y-2.5">
                   <span className="text-4xl">📋</span>
-                  <p className="text-sm font-bold text-white/50 text-center">אין תבניות שמורות עדיין</p>
-                  <p className="text-[11px] text-white/25 text-center leading-relaxed">
-                    בנה תבנית בכרטיסיית האימונים<br />כדי להוסיף אותה לכאן
-                  </p>
+                  <p className="text-sm font-bold text-white/50 text-center">אין תבניות</p>
                 </div>
               ) : (
-                userTemplates.map((t: any) => {
-                  const meta     = CATEGORY_META[t.category] ?? { emoji: "💪", color: "#10b981" };
-                  const isPinned = pinnedIds.includes(t.id);
-                  const exCount  = Array.isArray(t.exercises) ? t.exercises.length : 0;
+                allTemplates.map((t: any) => {
+                  const meta      = CATEGORY_META[t.category] ?? { emoji: "💪", color: "#10b981" };
+                  const isVisible = !hiddenIds.includes(t.id);
+                  const exCount   = Array.isArray(t.exercises) ? t.exercises.length : 0;
                   return (
                     <button
                       key={t.id}
-                      onClick={() => togglePin(t.id)}
+                      onClick={() => toggleHidden(t.id)}
                       className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all active:scale-[0.98] ${
-                        isPinned
+                        isVisible
                           ? "border-emerald-500/40 bg-emerald-500/10"
                           : "border-white/10 bg-white/4 hover:border-white/18"
                       }`}
                     >
-                      {/* Category icon */}
                       <div
                         className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0"
                         style={{ background: meta.color + "22" }}
                       >
                         {meta.emoji}
                       </div>
-
-                      {/* Name + meta */}
                       <div className="flex-1 min-w-0 text-right">
-                        <p className="text-sm font-black text-white truncate">{t.name}</p>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <p className="text-sm font-black text-white truncate">{t.name}</p>
+                          {t.is_system && (
+                            <Star className="h-3 w-3 text-amber-400/60 shrink-0" />
+                          )}
+                        </div>
                         <p className="text-[10px] text-white/35 mt-0.5">{exCount} תרגילים</p>
                       </div>
-
-                      {/* Checkbox */}
                       <div
                         className={`h-5 w-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
-                          isPinned ? "border-emerald-500 bg-emerald-500" : "border-white/25 bg-transparent"
+                          isVisible ? "border-emerald-500 bg-emerald-500" : "border-white/25 bg-transparent"
                         }`}
                       >
-                        {isPinned && <Check className="h-3 w-3 text-white" />}
+                        {isVisible && <Check className="h-3 w-3 text-white" />}
                       </div>
                     </button>
                   );
@@ -503,7 +501,7 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
               )}
             </div>
 
-            {/* Done button */}
+            {/* Done */}
             <div className="px-4 pb-5 pt-3 border-t border-white/8">
               <button
                 onClick={() => setShowEdit(false)}
@@ -3393,11 +3391,19 @@ function BodyProgressGallery() {
   );
 }
 
+// ─── Running Tab ──────────────────────────────────────────────────────────────
+function RunningTab() {
+  return (
+    <div className="px-4 pt-8 pb-6 space-y-4">
+      <RunningLogSection />
+    </div>
+  );
+}
+
 // ─── Progress Tab ─────────────────────────────────────────────────────────────
 function ProgressTab() {
   return (
     <div className="px-4 pt-8 space-y-4 pb-4">
-      <RunningLogSection />
       <WeightChart />
       <PRSection />
       <VolumeChart />
@@ -3477,6 +3483,7 @@ function SportPage() {
             />
           )}
           {activeTab === "library" && <ExerciseLibraryTab onAddToWorkout={handleAddExercisesToWorkout} />}
+          {activeTab === "running"  && <RunningTab />}
           {activeTab === "progress" && <ProgressTab />}
         </div>
       </div>
