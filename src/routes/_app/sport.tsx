@@ -968,6 +968,11 @@ function WorkoutBuilderTab({
   const qc            = useQueryClient();
   const [celebPRs, setCelebPRs] = useState<{ name: string; value: number }[]>([]);
 
+  // ── Duration modal (Task 3) ──────────────────────────────────────
+  const [showDurationModal, setShowDurationModal] = useState(false);
+  const [durationMinutes,   setDurationMinutes]   = useState("45");
+  const pendingWorkout = useRef<{ filled: BuilderEx[]; category: string; name: string } | null>(null);
+
   // Load template pushed from the dashboard
   useEffect(() => {
     if (!externalTemplate) return;
@@ -1028,15 +1033,31 @@ function WorkoutBuilderTab({
     } catch { toast.error("שגיאה בשמירה"); }
   };
 
-  const handleLogNow = async () => {
+  // ── Step 1: validate → open duration modal (no DB save yet) ────
+  const handleLogNow = () => {
     if (!workoutName.trim()) return toast.error("תן שם לאימון");
     const filled = exercises.filter((e) => e.name.trim());
     if (!filled.length) return toast.error("הוסף לפחות תרגיל אחד");
-    try {
-      await addWorkout.mutateAsync({ category: workoutCategory, exercises: filled, notes: workoutName });
+    pendingWorkout.current = { filled, category: workoutCategory, name: workoutName };
+    setDurationMinutes("45");
+    setShowDurationModal(true);
+  };
 
-      // ── Auto-PR detection: compare each weighted exercise against best known PR ──
-      const withWeight = filled.filter((e) => e.weight_kg > 0);
+  // ── Step 2: duration confirmed → save to DB (Task 4 completes this) ──
+  const handleConfirmDuration = async (mins: number) => {
+    const pw = pendingWorkout.current;
+    if (!pw) return;
+    setShowDurationModal(false);
+    try {
+      await addWorkout.mutateAsync({
+        category:         pw.category,
+        exercises:        pw.filled,
+        notes:            pw.name,
+        duration_minutes: mins,
+      });
+
+      // ── Auto-PR detection ────────────────────────────────────────
+      const withWeight = pw.filled.filter((e) => e.weight_kg > 0);
       if (withWeight.length > 0) {
         const cachedPRs: any[] = qc.getQueryData(["personal-records"]) ?? [];
         const newlyHit: { name: string; value: number }[] = [];
@@ -1050,10 +1071,10 @@ function WorkoutBuilderTab({
                 exercise_name: ex.name,
                 value:         ex.weight_kg,
                 unit:          "kg",
-                category:      workoutCategory === "running" ? "mixed" : workoutCategory,
+                category:      pw.category === "running" ? "mixed" : pw.category,
               });
               newlyHit.push({ name: ex.name, value: ex.weight_kg });
-            } catch {/* non-critical: PR save failure shouldn't block workout log */}
+            } catch {/* non-critical */}
           }
         }
         if (newlyHit.length > 0) setCelebPRs(newlyHit);
@@ -1061,6 +1082,7 @@ function WorkoutBuilderTab({
 
       if (!withWeight.length || celebPRs.length === 0) toast.success("אימון נרשם! 💪");
       setWorkoutName(""); setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
+      pendingWorkout.current = null;
     } catch { toast.error("שגיאה בשמירה"); }
   };
 
@@ -1093,6 +1115,7 @@ function WorkoutBuilderTab({
   };
 
   return (
+  <>
     <div className="px-4 pt-8 space-y-4">
       <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5">
         {([["custom", "🏗️ בנה אימון"], ["ai", "🤖 AI Planner"]] as const).map(([k, l]) => (
@@ -1286,6 +1309,91 @@ function WorkoutBuilderTab({
         <ConfettiCelebration prs={celebPRs} onDone={() => setCelebPRs([])} />
       )}
     </div>
+
+    {/* ── Duration Modal (Task 3) ─────────────────────────────────── */}
+    {showDurationModal && (
+      <div
+        className="fixed inset-0 z-50 flex items-end justify-center pb-10 px-4"
+        style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(14px)" }}
+        onClick={(e) => { if (e.target === e.currentTarget) { setShowDurationModal(false); pendingWorkout.current = null; } }}
+      >
+        <div className="w-full max-w-sm rounded-3xl border border-white/12 bg-[#0d0d0f] p-6 space-y-5 shadow-2xl">
+          {/* Header */}
+          <div className="text-center space-y-1.5">
+            <div className="text-4xl leading-none">⏱️</div>
+            <p className="text-lg font-black text-white mt-2">כמה זמן נמשך האימון?</p>
+            <p className="text-[11px] text-white/35">הכנס את משך האימון בדקות</p>
+          </div>
+
+          {/* Stepper + input */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setDurationMinutes((v) => String(Math.max(5, (parseInt(v) || 45) - 5)))}
+              className="h-12 w-12 shrink-0 rounded-2xl bg-white/8 text-white text-2xl font-black flex items-center justify-center active:scale-90 transition-all"
+            >
+              −
+            </button>
+            <div className="relative flex-1">
+              <input
+                type="number"
+                inputMode="numeric"
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                min={1}
+                max={300}
+                className="w-full text-center text-4xl font-black text-white bg-white/8 rounded-2xl py-3 outline-none border border-white/10 focus:border-emerald-500/50 transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] text-white/30 font-semibold pointer-events-none">דק׳</span>
+            </div>
+            <button
+              onClick={() => setDurationMinutes((v) => String(Math.min(300, (parseInt(v) || 45) + 5)))}
+              className="h-12 w-12 shrink-0 rounded-2xl bg-white/8 text-white text-2xl font-black flex items-center justify-center active:scale-90 transition-all"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Quick-pick chips */}
+          <div className="grid grid-cols-3 gap-2">
+            {[20, 45, 60, 75, 90, 120].map((d) => (
+              <button
+                key={d}
+                onClick={() => setDurationMinutes(String(d))}
+                className={`py-2 rounded-xl text-xs font-bold transition-all border ${
+                  parseInt(durationMinutes) === d
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50"
+                    : "bg-white/5 text-white/35 border-white/10"
+                }`}
+              >
+                {d}′
+              </button>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <button
+              onClick={() => { setShowDurationModal(false); pendingWorkout.current = null; }}
+              className="py-3.5 rounded-2xl border border-white/15 text-white/45 text-sm font-bold active:scale-[0.97] transition-all"
+            >
+              ביטול
+            </button>
+            <button
+              onClick={() => {
+                const mins = parseInt(durationMinutes);
+                if (!mins || mins < 1) return toast.error("הכנס מספר דקות תקין");
+                handleConfirmDuration(mins);
+              }}
+              className="py-3.5 rounded-2xl bg-emerald-500 text-white text-sm font-black active:scale-[0.97] transition-all shadow-[0_0_20px_rgba(16,185,129,0.35)]"
+            >
+              המשך →
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
   );
 }
 
