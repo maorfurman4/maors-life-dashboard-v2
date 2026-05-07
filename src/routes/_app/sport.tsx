@@ -5,13 +5,14 @@ import {
   Target, Zap, ChevronRight, Plus, RotateCcw, Minus,
   ChevronDown, ChevronUp, Loader2, Star, X, BookOpen,
   TrendingUp, Scale, Medal, BarChart3, Camera,
-  Pencil, Check, Trash2,
+  Pencil, Check, Trash2, Heart, EyeOff, Eye,
 } from "lucide-react";
 import {
   usePersonalRecords, useAddPersonalRecord,
   useWorkoutTemplates, useAddWorkoutTemplate, useDeleteWorkoutTemplate,
   useWeekWorkouts, useAddWorkout, useWorkoutStreak,
   useWeightEntries, useAddWeight, useDeleteWeight, useUpdateWeight,
+  useUserSettings, useUpdateUserSettings,
 } from "@/hooks/use-sport-data";
 import { generateWorkoutPlan, type WorkoutPlan } from "@/lib/ai-service";
 import { toast } from "sonner";
@@ -183,6 +184,84 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
     ],
   },
 ];
+
+const WARMUP_GROUPS: MuscleGroup[] = [
+  {
+    key: "dynamic", label: "חימום דינמי", emoji: "🔥", color: "#f97316",
+    exercises: [
+      { name: "ג'אמפינג ג'קס", muscles: "כל הגוף, קרדיו", tips: ["קצב עקבי", "נחת בעדינות", "ידיים עד מעל הראש"], defaultSets: 3, defaultReps: "30 שניות", equipment: "ללא", youtubeQuery: "jumping+jacks+warm+up" },
+      { name: "High Knees", muscles: "ירכיים, קרדיו, ליבה", tips: ["ברכיים עד גובה הירך", "קצב מהיר", "ידיים נוגעות בברכיים"], defaultSets: 3, defaultReps: "30 שניות", equipment: "ללא", youtubeQuery: "high+knees+warm+up" },
+      { name: "מעגלי כתפיים", muscles: "כתפיים, גב עליון", tips: ["מעגלים קטנים לגדולים", "קדימה ואחורה", "קצב איטי"], defaultSets: 2, defaultReps: "10 כל כיוון", equipment: "ללא", youtubeQuery: "shoulder+circles+warm+up" },
+      { name: "Inchworm", muscles: "גב, ליבה, כתפיים", tips: ["הרחב ידיים קדימה", "גב ישר", "תנועה מבוקרת"], defaultSets: 2, defaultReps: "8", equipment: "ללא", youtubeQuery: "inchworm+exercise+warm+up" },
+      { name: "לאנג' + סיבוב (Lunge Twist)", muscles: "ירכיים, ליבה, קואורדינציה", tips: ["פסיעה קדימה", "סיבוב לכיוון הרגל הקדמית", "גב ישר"], defaultSets: 2, defaultReps: "8 כל צד", equipment: "ללא", youtubeQuery: "lunge+twist+warm+up" },
+    ],
+  },
+  {
+    key: "static", label: "מתיחות סטטיות", emoji: "🧘", color: "#8b5cf6",
+    exercises: [
+      { name: "מתיחת חזה (קיר)", muscles: "חזה, כתפיים קדמיות", tips: ["יד על קיר בגובה כתף", "סובב גוף הצידה", "החזק 30 שניות"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "קיר", youtubeQuery: "chest+stretch+wall" },
+      { name: "מתיחת Hip Flexor", muscles: "ירכיים, גב תחתון", tips: ["ברך אחת על הרצפה", "הרחק הירך קדימה", "גב ישר"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "ללא", youtubeQuery: "hip+flexor+stretch" },
+      { name: "מתיחת המסטרינג", muscles: "המסטרינג, גב תחתון", tips: ["שב ורגל ישרה", "כופף לכיוון האצבעות", "אל תעגל גב"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "ללא", youtubeQuery: "hamstring+stretch+seated" },
+      { name: "מתיחת שוקיים (קיר)", muscles: "שוקיים", tips: ["יד על קיר", "רגל אחורית ישרה", "עקב בקרקע"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "קיר", youtubeQuery: "calf+stretch+wall" },
+    ],
+  },
+  {
+    key: "cooldown", label: "סיום ושחרור", emoji: "❄️", color: "#06b6d4",
+    exercises: [
+      { name: "Child's Pose", muscles: "גב תחתון, ירכיים, כתפיים", tips: ["ברכיים פתוחות", "ידיים מוארכות", "נשום עמוק"], defaultSets: 1, defaultReps: "60 שניות", equipment: "ללא", youtubeQuery: "child's+pose+yoga" },
+      { name: "Savasana", muscles: "שחרור כולל, מנוחה", tips: ["שכב שטוח", "עצום עיניים", "נשום עמוק 10 פעמים"], defaultSets: 1, defaultReps: "2-3 דקות", equipment: "ללא", youtubeQuery: "savasana+yoga+relaxation" },
+      { name: "Spinal Twist שכוב", muscles: "גב, ירכיים, ליבה", tips: ["שכב, ברך אחת לצד", "כתפיים נשארות על הרצפה", "הרגע"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "ללא", youtubeQuery: "supine+spinal+twist" },
+      { name: "Figure 4 Stretch", muscles: "ישבן, ירכיים, אגן", tips: ["שכב, רגל אחת על השנייה", "משוך ברך לחזה", "מתיחה עמוקה"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "ללא", youtubeQuery: "figure+4+stretch+glutes" },
+    ],
+  },
+];
+
+// ─── Equipment helpers ────────────────────────────────────────────────────────
+type EquipmentCategory = "free_weights" | "machine" | "cables" | "mat" | "bar" | "equipment";
+
+function getEquipCat(equipment: string): EquipmentCategory {
+  if (equipment.includes("מכונה")) return "machine";
+  if (equipment.includes("כבלים")) return "cables";
+  if (equipment.includes("מוט מתח")) return "bar";
+  if (equipment.includes("מקבילים") || (equipment.includes("כסא") && !equipment.includes("כסא / מקבילים"))) return "equipment";
+  if (equipment.includes("ללא")) return "mat";
+  return "free_weights";
+}
+
+const EQUIP_META: Record<EquipmentCategory, { label: string; emoji: string; color: string }> = {
+  free_weights: { label: "משקולות חופשיות", emoji: "🏋️", color: "#10b981" },
+  machine:      { label: "מכונות",           emoji: "⚙️",  color: "#3b82f6" },
+  cables:       { label: "כבלים",            emoji: "🔗",  color: "#8b5cf6" },
+  mat:          { label: "מזרן / ללא ציוד",  emoji: "🧘",  color: "#06b6d4" },
+  bar:          { label: "מוט מתח",          emoji: "⬆️",  color: "#f59e0b" },
+  equipment:    { label: "ציוד עזר",         emoji: "🪑",  color: "#ec4899" },
+};
+
+// ─── Body icon ────────────────────────────────────────────────────────────────
+const BODY_DOTS: Record<string, { cx: number; cy: number }> = {
+  chest:     { cx: 14, cy: 15 },
+  back:      { cx: 14, cy: 18 },
+  shoulders: { cx: 9,  cy: 12 },
+  arms:      { cx: 6,  cy: 18 },
+  legs:      { cx: 14, cy: 36 },
+  core:      { cx: 14, cy: 23 },
+};
+
+function MuscleBodyIcon({ muscleKey, size = 26 }: { muscleKey: string; size?: number }) {
+  const dot = BODY_DOTS[muscleKey];
+  const h = Math.round(size * 52 / 28);
+  return (
+    <svg width={size} height={h} viewBox="0 0 28 52" fill="none">
+      <ellipse cx="14" cy="4" rx="3.5" ry="4" fill="rgba(255,255,255,0.18)" />
+      <rect x="9" y="9" width="10" height="16" rx="2" fill="rgba(255,255,255,0.14)" />
+      <rect x="4" y="9" width="4" height="13" rx="2" fill="rgba(255,255,255,0.14)" />
+      <rect x="20" y="9" width="4" height="13" rx="2" fill="rgba(255,255,255,0.14)" />
+      <rect x="9" y="26" width="4.5" height="18" rx="2" fill="rgba(255,255,255,0.14)" />
+      <rect x="14.5" y="26" width="4.5" height="18" rx="2" fill="rgba(255,255,255,0.14)" />
+      {dot && <circle cx={dot.cx} cy={dot.cy} r="3" fill="#ef4444" fillOpacity="0.88" />}
+    </svg>
+  );
+}
 
 // ─── Weekly day strip ─────────────────────────────────────────────────────────
 const DAYS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
@@ -516,9 +595,13 @@ const WORKOUT_CATEGORIES: { value: WorkoutDbCategory; label: string }[] = [
 function WorkoutBuilderTab({
   externalTemplate,
   onExternalTemplateConsumed,
+  pendingExercises,
+  onPendingExercisesConsumed,
 }: {
   externalTemplate?: any;
   onExternalTemplateConsumed?: () => void;
+  pendingExercises?: LibraryExercise[];
+  onPendingExercisesConsumed?: () => void;
 }) {
   const [subTab, setSubTab] = useState<"ai" | "custom">("custom");
   const [workoutName, setWorkoutName]         = useState("");
@@ -542,6 +625,26 @@ function WorkoutBuilderTab({
     setSubTab("custom");
     onExternalTemplateConsumed?.();
   }, [externalTemplate]);
+
+  // Append exercises picked from the library
+  useEffect(() => {
+    if (!pendingExercises?.length) return;
+    const parseReps = (reps: string): number => {
+      const m = reps.match(/\d+/);
+      return m ? parseInt(m[0]) : 10;
+    };
+    setExercises((prev) => [
+      ...prev.filter((e) => e.name.trim()),
+      ...pendingExercises.map((ex) => ({
+        name: ex.name,
+        sets: ex.defaultSets,
+        reps: parseReps(ex.defaultReps),
+        weight_kg: 0,
+      })),
+    ]);
+    setSubTab("custom");
+    onPendingExercisesConsumed?.();
+  }, [pendingExercises]);
 
   const updateEx = (i: number, v: BuilderEx) => setExercises((prev) => prev.map((e, idx) => idx === i ? v : e));
   const removeEx = (i: number) => setExercises((prev) => prev.filter((_, idx) => idx !== i));
@@ -761,29 +864,74 @@ function WorkoutBuilderTab({
 //  TAB 3 — EXERCISE LIBRARY
 // ═══════════════════════════════════════════════════════════════════════
 
-function ExerciseModal({ ex, onClose }: { ex: LibraryExercise; onClose: () => void }) {
+function ExerciseModal({
+  ex,
+  groupKey,
+  onClose,
+  isFavorite,
+  onToggleFavorite,
+  onToggleHidden,
+}: {
+  ex: LibraryExercise;
+  groupKey?: string;
+  onClose: () => void;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+  onToggleHidden: () => void;
+}) {
   return (
     <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
-      <div className="w-full max-w-lg mx-auto rounded-t-3xl border-t border-x border-white/10 bg-[#0d1117]/95 backdrop-blur-2xl p-5 space-y-4 pb-10"
-        onClick={(e) => e.stopPropagation()}>
+      <div
+        className="w-full max-w-lg mx-auto rounded-t-3xl border-t border-x border-white/10 bg-[#0d1117]/95 backdrop-blur-2xl p-5 space-y-4 pb-10"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto" />
+        {/* Header */}
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-lg font-black text-white">{ex.name}</h3>
-            <p className="text-xs text-white/40 mt-0.5">{ex.muscles}</p>
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            {groupKey && BODY_DOTS[groupKey] && (
+              <div className="shrink-0 mt-0.5">
+                <MuscleBodyIcon muscleKey={groupKey} size={28} />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-black text-white leading-tight">{ex.name}</h3>
+              <p className="text-xs text-white/40 mt-0.5">{ex.muscles}</p>
+            </div>
           </div>
-          <button onClick={onClose} className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:bg-white/15 shrink-0">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+              className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all ${
+                isFavorite ? "bg-red-500/20 text-red-400" : "bg-white/8 text-white/40 hover:bg-white/15"
+              }`}
+            >
+              <Heart className={`h-3.5 w-3.5 ${isFavorite ? "fill-red-400" : ""}`} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleHidden(); onClose(); }}
+              className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/40 hover:bg-white/15 transition-all"
+              title="הסתר תרגיל"
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={onClose} className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:bg-white/15">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
+
+        {/* Stats row */}
         <div className="grid grid-cols-3 gap-2 text-center">
           {[["סטים", ex.defaultSets], ["חזרות", ex.defaultReps], ["ציוד", ex.equipment]].map(([label, val]) => (
             <div key={String(label)} className="rounded-xl border border-white/8 bg-white/5 p-2.5">
               <p className="text-[9px] text-white/35">{label}</p>
-              <p className="text-sm font-black text-white mt-0.5">{val}</p>
+              <p className="text-sm font-black text-white mt-0.5 leading-tight">{val}</p>
             </div>
           ))}
         </div>
+
+        {/* Tips */}
         <div className="space-y-2">
           <p className="text-[11px] font-bold text-white/50">💡 טיפים לביצוע נכון</p>
           {ex.tips.map((tip, i) => (
@@ -793,8 +941,13 @@ function ExerciseModal({ ex, onClose }: { ex: LibraryExercise; onClose: () => vo
             </div>
           ))}
         </div>
-        <a href={`https://www.youtube.com/results?search_query=${ex.youtubeQuery}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-sm hover:bg-red-500/15 transition-all">
+
+        {/* YouTube */}
+        <a
+          href={`https://www.youtube.com/results?search_query=${ex.youtubeQuery}`}
+          target="_blank" rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-sm hover:bg-red-500/15 transition-all"
+        >
           <span>▶</span>סרטון הדרכה ב-YouTube
         </a>
       </div>
@@ -802,43 +955,194 @@ function ExerciseModal({ ex, onClose }: { ex: LibraryExercise; onClose: () => vo
   );
 }
 
-type LibraryWorkoutType = "weights" | "calisthenics";
+type LibraryWorkoutType = "weights" | "calisthenics" | "warmup";
 
-function ExerciseLibraryTab() {
-  const [workoutType, setWorkoutType]     = useState<LibraryWorkoutType>("weights");
-  const [selectedGroup, setSelectedGroup] = useState<MuscleGroup | null>(null);
-  const [selectedEx, setSelectedEx]       = useState<LibraryExercise | null>(null);
+function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: LibraryExercise[]) => void }) {
+  const [workoutType,    setWorkoutType]    = useState<LibraryWorkoutType>("weights");
+  const [selectedGroup,  setSelectedGroup]  = useState<MuscleGroup | null>(null);
+  const [selectedEquip,  setSelectedEquip]  = useState<EquipmentCategory | null>(null);
+  const [selectedEx,     setSelectedEx]     = useState<{ ex: LibraryExercise; groupKey: string } | null>(null);
+  const [checked,        setChecked]        = useState<Set<string>>(new Set());
+  const [showHidden,     setShowHidden]     = useState(false);
 
-  const groups = workoutType === "weights" ? MUSCLE_GROUPS : CALISTHENICS_MUSCLE_GROUPS;
+  const { data: settings } = useUserSettings();
+  const updateSettings = useUpdateUserSettings();
+  const favorites: string[] = (settings as any)?.favorite_exercises ?? [];
+  const hidden: string[]    = (settings as any)?.hidden_exercises   ?? [];
 
-  const handleTypeChange = (t: LibraryWorkoutType) => {
-    setWorkoutType(t); setSelectedGroup(null); setSelectedEx(null);
+  const toggleFavorite = (name: string) => {
+    const next = favorites.includes(name)
+      ? favorites.filter((n) => n !== name)
+      : [...favorites, name];
+    updateSettings.mutate({ favorite_exercises: next });
   };
 
+  const toggleHidden = (name: string) => {
+    const next = hidden.includes(name)
+      ? hidden.filter((n) => n !== name)
+      : [...hidden, name];
+    updateSettings.mutate({ hidden_exercises: next });
+  };
+
+  const toggleCheck = (name: string) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+
+  // Build a flat map of all exercises for lookup
+  const allExMap = new Map<string, LibraryExercise>();
+  [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...WARMUP_GROUPS]
+    .forEach((g) => g.exercises.forEach((ex) => allExMap.set(ex.name, ex)));
+
+  const handleAddToWorkout = () => {
+    const exs = [...checked].map((n) => allExMap.get(n)!).filter(Boolean);
+    onAddToWorkout?.(exs);
+    setChecked(new Set());
+  };
+
+  const handleTypeChange = (t: LibraryWorkoutType) => {
+    setWorkoutType(t);
+    setSelectedGroup(null);
+    setSelectedEquip(null);
+    setChecked(new Set());
+  };
+
+  const handleGroupSelect = (g: MuscleGroup) => {
+    setSelectedGroup(g);
+    setSelectedEquip(null);
+  };
+
+  const handleBack = () => {
+    if (selectedEquip) { setSelectedEquip(null); return; }
+    setSelectedGroup(null);
+  };
+
+  // Exercises in the current group, optionally filtered by equipment
+  const groupExercises = (() => {
+    if (!selectedGroup) return [];
+    let exs = selectedGroup.exercises.filter((ex) => showHidden || !hidden.includes(ex.name));
+    if (selectedEquip) exs = exs.filter((ex) => getEquipCat(ex.equipment) === selectedEquip);
+    return exs;
+  })();
+
+  // Equipment categories present in the selected group (weights only)
+  const equipCategories: EquipmentCategory[] = selectedGroup
+    ? [...new Set(selectedGroup.exercises.map((ex) => getEquipCat(ex.equipment)))]
+    : [];
+
+  // Favorite exercises for the current type
+  const favForType = favorites.filter((name) => {
+    const ex = allExMap.get(name);
+    if (!ex) return false;
+    const inWeights = MUSCLE_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
+    const inCali    = CALISTHENICS_MUSCLE_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
+    const inWarmup  = WARMUP_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
+    if (workoutType === "weights")      return inWeights;
+    if (workoutType === "calisthenics") return inCali;
+    if (workoutType === "warmup")       return inWarmup;
+    return false;
+  });
+
+  const groups =
+    workoutType === "weights"      ? MUSCLE_GROUPS :
+    workoutType === "calisthenics" ? CALISTHENICS_MUSCLE_GROUPS :
+    WARMUP_GROUPS;
+
   return (
-    <div className="px-4 pt-8 space-y-4">
-      {/* Workout type tabs */}
+    <div className="px-4 pt-8 space-y-4 pb-28">
+      {/* ── Type tabs ─────────────────────────────────────────────── */}
       <div className="flex gap-1 p-1 rounded-2xl bg-white/5 border border-white/8">
         {([
-          { key: "weights" as const,      label: "🏋️ חדר כושר" },
-          { key: "calisthenics" as const, label: "🤸 קלסטניקס" },
-        ]).map(({ key, label }) => (
+          { key: "weights"      as const, label: "🏋️ חדר כושר"  },
+          { key: "calisthenics" as const, label: "🤸 קלסטניקס"  },
+          { key: "warmup"       as const, label: "🔥 חימום"      },
+        ] as const).map(({ key, label }) => (
           <button key={key} onClick={() => handleTypeChange(key)}
-            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
-              workoutType === key ? "bg-white/15 text-white shadow-sm" : "text-white/35 hover:text-white/60"
+            className={`flex-1 py-2 rounded-xl text-[11px] font-black transition-all ${
+              workoutType === key ? "bg-white/15 text-white shadow-sm" : "text-white/35 hover:text-white/55"
             }`}>
             {label}
           </button>
         ))}
       </div>
 
-      {!selectedGroup ? (
+      {/* ── Favorites row (when on root view) ─────────────────────── */}
+      {!selectedGroup && favForType.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[11px] font-bold text-white/45 flex items-center gap-1.5">
+            <Heart className="h-3 w-3 text-red-400 fill-red-400" />מועדפים
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {favForType.map((name) => {
+              const ex = allExMap.get(name)!;
+              const isChecked = checked.has(name);
+              return (
+                <div key={name}
+                  className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border transition-all cursor-pointer ${
+                    isChecked
+                      ? "border-emerald-500/60 bg-emerald-500/15"
+                      : "border-white/10 bg-white/5"
+                  }`}
+                  onClick={() => toggleCheck(name)}
+                >
+                  <div className={`h-4 w-4 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                    isChecked ? "border-emerald-500 bg-emerald-500" : "border-white/25"
+                  }`}>
+                    {isChecked && <Check className="h-2.5 w-2.5 text-white" />}
+                  </div>
+                  <span className="text-xs font-semibold text-white whitespace-nowrap">{name}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedEx({ ex, groupKey: "" }); }}
+                    className="text-white/25 hover:text-white/60 transition-colors"
+                  >
+                    <BookOpen className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Back button + breadcrumb (when in a group) ─────────────── */}
+      {selectedGroup && (
+        <div className="flex items-center gap-3">
+          <button onClick={handleBack}
+            className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-xl">{selectedGroup.emoji}</span>
+            <div className="min-w-0">
+              <p className="text-sm font-black text-white leading-tight">
+                {selectedGroup.label}
+                {selectedEquip && <span className="text-white/40 font-normal"> · {EQUIP_META[selectedEquip].label}</span>}
+              </p>
+            </div>
+          </div>
+          {hidden.length > 0 && (
+            <button
+              onClick={() => setShowHidden((v) => !v)}
+              className={`h-7 px-2.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                showHidden ? "bg-white/15 text-white" : "bg-white/5 text-white/30"
+              }`}
+            >
+              <Eye className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── WARMUP: flat group sections ─────────────────────────────── */}
+      {workoutType === "warmup" && !selectedGroup && (
         <>
-          <p className="text-sm font-black text-white">בחר קבוצת שרירים</p>
-          <div className="grid grid-cols-2 gap-3">
-            {groups.map((g) => (
-              <button key={g.key} onClick={() => setSelectedGroup(g)}
-                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.97] transition-all">
+          <p className="text-sm font-black text-white">בחר קטגוריה</p>
+          <div className="space-y-3">
+            {WARMUP_GROUPS.map((g) => (
+              <button key={g.key} onClick={() => handleGroupSelect(g)}
+                className="w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.97] transition-all">
                 <div className="h-11 w-11 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ background: g.color + "22" }}>
                   {g.emoji}
                 </div>
@@ -850,38 +1154,204 @@ function ExerciseLibraryTab() {
             ))}
           </div>
         </>
-      ) : (
+      )}
+
+      {/* ── WEIGHTS / CALISTHENICS root: muscle group grid ─────────── */}
+      {(workoutType === "weights" || workoutType === "calisthenics") && !selectedGroup && (
         <>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSelectedGroup(null)}
-              className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15">
-              <ChevronRight className="h-4 w-4" />
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="text-xl">{selectedGroup.emoji}</span>
-              <p className="text-sm font-black text-white">{selectedGroup.label}</p>
-            </div>
-          </div>
-          <div className="space-y-2">
-            {selectedGroup.exercises.map((ex) => (
-              <button key={ex.name} onClick={() => setSelectedEx(ex)}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center justify-between gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.98] transition-all">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-white">{ex.name}</p>
-                  <p className="text-[10px] text-white/35 mt-0.5 truncate">{ex.muscles}</p>
-                  <div className="flex gap-2 mt-1.5">
-                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-white/40">{ex.equipment}</span>
-                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 text-emerald-400">{ex.defaultSets}×{ex.defaultReps}</span>
+          <p className="text-sm font-black text-white">בחר קבוצת שרירים</p>
+          <div className="grid grid-cols-2 gap-3">
+            {groups.map((g) => {
+              const visibleCount = g.exercises.filter((ex) => !hidden.includes(ex.name)).length;
+              return (
+                <button key={g.key} onClick={() => handleGroupSelect(g)}
+                  className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.97] transition-all">
+                  <div className="h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 relative" style={{ background: g.color + "22" }}>
+                    <MuscleBodyIcon muscleKey={g.key} size={30} />
                   </div>
-                </div>
-                <BookOpen className="h-4 w-4 text-white/30 shrink-0" />
-              </button>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-white">{g.label}</p>
+                    <p className="text-[10px] text-white/35">{visibleCount} תרגילים</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ── WEIGHTS inside group: equipment chips ───────────────────── */}
+      {workoutType === "weights" && selectedGroup && !selectedEquip && (
+        <>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {equipCategories.map((cat) => {
+              const meta = EQUIP_META[cat];
+              const count = selectedGroup.exercises.filter(
+                (ex) => getEquipCat(ex.equipment) === cat && (showHidden || !hidden.includes(ex.name))
+              ).length;
+              if (count === 0) return null;
+              return (
+                <button key={cat} onClick={() => setSelectedEquip(cat)}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8 active:scale-95 transition-all">
+                  <span className="text-base leading-none">{meta.emoji}</span>
+                  <div className="text-right">
+                    <p className="text-[11px] font-bold text-white whitespace-nowrap">{meta.label}</p>
+                    <p className="text-[9px] text-white/35">{count} תרגילים</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {/* Show all exercises grouped by equipment when no filter */}
+          <div className="space-y-2">
+            {groupExercises.map((ex) => (
+              <ExerciseRow
+                key={ex.name}
+                ex={ex}
+                groupKey={selectedGroup.key}
+                isChecked={checked.has(ex.name)}
+                isFavorite={favorites.includes(ex.name)}
+                onCheck={() => toggleCheck(ex.name)}
+                onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
+              />
             ))}
           </div>
         </>
       )}
 
-      {selectedEx && <ExerciseModal ex={selectedEx} onClose={() => setSelectedEx(null)} />}
+      {/* ── WEIGHTS with equipment selected: filtered list ──────────── */}
+      {workoutType === "weights" && selectedGroup && selectedEquip && (
+        <div className="space-y-2">
+          {groupExercises.map((ex) => (
+            <ExerciseRow
+              key={ex.name}
+              ex={ex}
+              groupKey={selectedGroup.key}
+              isChecked={checked.has(ex.name)}
+              isFavorite={favorites.includes(ex.name)}
+              onCheck={() => toggleCheck(ex.name)}
+              onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── CALISTHENICS / WARMUP inside group: exercise list ──────── */}
+      {(workoutType === "calisthenics" || workoutType === "warmup") && selectedGroup && (
+        <div className="space-y-2">
+          {groupExercises.map((ex) => (
+            <ExerciseRow
+              key={ex.name}
+              ex={ex}
+              groupKey={selectedGroup.key}
+              isChecked={checked.has(ex.name)}
+              isFavorite={favorites.includes(ex.name)}
+              onCheck={() => toggleCheck(ex.name)}
+              onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
+            />
+          ))}
+          {groupExercises.length === 0 && (
+            <div className="text-center py-8 text-white/30 text-xs">
+              כל התרגילים מוסתרים —{" "}
+              <button onClick={() => setShowHidden(true)} className="underline">הצג מוסתרים</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Modal ─────────────────────────────────────────────────── */}
+      {selectedEx && (
+        <ExerciseModal
+          ex={selectedEx.ex}
+          groupKey={selectedEx.groupKey}
+          onClose={() => setSelectedEx(null)}
+          isFavorite={favorites.includes(selectedEx.ex.name)}
+          onToggleFavorite={() => toggleFavorite(selectedEx.ex.name)}
+          onToggleHidden={() => toggleHidden(selectedEx.ex.name)}
+        />
+      )}
+
+      {/* ── Floating add bar ──────────────────────────────────────── */}
+      {checked.size > 0 && (
+        <div className="fixed bottom-20 left-4 right-4 z-40 flex items-center gap-2 p-2.5 rounded-2xl bg-emerald-500 shadow-xl shadow-emerald-500/40">
+          <button
+            onClick={() => setChecked(new Set())}
+            className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <button
+            onClick={handleAddToWorkout}
+            className="flex-1 text-sm font-black text-white text-center min-h-[36px] flex items-center justify-center gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            הוסף {checked.size} {checked.size === 1 ? "תרגיל" : "תרגילים"} לאימון
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ExerciseRow sub-component ────────────────────────────────────────────────
+function ExerciseRow({
+  ex,
+  groupKey,
+  isChecked,
+  isFavorite,
+  onCheck,
+  onOpen,
+}: {
+  ex: LibraryExercise;
+  groupKey: string;
+  isChecked: boolean;
+  isFavorite: boolean;
+  onCheck: () => void;
+  onOpen: () => void;
+}) {
+  return (
+    <div
+      className={`w-full rounded-2xl border backdrop-blur-xl p-3.5 flex items-center gap-3 transition-all cursor-pointer ${
+        isChecked
+          ? "border-emerald-500/50 bg-emerald-500/10"
+          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
+      }`}
+      onClick={onCheck}
+    >
+      {/* Checkbox */}
+      <div className={`h-5 w-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+        isChecked ? "border-emerald-500 bg-emerald-500" : "border-white/25"
+      }`}>
+        {isChecked && <Check className="h-3 w-3 text-white" />}
+      </div>
+
+      {/* Body icon */}
+      {BODY_DOTS[groupKey] && (
+        <div className="shrink-0">
+          <MuscleBodyIcon muscleKey={groupKey} size={22} />
+        </div>
+      )}
+
+      {/* Text */}
+      <div className="flex-1 min-w-0 text-right">
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-black text-white leading-tight flex-1 truncate">{ex.name}</p>
+          {isFavorite && <Heart className="h-3 w-3 text-red-400 fill-red-400 shrink-0" />}
+        </div>
+        <p className="text-[10px] text-white/35 mt-0.5 truncate">{ex.muscles}</p>
+        <div className="flex gap-1.5 mt-1.5 flex-wrap">
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-white/10 bg-white/5 text-white/40">{ex.equipment}</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/8 text-emerald-400">{ex.defaultSets}×{ex.defaultReps}</span>
+        </div>
+      </div>
+
+      {/* Open modal */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onOpen(); }}
+        className="h-8 w-8 rounded-xl bg-white/5 flex items-center justify-center text-white/30 hover:bg-white/15 hover:text-white/70 shrink-0 transition-all"
+      >
+        <BookOpen className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
@@ -1163,12 +1633,18 @@ function ProgressTab() {
 //  MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════
 function SportPage() {
-  const [activeTab,       setActiveTab]       = useState<Tab>("dashboard");
-  const [isTraining,      setIsTraining]      = useState(true);
-  const [loadedTemplate,  setLoadedTemplate]  = useState<any>(null);
+  const [activeTab,        setActiveTab]        = useState<Tab>("dashboard");
+  const [isTraining,       setIsTraining]       = useState(true);
+  const [loadedTemplate,   setLoadedTemplate]   = useState<any>(null);
+  const [pendingExercises, setPendingExercises] = useState<LibraryExercise[]>([]);
 
   const handleLoadTemplate = (t: any) => {
     setLoadedTemplate(t);
+    setActiveTab("builder");
+  };
+
+  const handleAddExercisesToWorkout = (exs: LibraryExercise[]) => {
+    setPendingExercises(exs);
     setActiveTab("builder");
   };
 
@@ -1219,9 +1695,11 @@ function SportPage() {
             <WorkoutBuilderTab
               externalTemplate={loadedTemplate}
               onExternalTemplateConsumed={() => setLoadedTemplate(null)}
+              pendingExercises={pendingExercises}
+              onPendingExercisesConsumed={() => setPendingExercises([])}
             />
           )}
-          {activeTab === "library" && <ExerciseLibraryTab />}
+          {activeTab === "library" && <ExerciseLibraryTab onAddToWorkout={handleAddExercisesToWorkout} />}
           {activeTab === "progress" && <ProgressTab />}
         </div>
       </div>
