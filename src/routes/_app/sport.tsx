@@ -35,15 +35,15 @@ const TABS: { key: Tab; label: string }[] = [
 
 // ─── Quick-Add workout definitions ───────────────────────────────────────────
 const QUICK_WORKOUTS = [
-  { key: "cardio",    label: "ריצה / קרדיו",  emoji: "🏃", color: "#f97316", image: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80", durations: [20, 30, 45] },
-  { key: "strength",  label: "כוח",            emoji: "🏋️", color: "#10b981", image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&q=80", durations: [45, 60, 75] },
-  { key: "hiit",      label: "HIIT",           emoji: "⚡", color: "#eab308", image: "https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=400&q=80", durations: [15, 20, 30] },
-  { key: "chest",     label: "חזה / כתפיים",  emoji: "💪", color: "#3b82f6", image: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80", durations: [45, 60, 75] },
-  { key: "back",      label: "גב / מתח",      emoji: "🦾", color: "#8b5cf6", image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&q=80", durations: [45, 60, 75] },
-  { key: "legs",      label: "רגליים",         emoji: "🦵", color: "#ec4899", image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&q=80", durations: [50, 60, 80] },
-  { key: "core",      label: "ליבה / בטן",    emoji: "🎯", color: "#06b6d4", image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80", durations: [15, 25, 40] },
-  { key: "yoga",      label: "יוגה / גמישות", emoji: "🧘", color: "#a78bfa", image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80", durations: [20, 45, 60] },
-] as const;
+  { key: "cardio",    label: "ריצה / קרדיו",  dbCategory: "running"      as const, emoji: "🏃", color: "#f97316", image: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80", durations: [20, 30, 45] },
+  { key: "strength",  label: "כוח",            dbCategory: "weights"      as const, emoji: "🏋️", color: "#10b981", image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&q=80", durations: [45, 60, 75] },
+  { key: "hiit",      label: "HIIT",           dbCategory: "mixed"        as const, emoji: "⚡", color: "#eab308", image: "https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=400&q=80", durations: [15, 20, 30] },
+  { key: "chest",     label: "חזה / כתפיים",  dbCategory: "weights"      as const, emoji: "💪", color: "#3b82f6", image: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80", durations: [45, 60, 75] },
+  { key: "back",      label: "גב / מתח",      dbCategory: "weights"      as const, emoji: "🦾", color: "#8b5cf6", image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&q=80", durations: [45, 60, 75] },
+  { key: "legs",      label: "רגליים",         dbCategory: "weights"      as const, emoji: "🦵", color: "#ec4899", image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&q=80", durations: [50, 60, 80] },
+  { key: "core",      label: "ליבה / בטן",    dbCategory: "mixed"        as const, emoji: "🎯", color: "#06b6d4", image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80", durations: [15, 25, 40] },
+  { key: "yoga",      label: "יוגה / גמישות", dbCategory: "calisthenics" as const, emoji: "🧘", color: "#a78bfa", image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80", durations: [20, 45, 60] },
+];
 
 // ─── Exercise Library data ────────────────────────────────────────────────────
 interface LibraryExercise {
@@ -219,14 +219,14 @@ function DayStatusBanner({ isTraining, onToggle }: { isTraining: boolean; onTogg
         <p className="text-sm font-black text-white leading-tight">{isTraining ? "🔥 יום אימון" : "😴 יום מנוחה"}</p>
         <p className="text-[11px] text-white/40 mt-0.5">{isTraining ? "כל הכבוד — לכו על זה!" : "מנוחה = התאוששות = גדילה"}</p>
       </div>
-      <div className={`relative w-12 h-6 rounded-full shrink-0 transition-colors duration-300 ${isTraining ? "bg-emerald-500" : "bg-white/15"}`}>
-        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-300 ${isTraining ? "translate-x-6" : "translate-x-0.5"}`} />
+      <div className={`relative w-12 h-6 rounded-full overflow-hidden shrink-0 transition-colors duration-300 ${isTraining ? "bg-emerald-500" : "bg-white/15"}`}>
+        <div className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-300 ${isTraining ? "translate-x-[22px]" : "translate-x-0"}`} />
       </div>
     </button>
   );
 }
 
-function QuickWorkoutCard({ workout, onQuickLog }: { workout: (typeof QUICK_WORKOUTS)[number]; onQuickLog: (label: string, duration: number) => void }) {
+function QuickWorkoutCard({ workout, onQuickLog }: { workout: (typeof QUICK_WORKOUTS)[number]; onQuickLog: (dbCategory: string, label: string, duration: number) => void }) {
   const [selDuration, setSelDuration] = useState<number>(workout.durations[1]);
   return (
     <div className="relative flex-shrink-0 w-36 h-48 rounded-2xl overflow-hidden cursor-pointer select-none" style={{ backgroundImage: `url('${workout.image}')`, backgroundSize: "cover", backgroundPosition: "center" }}>
@@ -242,7 +242,7 @@ function QuickWorkoutCard({ workout, onQuickLog }: { workout: (typeof QUICK_WORK
           </button>
         ))}
       </div>
-      <button onClick={() => onQuickLog(workout.label, selDuration)}
+      <button onClick={() => onQuickLog(workout.dbCategory, workout.label, selDuration)}
         className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-black text-white transition-all active:scale-95"
         style={{ background: workout.color + "cc", backdropFilter: "blur(8px)" }}>
         <Plus className="h-3 w-3" />הוסף
@@ -254,9 +254,9 @@ function QuickWorkoutCard({ workout, onQuickLog }: { workout: (typeof QUICK_WORK
 function QuickAddRow() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const addWorkout = useAddWorkout();
-  const handleQuickLog = async (label: string, duration: number) => {
+  const handleQuickLog = async (dbCategory: string, label: string, duration: number) => {
     try {
-      await addWorkout.mutateAsync({ category: label, duration_minutes: duration });
+      await addWorkout.mutateAsync({ category: dbCategory, duration_minutes: duration, notes: label });
       toast.success(`✅ ${label} — ${duration} דקות נרשם!`, { duration: 2500 });
     } catch { toast.error("שגיאה בשמירת האימון"); }
   };
@@ -401,17 +401,20 @@ function WeekStrip() {
 function Stepper({ value, onChange, min = 0, max = 999, step = 1, suffix = "" }: {
   value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number; suffix?: string;
 }) {
+  const fmt = (n: number) => n % 1 === 0 ? String(n) : n.toFixed(1);
+  const dec = (n: number) => parseFloat((Math.max(min, n - step)).toFixed(2));
+  const inc = (n: number) => parseFloat((Math.min(max, n + step)).toFixed(2));
   return (
     <div className="flex items-center gap-1.5">
-      <button onClick={() => onChange(Math.max(min, value - step))}
+      <button onClick={() => onChange(dec(value))}
         className="h-8 w-8 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center text-white/70 hover:bg-white/15 active:scale-95 transition-all">
         <Minus className="h-3.5 w-3.5" />
       </button>
       <div className="w-14 text-center">
-        <span className="text-sm font-black text-white">{value}</span>
+        <span className="text-sm font-black text-white">{fmt(value)}</span>
         {suffix && <span className="text-[10px] text-white/40 ml-0.5">{suffix}</span>}
       </div>
-      <button onClick={() => onChange(Math.min(max, value + step))}
+      <button onClick={() => onChange(inc(value))}
         className="h-8 w-8 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center text-white/70 hover:bg-white/15 active:scale-95 transition-all">
         <Plus className="h-3.5 w-3.5" />
       </button>
@@ -449,7 +452,7 @@ function BuilderExerciseRow({ ex, onChange, onRemove, idx }: {
         </div>
         <div className="space-y-1">
           <p className="text-[9px] text-white/40 font-medium">משקל</p>
-          <Stepper value={ex.weight_kg} onChange={(v) => onChange({ ...ex, weight_kg: v })} min={0} max={300} step={2.5} suffix="kg" />
+          <Stepper value={ex.weight_kg} onChange={(v) => onChange({ ...ex, weight_kg: v })} min={0} max={300} step={0.5} suffix="kg" />
         </div>
       </div>
     </div>
@@ -460,10 +463,19 @@ const BUILDER_GOALS = ["בניית שריר", "ירידה במשקל", "כוח �
 const EQUIPMENT_OPTS = ["חדר כושר", "ביתי", "ללא ציוד"];
 const DAYS_OPTS = [3, 4, 5, 6];
 
+type WorkoutDbCategory = "weights" | "calisthenics" | "running" | "mixed";
+const WORKOUT_CATEGORIES: { value: WorkoutDbCategory; label: string }[] = [
+  { value: "weights",      label: "🏋️ כוח"      },
+  { value: "calisthenics", label: "🤸 קלסטניקס"  },
+  { value: "running",      label: "🏃 ריצה"      },
+  { value: "mixed",        label: "⚡ HIIT"       },
+];
+
 function WorkoutBuilderTab() {
   const [subTab, setSubTab] = useState<"ai" | "custom">("custom");
-  const [workoutName, setWorkoutName]   = useState("");
-  const [exercises, setExercises]       = useState<BuilderEx[]>([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
+  const [workoutName, setWorkoutName]         = useState("");
+  const [workoutCategory, setWorkoutCategory] = useState<WorkoutDbCategory>("weights");
+  const [exercises, setExercises]             = useState<BuilderEx[]>([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
   const addTemplate   = useAddWorkoutTemplate();
   const addWorkout    = useAddWorkout();
   const { data: templates } = useWorkoutTemplates();
@@ -478,7 +490,7 @@ function WorkoutBuilderTab() {
     const filled = exercises.filter((e) => e.name.trim());
     if (!filled.length) return toast.error("הוסף לפחות תרגיל אחד");
     try {
-      await addTemplate.mutateAsync({ name: workoutName, category: "custom", exercises: filled });
+      await addTemplate.mutateAsync({ name: workoutName, category: workoutCategory, exercises: filled });
       toast.success("תבנית נשמרה ✅");
       setWorkoutName(""); setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
     } catch { toast.error("שגיאה בשמירה"); }
@@ -489,7 +501,7 @@ function WorkoutBuilderTab() {
     const filled = exercises.filter((e) => e.name.trim());
     if (!filled.length) return toast.error("הוסף לפחות תרגיל אחד");
     try {
-      await addWorkout.mutateAsync({ category: workoutName, exercises: filled });
+      await addWorkout.mutateAsync({ category: workoutCategory, exercises: filled, notes: workoutName });
       toast.success("אימון נרשם! 💪");
       setWorkoutName(""); setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
     } catch { toast.error("שגיאה בשמירה"); }
@@ -553,6 +565,18 @@ function WorkoutBuilderTab() {
             <input value={workoutName} onChange={(e) => setWorkoutName(e.target.value)}
               placeholder="שם האימון (למשל: כוח עליון)"
               className="w-full bg-transparent text-sm font-black text-white placeholder:text-white/25 outline-none text-right" dir="rtl" />
+          </div>
+          <div className="flex gap-1.5">
+            {WORKOUT_CATEGORIES.map(({ value, label }) => (
+              <button key={value} onClick={() => setWorkoutCategory(value)}
+                className={`flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${
+                  workoutCategory === value
+                    ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/50"
+                    : "text-white/30 border-white/10 hover:text-white/50"
+                }`}>
+                {label}
+              </button>
+            ))}
           </div>
           <div className="space-y-3">
             {exercises.map((ex, i) => (
