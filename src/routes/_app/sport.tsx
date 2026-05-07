@@ -297,11 +297,13 @@ function DayStatusBanner({ isTraining, onToggle }: { isTraining: boolean; onTogg
   return (
     <button
       onClick={onToggle}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border backdrop-blur-xl transition-all duration-300 text-right ${
-        isTraining ? "border-emerald-500/40 bg-emerald-500/10" : "border-white/10 bg-white/5"
+      className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl border backdrop-blur-xl transition-all duration-300 text-right ${
+        isTraining
+          ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_6px_32px_rgba(16,185,129,0.14)]"
+          : "border-white/10 bg-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
       }`}
     >
-      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isTraining ? "bg-emerald-500/25" : "bg-white/10"}`}>
+      <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isTraining ? "bg-emerald-500/25" : "bg-white/10"}`}>
         {isTraining ? <Flame className="h-5 w-5 text-emerald-400" /> : <RotateCcw className="h-5 w-5 text-white/40" />}
       </div>
       <div className="flex-1 min-w-0">
@@ -646,14 +648,18 @@ function StatsStrip() {
     { label: "קלוריות", value: "0",                   sub: "אתמול", icon: Flame,    color: "#ef4444" },
   ];
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-4 gap-2.5">
       {stats.map(({ label, value, sub, icon: Icon, color }) => (
-        <div key={label} className="rounded-2xl border border-white/8 bg-white/5 backdrop-blur-xl p-3 text-center space-y-1.5">
-          <div className="h-7 w-7 rounded-xl mx-auto flex items-center justify-center" style={{ background: color + "22" }}>
-            <Icon className="h-3.5 w-3.5" style={{ color }} />
+        <div
+          key={label}
+          className="rounded-2xl border border-white/8 bg-white/5 backdrop-blur-xl p-3.5 text-center space-y-1.5"
+          style={{ boxShadow: `0 6px 24px ${color}12` }}
+        >
+          <div className="h-8 w-8 rounded-xl mx-auto flex items-center justify-center" style={{ background: color + "22" }}>
+            <Icon className="h-4 w-4" style={{ color }} />
           </div>
-          <p className="text-lg font-black text-white leading-none">{value}</p>
-          <p className="text-[9px] text-white/35 font-medium">{label}</p>
+          <p className="text-xl font-black text-white leading-none tabular-nums">{value}</p>
+          <p className="text-[9px] text-white/40 font-semibold">{label}</p>
           <p className="text-[8px] text-white/20">{sub}</p>
         </div>
       ))}
@@ -672,13 +678,19 @@ function WeekStrip() {
   const goal = 3;
   const pct  = Math.min(100, (done / goal) * 100);
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
+    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-4 py-4 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.22)]">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-emerald-400" /><p className="text-sm font-black text-white">שבוע אימונים</p></div>
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-emerald-400" />
+          <p className="text-sm font-black text-white">שבוע אימונים</p>
+        </div>
         <span className="text-[11px] font-semibold text-white/40">{done}/{goal} אימונים</span>
       </div>
       <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-        <div className="h-full rounded-full bg-emerald-500 transition-all duration-700 shadow-[0_0_8px_rgba(16,185,129,0.5)]" style={{ width: `${pct}%` }} />
+        <div
+          className="h-full rounded-full bg-emerald-500 transition-all duration-700 shadow-[0_0_10px_rgba(16,185,129,0.55)]"
+          style={{ width: `${pct}%` }}
+        />
       </div>
       <div className="flex justify-between">
         {DAYS.map((day, i) => {
@@ -686,10 +698,11 @@ function WeekStrip() {
           const completed = completedDays.includes(i);
           return (
             <div key={i} className="flex flex-col items-center gap-1.5">
-              <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[9px] font-black transition-all ${
-                completed ? "bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-[9px] font-black transition-all ${
+                completed ? "bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)]"
                 : isToday  ? "border-2 border-emerald-500/60 text-emerald-400 bg-emerald-500/10"
-                : "border border-white/10 text-white/20"}`}>
+                : "border border-white/10 text-white/15"
+              }`}>
                 {completed ? "✓" : day}
               </div>
             </div>
@@ -837,7 +850,7 @@ function BuilderExerciseRow({
 
       {/* Main card — positioned so it paints above the absolute backdrop ── */}
       <div
-        className="relative z-[1] rounded-2xl border border-white/10 bg-[#111315] p-3 space-y-2.5"
+        className="relative z-[1] rounded-2xl border border-white/10 bg-[#111315] p-3 space-y-2.5 shadow-[0_2px_16px_rgba(0,0,0,0.35)]"
         style={{ transform: `translateX(-${swipeX}px)`, transition: swiping.current ? "none" : "transform 0.18s ease" }}
       >
         {/* ── Name row (always visible) ──── */}
@@ -3444,7 +3457,7 @@ function SportPage() {
           </div>
 
           {activeTab === "dashboard" && (
-            <div className="px-4 pt-6 space-y-5">
+            <div className="px-4 pt-8 pb-6 space-y-6">
               <DayStatusBanner isTraining={isTraining} onToggle={() => setIsTraining((v) => !v)} />
               <div className="space-y-4">
                 <QuickAddRow onLoadTemplate={handleLoadTemplate} />
