@@ -195,12 +195,12 @@ export function useAddWeight() {
   return useMutation({
     mutationFn: async (entry: { weight_kg: number; date?: string; notes?: string }) => {
       const userId = await getUserId();
-      const { error } = await supabase.from("weight_entries").insert({
-        user_id: userId,
-        weight_kg: entry.weight_kg,
-        date: entry.date || new Date().toISOString().slice(0, 10),
-        notes: entry.notes || null,
-      });
+      const date = entry.date || new Date().toISOString().slice(0, 10);
+      // upsert: if entry exists for this date, update weight instead of failing
+      const { error } = await supabase.from("weight_entries").upsert(
+        { user_id: userId, weight_kg: entry.weight_kg, date, notes: entry.notes || null },
+        { onConflict: "user_id,date" }
+      );
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["weight-entries"] }),
