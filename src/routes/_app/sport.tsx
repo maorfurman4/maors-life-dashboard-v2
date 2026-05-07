@@ -3402,13 +3402,44 @@ function RunningTab() {
 
 // ─── Progress Tab ─────────────────────────────────────────────────────────────
 function ProgressTab() {
+  const [subTab, setSubTab] = useState<"analytics" | "tracking">("analytics");
+
   return (
-    <div className="px-4 pt-8 space-y-4 pb-4">
-      <WeightChart />
-      <PRSection />
-      <VolumeChart />
-      <WorkoutHistoryStrip />
-      <BodyProgressGallery />
+    <div className="px-4 pt-6 pb-8 space-y-5">
+      {/* Segmented control */}
+      <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
+        {([
+          { key: "analytics", label: "נתוני אימון"  },
+          { key: "tracking",  label: "מעקב גוף"     },
+        ] as const).map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setSubTab(key)}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+              subTab === key
+                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
+                : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {subTab === "analytics" && (
+        <div className="space-y-4">
+          <PRSection />
+          <VolumeChart />
+          <WorkoutHistoryStrip />
+        </div>
+      )}
+
+      {subTab === "tracking" && (
+        <div className="space-y-4">
+          <WeightChart />
+          <BodyProgressGallery />
+        </div>
+      )}
     </div>
   );
 }
