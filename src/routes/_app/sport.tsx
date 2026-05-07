@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Dumbbell, Play, CheckCircle2, Trophy, Flame, Clock,
   Target, Zap, ChevronRight, Plus, RotateCcw, Minus,
   ChevronDown, ChevronUp, Loader2, Star, X, BookOpen,
   TrendingUp, Scale, Medal, BarChart3, Camera,
   Pencil, Check, Trash2, Heart, EyeOff, Eye,
+  Share2, MapPin, Timer, Download,
 } from "lucide-react";
 import {
   usePersonalRecords, useAddPersonalRecord,
@@ -13,6 +14,7 @@ import {
   useWeekWorkouts, useAddWorkout, useWorkoutStreak,
   useWeightEntries, useAddWeight, useDeleteWeight, useUpdateWeight,
   useUserSettings, useUpdateUserSettings,
+  useRunHistory, useBodyProgress, useAddBodyProgress, useDeleteBodyProgress,
 } from "@/hooks/use-sport-data";
 import { generateWorkoutPlan, type WorkoutPlan } from "@/lib/ai-service";
 import { toast } from "sonner";
@@ -1898,24 +1900,706 @@ function WorkoutHistoryStrip() {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+//  TASK 5 — Running Module & Visual Progress
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Pace helpers ────────────────────────────────────────────────────────────
+function computePaceDecimal(distanceKm: number, durationMinutes: number): number | null {
+  if (distanceKm <= 0 || durationMinutes <= 0) return null;
+  const p = durationMinutes / distanceKm;
+  if (p < 2 || p > 40) return null;
+  return p;
+}
+function formatPace(decimalMinutes: number): string {
+  const mins = Math.floor(decimalMinutes);
+  const secs = Math.round((decimalMinutes - mins) * 60);
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+function formatDurationHMS(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = Math.floor(minutes % 60);
+  const s = Math.round((minutes - Math.floor(minutes)) * 60);
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// Canvas: rounded rectangle path helper
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number,
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+// ─── Share Run Modal ──────────────────────────────────────────────────────────
+interface RunForShare {
+  date: string;
+  distanceKm:      number | null;
+  durationMinutes: number | null;
+  paceDecimal:     number | null;
+  notes?:          string | null;
+}
+
+function ShareRunModal({ run, onClose }: { run: RunForShare; onClose: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const W = 1080, H = 1080;
+    canvas.width = W; canvas.height = H;
+
+    // ── Background gradient ──
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0,   "#070e19");
+    bg.addColorStop(0.45,"#0b2018");
+    bg.addColorStop(1,   "#060c15");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+    // ── Emerald glow — top right ──
+    const g1 = ctx.createRadialGradient(W * 0.85, H * 0.1, 0, W * 0.85, H * 0.1, 460);
+    g1.addColorStop(0, "rgba(16,185,129,0.20)");
+    g1.addColorStop(1, "rgba(16,185,129,0)");
+    ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
+
+    // ── Orange glow — bottom left ──
+    const g2 = ctx.createRadialGradient(W * 0.18, H * 0.9, 0, W * 0.18, H * 0.9, 340);
+    g2.addColorStop(0, "rgba(249,115,22,0.14)");
+    g2.addColorStop(1, "rgba(249,115,22,0)");
+    ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+
+    // ── Subtle dot grid ──
+    ctx.fillStyle = "rgba(255,255,255,0.025)";
+    for (let x = 30; x < W; x += 54) {
+      for (let y = 30; y < H; y += 54) {
+        ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // ── Text setup (RTL) ──
+    ctx.direction  = "rtl";
+    ctx.textBaseline = "alphabetic";
+
+    // ── App name ──
+    ctx.font      = "bold 48px -apple-system, Arial, sans-serif";
+    ctx.fillStyle = "#10b981";
+    ctx.textAlign = "right";
+    ctx.fillText("LifePulse", W - 80, 104);
+
+    // ── Date ──
+    const dateStr = new Date(run.date).toLocaleDateString("he-IL", {
+      weekday: "long", day: "numeric", month: "long",
+    });
+    ctx.font      = "32px -apple-system, Arial, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.36)";
+    ctx.fillText(dateStr, W - 80, 152);
+
+    // ── Top divider ──
+    ctx.strokeStyle = "rgba(16,185,129,0.22)";
+    ctx.lineWidth   = 1.5;
+    ctx.setLineDash([10, 7]);
+    ctx.beginPath(); ctx.moveTo(80, 186); ctx.lineTo(W - 80, 186); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // ── Hero: "PACE" label ──
+    ctx.font      = "bold 30px -apple-system, Arial, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.30)";
+    ctx.textAlign = "center";
+    ctx.fillText("פייס ממוצע", W / 2, 280);
+
+    // ── Hero pace number ──
+    const paceStr = run.paceDecimal ? formatPace(run.paceDecimal) : "--:--";
+    ctx.font      = "bold 230px -apple-system, Arial, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.96)";
+    ctx.fillText(paceStr, W / 2, 530);
+
+    // ── /ק"מ unit ──
+    ctx.font      = "bold 58px -apple-system, Arial, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.38)";
+    ctx.fillText("/ק״מ", W / 2, 600);
+
+    // ── Stats boxes ──
+    const stats: { label: string; value: string }[] = [];
+    if (run.distanceKm)      stats.push({ label: "קילומטר",  value: run.distanceKm.toFixed(1) });
+    if (run.durationMinutes) stats.push({ label: "זמן ריצה", value: formatDurationHMS(run.durationMinutes) });
+
+    if (stats.length > 0) {
+      const bW = stats.length === 1 ? 360 : 310;
+      const bH = 148;
+      const bY = 666;
+      const gap = 30;
+      const totalW = stats.length * bW + (stats.length - 1) * gap;
+      const startX = (W - totalW) / 2;
+
+      stats.forEach((s, i) => {
+        const bx = startX + i * (bW + gap);
+        ctx.fillStyle = "rgba(255,255,255,0.055)";
+        roundRect(ctx, bx, bY, bW, bH, 24);
+        ctx.fill();
+
+        ctx.font      = `bold ${stats.length === 1 ? 88 : 76}px -apple-system, Arial, sans-serif`;
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.fillText(s.value, bx + bW / 2, bY + 94);
+
+        ctx.font      = "28px -apple-system, Arial, sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,0.38)";
+        ctx.fillText(s.label, bx + bW / 2, bY + 130);
+      });
+    }
+
+    // ── Bottom divider ──
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(80, H - 128); ctx.lineTo(W - 80, H - 128); ctx.stroke();
+
+    // ── Footer ──
+    ctx.font      = "26px -apple-system, Arial, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.16)";
+    ctx.textAlign = "center";
+    ctx.fillText("LifePulse • מעקב כושר ובריאות", W / 2, H - 68);
+
+  }, [run]);
+
+  const handleDownload = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url; a.download = `run_${run.date}.png`; a.click();
+  };
+
+  const handleShare = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], "my-run.png", { type: "image/png" });
+      if (typeof navigator.share === "function") {
+        try {
+          await navigator.share({ files: [file], title: "הריצה שלי 🏃" });
+          return;
+        } catch {/* user cancelled — fall through to download */}
+      }
+      handleDownload();
+    }, "image/png");
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm space-y-3 rounded-3xl border border-white/10 bg-black/90 backdrop-blur-xl p-4 pb-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onClose}
+            className="h-7 w-7 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/15 transition-all"
+          >
+            <X className="h-3.5 w-3.5 text-white/60" />
+          </button>
+          <p className="text-sm font-black text-white">שתף ריצה</p>
+          <div className="w-7" />
+        </div>
+
+        {/* Canvas preview */}
+        <div className="rounded-2xl overflow-hidden w-full aspect-square bg-black shadow-2xl">
+          <canvas ref={canvasRef} className="w-full h-full" style={{ imageRendering: "auto" }} />
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={handleDownload}
+            className="flex-1 py-3 rounded-2xl bg-white/8 border border-white/10 text-sm font-bold text-white/60 flex items-center justify-center gap-2 hover:bg-white/12 active:scale-95 transition-all"
+          >
+            <Download className="h-4 w-4" /> הורד
+          </button>
+          <button
+            onClick={handleShare}
+            className="flex-1 py-3 rounded-2xl bg-emerald-500 text-sm font-black text-white flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 active:scale-95 transition-all"
+          >
+            <Share2 className="h-4 w-4" /> שתף
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Running Log Section ──────────────────────────────────────────────────────
+function RunningLogSection() {
+  const addWorkout = useAddWorkout();
+  const { data: runs } = useRunHistory();
+
+  const [distRaw,  setDistRaw]  = useState("");
+  const [minsRaw,  setMinsRaw]  = useState("");
+  const [secsRaw,  setSecsRaw]  = useState("0");
+  const [runNotes, setRunNotes] = useState("");
+  const [shareRun, setShareRun] = useState<RunForShare | null>(null);
+
+  // Real-time derived pace
+  const distKm    = parseFloat(distRaw)  || 0;
+  const totalMins = (parseInt(minsRaw)   || 0) + (parseInt(secsRaw) || 0) / 60;
+  const paceDec   = computePaceDecimal(distKm, totalMins);
+
+  const handleSave = async () => {
+    if (!distKm && !totalMins) return toast.error("הכנס לפחות מרחק או זמן");
+    try {
+      await addWorkout.mutateAsync({
+        category: "running",
+        duration_minutes: totalMins || undefined,
+        notes: runNotes || undefined,
+        run: {
+          distance_km:      distKm     || undefined,
+          duration_minutes: totalMins  || undefined,
+          pace_per_km:      paceDec    || undefined,
+        },
+      });
+      toast.success(
+        `🏃 ריצה נרשמה! ${distKm ? distKm + " ק״מ" : ""}${paceDec ? "  ·  " + formatPace(paceDec) + " /ק״מ" : ""}`
+      );
+      setDistRaw(""); setMinsRaw(""); setSecsRaw("0"); setRunNotes("");
+    } catch {
+      toast.error("שגיאה בשמירה");
+    }
+  };
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
+      {shareRun && (
+        <ShareRunModal run={shareRun} onClose={() => setShareRun(null)} />
+      )}
+
+      {/* Title */}
+      <div className="flex items-center gap-2">
+        <Flame className="h-4 w-4 text-orange-400" />
+        <p className="text-sm font-black text-white">יומן ריצה</p>
+      </div>
+
+      {/* Inputs */}
+      <div className="space-y-2.5">
+
+        {/* Distance */}
+        <div className="flex items-center gap-2.5">
+          <MapPin className="h-4 w-4 text-orange-400 shrink-0" />
+          <div className="flex-1 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5">
+            <input
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9.]*"
+              value={distRaw}
+              onChange={(e) => setDistRaw(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              placeholder="0.0"
+              className="flex-1 bg-transparent text-sm font-bold text-white placeholder:text-white/20 outline-none text-left"
+              dir="ltr"
+            />
+            <span className="text-xs font-bold text-orange-400/70 shrink-0">ק״מ</span>
+          </div>
+        </div>
+
+        {/* Duration: minutes + seconds */}
+        <div className="flex items-center gap-2.5">
+          <Timer className="h-4 w-4 text-orange-400 shrink-0" />
+          <div className="flex flex-1 gap-2">
+            <div className="flex-1 flex items-center gap-1.5 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={minsRaw}
+                onChange={(e) => setMinsRaw(e.target.value.replace(/\D/g, ""))}
+                onFocus={(e) => e.target.select()}
+                placeholder="0"
+                className="w-full bg-transparent text-sm font-bold text-white placeholder:text-white/20 outline-none text-left"
+                dir="ltr"
+              />
+              <span className="text-xs font-bold text-orange-400/70 shrink-0">דק׳</span>
+            </div>
+            <div className="w-24 flex items-center gap-1.5 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={secsRaw}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "");
+                  const n = parseInt(v) || 0;
+                  setSecsRaw(String(Math.min(59, n)));
+                }}
+                onFocus={(e) => e.target.select()}
+                placeholder="0"
+                className="w-full bg-transparent text-sm font-bold text-white placeholder:text-white/20 outline-none text-left"
+                dir="ltr"
+              />
+              <span className="text-xs font-bold text-orange-400/70 shrink-0">שנ׳</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Real-time pace pill */}
+        {paceDec && (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-orange-500/25 bg-orange-500/10 px-4 py-3 transition-all">
+            <span className="text-2xl font-black text-white tracking-tight">{formatPace(paceDec)}</span>
+            <span className="text-sm font-bold text-orange-400">/ק״מ</span>
+          </div>
+        )}
+
+        {/* Notes */}
+        <input
+          value={runNotes}
+          onChange={(e) => setRunNotes(e.target.value)}
+          placeholder="הערות (מסלול, תחושה...)..."
+          className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/20 outline-none"
+          dir="rtl"
+        />
+
+        {/* Save */}
+        <button
+          onClick={handleSave}
+          disabled={addWorkout.isPending || (!distKm && !totalMins)}
+          className="w-full py-3.5 rounded-2xl bg-orange-500 text-white font-black text-sm disabled:opacity-40 hover:bg-orange-400 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 min-h-[44px]"
+        >
+          {addWorkout.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          שמור ריצה
+        </button>
+      </div>
+
+      {/* Recent runs list */}
+      {(runs ?? []).length > 0 && (
+        <div className="space-y-2 pt-1 border-t border-white/5">
+          <p className="text-[11px] font-bold text-white/35 uppercase tracking-wider pt-1">ריצות אחרונות</p>
+          <div className="space-y-1.5">
+            {(runs ?? []).slice(0, 6).map((r: any) => {
+              const rd   = r.run;
+              const pace = rd?.pace_per_km ? formatPace(Number(rd.pace_per_km)) : null;
+              const dist = rd?.distance_km ? Number(rd.distance_km).toFixed(1) : null;
+              return (
+                <div key={r.id}
+                  className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {dist && (
+                        <span className="text-sm font-black text-white">{dist} ק״מ</span>
+                      )}
+                      {pace && (
+                        <span className="text-xs font-bold text-orange-400 bg-orange-400/10 rounded-lg px-1.5 py-0.5">
+                          {pace} /ק״מ
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-white/30 mt-0.5">
+                      {new Date(r.date).toLocaleDateString("he-IL", {
+                        weekday: "short", day: "numeric", month: "numeric",
+                      })}
+                      {rd?.duration_minutes
+                        ? `  ·  ${formatDurationHMS(Number(rd.duration_minutes))}`
+                        : ""}
+                    </p>
+                  </div>
+                  {/* Share button */}
+                  <button
+                    onClick={() =>
+                      setShareRun({
+                        date:             r.date,
+                        distanceKm:      rd?.distance_km      ? Number(rd.distance_km)      : null,
+                        durationMinutes: rd?.duration_minutes ? Number(rd.duration_minutes) : null,
+                        paceDecimal:     rd?.pace_per_km      ? Number(rd.pace_per_km)      : null,
+                        notes:           r.notes,
+                      })
+                    }
+                    className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center shrink-0 hover:bg-white/12 active:scale-90 transition-all"
+                  >
+                    <Share2 className="h-3.5 w-3.5 text-white/40" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Body Progress Gallery ────────────────────────────────────────────────────
+type BodyAngle = "front" | "back" | "side";
+
+const BODY_ANGLES: { key: BodyAngle; label: string; emoji: string }[] = [
+  { key: "front", label: "קדמי",  emoji: "🧍" },
+  { key: "back",  label: "אחורי", emoji: "🔄" },
+  { key: "side",  label: "צד",    emoji: "↔️" },
+];
+
+function BodyProgressGallery() {
+  const [angle,      setAngle]      = useState<BodyAngle>("front");
+  const [newFile,    setNewFile]    = useState<File | null>(null);
+  const [newPreview, setNewPreview] = useState<string | null>(null);
+  const [notes,      setNotes]      = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: allPhotos, isLoading } = useBodyProgress();
+  const addPhoto    = useAddBodyProgress();
+  const deletePhoto = useDeleteBodyProgress();
+
+  // Per-angle slice
+  const anglePhotos = useMemo(
+    () => (allPhotos ?? []).filter((p: any) => (p.angle ?? "front") === angle),
+    [allPhotos, angle],
+  );
+  const ghostPhoto = anglePhotos[0] ?? null;
+
+  // Clean up object URL on unmount or swap
+  useEffect(() => {
+    return () => { if (newPreview) URL.revokeObjectURL(newPreview); };
+  }, [newPreview]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (newPreview) URL.revokeObjectURL(newPreview);
+    setNewFile(file);
+    setNewPreview(URL.createObjectURL(file));
+    e.target.value = "";
+  };
+
+  const handleSave = async () => {
+    if (!newFile) return toast.error("בחר תמונה");
+    try {
+      await addPhoto.mutateAsync({ file: newFile, angle, notes });
+      const lbl = BODY_ANGLES.find((a) => a.key === angle)?.label ?? angle;
+      toast.success(`📸 תמונה נשמרה — ${lbl}`);
+      setNewFile(null); setNewPreview(null); setNotes("");
+    } catch {/* handled in hook */}
+  };
+
+  const handleDiscard = () => {
+    if (newPreview) URL.revokeObjectURL(newPreview);
+    setNewFile(null); setNewPreview(null);
+  };
+
+  const handleDeleteWithConfirm = (p: any) => {
+    toast.error("מחיקת תמונה?", {
+      action: {
+        label: "מחק",
+        onClick: () => deletePhoto.mutate({ id: p.id, photoPath: p.photo_url }),
+      },
+      duration: 5000,
+    });
+  };
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <Camera className="h-4 w-4 text-violet-400" />
+        <p className="text-sm font-black text-white">גלריית טרנספורמציה</p>
+      </div>
+
+      {/* Angle tabs */}
+      <div className="flex gap-1 p-1 rounded-2xl bg-white/[0.04] border border-white/10">
+        {BODY_ANGLES.map(({ key, label, emoji }) => (
+          <button
+            key={key}
+            onClick={() => {
+              setAngle(key);
+              if (newPreview) URL.revokeObjectURL(newPreview);
+              setNewFile(null); setNewPreview(null);
+            }}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+              angle === key
+                ? "bg-violet-500 text-white shadow-lg shadow-violet-500/25"
+                : "text-white/40 hover:text-white/65"
+            }`}
+          >
+            {emoji} {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Main: upload zone OR comparison */}
+      {newPreview ? (
+        /* ── Comparison: ghost (before) | new (after) ── */
+        <div className="space-y-3">
+          <div className="flex gap-2 h-52">
+            {/* Before */}
+            <div className="flex-1 rounded-2xl overflow-hidden relative">
+              {ghostPhoto?.signedUrl ? (
+                <img
+                  src={ghostPhoto.signedUrl}
+                  alt="לפני"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                  <p className="text-[10px] text-white/25">אין תמונה קודמת</p>
+                </div>
+              )}
+              <div className="absolute bottom-0 inset-x-0 bg-black/55 py-1 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-white/55">
+                  {ghostPhoto
+                    ? new Date(ghostPhoto.date).toLocaleDateString("he-IL", {
+                        day: "numeric", month: "numeric", year: "2-digit",
+                      })
+                    : "לפני"}
+                </span>
+              </div>
+            </div>
+
+            {/* After */}
+            <div className="flex-1 rounded-2xl overflow-hidden relative">
+              <img src={newPreview} alt="עכשיו" className="w-full h-full object-cover" />
+              <div className="absolute bottom-0 inset-x-0 bg-emerald-500/55 py-1 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-white">עכשיו</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <input
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="הערות (משקל, תחושה, תאריך...)..."
+            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/20 outline-none"
+            dir="rtl"
+          />
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleDiscard}
+              className="flex-1 py-3 rounded-2xl border border-white/10 bg-white/5 text-sm font-bold text-white/50 hover:bg-white/8 active:scale-95 transition-all"
+            >
+              ביטול
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={addPhoto.isPending}
+              className="flex-1 py-3 rounded-2xl bg-violet-500 text-white font-black text-sm disabled:opacity-40 shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2 hover:bg-violet-400 active:scale-95 transition-all min-h-[44px]"
+            >
+              {addPhoto.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
+              שמור
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* ── Ghost overlay upload zone ── */
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full h-52 rounded-2xl border border-dashed border-white/20 relative overflow-hidden flex items-center justify-center group hover:border-violet-500/40 transition-all"
+          >
+            {/* Ghost image — low opacity background */}
+            {ghostPhoto?.signedUrl && (
+              <img
+                src={ghostPhoto.signedUrl}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                style={{ opacity: 0.20, filter: "blur(1.5px) saturate(0.7)" }}
+              />
+            )}
+            {/* Overlay content */}
+            <div className="relative z-10 flex flex-col items-center gap-2 pointer-events-none">
+              <div className="h-12 w-12 rounded-2xl bg-white/12 flex items-center justify-center group-hover:bg-violet-500/20 transition-all">
+                <Camera className="h-6 w-6 text-white/50 group-hover:text-violet-400 transition-all" />
+              </div>
+              <p className="text-xs font-medium text-white/45 group-hover:text-white/65 transition-all">
+                {ghostPhoto ? "הוסף תמונה חדשה" : "צלם / בחר תמונה"}
+              </p>
+              {ghostPhoto && (
+                <p className="text-[10px] text-violet-400/55">
+                  תמונה קודמת:{" "}
+                  {new Date(ghostPhoto.date).toLocaleDateString("he-IL", {
+                    day: "numeric", month: "long",
+                  })}
+                </p>
+              )}
+            </div>
+          </button>
+        </>
+      )}
+
+      {/* History strip */}
+      {!isLoading && anglePhotos.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[11px] font-bold text-white/30 uppercase tracking-wider">
+            היסטוריה — {BODY_ANGLES.find((a) => a.key === angle)?.label}
+          </p>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {anglePhotos.map((p: any) => (
+              <div key={p.id} className="shrink-0 w-20 h-20 rounded-xl overflow-hidden relative group">
+                {p.signedUrl ? (
+                  <img src={p.signedUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-white/10" />
+                )}
+                {/* Delete on hover/long-tap */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteWithConfirm(p); }}
+                    className="h-7 w-7 rounded-lg bg-red-500/80 flex items-center justify-center hover:bg-red-500 active:scale-90 transition-all"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-white" />
+                  </button>
+                </div>
+                {/* Date badge */}
+                <div className="absolute bottom-0 inset-x-0 bg-black/50 py-0.5">
+                  <p className="text-[8px] text-white/55 text-center">
+                    {new Date(p.date).toLocaleDateString("he-IL", { day: "numeric", month: "numeric" })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Progress Tab ─────────────────────────────────────────────────────────────
 function ProgressTab() {
   return (
-    <div className="px-4 pt-8 space-y-4">
+    <div className="px-4 pt-8 space-y-4 pb-4">
+      <RunningLogSection />
       <WeightChart />
       <PRSection />
       <WorkoutHistoryStrip />
-      <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Camera className="h-4 w-4 text-violet-400" />
-          <p className="text-sm font-black text-white">גלריית טרנספורמציה</p>
-        </div>
-        <div className="h-24 rounded-2xl border border-dashed border-white/15 flex items-center justify-center">
-          <div className="text-center">
-            <Camera className="h-6 w-6 text-white/20 mx-auto mb-1" />
-            <p className="text-xs text-white/25">העלאת תמונות — בקרוב</p>
-          </div>
-        </div>
-      </div>
+      <BodyProgressGallery />
     </div>
   );
 }
