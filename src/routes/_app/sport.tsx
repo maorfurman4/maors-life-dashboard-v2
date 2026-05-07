@@ -589,7 +589,7 @@ function BuilderExerciseRow({
   const [swipeX,  setSwipeX]  = useState(0);
   const touchStartX = useRef(0);
   const swiping     = useRef(false);
-  const ACTION_W    = 104;
+  const ACTION_W    = 64;
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -651,17 +651,11 @@ function BuilderExerciseRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Swipe backdrop ── */}
-      <div className="absolute inset-y-0 right-0 flex items-stretch gap-1 p-1.5" style={{ width: ACTION_W }}>
-        <button
-          onClick={() => { onDuplicate(); setSwipeX(0); toast.success("📋 תרגיל שוכפל"); }}
-          className="flex-1 rounded-xl bg-blue-500/25 text-blue-400 flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold"
-        >
-          <CheckCircle2 className="h-4 w-4" />שכפל
-        </button>
+      {/* Swipe backdrop — delete only ── */}
+      <div className="absolute inset-y-0 right-0 flex items-stretch p-1.5" style={{ width: ACTION_W }}>
         <button
           onClick={() => { onRemove(); setSwipeX(0); }}
-          className="flex-1 rounded-xl bg-red-500/20 text-red-400 flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold"
+          className="w-full rounded-xl bg-red-500/25 text-red-400 flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold hover:bg-red-500/35 active:scale-95 transition-all"
         >
           <Trash2 className="h-4 w-4" />מחק
         </button>
