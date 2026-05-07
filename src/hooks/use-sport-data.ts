@@ -267,6 +267,113 @@ export function useUpdateWeight() {
   });
 }
 
+// ─── Running History ───
+export function useRunHistory(limit = 20) {
+  return useQuery({
+    queryKey: ["run-history", limit],
+    queryFn: async () => {
+      const userId = await getUserId();
+      const { data, error } = await supabase
+        .from("workouts")
+        .select("*, workout_runs(*)")
+        .eq("user_id", userId)
+        .eq("category", "running")
+        .order("date", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return (data || []).map((w: any) => ({
+        id:               w.id,
+        date:             w.date,
+        notes:            w.notes,
+        duration_minutes: w.duration_minutes,
+        calories_burned:  w.calories_burned,
+        run:              (w.workout_runs as any[])?.[0] ?? null,
+      }));
+    },
+  });
+}
+
+// ─── Body Progress ───
+export function useBodyProgress() {
+  return useQuery({
+    queryKey: ["body-progress"],
+    queryFn: async () => {
+      const userId = await getUserId();
+      const { data, error } = await supabase
+        .from("body_progress")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false })
+        .limit(60);
+      if (error) throw error;
+      // Generate 24h signed URLs for the private bucket
+      const photos = await Promise.all(
+        (data || []).map(async (p: any) => {
+          if (!p.photo_url) return { ...p, signedUrl: "" };
+          const { data: s } = await supabase.storage
+            .from("body-progress")
+            .createSignedUrl(p.photo_url, 86400);
+          return { ...p, signedUrl: s?.signedUrl ?? "" };
+        })
+      );
+      return photos;
+    },
+  });
+}
+
+export function useAddBodyProgress() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      file,
+      angle,
+      notes,
+      date,
+    }: {
+      file: File;
+      angle: string;
+      notes?: string;
+      date?: string;
+    }) => {
+      const userId = await getUserId();
+      const ext  = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${userId}/${Date.now()}_${angle}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("body-progress")
+        .upload(path, file, { contentType: file.type });
+      if (upErr) throw upErr;
+      const { error: dbErr } = await (supabase as any).from("body_progress").insert({
+        user_id:   userId,
+        photo_url: path,
+        angle,
+        notes:     notes || null,
+        date:      date || new Date().toISOString().slice(0, 10),
+      });
+      if (dbErr) {
+        await supabase.storage.from("body-progress").remove([path]);
+        throw dbErr;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["body-progress"] }),
+    onError:   (e: Error) => toast.error("שגיאה בהעלאת תמונה: " + e.message),
+  });
+}
+
+export function useDeleteBodyProgress() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, photoPath }: { id: string; photoPath?: string }) => {
+      if (photoPath) {
+        await supabase.storage.from("body-progress").remove([photoPath]);
+      }
+      const { error } = await supabase.from("body_progress").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["body-progress"] }),
+    onError:   (e: Error) => toast.error("שגיאה במחיקה: " + e.message),
+  });
+}
+
 // ─── Nutrition Entries ───
 export function useNutritionEntries(date?: string) {
   const targetDate = date || new Date().toISOString().slice(0, 10);
