@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, Loader2, Star, X, BookOpen,
   TrendingUp, Scale, Medal, BarChart3, Camera,
   Pencil, Check, Trash2, Heart, EyeOff, Eye,
-  Share2, MapPin, Timer, Download,
+  Share2, MapPin, Timer, Download, Settings2,
 } from "lucide-react";
 import {
   usePersonalRecords, useAddPersonalRecord,
@@ -343,59 +343,177 @@ function QuickWorkoutCard({ workout, onQuickLog }: { workout: (typeof QUICK_WORK
 function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { data: templates, isLoading } = useWorkoutTemplates();
-  const systemTemplates = (templates ?? []).filter((t: any) => t.is_system);
+
+  // Pinned user-template IDs — persisted to localStorage, no DB migration needed
+  const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("qw-pinned") ?? "[]"); } catch { return []; }
+  });
+  const [showEdit, setShowEdit] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("qw-pinned", JSON.stringify(pinnedIds));
+  }, [pinnedIds]);
+
+  const allTemplates   = templates ?? [];
+  const systemTemplates = allTemplates.filter((t: any) =>  t.is_system);
+  const userTemplates   = allTemplates.filter((t: any) => !t.is_system);
+  const pinnedTemplates = userTemplates.filter((t: any) => pinnedIds.includes(t.id));
+  const carouselItems   = [...systemTemplates, ...pinnedTemplates];
+
+  const togglePin = (id: string) =>
+    setPinnedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+
+  const RichCard = ({ t }: { t: any }) => {
+    const meta  = CATEGORY_META[t.category]  ?? { emoji: "💪", color: "#10b981" };
+    const image = CATEGORY_IMAGE[t.category] ?? CATEGORY_IMAGE.weights;
+    return (
+      <div
+        className="relative flex-shrink-0 w-36 h-48 rounded-2xl overflow-hidden cursor-pointer select-none"
+        style={{
+          scrollSnapAlign: "start",
+          backgroundImage: `url('${image}')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+        <span className="absolute top-2.5 right-2.5 text-2xl leading-none drop-shadow-lg">{meta.emoji}</span>
+        <p className="absolute bottom-10 right-0 left-0 px-3 text-sm font-black text-white leading-tight text-right line-clamp-2">
+          {t.name}
+        </p>
+        <button
+          onClick={() => onLoadTemplate(t)}
+          className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-black text-white transition-all active:scale-95"
+          style={{ background: meta.color + "cc", backdropFilter: "blur(8px)" }}
+        >
+          <ChevronRight className="h-3 w-3" />טען
+        </button>
+      </div>
+    );
+  };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between px-0.5">
-        <p className="text-sm font-black text-white">אימון מהיר</p>
-      </div>
-      <div
-        ref={scrollRef}
-        className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-0.5 px-0.5"
-        style={{ scrollSnapType: "x mandatory" }}
-      >
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex-shrink-0 w-36 h-48 rounded-2xl bg-white/5 animate-pulse"
-                style={{ scrollSnapAlign: "start" }}
-              />
-            ))
-          : systemTemplates.map((t: any) => {
-              const meta  = CATEGORY_META[t.category]  ?? { emoji: "💪", color: "#10b981" };
-              const image = CATEGORY_IMAGE[t.category] ?? CATEGORY_IMAGE.weights;
-              return (
+    <>
+      <div className="space-y-3">
+        {/* Header */}
+        <div className="flex items-center justify-between px-0.5">
+          <p className="text-sm font-black text-white">אימון מהיר</p>
+          <button
+            onClick={() => setShowEdit(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-[11px] text-white/45 hover:text-white/70 hover:bg-white/8 transition-all active:scale-95"
+          >
+            <Settings2 className="h-3 w-3" />
+            <span>ערוך</span>
+          </button>
+        </div>
+
+        {/* Carousel */}
+        <div
+          ref={scrollRef}
+          className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-0.5 px-0.5"
+          style={{ scrollSnapType: "x mandatory" }}
+        >
+          {isLoading
+            ? Array.from({ length: 4 }).map((_, i) => (
                 <div
-                  key={t.id}
-                  className="relative flex-shrink-0 w-36 h-48 rounded-2xl overflow-hidden cursor-pointer select-none"
-                  style={{
-                    scrollSnapAlign: "start",
-                    backgroundImage: `url('${image}')`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
-                  <span className="absolute top-2.5 right-2.5 text-2xl leading-none drop-shadow-lg">
-                    {meta.emoji}
-                  </span>
-                  <p className="absolute bottom-10 right-0 left-0 px-3 text-sm font-black text-white leading-tight text-right line-clamp-2">
-                    {t.name}
-                  </p>
-                  <button
-                    onClick={() => onLoadTemplate(t)}
-                    className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-black text-white transition-all active:scale-95"
-                    style={{ background: meta.color + "cc", backdropFilter: "blur(8px)" }}
-                  >
-                    <ChevronRight className="h-3 w-3" />טען
-                  </button>
-                </div>
-              );
-            })}
+                  key={i}
+                  className="flex-shrink-0 w-36 h-48 rounded-2xl bg-white/5 animate-pulse"
+                  style={{ scrollSnapAlign: "start" }}
+                />
+              ))
+            : carouselItems.map((t: any) => <RichCard key={t.id} t={t} />)}
+        </div>
       </div>
-    </div>
+
+      {/* ── Edit / Customize modal ──────────────────────────────────── */}
+      {showEdit && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center pb-10 px-4"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(14px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowEdit(false); }}
+        >
+          <div className="w-full max-w-sm rounded-3xl border border-white/12 bg-[#0d0d0f] shadow-2xl flex flex-col"
+            style={{ maxHeight: "75vh" }}>
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/8">
+              <div>
+                <p className="text-base font-black text-white">התאם אישית</p>
+                <p className="text-[11px] text-white/35 mt-0.5">בחר תבניות לקרוסלת "אימון מהיר"</p>
+              </div>
+              <button
+                onClick={() => setShowEdit(false)}
+                className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/12 transition-all active:scale-95"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Template list */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+              {userTemplates.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-2.5">
+                  <span className="text-4xl">📋</span>
+                  <p className="text-sm font-bold text-white/50 text-center">אין תבניות שמורות עדיין</p>
+                  <p className="text-[11px] text-white/25 text-center leading-relaxed">
+                    בנה תבנית בכרטיסיית האימונים<br />כדי להוסיף אותה לכאן
+                  </p>
+                </div>
+              ) : (
+                userTemplates.map((t: any) => {
+                  const meta     = CATEGORY_META[t.category] ?? { emoji: "💪", color: "#10b981" };
+                  const isPinned = pinnedIds.includes(t.id);
+                  const exCount  = Array.isArray(t.exercises) ? t.exercises.length : 0;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => togglePin(t.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all active:scale-[0.98] ${
+                        isPinned
+                          ? "border-emerald-500/40 bg-emerald-500/10"
+                          : "border-white/10 bg-white/4 hover:border-white/18"
+                      }`}
+                    >
+                      {/* Category icon */}
+                      <div
+                        className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+                        style={{ background: meta.color + "22" }}
+                      >
+                        {meta.emoji}
+                      </div>
+
+                      {/* Name + meta */}
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className="text-sm font-black text-white truncate">{t.name}</p>
+                        <p className="text-[10px] text-white/35 mt-0.5">{exCount} תרגילים</p>
+                      </div>
+
+                      {/* Checkbox */}
+                      <div
+                        className={`h-5 w-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
+                          isPinned ? "border-emerald-500 bg-emerald-500" : "border-white/25 bg-transparent"
+                        }`}
+                      >
+                        {isPinned && <Check className="h-3 w-3 text-white" />}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Done button */}
+            <div className="px-4 pb-5 pt-3 border-t border-white/8">
+              <button
+                onClick={() => setShowEdit(false)}
+                className="w-full py-3.5 rounded-2xl bg-emerald-500 text-white text-sm font-black active:scale-[0.97] transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+              >
+                סיום
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -3330,7 +3448,6 @@ function SportPage() {
               <DayStatusBanner isTraining={isTraining} onToggle={() => setIsTraining((v) => !v)} />
               <div className="space-y-4">
                 <QuickAddRow onLoadTemplate={handleLoadTemplate} />
-                <QuickTemplatesRow onLoadTemplate={handleLoadTemplate} />
               </div>
               <StatsStrip />
               <WeekStrip />
