@@ -212,6 +212,20 @@ export function useDeleteWorkoutTemplate() {
   });
 }
 
+export function useUpdateWorkoutTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, exercises }: { id: string; exercises: { name: string; sets: number; reps: number; weight_kg: number }[] }) => {
+      const { error } = await supabase
+        .from("workout_templates")
+        .update({ exercises })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-templates"] }),
+  });
+}
+
 // ─── Weight Entries ───
 export function useWeightEntries(limit = 30) {
   return useQuery({

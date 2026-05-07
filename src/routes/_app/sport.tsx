@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import {
   usePersonalRecords, useAddPersonalRecord,
-  useWorkoutTemplates, useAddWorkoutTemplate, useDeleteWorkoutTemplate,
+  useWorkoutTemplates, useAddWorkoutTemplate, useDeleteWorkoutTemplate, useUpdateWorkoutTemplate,
   useWeekWorkouts, useAddWorkout, useWorkoutStreak,
   useWeightEntries, useAddWeight, useDeleteWeight, useUpdateWeight,
   useUserSettings, useUpdateUserSettings,
@@ -1715,6 +1715,43 @@ function ExerciseModal({
   onToggleFavorite: () => void;
   onToggleHidden: () => void;
 }) {
+  const [showTemplates, setShowTemplates] = useState(false);
+  const { data: templates } = useWorkoutTemplates();
+  const updateTemplate   = useUpdateWorkoutTemplate();
+  const addTemplate      = useAddWorkoutTemplate();
+
+  const userTemplates = ((templates ?? []) as any[]).filter((t) => !t.is_system);
+
+  const parseSets = (s: string | number) => { const n = parseInt(String(s)); return isNaN(n) ? 3 : n; };
+  const parseReps = (s: string)          => { const n = parseInt(s);          return isNaN(n) ? 10 : n; };
+
+  const handleAddToTemplate = (t: any) => {
+    const existing: any[] = t.exercises ?? [];
+    if (existing.some((e: any) => e.name === ex.name)) {
+      toast.info("התרגיל כבר קיים בתבנית זו");
+      return;
+    }
+    updateTemplate.mutate({
+      id: t.id,
+      exercises: [
+        ...existing,
+        { name: ex.name, sets: parseSets(ex.defaultSets), reps: parseReps(ex.defaultReps), weight_kg: 0 },
+      ],
+    });
+    toast.success(`נוסף ל"${t.name}" ✓`);
+    setShowTemplates(false);
+  };
+
+  const handleCreateNew = () => {
+    addTemplate.mutate({
+      name: ex.name,
+      category: "weights",
+      exercises: [{ name: ex.name, sets: parseSets(ex.defaultSets), reps: parseReps(ex.defaultReps), weight_kg: 0 }],
+    });
+    toast.success("תבנית חדשה נוצרה ✓");
+    setShowTemplates(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
       <div
@@ -1722,71 +1759,139 @@ function ExerciseModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto" />
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            {groupKey && BODY_DOTS[groupKey] && (
-              <div className="shrink-0 mt-0.5">
-                <MuscleBodyIcon muscleKey={groupKey} size={28} />
+
+        {showTemplates ? (
+          /* ── Template picker ─────────────────────────────────── */
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowTemplates(false)}
+                className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15 transition-all"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <p className="text-sm font-black text-white flex-1" dir="rtl">הוסף לתבנית — <span className="text-white/40 font-normal">{ex.name}</span></p>
+            </div>
+
+            {userTemplates.length === 0 ? (
+              <p className="text-xs text-white/35 text-center py-6">אין תבניות שמורות עדיין</p>
+            ) : (
+              <div className="space-y-2 max-h-52 overflow-y-auto scrollbar-hide">
+                {userTemplates.map((t: any) => {
+                  const alreadyIn = (t.exercises ?? []).some((e: any) => e.name === ex.name);
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => !alreadyIn && handleAddToTemplate(t)}
+                      disabled={alreadyIn || updateTemplate.isPending}
+                      className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-right ${
+                        alreadyIn
+                          ? "border-emerald-500/30 bg-emerald-500/8 cursor-default"
+                          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8 active:scale-[0.98]"
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0" dir="rtl">
+                        <p className="text-sm font-bold text-white truncate">{t.name}</p>
+                        <p className="text-[10px] text-white/35">{(t.exercises ?? []).length} תרגילים</p>
+                      </div>
+                      {alreadyIn
+                        ? <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                        : <Plus className="h-4 w-4 text-white/40 shrink-0" />
+                      }
+                    </button>
+                  );
+                })}
               </div>
             )}
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-black text-white leading-tight">{ex.name}</h3>
-              <p className="text-xs text-white/40 mt-0.5">{ex.muscles}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+
             <button
-              onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
-              className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all ${
-                isFavorite ? "bg-red-500/20 text-red-400" : "bg-white/8 text-white/40 hover:bg-white/15"
-              }`}
+              onClick={handleCreateNew}
+              disabled={addTemplate.isPending}
+              className="w-full py-3.5 rounded-2xl border border-dashed border-white/15 text-white/50 text-sm font-bold flex items-center justify-center gap-2 hover:border-white/30 hover:text-white/70 active:scale-[0.98] transition-all disabled:opacity-40"
             >
-              <Heart className={`h-3.5 w-3.5 ${isFavorite ? "fill-red-400" : ""}`} />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleHidden(); onClose(); }}
-              className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/40 hover:bg-white/15 transition-all"
-              title="הסתר תרגיל"
-            >
-              <EyeOff className="h-3.5 w-3.5" />
-            </button>
-            <button onClick={onClose} className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:bg-white/15">
-              <X className="h-4 w-4" />
+              <Plus className="h-4 w-4" />
+              צור תבנית חדשה מתרגיל זה
             </button>
           </div>
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2 text-center">
-          {[["סטים", ex.defaultSets], ["חזרות", ex.defaultReps], ["ציוד", ex.equipment]].map(([label, val]) => (
-            <div key={String(label)} className="rounded-xl border border-white/8 bg-white/5 p-2.5">
-              <p className="text-[9px] text-white/35">{label}</p>
-              <p className="text-sm font-black text-white mt-0.5 leading-tight">{val}</p>
+        ) : (
+          /* ── Normal exercise detail ──────────────────────────── */
+          <>
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                {groupKey && BODY_DOTS[groupKey] && (
+                  <div className="shrink-0 mt-0.5">
+                    <MuscleBodyIcon muscleKey={groupKey} size={28} />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-black text-white leading-tight">{ex.name}</h3>
+                  <p className="text-xs text-white/40 mt-0.5">{ex.muscles}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+                  className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all ${
+                    isFavorite ? "bg-red-500/20 text-red-400" : "bg-white/8 text-white/40 hover:bg-white/15"
+                  }`}
+                >
+                  <Heart className={`h-3.5 w-3.5 ${isFavorite ? "fill-red-400" : ""}`} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleHidden(); onClose(); }}
+                  className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/40 hover:bg-white/15 transition-all"
+                  title="הסתר תרגיל"
+                >
+                  <EyeOff className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={onClose} className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:bg-white/15">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
 
-        {/* Tips */}
-        <div className="space-y-2">
-          <p className="text-[11px] font-bold text-white/50">💡 טיפים לביצוע נכון</p>
-          {ex.tips.map((tip, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <span className="h-5 w-5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-              <p className="text-xs text-white/70">{tip}</p>
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {[["סטים", ex.defaultSets], ["חזרות", ex.defaultReps], ["ציוד", ex.equipment]].map(([label, val]) => (
+                <div key={String(label)} className="rounded-xl border border-white/8 bg-white/5 p-2.5">
+                  <p className="text-[9px] text-white/35">{label}</p>
+                  <p className="text-sm font-black text-white mt-0.5 leading-tight">{val}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* YouTube */}
-        <a
-          href={`https://www.youtube.com/results?search_query=${ex.youtubeQuery}`}
-          target="_blank" rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-sm hover:bg-red-500/15 transition-all"
-        >
-          <Youtube className="h-4 w-4" />
-          <span>סרטון הדרכה ב-YouTube</span>
-        </a>
+            {/* Tips */}
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-white/50">💡 טיפים לביצוע נכון</p>
+              {ex.tips.map((tip, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="h-5 w-5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                  <p className="text-xs text-white/70">{tip}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Add to template */}
+            <button
+              onClick={() => setShowTemplates(true)}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-sm hover:bg-emerald-500/15 transition-all active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4" />
+              הוסף לתבנית
+            </button>
+
+            {/* YouTube */}
+            <a
+              href={`https://www.youtube.com/results?search_query=${ex.youtubeQuery}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-sm hover:bg-red-500/15 transition-all"
+            >
+              <Youtube className="h-4 w-4" />
+              <span>סרטון הדרכה ב-YouTube</span>
+            </a>
+          </>
+        )}
       </div>
     </div>
   );
