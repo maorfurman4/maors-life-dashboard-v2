@@ -700,19 +700,26 @@ function BuilderExerciseRow({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Swipe backdrop — delete only ── */}
-      <div className="absolute inset-y-0 right-0 flex items-stretch p-1.5" style={{ width: ACTION_W }}>
+      {/* Swipe backdrop — hidden at rest, revealed during swipe ── */}
+      <div
+        className="absolute inset-y-0 right-0 flex items-stretch p-1.5"
+        style={{
+          width: ACTION_W,
+          opacity: Math.min(swipeX / ACTION_W, 1),
+          pointerEvents: swipeX >= ACTION_W ? "auto" : "none",
+        }}
+      >
         <button
           onClick={() => { onRemove(); setSwipeX(0); }}
-          className="w-full rounded-xl bg-red-500/25 text-red-400 flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold hover:bg-red-500/35 active:scale-95 transition-all"
+          className="w-full rounded-xl bg-red-500/80 text-white flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold active:scale-95 transition-all"
         >
           <Trash2 className="h-4 w-4" />מחק
         </button>
       </div>
 
-      {/* Main card ── */}
+      {/* Main card — positioned so it paints above the absolute backdrop ── */}
       <div
-        className="rounded-2xl border border-white/10 bg-white/5 p-3 space-y-2.5"
+        className="relative z-[1] rounded-2xl border border-white/10 bg-[#111315] p-3 space-y-2.5"
         style={{ transform: `translateX(-${swipeX}px)`, transition: swiping.current ? "none" : "transform 0.18s ease" }}
       >
         {/* ── Name row (always visible) ──── */}
