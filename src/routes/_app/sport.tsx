@@ -263,6 +263,19 @@ function MuscleBodyIcon({ muscleKey, size = 26 }: { muscleKey: string; size?: nu
   );
 }
 
+// ─── Builder helpers ──────────────────────────────────────────────────────────
+const TIME_KEYWORDS_LC = [
+  "פלנק", "plank", "wall sit", "ישיבת קיר", "hollow body", "l-sit",
+  "מתיחת", "מתיחה", "stretch", "savasana", "child", "spinal",
+  "figure 4", "hold", "שחרור", "inchworm",
+];
+function detectTimeBased(name: string): boolean {
+  const lc = name.toLowerCase();
+  return TIME_KEYWORDS_LC.some((k) => lc.includes(k));
+}
+// Accent colors cycled per exercise group block (zebra striping)
+const GROUP_ACCENT_COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#f97316", "#ec4899", "#06b6d4"];
+
 // ─── Weekly day strip ─────────────────────────────────────────────────────────
 const DAYS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
 const TODAY_IDX = new Date().getDay();
@@ -543,20 +556,32 @@ function Stepper({ value, onChange, min = 0, max = 999, step = 1, suffix = "" }:
   );
 }
 
-interface BuilderEx { name: string; sets: number; reps: number; weight_kg: number; }
+interface BuilderEx {
+  name: string;
+  sets: number;
+  reps: number;
+  weight_kg: number;
+  isTimeBased?: boolean;  // undefined = auto-detect from name
+  isWarmup?: boolean;
+  group?: number;         // group ID for zebra striping
+}
 
 function BuilderExerciseRow({
-  ex, onChange, onRemove, onDuplicate, idx,
+  ex, onChange, onRemove, onDuplicate, idx, accentColor,
 }: {
   ex: BuilderEx;
   onChange: (v: BuilderEx) => void;
   onRemove: () => void;
   onDuplicate: () => void;
   idx: number;
+  accentColor?: string;
 }) {
-  // ── Swipe-to-reveal state ────────────────────────────────────────
-  const [swipeX,    setSwipeX]    = useState(0);
-  const [actOpen,   setActOpen]   = useState(false);
+  // ── Accordion & menu state ───────────────────────────────────────
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [actOpen,     setActOpen]     = useState(false);
+
+  // ── Swipe-to-reveal ──────────────────────────────────────────────
+  const [swipeX,  setSwipeX]  = useState(0);
   const touchStartX = useRef(0);
   const swiping     = useRef(false);
   const ACTION_W    = 104;
@@ -571,23 +596,26 @@ function BuilderExerciseRow({
     if (delta > 0) setSwipeX(Math.min(delta, ACTION_W));
     else if (delta < -10) setSwipeX(0);
   };
-  const onTouchEnd = () => {
-    setSwipeX((prev) => (prev > ACTION_W / 3 ? ACTION_W : 0));
-  };
+  const onTouchEnd = () => setSwipeX((p) => (p > ACTION_W / 3 ? ACTION_W : 0));
 
-  // ── Local raw-string state (lets user clear & retype) ────────────
+  // ── Time-mode detection ──────────────────────────────────────────
+  // isTimeBased=undefined → auto; true/false → explicit override
+  const isTimeMode = ex.isTimeBased !== undefined ? ex.isTimeBased : detectTimeBased(ex.name);
+  const toggleTimeMode = () => onChange({ ...ex, isTimeBased: !isTimeMode });
+  const toggleWarmup   = () => onChange({ ...ex, isWarmup: !ex.isWarmup });
+
+  // ── Local raw-string state ───────────────────────────────────────
   const [rawSets,   setRawSets]   = useState(String(ex.sets));
   const [rawReps,   setRawReps]   = useState(String(ex.reps));
   const [rawWeight, setRawWeight] = useState(ex.weight_kg > 0 ? String(ex.weight_kg) : "");
 
-  // Sync raw strings when parent updates (button clicks, template load)
-  useEffect(() => setRawSets(String(ex.sets)),       [ex.sets]);
-  useEffect(() => setRawReps(String(ex.reps)),       [ex.reps]);
+  useEffect(() => setRawSets(String(ex.sets)),   [ex.sets]);
+  useEffect(() => setRawReps(String(ex.reps)),   [ex.reps]);
   useEffect(() => {
     setRawWeight(ex.weight_kg > 0 ? String(ex.weight_kg) : "");
   }, [ex.weight_kg]);
 
-  // ── Tab-to-next navigation via data attributes ───────────────────
+  // ── Tab-to-next ──────────────────────────────────────────────────
   const focusNext = (field: "sets" | "reps" | "weight") => (e: React.KeyboardEvent) => {
     if (e.key !== "Tab" || e.shiftKey) return;
     if (field === "sets") {
@@ -602,11 +630,9 @@ function BuilderExerciseRow({
     }
   };
 
-  const autoSel = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
-
-  // ── Quick-increment helpers ──────────────────────────────────────
-  const incSets   = (d: number) => onChange({ ...ex, sets:      Math.max(1,  ex.sets   + d) });
-  const incReps   = (d: number) => onChange({ ...ex, reps:      Math.max(1,  ex.reps   + d) });
+  const autoSel   = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
+  const incSets   = (d: number) => onChange({ ...ex, sets:      Math.max(1, ex.sets + d) });
+  const incReps   = (d: number) => onChange({ ...ex, reps:      Math.max(1, ex.reps + d) });
   const incWeight = (d: number) => onChange({ ...ex, weight_kg: parseFloat(Math.max(0, ex.weight_kg + d).toFixed(2)) });
 
   const inputCls = "w-full h-9 rounded-xl bg-white/10 border border-white/12 text-center text-sm font-black text-white outline-none focus:border-emerald-500/60 focus:bg-emerald-500/8 transition-all";
@@ -615,44 +641,44 @@ function BuilderExerciseRow({
   return (
     <div
       className="relative overflow-hidden rounded-2xl select-none"
+      style={accentColor ? { borderLeft: `3px solid ${accentColor}60` } : undefined}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* ── Swipe action backdrop ─────────────────────────────────── */}
-      <div
-        className="absolute inset-y-0 right-0 flex items-stretch gap-1 p-1.5"
-        style={{ width: ACTION_W }}
-      >
+      {/* Swipe backdrop ── */}
+      <div className="absolute inset-y-0 right-0 flex items-stretch gap-1 p-1.5" style={{ width: ACTION_W }}>
         <button
-          onClick={() => { onDuplicate(); setSwipeX(0); }}
+          onClick={() => { onDuplicate(); setSwipeX(0); toast.success("📋 תרגיל שוכפל"); }}
           className="flex-1 rounded-xl bg-blue-500/25 text-blue-400 flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold"
         >
-          <CheckCircle2 className="h-4 w-4" />
-          שכפל
+          <CheckCircle2 className="h-4 w-4" />שכפל
         </button>
         <button
           onClick={() => { onRemove(); setSwipeX(0); }}
           className="flex-1 rounded-xl bg-red-500/20 text-red-400 flex flex-col items-center justify-center gap-0.5 text-[9px] font-bold"
         >
-          <Trash2 className="h-4 w-4" />
-          מחק
+          <Trash2 className="h-4 w-4" />מחק
         </button>
       </div>
 
-      {/* ── Main card (slides left on swipe) ──────────────────────── */}
+      {/* Main card ── */}
       <div
-        className="rounded-2xl border border-white/10 bg-white/5 p-3 space-y-3"
-        style={{
-          transform: `translateX(-${swipeX}px)`,
-          transition: swiping.current ? "none" : "transform 0.18s ease",
-        }}
+        className="rounded-2xl border border-white/10 bg-white/5 p-3 space-y-2.5"
+        style={{ transform: `translateX(-${swipeX}px)`, transition: swiping.current ? "none" : "transform 0.18s ease" }}
       >
-        {/* Name row */}
+        {/* ── Name row (always visible) ──── */}
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-[10px] font-black text-emerald-400 shrink-0">
-            {idx + 1}
-          </div>
+          {/* Collapse toggle — click index badge */}
+          <button
+            onClick={() => setIsCollapsed((v) => !v)}
+            className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0 hover:bg-emerald-500/30 transition-all"
+          >
+            {isCollapsed
+              ? <ChevronDown className="h-3.5 w-3.5 text-emerald-400" />
+              : <span className="text-[10px] font-black text-emerald-400">{idx + 1}</span>}
+          </button>
+
           <input
             value={ex.name}
             onChange={(e) => onChange({ ...ex, name: e.target.value })}
@@ -660,7 +686,20 @@ function BuilderExerciseRow({
             className="flex-1 bg-transparent text-sm font-semibold text-white placeholder:text-white/25 outline-none border-b border-white/10 pb-0.5"
             dir="rtl"
           />
-          {/* ⋮ menu — desktop fallback */}
+
+          {/* Status badges */}
+          {ex.isWarmup && (
+            <span className="shrink-0 text-[8px] font-black text-amber-400 px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/20">
+              חימום
+            </span>
+          )}
+          {isTimeMode && (
+            <span className="shrink-0 text-[8px] font-black text-cyan-400 px-1 py-0.5 rounded-full bg-cyan-500/12 border border-cyan-500/20">
+              ⏱
+            </span>
+          )}
+
+          {/* ⋮ overflow menu */}
           <button
             onClick={() => setActOpen((v) => !v)}
             className={`h-6 w-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 transition-all ${
@@ -671,109 +710,118 @@ function BuilderExerciseRow({
           </button>
         </div>
 
-        {/* Desktop action row (toggled by ⋮) */}
+        {/* ── ⋮ Action row (warmup | time | duplicate | delete) ─── */}
         {actOpen && (
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <button
-              onClick={() => { onDuplicate(); setActOpen(false); }}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-blue-500/15 text-blue-400 text-xs font-bold hover:bg-blue-500/25 active:scale-[0.98]"
+              onClick={toggleWarmup}
+              className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${
+                ex.isWarmup
+                  ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                  : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10"
+              }`}
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />שכפל
+              🔥 חימום
+            </button>
+            <button
+              onClick={toggleTimeMode}
+              className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${
+                isTimeMode
+                  ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+                  : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10"
+              }`}
+            >
+              ⏱ זמן
+            </button>
+            <button
+              onClick={() => { onDuplicate(); setActOpen(false); toast.success("📋 תרגיל שוכפל"); }}
+              className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl bg-blue-500/15 text-blue-400 text-[10px] font-bold border border-blue-500/20 hover:bg-blue-500/25"
+            >
+              <CheckCircle2 className="h-3 w-3" />שכפל
             </button>
             <button
               onClick={onRemove}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-red-500/12 text-red-400 text-xs font-bold hover:bg-red-500/20 active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl bg-red-500/12 text-red-400 text-[10px] font-bold border border-red-500/20 hover:bg-red-500/20"
             >
-              <Trash2 className="h-3.5 w-3.5" />מחק
+              <Trash2 className="h-3 w-3" />מחק
             </button>
           </div>
         )}
 
-        {/* Inputs grid */}
-        <div className="grid grid-cols-3 gap-2">
-          {/* ── Sets ─────────────────── */}
-          <div className="space-y-1.5">
-            <p className="text-[9px] text-white/40 font-medium text-center">סטים</p>
-            <input
-              data-brow={idx} data-bfield="sets"
-              type="text" inputMode="numeric" pattern="[0-9]*"
-              value={rawSets}
-              onChange={(e) => {
-                setRawSets(e.target.value);
-                const v = parseInt(e.target.value);
-                if (!isNaN(v) && v >= 1) onChange({ ...ex, sets: v });
-              }}
-              onBlur={() => {
-                const v = parseInt(rawSets);
-                if (isNaN(v) || v < 1) setRawSets(String(ex.sets));
-              }}
-              onFocus={autoSel}
-              onKeyDown={focusNext("sets")}
-              className={inputCls}
-            />
-            <div className="flex gap-1 justify-center">
-              <button onClick={() => incSets(-1)}  className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>−1</button>
-              <button onClick={() => incSets(+1)}  className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>+1</button>
-            </div>
-          </div>
-
-          {/* ── Reps ─────────────────── */}
-          <div className="space-y-1.5">
-            <p className="text-[9px] text-white/40 font-medium text-center">חזרות</p>
-            <input
-              data-brow={idx} data-bfield="reps"
-              type="text" inputMode="numeric" pattern="[0-9]*"
-              value={rawReps}
-              onChange={(e) => {
-                setRawReps(e.target.value);
-                const v = parseInt(e.target.value);
-                if (!isNaN(v) && v >= 1) onChange({ ...ex, reps: v });
-              }}
-              onBlur={() => {
-                const v = parseInt(rawReps);
-                if (isNaN(v) || v < 1) setRawReps(String(ex.reps));
-              }}
-              onFocus={autoSel}
-              onKeyDown={focusNext("reps")}
-              className={inputCls}
-            />
-            <div className="flex gap-1 justify-center">
-              <button onClick={() => incReps(-1)}  className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>−1</button>
-              <button onClick={() => incReps(+1)}  className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>+1</button>
-            </div>
-          </div>
-
-          {/* ── Weight ───────────────── */}
-          <div className="space-y-1.5">
-            <p className="text-[9px] text-white/40 font-medium text-center">משקל</p>
-            <div className="relative">
+        {/* ── Stats grid (hidden when collapsed) ────────────────── */}
+        {!isCollapsed && (
+          <div className="grid grid-cols-3 gap-2">
+            {/* Sets */}
+            <div className="space-y-1.5">
+              <p className="text-[9px] text-white/40 font-medium text-center">סטים</p>
               <input
-                data-brow={idx} data-bfield="weight"
-                type="text" inputMode="decimal" pattern="[0-9.]*"
-                value={rawWeight}
-                placeholder="0"
-                onChange={(e) => {
-                  setRawWeight(e.target.value);
-                  const v = parseFloat(e.target.value);
-                  if (!isNaN(v) && v >= 0) onChange({ ...ex, weight_kg: parseFloat(v.toFixed(2)) });
-                }}
-                onBlur={() => {
-                  const v = parseFloat(rawWeight);
-                  if (isNaN(v) || v < 0) setRawWeight(ex.weight_kg > 0 ? String(ex.weight_kg) : "");
-                }}
+                data-brow={idx} data-bfield="sets"
+                type="text" inputMode="numeric" pattern="[0-9]*"
+                value={rawSets}
+                onChange={(e) => { setRawSets(e.target.value); const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) onChange({ ...ex, sets: v }); }}
+                onBlur={() => { const v = parseInt(rawSets); if (isNaN(v) || v < 1) setRawSets(String(ex.sets)); }}
                 onFocus={autoSel}
-                onKeyDown={focusNext("weight")}
-                className={`${inputCls} placeholder:text-white/20`}
+                onKeyDown={focusNext("sets")}
+                className={inputCls}
               />
-              <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-white/25 pointer-events-none">kg</span>
+              <div className="flex gap-1 justify-center">
+                <button onClick={() => incSets(-1)} className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>−1</button>
+                <button onClick={() => incSets(+1)} className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>+1</button>
+              </div>
             </div>
-            <div className="flex gap-0.5 justify-center">
-              <button onClick={() => incWeight(-2.5)} className={`${microBtn} px-1.5 bg-white/8 text-white/50 hover:bg-white/15`}>-2.5</button>
-              <button onClick={() => incWeight(+2.5)} className={`${microBtn} px-1.5 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25`}>+2.5</button>
-              <button onClick={() => incWeight(+5)}   className={`${microBtn} px-1.5 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25`}>+5</button>
+
+            {/* Reps / Time ── dynamic label + micro-buttons */}
+            <div className="space-y-1.5">
+              <p className={`text-[9px] font-medium text-center ${isTimeMode ? "text-cyan-400/80" : "text-white/40"}`}>
+                {isTimeMode ? "שניות" : "חזרות"}
+              </p>
+              <input
+                data-brow={idx} data-bfield="reps"
+                type="text" inputMode="numeric" pattern="[0-9]*"
+                value={rawReps}
+                onChange={(e) => { setRawReps(e.target.value); const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) onChange({ ...ex, reps: v }); }}
+                onBlur={() => { const v = parseInt(rawReps); if (isNaN(v) || v < 1) setRawReps(String(ex.reps)); }}
+                onFocus={autoSel}
+                onKeyDown={focusNext("reps")}
+                className={`${inputCls} ${isTimeMode ? "border-cyan-500/30 focus:border-cyan-500/60 focus:bg-cyan-500/8" : ""}`}
+              />
+              {isTimeMode ? (
+                <div className="flex gap-1 justify-center">
+                  <button onClick={() => incReps(-15)} className={`${microBtn} px-1.5 bg-white/8 text-white/50 hover:bg-white/15`}>-15</button>
+                  <button onClick={() => incReps(+15)} className={`${microBtn} px-1.5 bg-cyan-500/15 text-cyan-400 hover:bg-cyan-500/25`}>+15</button>
+                </div>
+              ) : (
+                <div className="flex gap-1 justify-center">
+                  <button onClick={() => incReps(-1)} className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>−1</button>
+                  <button onClick={() => incReps(+1)} className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>+1</button>
+                </div>
+              )}
+            </div>
+
+            {/* Weight */}
+            <div className="space-y-1.5">
+              <p className="text-[9px] text-white/40 font-medium text-center">משקל</p>
+              <div className="relative">
+                <input
+                  data-brow={idx} data-bfield="weight"
+                  type="text" inputMode="decimal" pattern="[0-9.]*"
+                  value={rawWeight} placeholder="0"
+                  onChange={(e) => { setRawWeight(e.target.value); const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 0) onChange({ ...ex, weight_kg: parseFloat(v.toFixed(2)) }); }}
+                  onBlur={() => { const v = parseFloat(rawWeight); if (isNaN(v) || v < 0) setRawWeight(ex.weight_kg > 0 ? String(ex.weight_kg) : ""); }}
+                  onFocus={autoSel}
+                  onKeyDown={focusNext("weight")}
+                  className={`${inputCls} placeholder:text-white/20`}
+                />
+                <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-white/25 pointer-events-none">kg</span>
+              </div>
+              <div className="flex gap-0.5 justify-center">
+                <button onClick={() => incWeight(-2.5)} className={`${microBtn} px-1.5 bg-white/8 text-white/50 hover:bg-white/15`}>-2.5</button>
+                <button onClick={() => incWeight(+2.5)} className={`${microBtn} px-1.5 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25`}>+2.5</button>
+                <button onClick={() => incWeight(+5)}   className={`${microBtn} px-1.5 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25`}>+5</button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -805,7 +853,8 @@ function WorkoutBuilderTab({
   const [subTab, setSubTab] = useState<"ai" | "custom">("custom");
   const [workoutName, setWorkoutName]         = useState("");
   const [workoutCategory, setWorkoutCategory] = useState<WorkoutDbCategory>("weights");
-  const [exercises, setExercises]             = useState<BuilderEx[]>([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
+  const [exercises, setExercises]             = useState<BuilderEx[]>([{ name: "", sets: 3, reps: 10, weight_kg: 0, group: 0 }]);
+  const [groupCounter, setGroupCounter]       = useState(0);
   const addTemplate   = useAddWorkoutTemplate();
   const addWorkout    = useAddWorkout();
   const { data: templates } = useWorkoutTemplates();
@@ -825,22 +874,28 @@ function WorkoutBuilderTab({
     onExternalTemplateConsumed?.();
   }, [externalTemplate]);
 
-  // Append exercises picked from the library
+  // Append exercises picked from the library (new group per batch for zebra striping)
   useEffect(() => {
     if (!pendingExercises?.length) return;
     const parseReps = (reps: string): number => {
       const m = reps.match(/\d+/);
       return m ? parseInt(m[0]) : 10;
     };
-    setExercises((prev) => [
-      ...prev.filter((e) => e.name.trim()),
-      ...pendingExercises.map((ex) => ({
-        name: ex.name,
-        sets: ex.defaultSets,
-        reps: parseReps(ex.defaultReps),
-        weight_kg: 0,
-      })),
-    ]);
+    setGroupCounter((prevG) => {
+      const newGroup = prevG + 1;
+      setExercises((prev) => [
+        ...prev.filter((e) => e.name.trim()),
+        ...pendingExercises.map((ex) => ({
+          name: ex.name,
+          sets: ex.defaultSets,
+          reps: parseReps(ex.defaultReps),
+          weight_kg: 0,
+          group: newGroup,
+        })),
+      ]);
+      toast.success(`✅ ${pendingExercises.length} תרגילים נוספו לאימון`);
+      return newGroup;
+    });
     setSubTab("custom");
     onPendingExercisesConsumed?.();
   }, [pendingExercises]);
@@ -848,7 +903,11 @@ function WorkoutBuilderTab({
   const updateEx = (i: number, v: BuilderEx) => setExercises((prev) => prev.map((e, idx) => idx === i ? v : e));
   const removeEx = (i: number) => setExercises((prev) => prev.filter((_, idx) => idx !== i));
   const dupEx    = (i: number) => setExercises((prev) => { const c = [...prev]; c.splice(i + 1, 0, { ...prev[i] }); return c; });
-  const addEx    = () => setExercises((prev) => [...prev, { name: "", sets: 3, reps: 10, weight_kg: 0 }]);
+  const addEx    = () => setExercises((prev) => {
+    // New manual exercise joins the last group (or starts group 0)
+    const lastGroup = prev.length ? (prev[prev.length - 1].group ?? 0) : 0;
+    return [...prev, { name: "", sets: 3, reps: 10, weight_kg: 0, group: lastGroup }];
+  });
 
   const handleSaveTemplate = async () => {
     if (!workoutName.trim()) return toast.error("תן שם לאימון");
@@ -943,15 +1002,47 @@ function WorkoutBuilderTab({
               </button>
             ))}
           </div>
-          <div className="space-y-3">
-            {exercises.map((ex, i) => (
-              <BuilderExerciseRow key={i} ex={ex} idx={i} onChange={(v) => updateEx(i, v)} onRemove={() => removeEx(i)} onDuplicate={() => dupEx(i)} />
-            ))}
+          <div className="space-y-2.5">
+            {(() => {
+              // Compute zebra accent colors per group block
+              let block = 0;
+              let prevGroup: number | undefined = undefined;
+              return exercises.map((ex, i) => {
+                const g = ex.group ?? 0;
+                if (prevGroup !== undefined && g !== prevGroup) block++;
+                prevGroup = g;
+                const accentColor = GROUP_ACCENT_COLORS[block % GROUP_ACCENT_COLORS.length];
+                return (
+                  <BuilderExerciseRow
+                    key={i}
+                    ex={ex}
+                    idx={i}
+                    accentColor={accentColor}
+                    onChange={(v) => updateEx(i, v)}
+                    onRemove={() => removeEx(i)}
+                    onDuplicate={() => dupEx(i)}
+                  />
+                );
+              });
+            })()}
           </div>
-          <button onClick={addEx}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-white/20 text-white/50 hover:border-emerald-500/40 hover:text-emerald-400 transition-all text-sm font-semibold">
-            <Plus className="h-4 w-4" />הוסף תרגיל
-          </button>
+          <div className="flex gap-2">
+            <button onClick={addEx}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-white/20 text-white/50 hover:border-emerald-500/40 hover:text-emerald-400 transition-all text-sm font-semibold">
+              <Plus className="h-4 w-4" />הוסף תרגיל
+            </button>
+            <button
+              onClick={() => setGroupCounter((g) => {
+                const ng = g + 1;
+                setExercises((prev) => [...prev, { name: "", sets: 3, reps: 10, weight_kg: 0, group: ng }]);
+                return ng;
+              })}
+              className="flex items-center justify-center gap-1.5 px-3 py-3 rounded-2xl border border-dashed border-white/15 text-white/35 hover:border-blue-500/40 hover:text-blue-400 transition-all text-xs font-semibold whitespace-nowrap"
+              title="הוסף קבוצת שרירים חדשה (צבע חדש)"
+            >
+              <Plus className="h-3.5 w-3.5" />קבוצה
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <button onClick={handleSaveTemplate} disabled={addTemplate.isPending}
               className="flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-white/20 bg-white/8 text-white text-sm font-bold hover:bg-white/12 active:scale-[0.98] transition-all">
