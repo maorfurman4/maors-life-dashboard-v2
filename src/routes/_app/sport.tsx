@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, Loader2, Star, X, BookOpen,
   TrendingUp, Scale, Medal, BarChart3, Camera,
   Pencil, Check, Trash2, Heart, EyeOff, Eye,
-  Share2, MapPin, Timer, Download, Settings2,
+  Share2, MapPin, Timer, Download, Settings2, Youtube,
 } from "lucide-react";
 import {
   usePersonalRecords, useAddPersonalRecord,
@@ -242,6 +242,15 @@ const EQUIP_META: Record<EquipmentCategory, { label: string; emoji: string; colo
   mat:          { label: "מזרן / ללא ציוד",  emoji: "🧘",  color: "#06b6d4" },
   bar:          { label: "מוט מתח",          emoji: "⬆️",  color: "#f59e0b" },
   equipment:    { label: "ציוד עזר",         emoji: "🪑",  color: "#ec4899" },
+};
+
+const EQUIPMENT_IMAGES: Record<EquipmentCategory, string> = {
+  free_weights: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&q=80",
+  machine:      "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80",
+  cables:       "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&q=80",
+  mat:          "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80",
+  bar:          "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80",
+  equipment:    "https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=400&q=80",
 };
 
 // ─── Body icon ────────────────────────────────────────────────────────────────
@@ -1775,7 +1784,8 @@ function ExerciseModal({
           target="_blank" rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-sm hover:bg-red-500/15 transition-all"
         >
-          <span>▶</span>סרטון הדרכה ב-YouTube
+          <Youtube className="h-4 w-4" />
+          <span>סרטון הדרכה ב-YouTube</span>
         </a>
       </div>
     </div>
@@ -1791,6 +1801,7 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
   const [selectedEx,     setSelectedEx]     = useState<{ ex: LibraryExercise; groupKey: string } | null>(null);
   const [checked,        setChecked]        = useState<Set<string>>(new Set());
   const [showHidden,     setShowHidden]     = useState(false);
+  const [showAllExercises, setShowAllExercises] = useState(false);
 
   const { data: settings } = useUserSettings();
   const updateSettings = useUpdateUserSettings();
@@ -1833,16 +1844,19 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
     setWorkoutType(t);
     setSelectedGroup(null);
     setSelectedEquip(null);
+    setShowAllExercises(false);
     setChecked(new Set());
   };
 
   const handleGroupSelect = (g: MuscleGroup) => {
     setSelectedGroup(g);
     setSelectedEquip(null);
+    setShowAllExercises(false);
   };
 
   const handleBack = () => {
     if (selectedEquip) { setSelectedEquip(null); return; }
+    if (showAllExercises) { setShowAllExercises(false); return; }
     setSelectedGroup(null);
   };
 
@@ -1946,6 +1960,7 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
               <p className="text-sm font-black text-white leading-tight">
                 {selectedGroup.label}
                 {selectedEquip && <span className="text-white/40 font-normal"> · {EQUIP_META[selectedEquip].label}</span>}
+                {!selectedEquip && showAllExercises && <span className="text-white/40 font-normal"> · כל התרגילים</span>}
               </p>
             </div>
           </div>
@@ -2007,49 +2022,58 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
         </>
       )}
 
-      {/* ── WEIGHTS inside group: equipment chips ───────────────────── */}
-      {workoutType === "weights" && selectedGroup && !selectedEquip && (
-        <>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {equipCategories.map((cat) => {
-              const meta = EQUIP_META[cat];
-              const count = selectedGroup.exercises.filter(
-                (ex) => getEquipCat(ex.equipment) === cat && (showHidden || !hidden.includes(ex.name))
-              ).length;
-              if (count === 0) return null;
-              return (
-                <button key={cat} onClick={() => setSelectedEquip(cat)}
-                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8 active:scale-95 transition-all">
-                  <span className="text-base leading-none">{meta.emoji}</span>
-                  <div className="text-right">
-                    <p className="text-[11px] font-bold text-white whitespace-nowrap">{meta.label}</p>
-                    <p className="text-[9px] text-white/35">{count} תרגילים</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          {/* Show all exercises grouped by equipment when no filter */}
-          <div className="space-y-2">
-            {groupExercises.map((ex) => (
-              <ExerciseRow
-                key={ex.name}
-                ex={ex}
-                groupKey={selectedGroup.key}
-                isChecked={checked.has(ex.name)}
-                isFavorite={favorites.includes(ex.name)}
-                onCheck={() => toggleCheck(ex.name)}
-                onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
-              />
-            ))}
-          </div>
-        </>
+      {/* ── WEIGHTS inside group: equipment grid ────────────────────── */}
+      {workoutType === "weights" && selectedGroup && !selectedEquip && !showAllExercises && (
+        <div className="grid grid-cols-2 gap-3">
+          {/* Always-visible "All Exercises" tile */}
+          <button
+            onClick={() => setShowAllExercises(true)}
+            className="col-span-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/8 p-4 text-right flex items-center gap-3 active:scale-[0.97] transition-all hover:bg-emerald-500/12"
+          >
+            <div className="h-11 w-11 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-xl shrink-0">
+              🔍
+            </div>
+            <div>
+              <p className="text-sm font-black text-white">כל התרגילים</p>
+              <p className="text-[10px] text-emerald-400/70">{groupExercises.length} תרגילים</p>
+            </div>
+          </button>
+          {/* Equipment tiles — hidden if empty */}
+          {equipCategories.map((cat) => {
+            const meta = EQUIP_META[cat];
+            const img  = EQUIPMENT_IMAGES[cat];
+            const count = selectedGroup.exercises.filter(
+              (ex) => getEquipCat(ex.equipment) === cat && (showHidden || !hidden.includes(ex.name))
+            ).length;
+            if (count === 0) return null;
+            return (
+              <button key={cat} onClick={() => setSelectedEquip(cat)}
+                className="relative rounded-2xl overflow-hidden border border-white/10 h-28 active:scale-[0.97] transition-all hover:border-white/25"
+              >
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${img})`, filter: "brightness(0.3) saturate(0.7)" }}
+                />
+                <div className="relative z-10 h-full flex flex-col items-center justify-center gap-1 p-3">
+                  <span className="text-2xl">{meta.emoji}</span>
+                  <p className="text-[11px] font-black text-white text-center leading-tight">{meta.label}</p>
+                  <p className="text-[9px] text-white/50">{count} תרגילים</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       )}
 
-      {/* ── WEIGHTS with equipment selected: filtered list ──────────── */}
-      {workoutType === "weights" && selectedGroup && selectedEquip && (
+      {/* ── WEIGHTS with equip selected OR show-all: exercise list ──── */}
+      {workoutType === "weights" && selectedGroup && (selectedEquip || showAllExercises) && (
         <div className="space-y-2">
-          {groupExercises.map((ex) => (
+          {groupExercises.length === 0 ? (
+            <div className="text-center py-8 text-white/30 text-xs">
+              כל התרגילים מוסתרים —{" "}
+              <button onClick={() => setShowHidden(true)} className="underline">הצג מוסתרים</button>
+            </div>
+          ) : groupExercises.map((ex) => (
             <ExerciseRow
               key={ex.name}
               ex={ex}
