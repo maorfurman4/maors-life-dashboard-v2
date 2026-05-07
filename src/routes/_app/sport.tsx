@@ -339,29 +339,60 @@ function QuickWorkoutCard({ workout, onQuickLog }: { workout: (typeof QUICK_WORK
   );
 }
 
-function QuickAddRow() {
+function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const addWorkout = useAddWorkout();
-  const handleQuickLog = async (dbCategory: string, label: string, duration: number) => {
-    try {
-      await addWorkout.mutateAsync({ category: dbCategory, duration_minutes: duration, notes: label });
-      toast.success(`✅ ${label} — ${duration} דקות נרשם!`, { duration: 2500 });
-    } catch { toast.error("שגיאה בשמירת האימון"); }
-  };
+  const { data: templates, isLoading } = useWorkoutTemplates();
+  const systemTemplates = (templates ?? []).filter((t: any) => t.is_system);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between px-0.5">
-        <p className="text-sm font-black text-white">הוסף מהיר</p>
-        <button className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/70 transition-colors">
-          <span>כל האימונים</span><ChevronRight className="h-3 w-3" />
-        </button>
+        <p className="text-sm font-black text-white">אימון מהיר</p>
       </div>
-      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-0.5 px-0.5" style={{ scrollSnapType: "x mandatory" }}>
-        {QUICK_WORKOUTS.map((w) => (
-          <div key={w.key} style={{ scrollSnapAlign: "start" }}>
-            <QuickWorkoutCard workout={w} onQuickLog={handleQuickLog} />
-          </div>
-        ))}
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-0.5 px-0.5"
+        style={{ scrollSnapType: "x mandatory" }}
+      >
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex-shrink-0 w-36 h-48 rounded-2xl bg-white/5 animate-pulse"
+                style={{ scrollSnapAlign: "start" }}
+              />
+            ))
+          : systemTemplates.map((t: any) => {
+              const meta  = CATEGORY_META[t.category]  ?? { emoji: "💪", color: "#10b981" };
+              const image = CATEGORY_IMAGE[t.category] ?? CATEGORY_IMAGE.weights;
+              return (
+                <div
+                  key={t.id}
+                  className="relative flex-shrink-0 w-36 h-48 rounded-2xl overflow-hidden cursor-pointer select-none"
+                  style={{
+                    scrollSnapAlign: "start",
+                    backgroundImage: `url('${image}')`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+                  <span className="absolute top-2.5 right-2.5 text-2xl leading-none drop-shadow-lg">
+                    {meta.emoji}
+                  </span>
+                  <p className="absolute bottom-10 right-0 left-0 px-3 text-sm font-black text-white leading-tight text-right line-clamp-2">
+                    {t.name}
+                  </p>
+                  <button
+                    onClick={() => onLoadTemplate(t)}
+                    className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-black text-white transition-all active:scale-95"
+                    style={{ background: meta.color + "cc", backdropFilter: "blur(8px)" }}
+                  >
+                    <ChevronRight className="h-3 w-3" />טען
+                  </button>
+                </div>
+              );
+            })}
       </div>
     </div>
   );
@@ -410,11 +441,19 @@ const CATEGORY_META: Record<string, { emoji: string; color: string }> = {
   mixed:        { emoji: "⚡", color: "#eab308" },
 };
 
+const CATEGORY_IMAGE: Record<string, string> = {
+  weights:      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&q=80",
+  calisthenics: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80",
+  running:      "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80",
+  mixed:        "https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=400&q=80",
+};
+
 function QuickTemplatesRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
-  const { data: templates, isLoading } = useWorkoutTemplates();
+  const { data: allTemplates, isLoading } = useWorkoutTemplates();
+  const templates = (allTemplates ?? []).filter((t: any) => !t.is_system);
 
   if (isLoading) return null;
-  if (!templates?.length) {
+  if (!templates.length) {
     return (
       <div className="rounded-2xl border border-dashed border-white/12 bg-white/3 p-6 text-center space-y-2">
         <span className="text-4xl">💪</span>
@@ -3057,9 +3096,8 @@ function SportPage() {
           {activeTab === "dashboard" && (
             <div className="px-4 pt-6 space-y-5">
               <DayStatusBanner isTraining={isTraining} onToggle={() => setIsTraining((v) => !v)} />
-              <StreakBanner />
               <div className="space-y-4">
-                <QuickAddRow />
+                <QuickAddRow onLoadTemplate={handleLoadTemplate} />
                 <QuickTemplatesRow onLoadTemplate={handleLoadTemplate} />
               </div>
               <StatsStrip />
