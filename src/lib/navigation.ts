@@ -29,6 +29,7 @@ export const mainNavItems: NavItem[] = [
 export const settingsNavItem: NavItem = {
   id: "settings",
   label: "הגדרות",
+  displayLabel: "הגדרות ⚙️",
   to: "/settings",
   icon: Settings,
   colorClass: "text-muted-foreground",
