@@ -1151,6 +1151,7 @@ function WorkoutBuilderTab({
   const [workoutCategory, setWorkoutCategory] = useState<WorkoutDbCategory>("weights");
   const [exercises, setExercises]             = useState<BuilderEx[]>([{ name: "", sets: 3, reps: 10, weight_kg: 0, group: 0 }]);
   const [groupCounter, setGroupCounter]       = useState(0);
+  const [showLibraryPicker, setShowLibraryPicker] = useState(false);
   const addTemplate    = useAddWorkoutTemplate();
   const addWorkout     = useAddWorkout();
   const addNutrition   = useAddNutrition();
@@ -1401,6 +1402,10 @@ function WorkoutBuilderTab({
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-white/20 text-white/50 hover:border-emerald-500/40 hover:text-emerald-400 transition-all text-sm font-semibold">
               <Plus className="h-4 w-4" />הוסף תרגיל
             </button>
+            <button onClick={() => setShowLibraryPicker(true)}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-emerald-500/30 text-emerald-400/70 hover:border-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/8 transition-all text-sm font-semibold">
+              <BookOpen className="h-4 w-4" />בחר מהספרייה
+            </button>
             <button
               onClick={() => setGroupCounter((g) => {
                 const ng = g + 1;
@@ -1644,6 +1649,40 @@ function WorkoutBuilderTab({
         </div>
       </div>
     )}
+    {/* ── Library Picker overlay ──────────────────────────────────── */}
+    {showLibraryPicker && (
+      <div className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0c]">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 pt-14 pb-4 border-b border-white/8 shrink-0">
+          <button onClick={() => setShowLibraryPicker(false)}
+            className="h-9 w-9 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15 transition-all shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+          <p className="text-base font-black text-white flex-1 text-right">בחר תרגילים לאימון</p>
+          <span className="text-[11px] text-emerald-400 font-bold">הקש להוסיף</span>
+        </div>
+        {/* Library in selectionMode */}
+        <div className="flex-1 overflow-y-auto">
+          <ExerciseLibraryTab
+            selectionMode
+            onAddToWorkout={(exs) => {
+              setExercises((prev) => {
+                const nonEmpty = prev.filter((e) => e.name.trim() !== "");
+                const toAdd: BuilderEx[] = exs.map((e) => ({
+                  name: e.name,
+                  sets: typeof e.defaultSets === "number" ? e.defaultSets : parseInt(String(e.defaultSets)) || 3,
+                  reps: parseInt(e.defaultReps) || 10,
+                  weight_kg: 0,
+                  group: 0,
+                }));
+                return [...nonEmpty, ...toAdd];
+              });
+              toast.success(exs.length === 1 ? `${exs[0].name} נוסף לאימון ✓` : `${exs.length} תרגילים נוספו ✓`);
+            }}
+          />
+        </div>
+      </div>
+    )}
     {showDurationModal && (
       <div
         className="fixed inset-0 z-50 flex items-end justify-center pb-10 px-4"
@@ -1773,7 +1812,7 @@ function ExerciseModal({
       ],
     });
     toast.success(`נוסף ל"${t.name}" ✓`);
-    setShowTemplates(false);
+    // intentionally keep picker open so user sees the updated checkmark
   };
 
   const handleCreateNew = () => {
@@ -1783,7 +1822,6 @@ function ExerciseModal({
       exercises: [{ name: ex.name, sets: parseSets(ex.defaultSets), reps: parseReps(ex.defaultReps), weight_kg: 0 }],
     });
     toast.success("תבנית חדשה נוצרה ✓");
-    setShowTemplates(false);
   };
 
   return (
@@ -1795,56 +1833,65 @@ function ExerciseModal({
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto" />
 
         {showTemplates ? (
-          /* ── Template picker ─────────────────────────────────── */
+          /* ── Apple Music style template picker ───────────────── */
           <div className="space-y-3">
+            {/* Header */}
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowTemplates(false)}
-                className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15 transition-all"
-              >
+              <button onClick={() => setShowTemplates(false)}
+                className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15 transition-all shrink-0">
                 <ChevronRight className="h-4 w-4" />
               </button>
-              <p className="text-sm font-black text-white flex-1" dir="rtl">הוסף לתבנית — <span className="text-white/40 font-normal">{ex.name}</span></p>
+              <div className="flex-1 min-w-0" dir="rtl">
+                <p className="text-sm font-black text-white truncate">הוסף לרשימת השמעה</p>
+                <p className="text-[10px] text-white/40 truncate">{ex.name}</p>
+              </div>
             </div>
 
+            {/* Template list — Apple Music inner card */}
             {userTemplates.length === 0 ? (
-              <p className="text-xs text-white/35 text-center py-6">אין תבניות שמורות עדיין</p>
+              <p className="text-xs text-white/35 text-center py-8">אין תבניות שמורות עדיין</p>
             ) : (
-              <div className="space-y-2 max-h-52 overflow-y-auto scrollbar-hide">
-                {userTemplates.map((t: any) => {
+              <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/4 max-h-56 overflow-y-auto scrollbar-hide">
+                {userTemplates.map((t: any, idx: number) => {
                   const alreadyIn = (t.exercises ?? []).some((e: any) => e.name === ex.name);
+                  const hue = (t.name.charCodeAt(0) * 47) % 360;
                   return (
-                    <button
-                      key={t.id}
+                    <button key={t.id}
                       onClick={() => !alreadyIn && handleAddToTemplate(t)}
-                      disabled={alreadyIn || updateTemplate.isPending}
-                      className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-right ${
-                        alreadyIn
-                          ? "border-emerald-500/30 bg-emerald-500/8 cursor-default"
-                          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8 active:scale-[0.98]"
+                      disabled={updateTemplate.isPending}
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 transition-all active:bg-white/8 ${
+                        idx > 0 ? "border-t border-white/6" : ""
                       }`}
                     >
-                      <div className="flex-1 min-w-0" dir="rtl">
-                        <p className="text-sm font-bold text-white truncate">{t.name}</p>
-                        <p className="text-[10px] text-white/35">{(t.exercises ?? []).length} תרגילים</p>
+                      {/* "Album art" */}
+                      <div className="h-10 w-10 rounded-xl shrink-0 flex items-center justify-center text-sm font-black text-white"
+                        style={{ background: `hsl(${hue},50%,30%)` }}>
+                        {t.name.charAt(0)}
                       </div>
-                      {alreadyIn
-                        ? <Check className="h-4 w-4 text-emerald-400 shrink-0" />
-                        : <Plus className="h-4 w-4 text-white/40 shrink-0" />
-                      }
+                      {/* Text */}
+                      <div className="flex-1 min-w-0 text-right" dir="rtl">
+                        <p className="text-sm font-semibold text-white truncate">{t.name}</p>
+                        <p className="text-[10px] text-white/40">{(t.exercises ?? []).length} תרגילים</p>
+                      </div>
+                      {/* Action circle */}
+                      <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                        alreadyIn ? "bg-emerald-500" : "bg-white/12 hover:bg-white/20"
+                      }`}>
+                        {alreadyIn
+                          ? <Check className="h-3.5 w-3.5 text-white" />
+                          : <Plus className="h-3.5 w-3.5 text-white/70" />
+                        }
+                      </div>
                     </button>
                   );
                 })}
               </div>
             )}
 
-            <button
-              onClick={handleCreateNew}
-              disabled={addTemplate.isPending}
-              className="w-full py-3.5 rounded-2xl border border-dashed border-white/15 text-white/50 text-sm font-bold flex items-center justify-center gap-2 hover:border-white/30 hover:text-white/70 active:scale-[0.98] transition-all disabled:opacity-40"
-            >
-              <Plus className="h-4 w-4" />
-              צור תבנית חדשה מתרגיל זה
+            {/* Create new */}
+            <button onClick={handleCreateNew} disabled={addTemplate.isPending}
+              className="w-full py-3 rounded-2xl border border-dashed border-white/12 text-white/45 text-xs font-bold flex items-center justify-center gap-2 hover:border-emerald-500/30 hover:text-emerald-400 active:scale-[0.98] transition-all disabled:opacity-40">
+              <Plus className="h-3.5 w-3.5" />צור תבנית חדשה
             </button>
           </div>
         ) : (
@@ -1933,7 +1980,7 @@ function ExerciseModal({
 
 type LibraryWorkoutType = "weights" | "calisthenics" | "warmup";
 
-function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: LibraryExercise[]) => void }) {
+function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?: (exs: LibraryExercise[]) => void; selectionMode?: boolean }) {
   const [workoutType,    setWorkoutType]    = useState<LibraryWorkoutType>("weights");
   const [selectedGroup,  setSelectedGroup]  = useState<MuscleGroup | null>(null);
   const [selectedEquip,  setSelectedEquip]  = useState<EquipmentCategory | null>(null);
@@ -2059,8 +2106,20 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
     return out;
   }, [searchQuery, hidden, showHidden]);
 
+  const handleSelectionClick = (ex: LibraryExercise) => {
+    onAddToWorkout?.([ex]);
+    toast.success(`${ex.name} נוסף לאימון ✓`);
+  };
+
   return (
     <div className="px-4 pt-8 space-y-4 pb-28">
+      {/* ── selectionMode banner ──────────────────────────────────── */}
+      {selectionMode && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/12 border border-emerald-500/25">
+          <Plus className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+          <p className="text-xs font-bold text-emerald-300">הקש על תרגיל להוסיפו לאימון</p>
+        </div>
+      )}
       {/* ── Glassmorphism search bar ──────────────────────────────── */}
       <div className="relative">
         <input
@@ -2092,9 +2151,9 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
                   key={ex.name}
                   ex={ex}
                   groupKey={groupKey}
-                  isChecked={checked.has(ex.name)}
+                  isChecked={selectionMode ? false : checked.has(ex.name)}
                   isFavorite={favorites.includes(ex.name)}
-                  onCheck={() => toggleCheck(ex.name)}
+                  onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
                   onOpen={() => setSelectedEx({ ex, groupKey })}
                 />
               ))}
@@ -2148,7 +2207,7 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
                       ? "border-emerald-500/60 bg-emerald-500/15"
                       : "border-white/10 bg-white/5"
                   }`}
-                  onClick={() => toggleCheck(name)}
+                  onClick={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(name)}
                 >
                   <div className={`h-4 w-4 rounded-md border flex items-center justify-center shrink-0 transition-all ${
                     isChecked ? "border-emerald-500 bg-emerald-500" : "border-white/25"
@@ -2328,7 +2387,7 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
               groupKey={selectedGroup.key}
               isChecked={checked.has(ex.name)}
               isFavorite={favorites.includes(ex.name)}
-              onCheck={() => toggleCheck(ex.name)}
+              onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
               onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
             />
           ))}
@@ -2345,7 +2404,7 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
               groupKey={selectedGroup.key}
               isChecked={checked.has(ex.name)}
               isFavorite={favorites.includes(ex.name)}
-              onCheck={() => toggleCheck(ex.name)}
+              onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
               onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
             />
           ))}
@@ -2372,7 +2431,7 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
       </> /* end hierarchy wrapper */}
 
       {/* ── Floating add bar ──────────────────────────────────────── */}
-      {checked.size > 0 && (
+      {checked.size > 0 && !selectionMode && (
         <div className="fixed bottom-20 left-4 right-4 z-40 flex items-center gap-2 p-2.5 rounded-2xl bg-emerald-500 shadow-xl shadow-emerald-500/40">
           <button
             onClick={() => setChecked(new Set())}
