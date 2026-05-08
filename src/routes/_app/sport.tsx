@@ -63,17 +63,28 @@ interface LibraryExercise {
   equipment: string;
   youtubeQuery: string;
 }
+interface SubMuscleGroup {
+  key: string;
+  label: string;
+  emoji: string;
+  exerciseNames: string[];
+}
 interface MuscleGroup {
   key: string;
   label: string;
   emoji: string;
   color: string;
   exercises: LibraryExercise[];
+  subGroups?: SubMuscleGroup[];
 }
 
 const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "chest", label: "חזה", emoji: "💪", color: "#3b82f6",
+    subGroups: [
+      { key: "chest_upper", label: "חזה עליון",  emoji: "⬆️", exerciseNames: ["לחיצת חזה שכיבה", "שכיבות סמיכה"] },
+      { key: "chest_mid",   label: "חזה אמצע",   emoji: "🎯", exerciseNames: ["פרפר (Fly)", "לחיצת חזה במכונה", "קרוסאובר (כבלים)"] },
+    ],
     exercises: [
       { name: "לחיצת חזה שכיבה", muscles: "חזה, כתפיים קדמיות, טריצפס", tips: ["שמור על גב שטוח", "הורד לאיטיות — 3 שניות", "נשוף בלחיצה"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט", youtubeQuery: "bench+press+form+tutorial" },
       { name: "פרפר (Fly)", muscles: "חזה פנימי וחיצוני", tips: ["קשת עדינה במרפקים", "מרגיש מתיחה בפתיחה", "אל תכניס עמוד שדרה"], defaultSets: 3, defaultReps: "12", equipment: "דמבלים", youtubeQuery: "dumbbell+fly+chest+form" },
@@ -84,6 +95,11 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   },
   {
     key: "back", label: "גב", emoji: "🦾", color: "#8b5cf6",
+    subGroups: [
+      { key: "back_lats",  label: "גב רחב",   emoji: "⬆️", exerciseNames: ["מתח (Pull-up)", "לט פולדאון"] },
+      { key: "back_mid",   label: "גב אמצע",  emoji: "🔄", exerciseNames: ["חתירה (Barbell Row)", "חתירה כבלים ישיבה"] },
+      { key: "back_lower", label: "גב תחתון", emoji: "⬇️", exerciseNames: ["דדליפט"] },
+    ],
     exercises: [
       { name: "מתח (Pull-up)", muscles: "גב רחב, ביצפס, ליבה", tips: ["תלייה מלאה בתחתית", "הוצא חזה אל הבר", "אל תתנועע"], defaultSets: 4, defaultReps: "6-10", equipment: "מוט מתח", youtubeQuery: "pull+up+perfect+form" },
       { name: "חתירה (Barbell Row)", muscles: "גב אמצע, ביצפס, כתף אחורית", tips: ["גב ישר 45°", "משוך לבטן", "אל ת'שדרה עגול"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט", youtubeQuery: "barbell+row+form+tutorial" },
@@ -94,6 +110,11 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   },
   {
     key: "shoulders", label: "כתפיים", emoji: "🏋️", color: "#f97316",
+    subGroups: [
+      { key: "sh_front", label: "דלטואיד קדמי",  emoji: "🔵", exerciseNames: ["לחיצת כתפיים (OHP)", "הרמות קדמיות (Front Raise)"] },
+      { key: "sh_mid",   label: "דלטואיד אמצעי", emoji: "⚡", exerciseNames: ["הרמות צד (Lateral Raise)"] },
+      { key: "sh_rear",  label: "דלטואיד אחורי", emoji: "🔙", exerciseNames: ["Face Pull"] },
+    ],
     exercises: [
       { name: "לחיצת כתפיים (OHP)", muscles: "דלטואיד קדמי ואמצע, טריצפס", tips: ["עמוד יציב", "נסגר בראש", "אל תרכין גב"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט / דמבלים", youtubeQuery: "overhead+press+form+tutorial" },
       { name: "הרמות צד (Lateral Raise)", muscles: "דלטואיד אמצעי", tips: ["קצת קדימה — לא בצד מוחלט", "מרפק קצת כפוף", "הורד לאיטיות"], defaultSets: 3, defaultReps: "12-15", equipment: "דמבלים", youtubeQuery: "lateral+raise+form+tutorial" },
@@ -103,6 +124,10 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   },
   {
     key: "arms", label: "ידיים", emoji: "💪", color: "#ec4899",
+    subGroups: [
+      { key: "arms_bi",  label: "ביצפס",  emoji: "💪", exerciseNames: ["כפיפות מרפק (Bicep Curl)", "Hammer Curl"] },
+      { key: "arms_tri", label: "טריצפס", emoji: "💎", exerciseNames: ["פשיטת מרפק (Tricep Extension)", "מקבילים (Dips)"] },
+    ],
     exercises: [
       { name: "כפיפות מרפק (Bicep Curl)", muscles: "ביצפס, ברכיאליס", tips: ["אל תנופף", "סיום מלא בפסגה", "בקרה בירידה"], defaultSets: 3, defaultReps: "10-12", equipment: "דמבלים / מוט", youtubeQuery: "bicep+curl+form+tutorial" },
       { name: "פשיטת מרפק (Tricep Extension)", muscles: "טריצפס", tips: ["מרפקים קרוב לראש", "נעל מרפקים", "הרחב עד סוף"], defaultSets: 3, defaultReps: "12", equipment: "דמבלים", youtubeQuery: "tricep+extension+form" },
@@ -112,6 +137,11 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   },
   {
     key: "legs", label: "רגליים", emoji: "🦵", color: "#eab308",
+    subGroups: [
+      { key: "legs_quads",  label: "קוואדריצפס", emoji: "🦵", exerciseNames: ["סקוואט (Squat)", "לג פרס (Leg Press)", "לאנג' (Lunges)"] },
+      { key: "legs_hams",   label: "המסטרינג",   emoji: "🏃", exerciseNames: ["כפיפות ברכיים (Hamstring Curl)"] },
+      { key: "legs_calves", label: "שוקיים",      emoji: "👟", exerciseNames: ["הרמות עקב (Calf Raise)"] },
+    ],
     exercises: [
       { name: "סקוואט (Squat)", muscles: "קוואדריצפס, ישבן, גב תחתון", tips: ["ברכיים מעל אצבעות", "ירד עד מקביל לפחות", "גב ישר — חובה"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט", youtubeQuery: "squat+form+tutorial+beginners" },
       { name: "לאנג' (Lunges)", muscles: "קוואדריצפס, ישבן, המסטרינג", tips: ["ברך קדמית לא תחצה את האצבע", "פסיעה ארוכה", "גב ישר"], defaultSets: 3, defaultReps: "10 כל צד", equipment: "דמבלים / ללא", youtubeQuery: "lunges+form+tutorial" },
@@ -122,6 +152,10 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   },
   {
     key: "core", label: "ליבה", emoji: "🎯", color: "#06b6d4",
+    subGroups: [
+      { key: "core_abs",  label: "בטן",       emoji: "🎯", exerciseNames: ["סיט אפ (Sit-up)", "רוסיאן טוויסט", "ברכיים לחזה (Knee Tucks)"] },
+      { key: "core_deep", label: "ליבה עמוק", emoji: "🔵", exerciseNames: ["פלנק (Plank)", "Dead Bug"] },
+    ],
     exercises: [
       { name: "פלנק (Plank)", muscles: "ליבה, כתפיים, ישבן", tips: ["גוף קרש ישר", "אל תרים ישבן", "נשום בשלווה"], defaultSets: 3, defaultReps: "45-60 שניות", equipment: "ללא", youtubeQuery: "plank+form+tutorial" },
       { name: "סיט אפ (Sit-up)", muscles: "בטן עליונה, Hip Flexors", tips: ["אל תמשוך צוואר", "הורד לאיטיות", "מרפקים בצד"], defaultSets: 3, defaultReps: "20", equipment: "ללא", youtubeQuery: "proper+situp+form" },
@@ -1904,10 +1938,11 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
   const [selectedGroup,  setSelectedGroup]  = useState<MuscleGroup | null>(null);
   const [selectedEquip,  setSelectedEquip]  = useState<EquipmentCategory | null>(null);
   const [selectedEx,     setSelectedEx]     = useState<{ ex: LibraryExercise; groupKey: string } | null>(null);
-  const [checked,        setChecked]        = useState<Set<string>>(new Set());
-  const [showHidden,     setShowHidden]     = useState(false);
+  const [checked,          setChecked]          = useState<Set<string>>(new Set());
+  const [showHidden,       setShowHidden]       = useState(false);
   const [showAllExercises, setShowAllExercises] = useState(false);
-  const [searchQuery,    setSearchQuery]    = useState("");
+  const [selectedSubGroup, setSelectedSubGroup] = useState<SubMuscleGroup | null>(null);
+  const [searchQuery,      setSearchQuery]      = useState("");
 
   const { data: settings } = useUserSettings();
   const updateSettings = useUpdateUserSettings();
@@ -1951,6 +1986,7 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
     setSelectedGroup(null);
     setSelectedEquip(null);
     setShowAllExercises(false);
+    setSelectedSubGroup(null);
     setChecked(new Set());
   };
 
@@ -1958,25 +1994,33 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
     setSelectedGroup(g);
     setSelectedEquip(null);
     setShowAllExercises(false);
+    setSelectedSubGroup(null);
   };
 
   const handleBack = () => {
-    if (selectedEquip) { setSelectedEquip(null); return; }
-    if (showAllExercises) { setShowAllExercises(false); return; }
+    if (selectedEquip)      { setSelectedEquip(null); return; }
+    if (showAllExercises)   { setShowAllExercises(false); return; }
+    if (selectedSubGroup)   { setSelectedSubGroup(null); return; }
     setSelectedGroup(null);
   };
 
+  // Source exercises: sub-group subset if selected, otherwise whole group
+  const groupSource = (() => {
+    if (!selectedGroup) return [];
+    if (selectedSubGroup) return selectedGroup.exercises.filter((ex) => selectedSubGroup.exerciseNames.includes(ex.name));
+    return selectedGroup.exercises;
+  })();
+
   // Exercises in the current group, optionally filtered by equipment
   const groupExercises = (() => {
-    if (!selectedGroup) return [];
-    let exs = selectedGroup.exercises.filter((ex) => showHidden || !hidden.includes(ex.name));
+    let exs = groupSource.filter((ex) => showHidden || !hidden.includes(ex.name));
     if (selectedEquip) exs = exs.filter((ex) => getEquipCat(ex.equipment) === selectedEquip);
     return exs;
   })();
 
-  // Equipment categories present in the selected group (weights only)
+  // Equipment categories present in current source (weights only)
   const equipCategories: EquipmentCategory[] = selectedGroup
-    ? [...new Set(selectedGroup.exercises.map((ex) => getEquipCat(ex.equipment)))]
+    ? [...new Set(groupSource.map((ex) => getEquipCat(ex.equipment)))]
     : [];
 
   // Favorite exercises for the current type
@@ -2137,6 +2181,7 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
             <div className="min-w-0">
               <p className="text-sm font-black text-white leading-tight">
                 {selectedGroup.label}
+                {selectedSubGroup && <span className="text-white/40 font-normal"> · {selectedSubGroup.label}</span>}
                 {selectedEquip && <span className="text-white/40 font-normal"> · {EQUIP_META[selectedEquip].label}</span>}
                 {!selectedEquip && showAllExercises && <span className="text-white/40 font-normal"> · כל התרגילים</span>}
               </p>
@@ -2200,8 +2245,35 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
         </>
       )}
 
-      {/* ── WEIGHTS inside group: equipment grid ────────────────────── */}
-      {workoutType === "weights" && selectedGroup && !selectedEquip && !showAllExercises && (
+      {/* ── WEIGHTS inside group: sub-muscle grid ───────────────────── */}
+      {workoutType === "weights" && selectedGroup && selectedGroup.subGroups && !selectedSubGroup && !selectedEquip && !showAllExercises && (
+        <div className="grid grid-cols-2 gap-3">
+          {selectedGroup.subGroups.map((sg) => {
+            const count = selectedGroup.exercises.filter(
+              (ex) => sg.exerciseNames.includes(ex.name) && (showHidden || !hidden.includes(ex.name))
+            ).length;
+            return (
+              <button key={sg.key} onClick={() => setSelectedSubGroup(sg)}
+                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.97] transition-all"
+                style={{ borderColor: selectedGroup.color + "33" }}
+              >
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg shrink-0"
+                  style={{ background: selectedGroup.color + "22" }}>
+                  {sg.emoji}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-white truncate">{sg.label}</p>
+                  <p className="text-[10px] text-white/35">{count} תרגילים</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── WEIGHTS: equipment grid (after sub-group selected, or no sub-groups) */}
+      {workoutType === "weights" && selectedGroup && !selectedEquip && !showAllExercises &&
+       (!selectedGroup.subGroups || selectedSubGroup) && (
         <div className="grid grid-cols-2 gap-3">
           {/* Always-visible "All Exercises" tile */}
           <button
@@ -2216,26 +2288,24 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
               <p className="text-[10px] text-emerald-400/70">{groupExercises.length} תרגילים</p>
             </div>
           </button>
-          {/* Equipment tiles — hidden if empty */}
+          {/* Equipment tiles — QW-card gradient style, hidden if empty */}
           {equipCategories.map((cat) => {
-            const meta = EQUIP_META[cat];
-            const img  = EQUIPMENT_IMAGES[cat];
-            const count = selectedGroup.exercises.filter(
+            const meta  = EQUIP_META[cat];
+            const img   = EQUIPMENT_IMAGES[cat];
+            const count = groupSource.filter(
               (ex) => getEquipCat(ex.equipment) === cat && (showHidden || !hidden.includes(ex.name))
             ).length;
             if (count === 0) return null;
             return (
               <button key={cat} onClick={() => setSelectedEquip(cat)}
                 className="relative rounded-2xl overflow-hidden border border-white/10 h-28 active:scale-[0.97] transition-all hover:border-white/25"
+                style={{ backgroundImage: `url(${img})`, backgroundSize: "cover", backgroundPosition: "center" }}
               >
-                <div
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${img})`, filter: "brightness(0.3) saturate(0.7)" }}
-                />
-                <div className="relative z-10 h-full flex flex-col items-center justify-center gap-1 p-3">
-                  <span className="text-2xl">{meta.emoji}</span>
-                  <p className="text-[11px] font-black text-white text-center leading-tight">{meta.label}</p>
-                  <p className="text-[9px] text-white/50">{count} תרגילים</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/15" />
+                <div className="relative z-10 h-full flex flex-col items-end justify-end gap-0.5 p-3">
+                  <span className="text-xl">{meta.emoji}</span>
+                  <p className="text-[11px] font-black text-white text-right leading-tight">{meta.label}</p>
+                  <p className="text-[9px] text-white/55">{count} תרגילים</p>
                 </div>
               </button>
             );
