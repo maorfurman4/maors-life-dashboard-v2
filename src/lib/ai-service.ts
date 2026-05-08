@@ -97,6 +97,19 @@ export async function generateWorkoutPlan(payload: {
   return data.plan as WorkoutPlan;
 }
 
+// ─── Coach Feedback ───────────────────────────────────────────────────────────
+
+export async function generateCoachFeedback(payload: {
+  mins: number;
+  calories: number;
+  name: string;
+  muscles?: string;
+}): Promise<string> {
+  const { mins, calories, name, muscles } = payload;
+  const prompt = `אתה מאמן כושר אישי. המשתמש סיים אימון "${name}" — ${mins} דקות, ${calories} קלוריות.${muscles ? ` שרירים עיקריים: ${muscles}.` : ""} כתוב משפט עידוד קצר אחד בעברית (עד 20 מילה), תוך שיבוח הביצוע ועצה קצרה ממוקדת לאחר האימון (תזונה, מנוחה, או תרגיל המשך). השב במשפט אחד בלבד.`;
+  return invokeAI({ prompt });
+}
+
 // ─── Generic (for free-form text components) ─────────────────────────────────
 
 export async function analyzeImage(
