@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, Loader2, Star, X, BookOpen,
   TrendingUp, Scale, Medal, BarChart3, Camera,
   Pencil, Check, Trash2, Heart, EyeOff, Eye,
-  Share2, MapPin, Timer, Download, Settings2, Youtube,
+  Share2, MapPin, Timer, Download, Settings2, Youtube, Search,
 } from "lucide-react";
 import {
   usePersonalRecords, useAddPersonalRecord,
@@ -1907,6 +1907,7 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
   const [checked,        setChecked]        = useState<Set<string>>(new Set());
   const [showHidden,     setShowHidden]     = useState(false);
   const [showAllExercises, setShowAllExercises] = useState(false);
+  const [searchQuery,    setSearchQuery]    = useState("");
 
   const { data: settings } = useUserSettings();
   const updateSettings = useUpdateUserSettings();
@@ -1996,8 +1997,80 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
     workoutType === "calisthenics" ? CALISTHENICS_MUSCLE_GROUPS :
     WARMUP_GROUPS;
 
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return null;
+    const seen = new Set<string>();
+    const out: { ex: LibraryExercise; groupKey: string }[] = [];
+    [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...WARMUP_GROUPS].forEach((g) => {
+      g.exercises.forEach((ex) => {
+        if (seen.has(ex.name)) return;
+        if (!showHidden && hidden.includes(ex.name)) return;
+        if (ex.name.toLowerCase().includes(q) || ex.muscles.toLowerCase().includes(q) || ex.equipment.toLowerCase().includes(q)) {
+          seen.add(ex.name);
+          out.push({ ex, groupKey: g.key });
+        }
+      });
+    });
+    return out;
+  }, [searchQuery, hidden, showHidden]);
+
   return (
     <div className="px-4 pt-8 space-y-4 pb-28">
+      {/* ── Glassmorphism search bar ──────────────────────────────── */}
+      <div className="relative">
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="חפש תרגיל, שריר או ציוד..."
+          dir="rtl"
+          className="w-full rounded-2xl border border-white/15 bg-white/8 backdrop-blur-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all pr-10 appearance-none [&::-webkit-search-cancel-button]:hidden"
+        />
+        <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none" />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery("")} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* ── Flat search results (bypasses all hierarchy) ─────────── */}
+      {searchResults !== null && (
+        <>
+          {searchResults.length === 0 ? (
+            <div className="text-center py-12 text-white/30 text-sm">לא נמצאו תרגילים עבור "{searchQuery}"</div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-white/40">{searchResults.length} תוצאות</p>
+              {searchResults.map(({ ex, groupKey }) => (
+                <ExerciseRow
+                  key={ex.name}
+                  ex={ex}
+                  groupKey={groupKey}
+                  isChecked={checked.has(ex.name)}
+                  isFavorite={favorites.includes(ex.name)}
+                  onCheck={() => toggleCheck(ex.name)}
+                  onOpen={() => setSelectedEx({ ex, groupKey })}
+                />
+              ))}
+            </div>
+          )}
+          {/* Modal still works in search mode */}
+          {selectedEx && (
+            <ExerciseModal
+              ex={selectedEx.ex}
+              groupKey={selectedEx.groupKey}
+              onClose={() => setSelectedEx(null)}
+              isFavorite={favorites.includes(selectedEx.ex.name)}
+              onToggleFavorite={() => toggleFavorite(selectedEx.ex.name)}
+              onToggleHidden={() => toggleHidden(selectedEx.ex.name)}
+            />
+          )}
+        </>
+      )}
+
+      {searchResults !== null ? null : <>
       {/* ── Type tabs ─────────────────────────────────────────────── */}
       <div className="flex gap-1 p-1 rounded-2xl bg-white/5 border border-white/8">
         {([
@@ -2226,6 +2299,7 @@ function ExerciseLibraryTab({ onAddToWorkout }: { onAddToWorkout?: (exs: Library
           onToggleHidden={() => toggleHidden(selectedEx.ex.name)}
         />
       )}
+      </> /* end hierarchy wrapper */}
 
       {/* ── Floating add bar ──────────────────────────────────────── */}
       {checked.size > 0 && (
