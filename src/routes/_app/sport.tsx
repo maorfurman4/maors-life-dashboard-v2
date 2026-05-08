@@ -18,7 +18,7 @@ import {
   useUpdatePersonalRecord, useDeletePersonalRecord, useWeeklyVolume,
   useAddNutrition,
 } from "@/hooks/use-sport-data";
-import { generateWorkoutPlan, type WorkoutPlan } from "@/lib/ai-service";
+import { generateWorkoutPlan, generateCoachFeedback, type WorkoutPlan } from "@/lib/ai-service";
 import { toast } from "sonner";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -1136,7 +1136,11 @@ function DayStatusBanner({ isTraining, onToggle }: { isTraining: boolean; onTogg
 function QuickWorkoutCard({ workout, onQuickLog }: { workout: (typeof QUICK_WORKOUTS)[number]; onQuickLog: (dbCategory: string, label: string, duration: number) => void }) {
   const [selDuration, setSelDuration] = useState<number>(workout.durations[1]);
   return (
-    <div className="relative flex-shrink-0 w-36 h-48 rounded-2xl overflow-hidden cursor-pointer select-none" style={{ backgroundImage: `url('${workout.image}')`, backgroundSize: "cover", backgroundPosition: "center" }}>
+    <div
+      className="relative flex-shrink-0 w-36 h-48 rounded-2xl overflow-hidden cursor-pointer select-none active:scale-95 transition-all duration-200"
+      style={{ backgroundImage: `url('${workout.image}')`, backgroundSize: "cover", backgroundPosition: "center" }}
+      onClick={() => onQuickLog(workout.dbCategory, workout.label, selDuration)}
+    >
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
       <span className="absolute top-2.5 right-2.5 text-2xl leading-none drop-shadow-lg">{workout.emoji}</span>
       <p className="absolute bottom-16 right-0 left-0 px-3 text-sm font-black text-white leading-tight text-right">{workout.label}</p>
@@ -1149,7 +1153,8 @@ function QuickWorkoutCard({ workout, onQuickLog }: { workout: (typeof QUICK_WORK
           </button>
         ))}
       </div>
-      <button onClick={() => onQuickLog(workout.dbCategory, workout.label, selDuration)}
+      <button
+        onClick={(e) => { e.stopPropagation(); onQuickLog(workout.dbCategory, workout.label, selDuration); }}
         className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-black text-white transition-all active:scale-95"
         style={{ background: workout.color + "cc", backdropFilter: "blur(8px)" }}>
         <Plus className="h-3 w-3" />הוסף
@@ -1184,13 +1189,14 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
     const image = CATEGORY_IMAGE[t.category] ?? CATEGORY_IMAGE.weights;
     return (
       <div
-        className="relative flex-shrink-0 w-36 h-48 rounded-2xl overflow-hidden cursor-pointer select-none"
+        className="relative flex-shrink-0 w-36 h-48 rounded-2xl overflow-hidden cursor-pointer select-none active:scale-95 transition-all duration-200"
         style={{
           scrollSnapAlign: "start",
           backgroundImage: `url('${image}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
+        onClick={() => onLoadTemplate(t)}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
         <span className="absolute top-2.5 right-2.5 text-2xl leading-none drop-shadow-lg">{meta.emoji}</span>
@@ -1198,7 +1204,7 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
           {t.name}
         </p>
         <button
-          onClick={() => onLoadTemplate(t)}
+          onClick={(e) => { e.stopPropagation(); onLoadTemplate(t); }}
           className="absolute bottom-2 left-2 right-2 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[11px] font-black text-white transition-all active:scale-95"
           style={{ background: meta.color + "cc", backdropFilter: "blur(8px)" }}
         >
@@ -1383,12 +1389,13 @@ const CATEGORY_IMAGE: Record<string, string> = {
 };
 
 // MET values per category for calorie estimation
-// Calories = duration_minutes * (MET * 3.5 * weight_kg) / 200
+// Calories = MET * weight_kg * (minutes / 60)
 const MET_MAP: Record<string, number> = {
-  weights:      4.0,
-  calisthenics: 4.0,
+  weights:      6.0,
+  calisthenics: 8.0,
   running:      9.5,
   mixed:        8.0,
+  stretching:   2.5,
 };
 
 function QuickTemplatesRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
@@ -1940,7 +1947,8 @@ function WorkoutBuilderTab({
   const pendingWorkout = useRef<{ filled: BuilderEx[]; category: string; name: string } | null>(null);
 
   // ── Workout summary (Task 4) ─────────────────────────────────────
-  const [workoutSummary, setWorkoutSummary] = useState<{ mins: number; calories: number; name: string } | null>(null);
+  const [workoutSummary, setWorkoutSummary] = useState<{ mins: number; calories: number; name: string; muscles?: string } | null>(null);
+  const [coachMsg, setCoachMsg]             = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Load template pushed from the dashboard
@@ -2020,9 +2028,9 @@ function WorkoutBuilderTab({
     setShowDurationModal(false);
 
     // ── MET calorie calculation ──────────────────────────────────
-    const met         = MET_MAP[pw.category] ?? 4.0;
+    const met         = MET_MAP[pw.category] ?? 6.0;
     const bodyWeight  = (userSettings as any)?.weight_kg ?? 75;
-    const calories    = Math.round(mins * (met * 3.5 * bodyWeight) / 200);
+    const calories    = Math.round(met * bodyWeight * (mins / 60));
 
     try {
       // ── 1. Save workout row (with calories_burned) ───────────
@@ -2066,10 +2074,16 @@ function WorkoutBuilderTab({
       }
 
       // ── 4. Reset builder & show summary overlay ──────────────
+      const muscles = [...new Set(pw.filled.map((e: any) => e.name).slice(0, 3))].join(", ");
       setWorkoutName("");
       setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
       pendingWorkout.current = null;
-      setWorkoutSummary({ mins, calories, name: pw.name });
+      setCoachMsg(null);
+      setWorkoutSummary({ mins, calories, name: pw.name, muscles });
+      // fire-and-forget — non-critical
+      generateCoachFeedback({ mins, calories, name: pw.name, muscles })
+        .then((msg) => setCoachMsg(msg.trim()))
+        .catch(() => {/* silent */});
     } catch { toast.error("שגיאה בשמירה"); }
   };
 
@@ -2357,6 +2371,19 @@ function WorkoutBuilderTab({
             </div>
           </div>
 
+          {/* Coach feedback */}
+          <div className="rounded-2xl border border-purple-500/20 bg-purple-500/8 px-4 py-3 min-h-[48px] flex items-center gap-2.5">
+            <span className="text-xl flex-shrink-0">🤖</span>
+            {coachMsg
+              ? <p className="text-[12px] text-purple-200 leading-relaxed" dir="rtl">{coachMsg}</p>
+              : <div className="flex gap-1 items-center">
+                  <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "120ms" }} />
+                  <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "240ms" }} />
+                </div>
+            }
+          </div>
+
           {/* PR badge (shown when PRs were broken in the same session) */}
           {celebPRs.length > 0 && (
             <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-amber-400/20 bg-amber-400/8">
@@ -2373,6 +2400,7 @@ function WorkoutBuilderTab({
           <button
             onClick={() => {
               setWorkoutSummary(null);
+              setCoachMsg(null);
               setCelebPRs([]);
               onWorkoutComplete?.();
             }}

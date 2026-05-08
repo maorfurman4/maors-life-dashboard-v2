@@ -178,10 +178,13 @@ function NutritionPage() {
   const addWaterMl = useAddWaterMl();
 
   // ── Macro totals ──
-  const totalCal  = (meals ?? []).reduce((s, m) => s + (m.calories        ?? 0), 0);
-  const totalProt = (meals ?? []).reduce((s, m) => s + (Number(m.protein_g) || 0), 0);
-  const totalCarb = (meals ?? []).reduce((s, m) => s + (Number(m.carbs_g)   || 0), 0);
-  const totalFat  = (meals ?? []).reduce((s, m) => s + (Number(m.fat_g)     || 0), 0);
+  const foodMeals = (meals ?? []).filter((m: any) => m.meal_type !== "exercise");
+  const foodCal   = foodMeals.reduce((s, m) => s + (m.calories ?? 0), 0);
+  const burnedCal = (meals ?? []).filter((m: any) => m.meal_type === "exercise").reduce((s, m) => s + (m.calories ?? 0), 0);
+  const totalCal  = foodCal;  // ring tracks food consumed; burned shown separately
+  const totalProt = foodMeals.reduce((s, m) => s + (Number(m.protein_g) || 0), 0);
+  const totalCarb = foodMeals.reduce((s, m) => s + (Number(m.carbs_g)   || 0), 0);
+  const totalFat  = foodMeals.reduce((s, m) => s + (Number(m.fat_g)     || 0), 0);
 
   // ── Water: glasses field now stores ml directly ──
   const totalWaterMl = waterEntry?.glasses ?? 0;
@@ -301,6 +304,14 @@ function NutritionPage() {
                     </span>
                   </Ring>
                   <p className="text-xs font-bold text-white/60">קלוריות</p>
+                  {burnedCal > 0 && (
+                    <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-orange-500/15 border border-orange-500/25">
+                      <span className="text-sm">🔥</span>
+                      <span className="text-[11px] font-bold text-orange-400">
+                        {Math.round(burnedCal).toLocaleString("he")} קל׳ נשרפו
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
