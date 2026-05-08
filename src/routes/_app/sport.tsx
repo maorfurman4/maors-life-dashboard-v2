@@ -260,6 +260,46 @@ const WARMUP_GROUPS: MuscleGroup[] = [
   },
 ];
 
+// ─── Stretching groups ───────────────────────────────────────────────────────
+const STRETCHING_MUSCLE_GROUPS: MuscleGroup[] = [
+  { key: "stretch_upper",   label: "פלג גוף עליון", emoji: "🙆", color: "#38bdf8",
+    exercises: [
+      { name: "מתיחת חזה (דלת)", muscles: "חזה, כתפיים קדמיות", tips: ["יד על מסגרת דלת", "סובב גוף הצידה", "החזק 30 שניות"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "קיר", youtubeQuery: "doorway+chest+stretch+form" },
+      { name: "מתיחת כתפיים (Cross-Body)", muscles: "כתף אחורית, גב עליון", tips: ["משוך יד לחזה", "כתפיים נמוכות", "החזק 30 שניות"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "ללא", youtubeQuery: "cross+body+shoulder+stretch" },
+      { name: "מתיחת טריצפס מעל ראש", muscles: "טריצפס, כתף", tips: ["מרפק אחד מעל", "יד שנייה מושכת", "גב ישר"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "ללא", youtubeQuery: "overhead+tricep+stretch+form" },
+      { name: "Child's Pose מורחב", muscles: "כתפיים, גב עליון, גב תחתון", tips: ["ברכיים פתוחות", "ידיים מוארכות", "נשום עמוק"], defaultSets: 1, defaultReps: "60 שניות", equipment: "מזרן", youtubeQuery: "extended+childs+pose+stretch" },
+      { name: "Thread the Needle", muscles: "גב עליון, כתפיים", tips: ["ארבע רגליים", "החלק יד מתחת לגוף", "סיבוב מקסימלי"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "מזרן", youtubeQuery: "thread+the+needle+stretch+spine" },
+    ],
+  },
+  { key: "stretch_lower",   label: "פלג גוף תחתון", emoji: "🦵", color: "#a3e635",
+    exercises: [
+      { name: "מתיחת Hip Flexor (לאנג׳)", muscles: "Hip Flexors, קוואדס", tips: ["ברך על רצפה", "הרחק ירך קדימה", "גב ישר"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "מזרן", youtubeQuery: "hip+flexor+stretch+kneeling+lunge" },
+      { name: "מתיחת המסטרינג שכיבה", muscles: "המסטרינג, גב תחתון", tips: ["שכב על הגב", "הרם רגל ישרה", "מתיחה עדינה"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "מזרן", youtubeQuery: "supine+hamstring+stretch+strap" },
+      { name: "מתיחת Pigeon Pose", muscles: "ישבן עמוק, ירך חיצונית", tips: ["רגל קדמית אופקית", "הטה קדימה", "נשום עמוק"], defaultSets: 2, defaultReps: "45 שניות כל צד", equipment: "מזרן", youtubeQuery: "pigeon+pose+hip+stretch" },
+      { name: "מתיחת שוקיים (Calf Stretch)", muscles: "שוקיים, אכילס", tips: ["יד על קיר", "רגל אחורית ישרה", "עקב בקרקע"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "קיר", youtubeQuery: "calf+stretch+wall+form" },
+      { name: "Butterfly Stretch", muscles: "מפשעה, ירך פנימית", tips: ["כפות רגליים מאוחדות", "ברכיים לרצפה", "הטה קדימה"], defaultSets: 2, defaultReps: "45 שניות", equipment: "מזרן", youtubeQuery: "butterfly+stretch+inner+thigh" },
+    ],
+  },
+  { key: "stretch_spine",   label: "גב ועמוד שדרה", emoji: "🦴", color: "#fb923c",
+    exercises: [
+      { name: "Cat-Cow", muscles: "עמוד שדרה, גב, ליבה", tips: ["ארבע רגליים", "נשום פנימה = גב מקמר", "נשום החוצה = גב שקוע"], defaultSets: 2, defaultReps: "10 חזרות", equipment: "מזרן", youtubeQuery: "cat+cow+stretch+spine+mobility" },
+      { name: "Spinal Twist שכיבה", muscles: "עמוד שדרה, ישבן, IT Band", tips: ["שכב על הגב", "ברך אחת לצד", "כתפיים לרצפה"], defaultSets: 2, defaultReps: "30 שניות כל צד", equipment: "מזרן", youtubeQuery: "supine+spinal+twist+stretch" },
+      { name: "Cobra Stretch", muscles: "גב תחתון, בטן", tips: ["ידיים מתחת לכתפיים", "הרם חזה", "מרפקים קצת כפופים"], defaultSets: 2, defaultReps: "30 שניות", equipment: "מזרן", youtubeQuery: "cobra+pose+yoga+lower+back" },
+      { name: "מתיחת גב תחתון (Knee Hug)", muscles: "גב תחתון, ישבן", tips: ["שכב על הגב", "שתי ברכיים לחזה", "התנדנד בעדינות"], defaultSets: 1, defaultReps: "60 שניות", equipment: "מזרן", youtubeQuery: "knee+to+chest+lower+back+stretch" },
+      { name: "Figure-4 Stretch", muscles: "ישבן, פיריפורמיס", tips: ["שכב, רגל כ-4", "משוך ברך לחזה", "מתיחה עמוקה בישבן"], defaultSets: 2, defaultReps: "45 שניות כל צד", equipment: "מזרן", youtubeQuery: "figure+4+piriformis+stretch" },
+    ],
+  },
+  { key: "stretch_dynamic", label: "מתיחות דינמיות", emoji: "🌊", color: "#c084fc",
+    exercises: [
+      { name: "Leg Swing קדמי-אחורי", muscles: "ירכיים, Hip Flexors", tips: ["אחוז בקיר", "נדנד רגל ישרה", "טווח הולך וגדל"], defaultSets: 2, defaultReps: "15 כל רגל", equipment: "קיר", youtubeQuery: "dynamic+leg+swing+front+back" },
+      { name: "Leg Swing צדי", muscles: "מפשעה, ירך חיצונית", tips: ["אחוז בקיר בצד", "נדנד לצדדים", "עלה בהדרגה"], defaultSets: 2, defaultReps: "15 כל רגל", equipment: "קיר", youtubeQuery: "lateral+leg+swing+dynamic+stretch" },
+      { name: "World's Greatest Stretch", muscles: "כל הגוף, ירכיים, עמוד שדרה", tips: ["לאנג׳ + סיבוב + יד למעלה", "תנועה נוזלית", "3 תנוחות ברצף"], defaultSets: 2, defaultReps: "5 כל צד", equipment: "מזרן", youtubeQuery: "worlds+greatest+stretch+form" },
+      { name: "Arm Circle גדול", muscles: "כתפיים, גב עליון", tips: ["מעגלים קטנים לגדולים", "קדימה ואחורה", "קצב איטי"], defaultSets: 2, defaultReps: "10 כל כיוון", equipment: "ללא", youtubeQuery: "arm+circles+shoulder+warm+up" },
+      { name: "Inchworm + Push-up", muscles: "גב, ליבה, כתפיים, חזה", tips: ["הרחב ידיים קדימה", "שכיבה + חזור", "גב ישר לאורך"], defaultSets: 2, defaultReps: "8", equipment: "מזרן", youtubeQuery: "inchworm+pushup+combo+dynamic" },
+    ],
+  },
+];
+
 // ─── Compressed exercise seed: 72 new → 100 total (+ 28 existing) ────────────
 // format: [name, groupKey, equipment, ytQuery, sets, reps, muscles, tip]
 type _ES = [string,string,string,string,number,string,string,string];
@@ -919,6 +959,67 @@ const _EX5: _ES[] = [
 ];
 _EX5.forEach(([name,groupKey,equipment,ytQ,sets,reps,muscles,tip]) => {
   const g = MUSCLE_GROUPS.find(x => x.key === groupKey);
+  if (g) g.exercises.push({ name, muscles, tips: [tip], defaultSets: sets, defaultReps: reps, equipment, youtubeQuery: ytQ });
+});
+
+const _EX6: _ES[] = [
+  // ── stretch_upper פלג גוף עליון (13) ────────────────────────────────────
+  ["מתיחת ביצפס (קיר)","stretch_upper","קיר","bicep+wall+stretch+form",2,"30 שניות כל צד","ביצפס, כתף קדמית","יד על קיר, סובב"],
+  ["מתיחת כתף קדמית (פינה)","stretch_upper","קיר","anterior+shoulder+stretch+wall",2,"30 שניות כל צד","כתף קדמית","יד אחורה על קיר"],
+  ["מתיחת טרפז עליון","stretch_upper","ללא","upper+trapezius+stretch+neck",2,"30 שניות כל צד","טרפזים, צוואר","אוזן לכתף, יד לאחור"],
+  ["מתיחת צוואר צדית","stretch_upper","ללא","lateral+neck+stretch+form",2,"20 שניות כל צד","צוואר, טרפז","ראש לצד, ידיים נמוכות"],
+  ["Doorway Chest Stretch","stretch_upper","קיר","doorway+chest+stretch+pec+form",2,"30 שניות כל צד","חזה, כתפיים קדמיות","מרפקים 90° על מסגרת"],
+  ["Eagle Arms (כנפי נשר)","stretch_upper","ללא","eagle+arms+shoulder+stretch",2,"30 שניות כל צד","כתפיים אחוריות, גב עליון","הצלב ידיים, הרם"],
+  ["מתיחת מרפק מאחור","stretch_upper","ללא","behind+back+arm+stretch",2,"30 שניות כל צד","כתפיים, טריצפס","ידיים מאחור, לחץ"],
+  ["Cow Face Arms","stretch_upper","ללא","cow+face+arms+shoulder+stretch",2,"30 שניות כל צד","כתפיים, טריצפס, ביצפס","חיבור ידיים מאחורי גב"],
+  ["מתיחת גב עליון (עגול)","stretch_upper","ללא","thoracic+spine+stretch+seated",2,"30 שניות","גב עליון, שכמות","עגל גב, ידיים קדימה"],
+  ["Thoracic Extension (כיסא)","stretch_upper","ספסל","thoracic+extension+chair+back",2,"30 שניות","גב עליון","הנח שדרה על שפת כיסא"],
+  ["מתיחת אמות (Wrist Flexors)","stretch_upper","ללא","wrist+flexor+stretch+forearm",2,"20 שניות כל צד","אמות קדמיות","יד ישרה, כופף לאחור"],
+  ["מתיחת Forearm Extensors","stretch_upper","ללא","wrist+extensor+stretch+forearm",2,"20 שניות כל צד","אמות אחוריות","יד ישרה, כופף קדימה"],
+  ["Neck Rotation (רוטציה)","stretch_upper","ללא","neck+rotation+stretch+mobility",2,"30 שניות כל כיוון","צוואר, שרירי סובב","סיבוב איטי לצדדים"],
+  // ── stretch_lower פלג גוף תחתון (13) ────────────────────────────────────
+  ["Seated Forward Fold","stretch_lower","מזרן","seated+forward+fold+hamstring",2,"45 שניות","המסטרינג, גב תחתון","כופף לקדמת אצבעות"],
+  ["Standing Quad Stretch","stretch_lower","ללא","standing+quad+stretch+form",2,"30 שניות כל צד","קוואדריצפס, Hip Flexors","עקב לישבן, גב ישר"],
+  ["Supine Figure-4","stretch_lower","מזרן","supine+figure+4+glute+stretch",2,"45 שניות כל צד","ישבן, פיריפורמיס","שכיבה, 4 ידיים"],
+  ["Runner's Lunge Deep","stretch_lower","מזרן","runners+lunge+deep+hip+stretch",2,"45 שניות כל צד","Hip Flexors, מפשעה","ברך על מזרן, קדם ירך"],
+  ["Frog Stretch","stretch_lower","מזרן","frog+stretch+hip+groin+mobility",2,"45 שניות","מפשעה, ירך פנימית","ארבע רגליים, פתח ברכיים"],
+  ["Standing Pigeon (על מדרגה)","stretch_lower","קיר","standing+pigeon+pose+hip+stretch",2,"45 שניות כל צד","ישבן, ירך חיצונית","רגל על מדרגה/כיסא"],
+  ["Ankle Circles","stretch_lower","ללא","ankle+circles+mobility+form",2,"15 כל כיוון כל","קרסול, שוקיים","סיבובים איטיים"],
+  ["Seated Butterfly Advanced","stretch_lower","מזרן","butterfly+stretch+advanced+fold",2,"45 שניות","מפשעה, גב תחתון","הטה קדימה עם גב ישר"],
+  ["Standing IT Band Stretch","stretch_lower","קיר","it+band+standing+stretch+form",2,"30 שניות כל צד","IT Band, ירך חיצונית","הצלב רגליים, הטה לצד"],
+  ["Calf Stretch מדרגה","stretch_lower","ספסל","calf+stretch+stairs+edge",2,"30 שניות כל צד","שוקיים, אכילס","עקב על שפת מדרגה"],
+  ["Soleus Stretch (ברך כפופה)","stretch_lower","קיר","soleus+stretch+bent+knee+form",2,"30 שניות כל צד","סולאוס","כופף ברך לקיר"],
+  ["Prone Quad Stretch","stretch_lower","מזרן","prone+quad+stretch+lying+form",2,"30 שניות כל צד","קוואדריצפס, גב תחתון","שכיבה, עקב לישבן"],
+  ["Happy Baby Pose","stretch_lower","מזרן","happy+baby+pose+hip+inner+thigh",2,"45 שניות","ירך, גב תחתון, מפשעה","שכיבה, אחוז כפות"],
+  // ── stretch_spine גב ועמוד שדרה (12) ──────────────────────────────────
+  ["Thoracic Rotation ישיבה","stretch_spine","ספסל","thoracic+rotation+seated+stretch",2,"10 כל כיוון","גב עליון, עמוד שדרה","ישב, ידיים על כתפיים"],
+  ["Seated Forward Fold (כיסא)","stretch_spine","ספסל","seated+forward+fold+chair+back",2,"30 שניות","גב תחתון, המסטרינג","הטה קדימה, ידיים לרצפה"],
+  ["Pelvic Tilt","stretch_spine","מזרן","pelvic+tilt+exercise+lower+back",2,"15 חזרות","גב תחתון, ליבה","שכיבה, לחץ גב לרצפה"],
+  ["Bridge Stretch","stretch_spine","מזרן","bridge+pose+yoga+spine+stretch",2,"30 שניות","גב תחתון, ישבן, חזה","שכיבה, הרם ירכיים"],
+  ["Doorway Thoracic Rotation","stretch_spine","קיר","doorway+thoracic+rotation+stretch",2,"30 שניות כל צד","גב עליון, חזה","יד על מסגרת, סובב"],
+  ["Spinal Flexion/Extension","stretch_spine","מזרן","spinal+flexion+extension+stretch",2,"10 חזרות","עמוד שדרה כולו","ארבע רגליים, Cat-Cow"],
+  ["Lateral Flexion Standing","stretch_spine","ללא","lateral+flexion+standing+side+bend",2,"30 שניות כל צד","עמוד שדרה צידי, גב","הטה לצד עם יד מעל"],
+  ["Downward Dog","stretch_spine","מזרן","downward+dog+yoga+form+stretch",2,"45 שניות","גב, המסטרינג, שוקיים","V הפוך — עקבים לרצפה"],
+  ["Upward Dog","stretch_spine","מזרן","upward+facing+dog+yoga+spine",2,"20 שניות","גב תחתון, בטן","ידיים מתחת כתפיים, הרם"],
+  ["Child's Pose (Child's Pose)","stretch_spine","מזרן","childs+pose+lower+back+release",1,"60 שניות","גב תחתון, ירכיים","ברכיים פתוחות, ידיים קדימה"],
+  ["Foam Roller Thoracic","stretch_spine","ספסל","foam+roller+thoracic+extension+form",2,"30 שניות","גב עליון, עמוד שדרה","גלגל על גב עליון"],
+  ["Passive Hang (גב)","stretch_spine","קיר","passive+hang+spinal+decompression",2,"30 שניות","עמוד שדרה, כתפיים","תלה מוט, שחרר גוף"],
+  // ── stretch_dynamic מתיחות דינמיות (12) ──────────────────────────────
+  ["Hip Circle עמידה","stretch_dynamic","ללא","hip+circles+standing+mobility",2,"10 כל כיוון","אגן, גב תחתון","מעגלים גדולים באגן"],
+  ["Lunge + Twist","stretch_dynamic","מזרן","lunge+with+rotation+dynamic+stretch",2,"8 כל צד","ירכיים, עמוד שדרה","לאנג׳ + סיבוב לכיוון רגל"],
+  ["Knee Hug Walking","stretch_dynamic","ללא","walking+knee+hug+dynamic+stretch",2,"10 כל רגל","ישבן, Hip Flexors","הליכה + ברך לחזה"],
+  ["High Kick (מיתר)","stretch_dynamic","ללא","high+kick+leg+swing+hamstring",2,"10 כל רגל","המסטרינג","בעיטה גבוהה ישרה"],
+  ["Arm Swing Cross-Body","stretch_dynamic","ללא","arm+swing+cross+body+dynamic+warm+up",2,"20","כתפיים, גב עליון","הצלב ידיים בפתיחה"],
+  ["Thoracic Spine Windmill","stretch_dynamic","מזרן","thoracic+windmill+rotation+dynamic",2,"10 כל צד","גב עליון, כתפיים","שכיבה, סיבוב ידיים"],
+  ["Dynamic Hip Opener","stretch_dynamic","ללא","dynamic+hip+opener+mobility+drill",2,"10 כל צד","ירכיים, מפשעה","ברך כלפי חוץ בעיגול"],
+  ["Fire Hydrant (דינמי)","stretch_dynamic","מזרן","fire+hydrant+dynamic+hip+mobility",2,"15 כל צד","ישבן, ירך חיצונית","ארבע רגליים, הרם בעיגול"],
+  ["Ankle Flexion/Extension","stretch_dynamic","מזרן","ankle+flexion+extension+mobility",2,"15 כל רגל","קרסול, שוקיים","שכיבה, כופף + פשוט"],
+  ["Spiderman Stretch","stretch_dynamic","מזרן","spiderman+stretch+hip+flexor+mobility",2,"8 כל צד","Hip Flexors, מפשעה","לאנג׳ + הנחת מרפק לרצפה"],
+  ["Thoracic Cat-Cow (ישיבה)","stretch_dynamic","ספסל","seated+cat+cow+thoracic+mobility",2,"12 חזרות","גב, עמוד שדרה","ישב, ידיים על ברכיים"],
+  ["Neck Half-Circle","stretch_dynamic","ללא","neck+half+circle+mobility+stretch",2,"10 כל כיוון","צוואר","חצי מעגל איטי מצד לצד"],
+];
+_EX6.forEach(([name,groupKey,equipment,ytQ,sets,reps,muscles,tip]) => {
+  const g = STRETCHING_MUSCLE_GROUPS.find(x => x.key === groupKey);
   if (g) g.exercises.push({ name, muscles, tips: [tip], defaultSets: sets, defaultReps: reps, equipment, youtubeQuery: ytQ });
 });
 
@@ -2649,7 +2750,7 @@ function ExerciseModal({
   );
 }
 
-type LibraryWorkoutType = "weights" | "calisthenics" | "warmup";
+type LibraryWorkoutType = "weights" | "calisthenics" | "warmup" | "stretching";
 
 function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?: (exs: LibraryExercise[]) => void; selectionMode?: boolean }) {
   const [workoutType,    setWorkoutType]    = useState<LibraryWorkoutType>("weights");
@@ -2690,7 +2791,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
 
   // Build a flat map of all exercises for lookup
   const allExMap = new Map<string, LibraryExercise>();
-  [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...WARMUP_GROUPS]
+  [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...WARMUP_GROUPS, ...STRETCHING_MUSCLE_GROUPS]
     .forEach((g) => g.exercises.forEach((ex) => allExMap.set(ex.name, ex)));
 
   const handleAddToWorkout = () => {
@@ -2745,18 +2846,21 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
   const favForType = favorites.filter((name) => {
     const ex = allExMap.get(name);
     if (!ex) return false;
-    const inWeights = MUSCLE_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
-    const inCali    = CALISTHENICS_MUSCLE_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
-    const inWarmup  = WARMUP_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
-    if (workoutType === "weights")      return inWeights;
+    const inWeights    = MUSCLE_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
+    const inCali       = CALISTHENICS_MUSCLE_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
+    const inWarmup     = WARMUP_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
+    const inStretching = STRETCHING_MUSCLE_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
+    if (workoutType === "weights")    return inWeights;
     if (workoutType === "calisthenics") return inCali;
-    if (workoutType === "warmup")       return inWarmup;
+    if (workoutType === "warmup")     return inWarmup;
+    if (workoutType === "stretching") return inStretching;
     return false;
   });
 
   const groups =
     workoutType === "weights"      ? MUSCLE_GROUPS :
     workoutType === "calisthenics" ? CALISTHENICS_MUSCLE_GROUPS :
+    workoutType === "stretching"   ? STRETCHING_MUSCLE_GROUPS :
     WARMUP_GROUPS;
 
   const searchResults = useMemo(() => {
@@ -2764,7 +2868,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
     if (!q) return null;
     const seen = new Set<string>();
     const out: { ex: LibraryExercise; groupKey: string }[] = [];
-    [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...WARMUP_GROUPS].forEach((g) => {
+    [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...WARMUP_GROUPS, ...STRETCHING_MUSCLE_GROUPS].forEach((g) => {
       g.exercises.forEach((ex) => {
         if (seen.has(ex.name)) return;
         if (!showHidden && hidden.includes(ex.name)) return;
@@ -2813,9 +2917,13 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
       {searchResults !== null && (
         <>
           {searchResults.length === 0 ? (
-            <div className="text-center py-12 text-white/30 text-sm">לא נמצאו תרגילים עבור "{searchQuery}"</div>
+            <div className="flex flex-col items-center justify-center py-16 gap-3 animate-in fade-in duration-300">
+              <div className="h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center text-2xl">🔍</div>
+              <p className="text-sm font-bold text-white/50">לא מצאנו תרגילים</p>
+              <p className="text-xs text-white/25">נסה לחפש שריר, ציוד או שם תרגיל</p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 animate-in fade-in duration-300">
               <p className="text-[11px] font-bold text-white/40">{searchResults.length} תוצאות</p>
               {searchResults.map(({ ex, groupKey }) => (
                 <ExerciseRow
@@ -2850,10 +2958,11 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
         {([
           { key: "weights"      as const, label: "🏋️ חדר כושר"  },
           { key: "calisthenics" as const, label: "🤸 קלסטניקס"  },
+          { key: "stretching"   as const, label: "🧘 מתיחות"     },
           { key: "warmup"       as const, label: "🔥 חימום"      },
         ] as const).map(({ key, label }) => (
           <button key={key} onClick={() => handleTypeChange(key)}
-            className={`flex-1 py-2 rounded-xl text-[11px] font-black transition-all ${
+            className={`flex-1 py-1.5 rounded-xl text-[10px] font-black transition-all ${
               workoutType === key ? "bg-white/15 text-white shadow-sm" : "text-white/35 hover:text-white/55"
             }`}>
             {label}
@@ -2952,10 +3061,10 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
       )}
 
       {/* ── WEIGHTS / CALISTHENICS root: muscle group grid ─────────── */}
-      {(workoutType === "weights" || workoutType === "calisthenics") && !selectedGroup && (
+      {(workoutType === "weights" || workoutType === "calisthenics" || workoutType === "stretching") && !selectedGroup && (
         <>
           <p className="text-sm font-black text-white">בחר קבוצת שרירים</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
             {groups.map((g) => {
               const visibleCount = g.exercises.filter((ex) => !hidden.includes(ex.name)).length;
               return (
@@ -3031,7 +3140,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
                 className="relative rounded-2xl overflow-hidden border border-white/10 h-28 active:scale-[0.97] transition-all hover:border-white/25"
                 style={{ backgroundImage: `url(${img})`, backgroundSize: "cover", backgroundPosition: "center" }}
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/15" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                 <div className="relative z-10 h-full flex flex-col items-end justify-end gap-0.5 p-3">
                   <span className="text-xl">{meta.emoji}</span>
                   <p className="text-[11px] font-black text-white text-right leading-tight">{meta.label}</p>
@@ -3045,7 +3154,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
 
       {/* ── WEIGHTS with equip selected OR show-all: exercise list ──── */}
       {workoutType === "weights" && selectedGroup && (selectedEquip || showAllExercises) && (
-        <div className="space-y-2">
+        <div className="space-y-2 animate-in fade-in duration-300">
           {groupExercises.length === 0 ? (
             <div className="text-center py-8 text-white/30 text-xs">
               כל התרגילים מוסתרים —{" "}
@@ -3066,8 +3175,8 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
       )}
 
       {/* ── CALISTHENICS / WARMUP inside group: exercise list ──────── */}
-      {(workoutType === "calisthenics" || workoutType === "warmup") && selectedGroup && (
-        <div className="space-y-2">
+      {(workoutType === "calisthenics" || workoutType === "warmup" || workoutType === "stretching") && selectedGroup && (
+        <div className="space-y-2 animate-in fade-in duration-300">
           {groupExercises.map((ex) => (
             <ExerciseRow
               key={ex.name}
