@@ -279,12 +279,12 @@ const EQUIP_META: Record<EquipmentCategory, { label: string; emoji: string; colo
 };
 
 const EQUIPMENT_IMAGES: Record<EquipmentCategory, string> = {
-  free_weights: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&q=80",
-  machine:      "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80",
-  cables:       "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&q=80",
-  mat:          "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80",
-  bar:          "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80",
-  equipment:    "https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=400&q=80",
+  free_weights: "/assets/equipment/dumbbells.jpg",
+  machine:      "/assets/equipment/machine.jpg",
+  cables:       "/assets/equipment/cables.jpg",
+  mat:          "/assets/equipment/mat.jpg",
+  bar:          "/assets/equipment/pullups.jpg",
+  equipment:    "/assets/equipment/dips.jpg",
 };
 
 // ─── Body icon ────────────────────────────────────────────────────────────────
