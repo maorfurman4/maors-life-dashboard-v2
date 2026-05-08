@@ -82,8 +82,9 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "chest", label: "חזה", emoji: "💪", color: "#3b82f6",
     subGroups: [
-      { key: "chest_upper", label: "חזה עליון",  emoji: "⬆️", exerciseNames: ["לחיצת חזה שכיבה", "שכיבות סמיכה"] },
-      { key: "chest_mid",   label: "חזה אמצע",   emoji: "🎯", exerciseNames: ["פרפר (Fly)", "לחיצת חזה במכונה", "קרוסאובר (כבלים)"] },
+      { key: "chest_upper", label: "חזה עליון",  emoji: "⬆️", exerciseNames: ["לחיצת דמבלים משופעת","לחיצת מוט משופעת","פרפר משופע","Cable Fly מלמטה","Dumbbell Pullover"] },
+      { key: "chest_mid",   label: "חזה אמצעי",  emoji: "🎯", exerciseNames: ["לחיצת חזה שכיבה","שכיבות סמיכה","פרפר (Fly)","לחיצת חזה במכונה","קרוסאובר (כבלים)","Pec Deck מכונה","Squeeze Press","Cable Crossover רחב"] },
+      { key: "chest_lower", label: "חזה תחתון",  emoji: "⬇️", exerciseNames: ["לחיצת דמבלים ירידה","מקבילים לחזה","שכיבות ירידה","Cable Fly מגבוה"] },
     ],
     exercises: [
       { name: "לחיצת חזה שכיבה", muscles: "חזה, כתפיים קדמיות, טריצפס", tips: ["שמור על גב שטוח", "הורד לאיטיות — 3 שניות", "נשוף בלחיצה"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט", youtubeQuery: "bench+press+form+tutorial" },
@@ -96,9 +97,9 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "back", label: "גב", emoji: "🦾", color: "#8b5cf6",
     subGroups: [
-      { key: "back_lats",  label: "גב רחב",   emoji: "⬆️", exerciseNames: ["מתח (Pull-up)", "לט פולדאון"] },
-      { key: "back_mid",   label: "גב אמצע",  emoji: "🔄", exerciseNames: ["חתירה (Barbell Row)", "חתירה כבלים ישיבה"] },
-      { key: "back_lower", label: "גב תחתון", emoji: "⬇️", exerciseNames: ["דדליפט"] },
+      { key: "back_lats",  label: "רחב גבי",  emoji: "⬆️", exerciseNames: ["מתח (Pull-up)","לט פולדאון","Lat Pulldown רחב","Lat Pulldown צר","Straight Arm Pulldown"] },
+      { key: "back_traps", label: "טרפזים",   emoji: "🔄", exerciseNames: ["חתירה (Barbell Row)","חתירה כבלים ישיבה","T-Bar Row","Single Arm Dumbbell Row","Chest Supported Row","Meadows Row","Seal Row","Renegade Row"] },
+      { key: "back_lower", label: "גב תחתון", emoji: "⬇️", exerciseNames: ["דדליפט","Rack Pull","Back Extension","Good Morning"] },
     ],
     exercises: [
       { name: "מתח (Pull-up)", muscles: "גב רחב, ביצפס, ליבה", tips: ["תלייה מלאה בתחתית", "הוצא חזה אל הבר", "אל תתנועע"], defaultSets: 4, defaultReps: "6-10", equipment: "מוט מתח", youtubeQuery: "pull+up+perfect+form" },
@@ -111,9 +112,9 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "shoulders", label: "כתפיים", emoji: "🏋️", color: "#f97316",
     subGroups: [
-      { key: "sh_front", label: "דלטואיד קדמי",  emoji: "🔵", exerciseNames: ["לחיצת כתפיים (OHP)", "הרמות קדמיות (Front Raise)"] },
-      { key: "sh_mid",   label: "דלטואיד אמצעי", emoji: "⚡", exerciseNames: ["הרמות צד (Lateral Raise)"] },
-      { key: "sh_rear",  label: "דלטואיד אחורי", emoji: "🔙", exerciseNames: ["Face Pull"] },
+      { key: "sh_front", label: "כתף קדמית",  emoji: "🔵", exerciseNames: ["לחיצת כתפיים (OHP)","הרמות קדמיות (Front Raise)","Arnold Press","לחיצת כתפיים בישיבה","Cuban Press"] },
+      { key: "sh_mid",   label: "כתף אמצעית", emoji: "⚡", exerciseNames: ["הרמות צד (Lateral Raise)","Lateral Raise כבלים","Machine Lateral Raise","Upright Row","Shrug — כיווץ כתפיים"] },
+      { key: "sh_rear",  label: "כתף אחורית", emoji: "🔙", exerciseNames: ["Face Pull","Rear Delt Fly דמבלים","Cable Rear Delt Fly","Band Pull-Apart"] },
     ],
     exercises: [
       { name: "לחיצת כתפיים (OHP)", muscles: "דלטואיד קדמי ואמצע, טריצפס", tips: ["עמוד יציב", "נסגר בראש", "אל תרכין גב"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט / דמבלים", youtubeQuery: "overhead+press+form+tutorial" },
@@ -125,8 +126,9 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "arms", label: "ידיים", emoji: "💪", color: "#ec4899",
     subGroups: [
-      { key: "arms_bi",  label: "ביצפס",  emoji: "💪", exerciseNames: ["כפיפות מרפק (Bicep Curl)", "Hammer Curl"] },
-      { key: "arms_tri", label: "טריצפס", emoji: "💎", exerciseNames: ["פשיטת מרפק (Tricep Extension)", "מקבילים (Dips)"] },
+      { key: "arms_bi",   label: "יד קדמית",  emoji: "💪", exerciseNames: ["כפיפות מרפק (Bicep Curl)","Hammer Curl","Preacher Curl","Incline Dumbbell Curl","Concentration Curl","Spider Curl","Cable Curl","Hammer Curl כבלים"] },
+      { key: "arms_tri",  label: "יד אחורית", emoji: "💎", exerciseNames: ["פשיטת מרפק (Tricep Extension)","מקבילים (Dips)","Skull Crusher","Close Grip Bench","Overhead Tricep Extension","Tricep Pushdown V-Bar","Tricep Kickback"] },
+      { key: "arms_fore", label: "אמות",       emoji: "🦾", exerciseNames: ["Reverse Curl","Wrist Curl"] },
     ],
     exercises: [
       { name: "כפיפות מרפק (Bicep Curl)", muscles: "ביצפס, ברכיאליס", tips: ["אל תנופף", "סיום מלא בפסגה", "בקרה בירידה"], defaultSets: 3, defaultReps: "10-12", equipment: "דמבלים / מוט", youtubeQuery: "bicep+curl+form+tutorial" },
@@ -138,9 +140,10 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "legs", label: "רגליים", emoji: "🦵", color: "#eab308",
     subGroups: [
-      { key: "legs_quads",  label: "קוואדריצפס", emoji: "🦵", exerciseNames: ["סקוואט (Squat)", "לג פרס (Leg Press)", "לאנג' (Lunges)"] },
-      { key: "legs_hams",   label: "המסטרינג",   emoji: "🏃", exerciseNames: ["כפיפות ברכיים (Hamstring Curl)"] },
-      { key: "legs_calves", label: "שוקיים",      emoji: "👟", exerciseNames: ["הרמות עקב (Calf Raise)"] },
+      { key: "legs_quads",  label: "ארבע ראשי", emoji: "🦵", exerciseNames: ["סקוואט (Squat)","לאנג' (Lunges)","לג פרס (Leg Press)","Hack Squat מכונה","Leg Extension","Goblet Squat","Step Up לספסל","Sumo Squat","Hip Adduction מכונה","Hip Abduction מכונה","Bulgarian Split Squat"] },
+      { key: "legs_hams",   label: "האמסטרינג", emoji: "🏃", exerciseNames: ["כפיפות ברכיים (Hamstring Curl)","Romanian Deadlift","Nordic Hamstring Curl","Good Morning רגליים"] },
+      { key: "legs_glutes", label: "ישבן",       emoji: "🍑", exerciseNames: ["Hip Thrust","Glute Bridge","Donkey Kicks"] },
+      { key: "legs_calves", label: "תאומים",     emoji: "👟", exerciseNames: ["הרמות עקב (Calf Raise)","Seated Calf Raise"] },
     ],
     exercises: [
       { name: "סקוואט (Squat)", muscles: "קוואדריצפס, ישבן, גב תחתון", tips: ["ברכיים מעל אצבעות", "ירד עד מקביל לפחות", "גב ישר — חובה"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט", youtubeQuery: "squat+form+tutorial+beginners" },
@@ -153,8 +156,8 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "core", label: "ליבה", emoji: "🎯", color: "#06b6d4",
     subGroups: [
-      { key: "core_abs",  label: "בטן",       emoji: "🎯", exerciseNames: ["סיט אפ (Sit-up)", "רוסיאן טוויסט", "ברכיים לחזה (Knee Tucks)"] },
-      { key: "core_deep", label: "ליבה עמוק", emoji: "🔵", exerciseNames: ["פלנק (Plank)", "Dead Bug"] },
+      { key: "core_straight", label: "בטן ישרה", emoji: "🎯", exerciseNames: ["סיט אפ (Sit-up)","ברכיים לחזה (Knee Tucks)","פלנק (Plank)","Dead Bug","Cable Crunch","Dragon Flag","Ab Wheel Rollout","Hanging Leg Raise","V-Up","Hollow Crunch"] },
+      { key: "core_obliques", label: "אלכסונים", emoji: "🔄", exerciseNames: ["רוסיאן טוויסט","Woodchop (גרזן)","Pallof Press","Side Plank","Landmine Rotation"] },
     ],
     exercises: [
       { name: "פלנק (Plank)", muscles: "ליבה, כתפיים, ישבן", tips: ["גוף קרש ישר", "אל תרים ישבן", "נשום בשלווה"], defaultSets: 3, defaultReps: "45-60 שניות", equipment: "ללא", youtubeQuery: "plank+form+tutorial" },
@@ -257,8 +260,97 @@ const WARMUP_GROUPS: MuscleGroup[] = [
   },
 ];
 
+// ─── Compressed exercise seed: 72 new → 100 total (+ 28 existing) ────────────
+// format: [name, groupKey, equipment, ytQuery, sets, reps, muscles, tip]
+type _ES = [string,string,string,string,number,string,string,string];
+const _EX: _ES[] = [
+  // ── CHEST (12) ──
+  ["לחיצת דמבלים משופעת","chest","ספסל","incline+dumbbell+press+form",4,"8-10","חזה עליון, כתפיים קדמיות","הגדל זווית ל-30°, הרגש חזה עליון"],
+  ["לחיצת מוט משופעת","chest","ספסל","incline+barbell+bench+press",4,"6-8","חזה עליון, טריצפס","גב שטוח ללוח, ירידה מבוקרת"],
+  ["לחיצת דמבלים ירידה","chest","ספסל","decline+dumbbell+press",3,"10","חזה תחתון","ספסל שלילי לפחות -15°"],
+  ["פרפר משופע","chest","ספסל","incline+fly+chest+form",3,"12","חזה עליון","קשת עדינה, מרגיש מתיחה בפתיחה"],
+  ["Pec Deck מכונה","chest","מכונה","pec+deck+machine+form",3,"12-15","חזה פנימי","כוונן מושב — מרפקים בגובה כתפיים"],
+  ["Cable Fly מגבוה","chest","כבלים","high+cable+fly+lower+chest",3,"15","חזה תחתון","משוך מלמעלה למטה וצלב"],
+  ["Cable Fly מלמטה","chest","כבלים","low+cable+fly+upper+chest",3,"15","חזה עליון","משוך מלמטה למעלה וצלב"],
+  ["Dumbbell Pullover","chest","ספסל","dumbbell+pullover+chest+form",3,"12","חזה, גב רחב","מרפקים קצת כפופים לאורך כל התנועה"],
+  ["שכיבות ירידה","chest","ספסל","decline+push+up+form",3,"12-15","חזה תחתון","רגליים על ספסל, גוף ישר"],
+  ["Squeeze Press","chest","ספסל","dumbbell+squeeze+press+form",3,"12","חזה פנימי","לחץ דמבלים זה על זה לאורך כל התנועה"],
+  ["מקבילים לחזה","chest","מקבילים","weighted+dips+chest+form",4,"8-10","חזה תחתון, טריצפס","הישן קדימה ירד עמוק"],
+  ["Cable Crossover רחב","chest","כבלים","cable+crossover+wide+chest",3,"12","חזה כולו","ידיים ישרות, תנועת חיבוק"],
+  // ── BACK (12) ──
+  ["Single Arm Dumbbell Row","back","ספסל","single+arm+dumbbell+row+form",4,"10","גב אמצע, ביצפס","ברך ויד על ספסל, משוך לירך"],
+  ["T-Bar Row","back","מוט","t+bar+row+back+form",4,"8","גב אמצע, טרפזים","גב 45°, משוך לחזה תחתון"],
+  ["Chest Supported Row","back","מכונה","chest+supported+row+form",4,"10-12","גב אמצע, ביצפס","חזה על הריפוד, ללא עזרת גוף"],
+  ["Lat Pulldown רחב","back","מכונה","wide+grip+lat+pulldown+form",3,"10-12","גב רחב","הוצא חזה אל הבר בסיום"],
+  ["Lat Pulldown צר","back","מכונה","close+grip+lat+pulldown+form",3,"10-12","גב רחב, ביצפס","אחיזה מקבילה — טווח תנועה גדול"],
+  ["Straight Arm Pulldown","back","כבלים","straight+arm+pulldown+lats",3,"15","גב רחב","ידיים ישרות, לחץ מלמעלה למטה"],
+  ["Renegade Row","back","דמבלים","renegade+row+form",3,"8 כל צד","גב, ליבה","פלנק — משוך לסירוגין, אל תסובב"],
+  ["Meadows Row","back","מוט","meadows+row+back+form",4,"10","גב עליון, טרפזים","מוט בזווית, תנועה חד-צדדית"],
+  ["Seal Row","back","ספסל","seal+row+form+back",4,"10-12","גב אמצע","שכוב על ספסל — ביטול עזרת גוף לחלוטין"],
+  ["Rack Pull","back","מוט","rack+pull+form+upper+back",3,"5-6","גב תחתון, טרפזים","כמו דדליפט מגובה — פחות טווח"],
+  ["Back Extension","back","מכונה","back+extension+lower+back+form",3,"15","גב תחתון","אל תגיע מעבר לניטרלי בפסגה"],
+  ["Good Morning","back","מוט","good+morning+back+form",3,"12","גב תחתון, המסטרינג","מוט על כתפיים, כופף מהירכיים"],
+  // ── SHOULDERS (10) ──
+  ["Arnold Press","shoulders","דמבלים","arnold+press+form+shoulders",4,"10","כתפיים כולן, טריצפס","סובב כפות ידיים בתנועה"],
+  ["לחיצת כתפיים בישיבה","shoulders","ספסל","seated+dumbbell+shoulder+press",4,"10-12","כתפיים קדמיות ואמצע","גב ישר, אל תרים ישבן"],
+  ["Lateral Raise כבלים","shoulders","כבלים","cable+lateral+raise+form",3,"15","דלטואיד אמצעי","מתח קבוע לאורך כל הטווח"],
+  ["Rear Delt Fly דמבלים","shoulders","דמבלים","rear+delt+fly+dumbbell+form",3,"15","כתף אחורית, טרפזים","כפוף 45° קדימה, ידיים ישרות"],
+  ["Cable Rear Delt Fly","shoulders","כבלים","cable+rear+delt+fly+form",3,"15","כתף אחורית","כבלים מוצלבים — משוך בצד ה'הפוך'"],
+  ["Upright Row","shoulders","מוט","upright+row+form+shoulders",3,"12","דלטואיד אמצע, טרפזים","אחיזה רחבה — בטיחותי לכתפיים"],
+  ["Shrug — כיווץ כתפיים","shoulders","דמבלים","dumbbell+shrug+trap+form",4,"15-20","טרפזים","עלה ישר מעלה — לא מעגל כתפיים"],
+  ["Cuban Press","shoulders","דמבלים","cuban+press+form+shoulders",3,"12","שרוול מסובב, כתפיים","מתחיל כ-Upright Row, מסיים כ-OHP"],
+  ["Band Pull-Apart","shoulders","ללא","band+pull+apart+rear+delt",3,"20","כתף אחורית, טרפזים","ידיים ישרות, משוך עד לחזה"],
+  ["Machine Lateral Raise","shoulders","מכונה","machine+lateral+raise+form",3,"15","דלטואיד אמצעי","עגינה יציבה, תנועה מלאה"],
+  // ── ARMS (13) ──
+  ["Preacher Curl","arms","מכונה","preacher+curl+form+bicep",3,"10-12","ביצפס","מרפקים על הריפוד — בידוד מלא"],
+  ["Incline Dumbbell Curl","arms","ספסל","incline+dumbbell+curl+form",3,"10-12","ביצפס ראש ארוך","ספסל 45° — מתיחה מלאה בתחתית"],
+  ["Concentration Curl","arms","דמבלים","concentration+curl+bicep+form",3,"12","ביצפס, עיצוב פסגה","מרפק בין הירכיים, כוף לאיטיות"],
+  ["Spider Curl","arms","ספסל","spider+curl+bicep+incline",3,"12","ביצפס ראש קצר","ידיים תלויות מספסל משופע קדמה"],
+  ["Cable Curl","arms","כבלים","cable+bicep+curl+form",3,"12","ביצפס","מתח קבוע — עבוד על הפסגה"],
+  ["Hammer Curl כבלים","arms","כבלים","cable+hammer+curl+form",3,"12","ביצפס, ברכיאליס","אחיזה ניטרלית, כבל נמוך"],
+  ["Reverse Curl","arms","מוט","reverse+curl+forearm+bicep",3,"12","אמות, ביצפס","אחיזה עליונה — מקשה פי 2"],
+  ["Skull Crusher","arms","ספסל","skull+crusher+tricep+form",4,"10","טריצפס ראש ארוך","הורד לאחורה מעט מעל הראש"],
+  ["Close Grip Bench","arms","ספסל","close+grip+bench+press+tricep",4,"8-10","טריצפס, חזה","אחיזה כתף-רוחב, מרפקים צמודים"],
+  ["Overhead Tricep Extension","arms","דמבלים","overhead+tricep+extension+form",3,"12","טריצפס ראש ארוך","מרפקים קרובים לראש, מתיחה מלאה"],
+  ["Tricep Pushdown V-Bar","arms","כבלים","tricep+pushdown+v+bar+form",3,"12-15","טריצפס","נעל מרפקים, פשוט עד סיום מלא"],
+  ["Tricep Kickback","arms","ספסל","tricep+kickback+dumbbell+form",3,"12","טריצפס","כפוף 45°, פשוט עד ישר"],
+  ["Wrist Curl","arms","ספסל","wrist+curl+forearm+form",3,"15-20","אמות קדמיות","ידיים מעבר לקצה הספסל"],
+  // ── LEGS (15) ──
+  ["Romanian Deadlift","legs","מוט","romanian+deadlift+form+hamstrings",4,"8","המסטרינג, ישבן","ברים לאורך הרגל, כופף מהירכיים"],
+  ["Sumo Squat","legs","מוט","sumo+squat+form",4,"10","קוואדריצפס, ישבן, ירכיים","עמידה רחבה, אצבעות 45° החוצה"],
+  ["Hack Squat מכונה","legs","מכונה","hack+squat+machine+form",4,"10","קוואדריצפס","רגליים גבוה יותר = יותר ישבן"],
+  ["Leg Extension","legs","מכונה","leg+extension+form+quads",3,"12-15","קוואדריצפס בידוד","אל תנעל ברך בסיום, בקרה בחזרה"],
+  ["Seated Calf Raise","legs","מכונה","seated+calf+raise+form",4,"20-25","שוק (Soleus)","בישיבה מדגיש Soleus (שוק תחתון)"],
+  ["Glute Bridge","legs","מוט","glute+bridge+barbell+form",4,"15","ישבן, המסטרינג","ברכיים 90°, סחוט ישבן בפסגה"],
+  ["Hip Thrust","legs","ספסל","barbell+hip+thrust+form",4,"10-12","ישבן, המסטרינג","גב על ספסל, מוט על ירכיים"],
+  ["Goblet Squat","legs","דמבלים","goblet+squat+form",3,"12","קוואדריצפס, ישבן","דמבל בגובה חזה, ירד עמוק"],
+  ["Step Up לספסל","legs","ספסל","step+up+exercise+legs+form",3,"12 כל צד","קוואדריצפס, ישבן","ספסל בגובה ברך, צעד מלא"],
+  ["Nordic Hamstring Curl","legs","ללא","nordic+hamstring+curl+form",3,"5-8","המסטרינג","ירד לאיטיות, עלה בכוח ידיים"],
+  ["Hip Abduction מכונה","legs","מכונה","hip+abduction+machine+form",3,"15","ירכיים חיצוניות, ישבן","בישיבה, דחוף ברכיים החוצה"],
+  ["Hip Adduction מכונה","legs","מכונה","hip+adduction+machine+form",3,"15","ירכיים פנימיות","בישיבה, קרב ברכיים"],
+  ["Donkey Kicks","legs","כבלים","donkey+kicks+glutes+cable",3,"15 כל צד","ישבן","ארבע רגליים — כף רגל לתקרה"],
+  ["Bulgarian Split Squat","legs","ספסל","bulgarian+split+squat+form",3,"10 כל צד","קוואדריצפס, ישבן","רגל אחורית על ספסל, ירד ישר"],
+  ["Good Morning רגליים","legs","מוט","good+morning+hamstrings+glutes",3,"12","המסטרינג, ישבן","ברכיים קצת כפופות, כופף מהירכיים"],
+  // ── CORE (10) ──
+  ["Cable Crunch","core","כבלים","cable+crunch+abs+form",3,"15-20","בטן ישרה","כרע על ברכיים, משוך בכוח בטן"],
+  ["Dragon Flag","core","ספסל","dragon+flag+exercise+form",3,"4-6","בטן ישרה, ליבה עמוק","גוף ישר כקרש — ירד לאיטיות"],
+  ["Ab Wheel Rollout","core","ללא","ab+wheel+rollout+form",3,"8-10","בטן ישרה, ליבה","גב ישר, אל תרכין כלפי הרצפה"],
+  ["Hanging Leg Raise","core","מוט מתח","hanging+leg+raise+abs+form",3,"10-12","בטן תחתונה","תלה ממוט, הרם רגליים ישרות"],
+  ["V-Up","core","ללא","v+up+abs+core+form",3,"12-15","בטן ישרה","גוף V הפוך — ידיים ורגליים נפגשות"],
+  ["Woodchop (גרזן)","core","כבלים","cable+wood+chop+core+form",3,"12 כל צד","אלכסוני, ליבה","תנועת אלכסון מלמעלה למטה"],
+  ["Pallof Press","core","כבלים","pallof+press+core+anti+rotation",3,"12 כל צד","אלכסוני, ליבה עמוק","אנטי-רוטציה — אל תסובב!"],
+  ["Side Plank","core","ללא","side+plank+obliques+form",3,"30-45 שניות","אלכסוני, ירך אמצע","גוף ישר כקרש, ירכיים לא יורדות"],
+  ["Landmine Rotation","core","מוט","landmine+rotation+core+form",3,"10 כל צד","אלכסוני, כתפיים","החזק מוט בשתי ידיים, סובב גוף"],
+  ["Hollow Crunch","core","ללא","hollow+body+crunch+form",3,"15-20","בטן ישרה, ליבה עמוק","גב תחתון צמוד לרצפה כל הזמן"],
+];
+// Inject into MUSCLE_GROUPS at module load (inner arrays are mutable)
+_EX.forEach(([name,groupKey,equipment,ytQ,sets,reps,muscles,tip]) => {
+  const g = MUSCLE_GROUPS.find(x => x.key === groupKey);
+  if (g) g.exercises.push({ name, muscles, tips: [tip], defaultSets: sets, defaultReps: reps, equipment, youtubeQuery: ytQ });
+});
+
 // ─── Equipment helpers ────────────────────────────────────────────────────────
-type EquipmentCategory = "free_weights" | "machine" | "cables" | "mat" | "bar" | "equipment";
+type EquipmentCategory = "free_weights" | "machine" | "cables" | "mat" | "bar" | "equipment" | "bench" | "rings";
 
 function getEquipCat(equipment: string): EquipmentCategory {
   if (equipment.includes("מכונה")) return "machine";
@@ -266,6 +358,8 @@ function getEquipCat(equipment: string): EquipmentCategory {
   if (equipment.includes("מוט מתח")) return "bar";
   if (equipment.includes("מקבילים") || (equipment.includes("כסא") && !equipment.includes("כסא / מקבילים"))) return "equipment";
   if (equipment.includes("ללא")) return "mat";
+  if (equipment.includes("ספסל")) return "bench";
+  if (equipment.includes("טבעות")) return "rings";
   return "free_weights";
 }
 
@@ -276,6 +370,8 @@ const EQUIP_META: Record<EquipmentCategory, { label: string; emoji: string; colo
   mat:          { label: "מזרן / ללא ציוד",  emoji: "🧘",  color: "#06b6d4" },
   bar:          { label: "מוט מתח",          emoji: "⬆️",  color: "#f59e0b" },
   equipment:    { label: "ציוד עזר",         emoji: "🪑",  color: "#ec4899" },
+  bench:        { label: "ספסל",             emoji: "🛋️",  color: "#f97316" },
+  rings:        { label: "טבעות",            emoji: "⭕",  color: "#a855f7" },
 };
 
 const EQUIPMENT_IMAGES: Record<EquipmentCategory, string> = {
@@ -285,6 +381,8 @@ const EQUIPMENT_IMAGES: Record<EquipmentCategory, string> = {
   mat:          "/assets/equipment/mat.jpg",
   bar:          "/assets/equipment/pullups.jpg",
   equipment:    "/assets/equipment/dips.jpg",
+  bench:        "/assets/equipment/bench.jpg",
+  rings:        "/assets/equipment/rings.jpg",
 };
 
 // ─── Body icon ────────────────────────────────────────────────────────────────
