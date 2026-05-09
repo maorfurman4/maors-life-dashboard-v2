@@ -1911,6 +1911,11 @@ const WORKOUT_CATEGORIES: { value: WorkoutDbCategory; label: string }[] = [
   { value: "running",      label: "🏃 ריצה"      },
   { value: "mixed",        label: "⚡ HIIT"       },
 ];
+/** Coerce any legacy/unknown category string to a valid DB value */
+const toDbCategory = (cat: string | undefined): WorkoutDbCategory => {
+  const valid: WorkoutDbCategory[] = ["weights","calisthenics","running","mixed"];
+  return valid.includes(cat as WorkoutDbCategory) ? (cat as WorkoutDbCategory) : "weights";
+};
 
 function WorkoutBuilderTab({
   externalTemplate,
@@ -1955,7 +1960,7 @@ function WorkoutBuilderTab({
   useEffect(() => {
     if (!externalTemplate) return;
     setWorkoutName(externalTemplate.name ?? "");
-    setWorkoutCategory((externalTemplate.category as WorkoutDbCategory) ?? "weights");
+    setWorkoutCategory(toDbCategory(externalTemplate.category));
     setExercises(
       (externalTemplate.exercises ?? []).map((e: any) => ({
         name: e.name, sets: e.sets ?? 3, reps: e.reps ?? 10, weight_kg: e.weight_kg ?? 0,
@@ -2035,7 +2040,7 @@ function WorkoutBuilderTab({
     try {
       // ── 1. Save workout row (with calories_burned) ───────────
       await addWorkout.mutateAsync({
-        category:         pw.category,
+        category:         toDbCategory(pw.category),
         exercises:        pw.filled,
         notes:            pw.name,
         duration_minutes: mins,
@@ -2095,7 +2100,8 @@ function WorkoutBuilderTab({
 
   const handleLoadTemplate = (t: any) => {
     setWorkoutName(t.name);
-    setExercises((t.exercises ?? []).map((e: any) => ({ name: e.name, sets: e.sets, reps: e.reps, weight_kg: e.weight_kg || 0 })));
+    setWorkoutCategory(toDbCategory(t.category));
+    setExercises((t.exercises ?? []).map((e: any) => ({ name: e.name, sets: e.sets, reps: Number(e.reps) || 10, weight_kg: e.weight_kg || 0 })));
     toast.info(`טעינת תבנית: ${t.name}`);
   };
 
