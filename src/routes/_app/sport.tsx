@@ -2043,11 +2043,13 @@ function WorkoutBuilderTab({
       });
 
       // ── 2. Nutrition sync: push burned cals to today's log ───
-      addNutrition.mutateAsync({
-        name:      `פעילות גופנית — ${pw.name}`,
-        meal_type: "exercise",
-        calories:  calories,
-      }).catch(() => {/* non-critical: don't block summary on failure */});
+      try {
+        await addNutrition.mutateAsync({
+          name:      `פעילות גופנית — ${pw.name}`,
+          meal_type: "exercise",
+          calories:  calories,
+        });
+      } catch {/* non-critical */}
 
       // ── 3. Auto-PR detection ─────────────────────────────────
       const withWeight = pw.filled.filter((e) => e.weight_kg > 0);
@@ -2084,7 +2086,11 @@ function WorkoutBuilderTab({
       generateCoachFeedback({ mins, calories, name: pw.name, muscles })
         .then((msg) => setCoachMsg(msg.trim()))
         .catch(() => {/* silent */});
-    } catch { toast.error("שגיאה בשמירה"); }
+    } catch (err: any) {
+      const msg = err?.message ?? err?.error_description ?? JSON.stringify(err) ?? "unknown";
+      console.error("[handleConfirmDuration] save failed:", msg, err);
+      toast.error(`שגיאה בשמירה: ${msg.slice(0, 80)}`);
+    }
   };
 
   const handleLoadTemplate = (t: any) => {
