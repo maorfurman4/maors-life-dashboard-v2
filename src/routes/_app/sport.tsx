@@ -1028,6 +1028,17 @@ _EX6.forEach(([name,groupKey,equipment,ytQ,sets,reps,muscles,tip]) => {
   if (g) g.exercises.push({ name, muscles, tips: [tip], defaultSets: sets, defaultReps: reps, equipment, youtubeQuery: ytQ });
 });
 
+// ─── Global exercise name → LibraryExercise lookup (lazy, built after all injections) ──
+let _exerciseAllMap: Map<string, LibraryExercise> | null = null;
+function getExerciseAllMap(): Map<string, LibraryExercise> {
+  if (!_exerciseAllMap) {
+    _exerciseAllMap = new Map();
+    [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...STRETCHING_MUSCLE_GROUPS]
+      .forEach((g) => g.exercises.forEach((ex) => _exerciseAllMap!.set(ex.name, ex)));
+  }
+  return _exerciseAllMap;
+}
+
 // ─── Equipment helpers ────────────────────────────────────────────────────────
 type EquipmentCategory = "free_weights" | "machine" | "cables" | "mat" | "bar" | "equipment" | "bench" | "rings";
 
@@ -2217,10 +2228,24 @@ function WorkoutBuilderTab({
   const handleGeneratePlan = async () => {
     setAiLoading(true); setAiPlan(null);
     try {
+      // Build a filtered exercise list for the AI — only send exercises relevant
+      // to the selected equipment to keep token usage low.
+      const noEquip = aiEquip.includes("ללא ציוד");
+      const basicEquip = aiEquip.includes("ציוד בסיסי");
+      const sourceGroups = noEquip
+        ? CALISTHENICS_MUSCLE_GROUPS
+        : basicEquip
+          ? [...CALISTHENICS_MUSCLE_GROUPS, ...MUSCLE_GROUPS]
+          : MUSCLE_GROUPS;
+      const exerciseList = sourceGroups
+        .flatMap((g) => g.exercises)
+        .map((ex) => ({ name: ex.name, muscles: ex.muscles, equipment: ex.equipment }));
+
       const plan = await generateWorkoutPlan({
         goal: aiGoal, daysPerWeek: aiDays, equipment: aiEquip,
         constraints: aiConstraints || "אין",
         recentPRs: (prs ?? []).slice(0, 5).map((p: any) => ({ exercise_name: p.exercise_name, value: p.value, unit: p.unit })),
+        exerciseList,
       });
       setAiPlan(plan); setExpandedDay(0);
     } catch { toast.error("שגיאה ביצירת תוכנית, נסה שנית"); }
@@ -2379,37 +2404,136 @@ function WorkoutBuilderTab({
           </div>
           {aiPlan && (
             <div className="space-y-3">
+              {/* Summary */}
               <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-3">
                 <p className="text-xs text-emerald-300 font-semibold">{aiPlan.summary}</p>
               </div>
-              {aiPlan.workouts.map((w, i) => (
-                <div key={i} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-                  <button onClick={() => setExpandedDay(expandedDay === i ? null : i)}
-                    className="w-full flex items-center justify-between px-4 py-3.5 text-right">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-xs font-black text-emerald-400">{i + 1}</div>
-                      <div>
-                        <p className="text-sm font-black text-white">{w.day}</p>
-                        <p className="text-[10px] text-white/40">{w.name} · {w.duration_minutes} דק׳</p>
-                      </div>
-                    </div>
-                    {expandedDay === i ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
-                  </button>
-                  {expandedDay === i && (
-                    <div className="border-t border-white/8 divide-y divide-white/5">
-                      {w.exercises.map((ex, j) => (
-                        <div key={j} className="flex items-center justify-between px-4 py-2.5">
-                          <div>
-                            <p className="text-xs font-semibold text-white/80">{ex.name}</p>
-                            {ex.notes && <p className="text-[10px] text-white/35 mt-0.5">{ex.notes}</p>}
-                          </div>
-                          <span className="text-[10px] font-mono text-emerald-400">{ex.sets}×{ex.reps}{ex.weight_kg ? ` @ ${ex.weight_kg}kg` : ""}</span>
+
+              {/* Workout days */}
+              {aiPlan.workouts.map((w, i) => {
+                const libMap = getExerciseAllMap();
+                // Map category string from AI to valid DB category
+                const dbCat: "weights" | "calisthenics" | "mixed" =
+                  w.category === "strength" || w.category === "hypertrophy" ? "weights"
+                  : w.category === "cardio" || w.category === "running" ? "mixed"
+                  : "calisthenics";
+
+                const handleSaveDay = async () => {
+                  try {
+                    await addTemplate.mutateAsync({
+                      name: w.name,
+                      category: dbCat,
+                      exercises: w.exercises.map((ex) => ({
+                        name: ex.name,
+                        sets: ex.sets,
+                        reps: parseInt(ex.reps) || 10,
+                        weight_kg: ex.weight_kg ?? 0,
+                      })),
+                    });
+                    toast.success(`✅ "${w.name}" נשמר כתבנית!`);
+                  } catch { toast.error("שגיאה בשמירה"); }
+                };
+
+                const handleLoadDay = () => {
+                  setWorkoutName(w.name);
+                  setExercises(w.exercises.map((ex) => ({
+                    name: ex.name,
+                    sets: ex.sets,
+                    reps: parseInt(ex.reps) || 10,
+                    weight_kg: ex.weight_kg ?? 0,
+                    setsData: toSetsData(ex.sets, parseInt(ex.reps) || 10, ex.weight_kg ?? 0),
+                  })));
+                  setSubTab("custom");
+                  toast.success(`טוען "${w.name}" לבנאי...`);
+                };
+
+                return (
+                  <div key={i} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+                    {/* Day header */}
+                    <button onClick={() => setExpandedDay(expandedDay === i ? null : i)}
+                      className="w-full flex items-center justify-between px-4 py-3.5 text-right">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-xs font-black text-emerald-400">{i + 1}</div>
+                        <div>
+                          <p className="text-sm font-black text-white">{w.day}</p>
+                          <p className="text-[10px] text-white/40">{w.name} · {w.duration_minutes} דק׳ · {w.exercises.length} תרגילים</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                      </div>
+                      {expandedDay === i ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
+                    </button>
+
+                    {/* Expanded: exercise list + action buttons */}
+                    {expandedDay === i && (
+                      <div className="border-t border-white/8">
+                        {/* Exercise rows — library-linked */}
+                        <div className="divide-y divide-white/5">
+                          {w.exercises.map((ex, j) => {
+                            const libEx = libMap.get(ex.name);
+                            return (
+                              <div key={j} className="px-4 py-3 space-y-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold text-white/90 leading-tight">{ex.name}</p>
+                                    {libEx && (
+                                      <p className="text-[9px] text-white/35 mt-0.5 truncate">{libEx.muscles}</p>
+                                    )}
+                                    {ex.notes && <p className="text-[9px] text-white/30 mt-0.5 italic">{ex.notes}</p>}
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-[11px] font-black text-emerald-400 font-mono">
+                                      {ex.sets}×{ex.reps}{ex.weight_kg ? ` @ ${ex.weight_kg}kg` : ""}
+                                    </span>
+                                    {libEx?.youtubeQuery && (
+                                      <a
+                                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent(libEx.youtubeQuery)}`}
+                                        target="_blank" rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="h-6 w-6 rounded-lg bg-red-500/15 flex items-center justify-center hover:bg-red-500/25 transition-all shrink-0"
+                                        title="צפה בסרטון הדרכה"
+                                      >
+                                        <Youtube className="h-3 w-3 text-red-400" />
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                                {libEx && (
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[8px] text-white/20 bg-white/5 rounded-md px-1.5 py-0.5">{libEx.equipment}</span>
+                                  </div>
+                                )}
+                                {!libEx && (
+                                  <span className="text-[8px] text-amber-400/50">⚠ לא נמצא בספרייה</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-2 p-3 border-t border-white/5">
+                          <button
+                            onClick={handleSaveDay}
+                            disabled={addTemplate.isPending}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-amber-500/25 bg-amber-500/8 text-amber-400 text-xs font-bold hover:bg-amber-500/15 active:scale-[0.97] transition-all disabled:opacity-50"
+                          >
+                            <Star className="h-3.5 w-3.5" />
+                            שמור כתבנית
+                          </button>
+                          <button
+                            onClick={handleLoadDay}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-emerald-400 text-xs font-bold hover:bg-emerald-500/18 active:scale-[0.97] transition-all"
+                          >
+                            <Play className="h-3.5 w-3.5" />
+                            טען לבנאי
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Tips */}
               {aiPlan.tips?.length > 0 && (
                 <div className="rounded-2xl border border-white/8 bg-white/4 p-3 space-y-1.5">
                   <p className="text-[10px] font-bold text-white/40">טיפים מה-AI</p>
