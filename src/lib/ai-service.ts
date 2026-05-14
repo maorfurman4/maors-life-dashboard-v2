@@ -89,6 +89,8 @@ export async function generateWorkoutPlan(payload: {
   equipment: string;
   constraints: string;
   recentPRs: { exercise_name: string; value: number; unit: string }[];
+  /** Compact library snapshot — AI will only suggest exercises from this list */
+  exerciseList?: { name: string; muscles: string; equipment: string }[];
 }): Promise<WorkoutPlan> {
   const { data, error } = await supabase.functions.invoke("workout-plan-ai", { body: payload });
   if (error) throw new Error(error.message);

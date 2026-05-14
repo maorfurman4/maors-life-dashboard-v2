@@ -7,9 +7,24 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { goal, daysPerWeek, equipment, constraints, recentPRs } = await req.json();
+    const { goal, daysPerWeek, equipment, constraints, recentPRs, exerciseList } = await req.json();
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) throw new Error("OPENAI_API_KEY not set");
+
+    // Build exercise library block for the prompt (compact: name | muscles | equipment)
+    const hasLibrary = Array.isArray(exerciseList) && exerciseList.length > 0;
+    const libraryBlock = hasLibrary
+      ? exerciseList
+          .map((e: { name: string; muscles: string; equipment: string }) =>
+            `${e.name} | ${e.muscles} | ${e.equipment}`
+          )
+          .join("\n")
+      : null;
+
+    const systemMessage = hasLibrary
+      ? `אתה מאמן כושר אישי מומחה. תכנן תוכניות אימונים בטוחות ויעילות בעברית.
+חשוב ביותר: השתמש אך ורק בתרגילים שמופיעים ברשימת הספרייה שסופקה. שם התרגיל שתחזיר חייב להיות זהה בדיוק לשם שמופיע ברשימה (כולל רווחים ואותיות). אל תמציא תרגילים שלא ברשימה.`
+      : "אתה מאמן כושר אישי מומחה. תכנן תוכניות אימונים בטוחות ויעילות בעברית.";
 
     const userPrompt = `
 מטרה: ${goal || "כוח ומסת שריר"}
@@ -18,6 +33,7 @@ Deno.serve(async (req) => {
 מגבלות: ${constraints || "אין"}
 שיאים אישיים אחרונים:
 ${(recentPRs || []).map((p: any) => `- ${p.exercise_name}: ${p.value} ${p.unit}`).join("\n") || "אין נתונים"}
+${libraryBlock ? `\nספריית התרגילים הזמינה (שם | שרירים | ציוד) — בחר רק מרשימה זו:\n${libraryBlock}` : ""}
 
 בנה תוכנית אימונים שבועית מותאמת אישית. כל אימון צריך 5-8 תרגילים עם סטים, חזרות ומשקל מומלץ (בק"ג).
 החזר תוצאה כ-JSON דרך הפונקציה.
@@ -29,7 +45,7 @@ ${(recentPRs || []).map((p: any) => `- ${p.exercise_name}: ${p.value} ${p.unit}`
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "אתה מאמן כושר אישי מומחה. תכנן תוכניות אימונים בטוחות ויעילות בעברית." },
+          { role: "system", content: systemMessage },
           { role: "user", content: userPrompt },
         ],
         tools: [{
@@ -55,7 +71,7 @@ ${(recentPRs || []).map((p: any) => `- ${p.exercise_name}: ${p.value} ${p.unit}`
                         items: {
                           type: "object",
                           properties: {
-                            name: { type: "string" },
+                            name: { type: "string", description: "שם מדויק מספריית התרגילים" },
                             sets: { type: "number" },
                             reps: { type: "string", description: "טווח חזרות, למשל: 8-12" },
                             weight_kg: { type: "number" },
