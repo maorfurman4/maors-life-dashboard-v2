@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, Loader2, Star, X, BookOpen,
   TrendingUp, Scale, Medal, BarChart3, Camera,
   Pencil, Check, Trash2, Heart, EyeOff, Eye,
-  Share2, MapPin, Timer, Download, Settings2, Youtube, Search,
+  Share2, MapPin, Timer, Download, Settings2, Youtube, Search, Layers,
 } from "lucide-react";
 import {
   usePersonalRecords, useAddPersonalRecord,
@@ -3617,22 +3617,24 @@ function PRHistoryMiniChart({ records, unit }: { records: any[]; unit: string })
 
 // ─── PR Section (enhanced) ────────────────────────────────────────────────────
 function PRSection() {
-  const { data: prs } = usePersonalRecords();
+  const { data: prs }       = usePersonalRecords();
+  const { data: templates } = useWorkoutTemplates();
   const addPR    = useAddPersonalRecord();
   const updatePR = useUpdatePersonalRecord();
   const deletePR = useDeletePersonalRecord();
 
-  const [showForm,   setShowForm]   = useState(false);
-  const [prName,     setPrName]     = useState("");
-  const [prValueRaw, setPrValueRaw] = useState("100");
-  const [prUnit,     setPrUnit]     = useState("kg");
+  const [showForm,       setShowForm]       = useState(false);
+  const [prName,         setPrName]         = useState("");
+  const [prValueRaw,     setPrValueRaw]     = useState("100");
+  const [prUnit,         setPrUnit]         = useState("kg");
+  const [editingId,      setEditingId]      = useState<string | null>(null);
+  const [editValue,      setEditValue]      = useState("");
+  const [expandedEx,     setExpandedEx]     = useState<string | null>(null);
+  // toggle: grouped-by-template (true) vs flat list (false)
+  const [groupByTemplate, setGroupByTemplate] = useState(true);
 
-  const [editingId,  setEditingId]  = useState<string | null>(null);
-  const [editValue,  setEditValue]  = useState("");
-
-  const [expandedEx, setExpandedEx] = useState<string | null>(null);
-
-  // Group by exercise_name; each group sorted by date asc for charting
+  // ── Global PR source of truth: keyed by exercise_name ────────────────────
+  // PRs are NEVER isolated per-template — a PR set on any workout reflects here.
   const prGroups = useMemo(() => {
     const map: Record<string, any[]> = {};
     for (const pr of (prs ?? [])) {
@@ -3647,6 +3649,32 @@ function PRSection() {
       })
       .sort((a, b) => new Date(b.best.date).getTime() - new Date(a.best.date).getTime());
   }, [prs]);
+
+  // ── Template-grouped view: each template lists its exercises' global PRs ──
+  const templateGroups = useMemo(() => {
+    const prMap = new Map(prGroups.map((g) => [g.name, g]));
+    // All exercise names that appear in at least one template
+    const allTemplateExNames = new Set<string>(
+      (templates ?? []).flatMap((t: any) =>
+        ((t.exercises ?? []) as any[]).map((e: any) => e.name as string)
+      )
+    );
+    const groups = (templates ?? [])
+      .map((t: any) => {
+        const exNames: string[] = ((t.exercises ?? []) as any[]).map((e: any) => e.name);
+        const matchedPRs = exNames.map((n) => prMap.get(n)).filter(Boolean) as typeof prGroups;
+        return matchedPRs.length > 0
+          ? { id: t.id as string, label: t.name as string, prs: matchedPRs }
+          : null;
+      })
+      .filter(Boolean) as { id: string; label: string; prs: typeof prGroups }[];
+    // PRs for exercises not in any template
+    const orphans = prGroups.filter((g) => !allTemplateExNames.has(g.name));
+    if (orphans.length > 0) {
+      groups.push({ id: "__none__", label: "ללא תבנית", prs: orphans });
+    }
+    return groups;
+  }, [prGroups, templates]);
 
   const handleAdd = async () => {
     if (!prName.trim()) return toast.error("שם התרגיל חסר");
@@ -3689,12 +3717,29 @@ function PRSection() {
             </span>
           )}
         </div>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="h-7 w-7 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/25 active:scale-90 transition-all"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          {/* Toggle: grouped-by-template / flat */}
+          {prGroups.length > 0 && (
+            <button
+              onClick={() => setGroupByTemplate((v) => !v)}
+              title={groupByTemplate ? "הצג הכל" : "קבץ לפי תבנית"}
+              className={`h-7 px-2 rounded-xl text-[10px] font-bold flex items-center gap-1 transition-all ${
+                groupByTemplate
+                  ? "bg-amber-500/20 border border-amber-500/25 text-amber-400"
+                  : "bg-white/8 border border-white/10 text-white/40"
+              }`}
+            >
+              <Layers className="h-3 w-3" />
+              <span>{groupByTemplate ? "תבניות" : "הכל"}</span>
+            </button>
+          )}
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="h-7 w-7 rounded-xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/25 active:scale-90 transition-all"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Add form */}
@@ -3742,113 +3787,118 @@ function PRSection() {
         </div>
       )}
 
-      {/* PR groups list */}
-      {prGroups.length === 0 ? (
-        <div className="text-center py-6">
-          <span className="text-4xl">🏆</span>
-          <p className="text-xs text-white/30 mt-2">אין שיאים עדיין — שמור אימון עם משקל!</p>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {prGroups.map((group) => (
-            <div key={group.name} className="rounded-2xl border border-white/8 overflow-hidden">
-              {/* Row */}
-              <div
-                className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
-                onClick={() => setExpandedEx(expandedEx === group.name ? null : group.name)}
-              >
-                <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-
-                {/* Name + badge */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-white/80 truncate">{group.name}</p>
-                  {group.records.length > 1 && (
-                    <p className="text-[9px] text-white/30">{group.records.length} רשומות</p>
-                  )}
-                </div>
-
-                {/* Best value + inline edit OR display */}
-                {editingId === group.best.id ? (
-                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onFocus={(e) => e.target.select()}
-                      className="w-14 rounded-lg border border-amber-500/40 bg-amber-500/10 text-center text-xs font-black text-amber-400 outline-none py-1"
-                      autoFocus
-                    />
-                    <button
-                      onClick={() => handleSaveEdit(group.best.id)}
-                      className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center"
-                    >
-                      <Check className="h-3 w-3 text-emerald-400" />
-                    </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="h-6 w-6 rounded-lg bg-white/8 flex items-center justify-center"
-                    >
-                      <X className="h-3 w-3 text-white/40" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <span className="text-sm font-black text-amber-400">
-                      {Number(group.best.value).toLocaleString()}
-                    </span>
-                    <span className="text-[10px] text-white/35">{group.best.unit}</span>
-                    <button
-                      onClick={() => { setEditingId(group.best.id); setEditValue(String(group.best.value)); }}
-                      className="h-6 w-6 rounded-lg bg-white/6 flex items-center justify-center hover:bg-white/12 transition-all"
-                    >
-                      <Pencil className="h-3 w-3 text-white/35" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(group.best.id, group.name)}
-                      className="h-6 w-6 rounded-lg bg-white/6 flex items-center justify-center hover:bg-red-500/15 transition-all"
-                    >
-                      <Trash2 className="h-3 w-3 text-white/30" />
-                    </button>
-                  </div>
+      {/* Shared exercise-row renderer (used by both flat and grouped views) */}
+      {(() => {
+        const ExerciseRow = (group: typeof prGroups[number]) => (
+          <div key={group.name} className="rounded-2xl border border-white/8 overflow-hidden">
+            <div
+              className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
+              onClick={() => setExpandedEx(expandedEx === group.name ? null : group.name)}
+            >
+              <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-white/80 truncate">{group.name}</p>
+                {group.records.length > 1 && (
+                  <p className="text-[9px] text-white/30">{group.records.length} רשומות</p>
                 )}
-
-                {/* Chevron */}
-                <div className="ml-1 text-white/20">
-                  {expandedEx === group.name
-                    ? <ChevronUp className="h-3.5 w-3.5" />
-                    : <ChevronDown className="h-3.5 w-3.5" />}
-                </div>
               </div>
-
-              {/* Expanded: mini progression chart */}
-              {expandedEx === group.name && (
-                <div className="border-t border-white/5 px-3 pb-3">
-                  <PRHistoryMiniChart records={group.records} unit={group.best.unit} />
-                  {/* All records table */}
-                  {group.records.length > 1 && (
-                    <div className="mt-2 space-y-1">
-                      {[...group.records]
-                        .sort((a, b) => b.date.localeCompare(a.date))
-                        .map((r) => (
-                          <div key={r.id} className="flex items-center justify-between text-[10px] text-white/40">
-                            <span>{new Date(r.date).toLocaleDateString("he-IL", {
-                              day: "numeric", month: "numeric", year: "2-digit",
-                            })}</span>
-                            <span className={`font-bold ${r.id === group.best.id ? "text-amber-400" : "text-white/55"}`}>
-                              {Number(r.value)} {r.unit}
-                              {r.id === group.best.id && " 🏆"}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  )}
+              {editingId === group.best.id ? (
+                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="text" inputMode="decimal" value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    className="w-14 rounded-lg border border-amber-500/40 bg-amber-500/10 text-center text-xs font-black text-amber-400 outline-none py-1"
+                    autoFocus
+                  />
+                  <button onClick={() => handleSaveEdit(group.best.id)}
+                    className="h-6 w-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-emerald-400" />
+                  </button>
+                  <button onClick={() => setEditingId(null)}
+                    className="h-6 w-6 rounded-lg bg-white/8 flex items-center justify-center">
+                    <X className="h-3 w-3 text-white/40" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-sm font-black text-amber-400">
+                    {Number(group.best.value).toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-white/35">{group.best.unit}</span>
+                  <button
+                    onClick={() => { setEditingId(group.best.id); setEditValue(String(group.best.value)); }}
+                    className="h-6 w-6 rounded-lg bg-white/6 flex items-center justify-center hover:bg-white/12 transition-all"
+                  ><Pencil className="h-3 w-3 text-white/35" /></button>
+                  <button
+                    onClick={() => handleDelete(group.best.id, group.name)}
+                    className="h-6 w-6 rounded-lg bg-white/6 flex items-center justify-center hover:bg-red-500/15 transition-all"
+                  ><Trash2 className="h-3 w-3 text-white/30" /></button>
                 </div>
               )}
+              <div className="ml-1 text-white/20">
+                {expandedEx === group.name ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+            {expandedEx === group.name && (
+              <div className="border-t border-white/5 px-3 pb-3">
+                <PRHistoryMiniChart records={group.records} unit={group.best.unit} />
+                {group.records.length > 1 && (
+                  <div className="mt-2 space-y-1">
+                    {[...group.records].sort((a, b) => b.date.localeCompare(a.date)).map((r) => (
+                      <div key={r.id} className="flex items-center justify-between text-[10px] text-white/40">
+                        <span>{new Date(r.date).toLocaleDateString("he-IL", { day: "numeric", month: "numeric", year: "2-digit" })}</span>
+                        <span className={`font-bold ${r.id === group.best.id ? "text-amber-400" : "text-white/55"}`}>
+                          {Number(r.value)} {r.unit}{r.id === group.best.id && " 🏆"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+
+        if (prGroups.length === 0) return (
+          <div className="text-center py-6">
+            <span className="text-4xl">🏆</span>
+            <p className="text-xs text-white/30 mt-2">אין שיאים עדיין — שמור אימון עם משקל!</p>
+          </div>
+        );
+
+        /* ── FLAT view ───────────────────────────────────────────────── */
+        if (!groupByTemplate) return (
+          <div className="space-y-1">{prGroups.map((g) => ExerciseRow(g))}</div>
+        );
+
+        /* ── GROUPED-BY-TEMPLATE view ────────────────────────────────── */
+        if (templateGroups.length === 0) return (
+          <div className="space-y-1">{prGroups.map((g) => ExerciseRow(g))}</div>
+        );
+
+        return (
+          <div className="space-y-3">
+            {templateGroups.map((tg) => (
+              <div key={tg.id} className="space-y-1">
+                {/* Template section header */}
+                <div className="flex items-center gap-2 px-1">
+                  <div className={`h-px flex-1 ${tg.id === "__none__" ? "bg-white/8" : "bg-amber-500/20"}`} />
+                  <span className={`text-[10px] font-black shrink-0 ${tg.id === "__none__" ? "text-white/30" : "text-amber-400/70"}`}>
+                    {tg.id === "__none__" ? "✨ ללא תבנית" : `📋 ${tg.label}`}
+                  </span>
+                  <span className="text-[9px] text-white/20 bg-white/5 rounded-md px-1 py-0.5 shrink-0">
+                    {tg.prs.length}
+                  </span>
+                  <div className={`h-px flex-1 ${tg.id === "__none__" ? "bg-white/8" : "bg-amber-500/20"}`} />
+                </div>
+                {/* Exercise rows under this template — draw from global prGroups */}
+                {tg.prs.map((g) => ExerciseRow(g))}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
