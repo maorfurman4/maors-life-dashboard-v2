@@ -2881,7 +2881,7 @@ function ExerciseModal({
   );
 }
 
-type LibraryWorkoutType = "weights" | "calisthenics" | "warmup" | "stretching";
+type LibraryWorkoutType = "weights" | "calisthenics" | "stretching";
 
 function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?: (exs: LibraryExercise[]) => void; selectionMode?: boolean }) {
   const [workoutType,    setWorkoutType]    = useState<LibraryWorkoutType>("weights");
@@ -2922,7 +2922,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
 
   // Build a flat map of all exercises for lookup
   const allExMap = new Map<string, LibraryExercise>();
-  [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...WARMUP_GROUPS, ...STRETCHING_MUSCLE_GROUPS]
+  [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...STRETCHING_MUSCLE_GROUPS]
     .forEach((g) => g.exercises.forEach((ex) => allExMap.set(ex.name, ex)));
 
   const handleAddToWorkout = () => {
@@ -2979,27 +2979,24 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
     if (!ex) return false;
     const inWeights    = MUSCLE_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
     const inCali       = CALISTHENICS_MUSCLE_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
-    const inWarmup     = WARMUP_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
     const inStretching = STRETCHING_MUSCLE_GROUPS.some((g) => g.exercises.some((e) => e.name === name));
-    if (workoutType === "weights")    return inWeights;
+    if (workoutType === "weights")      return inWeights;
     if (workoutType === "calisthenics") return inCali;
-    if (workoutType === "warmup")     return inWarmup;
-    if (workoutType === "stretching") return inStretching;
+    if (workoutType === "stretching")   return inStretching;
     return false;
   });
 
   const groups =
     workoutType === "weights"      ? MUSCLE_GROUPS :
     workoutType === "calisthenics" ? CALISTHENICS_MUSCLE_GROUPS :
-    workoutType === "stretching"   ? STRETCHING_MUSCLE_GROUPS :
-    WARMUP_GROUPS;
+    STRETCHING_MUSCLE_GROUPS;
 
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return null;
     const seen = new Set<string>();
     const out: { ex: LibraryExercise; groupKey: string }[] = [];
-    [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...WARMUP_GROUPS, ...STRETCHING_MUSCLE_GROUPS].forEach((g) => {
+    [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...STRETCHING_MUSCLE_GROUPS].forEach((g) => {
       g.exercises.forEach((ex) => {
         if (seen.has(ex.name)) return;
         if (!showHidden && hidden.includes(ex.name)) return;
@@ -3090,7 +3087,6 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
           { key: "weights"      as const, label: "🏋️ חדר כושר"  },
           { key: "calisthenics" as const, label: "🤸 קלסטניקס"  },
           { key: "stretching"   as const, label: "🧘 מתיחות"     },
-          { key: "warmup"       as const, label: "🔥 חימום"      },
         ] as const).map(({ key, label }) => (
           <button key={key} onClick={() => handleTypeChange(key)}
             className={`flex-1 py-1.5 rounded-xl text-[10px] font-black transition-all ${
@@ -3170,27 +3166,6 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
         </div>
       )}
 
-      {/* ── WARMUP: flat group sections ─────────────────────────────── */}
-      {workoutType === "warmup" && !selectedGroup && (
-        <>
-          <p className="text-sm font-black text-white">בחר קטגוריה</p>
-          <div className="space-y-3">
-            {WARMUP_GROUPS.map((g) => (
-              <button key={g.key} onClick={() => handleGroupSelect(g)}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.97] transition-all">
-                <div className="h-11 w-11 rounded-2xl flex items-center justify-center text-2xl shrink-0" style={{ background: g.color + "22" }}>
-                  {g.emoji}
-                </div>
-                <div>
-                  <p className="text-sm font-black text-white">{g.label}</p>
-                  <p className="text-[10px] text-white/35">{g.exercises.length} תרגילים</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-
       {/* ── WEIGHTS / CALISTHENICS root: muscle group grid ─────────── */}
       {(workoutType === "weights" || workoutType === "calisthenics" || workoutType === "stretching") && !selectedGroup && (
         <>
@@ -3238,6 +3213,19 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
               </button>
             );
           })}
+          {/* "All exercises" catch-all — ensures batch-injected orphan exercises are always reachable */}
+          <button
+            onClick={() => setShowAllExercises(true)}
+            className="col-span-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/8 p-3 text-right flex items-center gap-3 active:scale-[0.97] transition-all hover:bg-emerald-500/12"
+          >
+            <div className="h-9 w-9 rounded-xl bg-emerald-500/20 flex items-center justify-center text-base shrink-0">🔍</div>
+            <div>
+              <p className="text-sm font-black text-white">כל התרגילים</p>
+              <p className="text-[10px] text-emerald-400/70">
+                {selectedGroup.exercises.filter((ex) => showHidden || !hidden.includes(ex.name)).length} תרגילים
+              </p>
+            </div>
+          </button>
         </div>
       )}
 
@@ -3305,8 +3293,8 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
         </div>
       )}
 
-      {/* ── CALISTHENICS / WARMUP inside group: exercise list ──────── */}
-      {(workoutType === "calisthenics" || workoutType === "warmup" || workoutType === "stretching") && selectedGroup && (
+      {/* ── CALISTHENICS / STRETCHING inside group: exercise list ─────── */}
+      {(workoutType === "calisthenics" || workoutType === "stretching") && selectedGroup && (
         <div className="space-y-2 animate-in fade-in duration-300">
           {groupExercises.map((ex) => (
             <ExerciseRow
