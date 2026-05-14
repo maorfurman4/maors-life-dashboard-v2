@@ -54,12 +54,14 @@ export function useAddWorkout() {
       calories_burned?: number;
       notes?: string;
       date?: string;
-      exercises?: { name: string; sets: number; reps: number; weight_kg?: number }[];
+      template_id?: string;
+      exercises?: { name: string; sets: number; reps: number; weight_kg?: number; sets_data?: { reps: number; weight_kg: number }[] }[];
       run?: { distance_km?: number; duration_minutes?: number; pace_per_km?: number };
     }) => {
       const userId = await getUserId();
       const { data: workoutRow, error: wErr } = await supabase
         .from("workouts")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert({
           user_id: userId,
           category: workout.category,
@@ -67,7 +69,8 @@ export function useAddWorkout() {
           calories_burned: workout.calories_burned || null,
           notes: workout.notes || null,
           date: workout.date || new Date().toISOString().slice(0, 10),
-        })
+          template_id: workout.template_id || null,
+        } as any)
         .select("id")
         .single();
       if (wErr) throw wErr;
@@ -81,8 +84,10 @@ export function useAddWorkout() {
           sets: ex.sets,
           reps: ex.reps,
           weight_kg: ex.weight_kg || null,
+          sets_data: ex.sets_data && ex.sets_data.length > 0 ? ex.sets_data : null,
         }));
-        const { error: exErr } = await supabase.from("workout_exercises").insert(exerciseRows);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: exErr } = await supabase.from("workout_exercises").insert(exerciseRows as any);
         if (exErr) throw exErr;
       }
 
@@ -170,6 +175,23 @@ export function useWorkoutStreak() {
         }
       }
       return streak;
+    },
+  });
+}
+
+export function useWorkoutHistory() {
+  return useQuery({
+    queryKey: ["workout-history"],
+    queryFn: async () => {
+      const userId = await getUserId();
+      const { data, error } = await supabase
+        .from("workouts")
+        .select("id, date, category, duration_minutes, calories_burned, notes, template_id, workout_exercises(id, name, sets, reps, weight_kg)")
+        .eq("user_id", userId)
+        .order("date", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
     },
   });
 }

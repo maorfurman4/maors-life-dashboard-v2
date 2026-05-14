@@ -11,7 +11,7 @@ import {
 import {
   usePersonalRecords, useAddPersonalRecord,
   useWorkoutTemplates, useAddWorkoutTemplate, useDeleteWorkoutTemplate, useUpdateWorkoutTemplate,
-  useWeekWorkouts, useAddWorkout, useWorkoutStreak,
+  useWeekWorkouts, useAddWorkout, useWorkoutStreak, useWorkoutHistory,
   useWeightEntries, useAddWeight, useDeleteWeight, useUpdateWeight,
   useUserSettings, useUpdateUserSettings,
   useRunHistory, useBodyProgress, useAddBodyProgress, useDeleteBodyProgress,
@@ -1561,14 +1561,88 @@ function Stepper({ value, onChange, min = 0, max = 999, step = 1, suffix = "" }:
   );
 }
 
+interface SetEntry { reps: number; weight_kg: number; }
+
+function toSetsData(sets: number, reps: number, weight_kg: number): SetEntry[] {
+  return Array.from({ length: Math.max(1, sets) }, () => ({ reps, weight_kg }));
+}
+
 interface BuilderEx {
   name: string;
-  sets: number;
-  reps: number;
-  weight_kg: number;
-  isTimeBased?: boolean;  // undefined = auto-detect from name
+  sets: number;          // = setsData.length (kept for backward compat / display)
+  reps: number;          // = last set's reps (kept for backward compat)
+  weight_kg: number;     // = last set's weight (kept for backward compat)
+  setsData: SetEntry[];  // per-set breakdown
+  isTimeBased?: boolean; // undefined = auto-detect from name
   isWarmup?: boolean;
-  group?: number;         // group ID for zebra striping
+  group?: number;        // group ID for zebra striping
+}
+
+function SetRow({
+  setIdx, entry, isTimeMode, isOnly,
+  onChange, onRemove,
+}: {
+  setIdx: number;
+  entry: SetEntry;
+  isTimeMode: boolean;
+  isOnly: boolean;
+  onChange: (v: SetEntry) => void;
+  onRemove: () => void;
+}) {
+  const [rawW, setRawW] = useState(entry.weight_kg > 0 ? String(entry.weight_kg) : "");
+  const [rawR, setRawR] = useState(String(entry.reps));
+  useEffect(() => { setRawW(entry.weight_kg > 0 ? String(entry.weight_kg) : ""); }, [entry.weight_kg]);
+  useEffect(() => { setRawR(String(entry.reps)); }, [entry.reps]);
+  const autoSel = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
+  const inp = "h-9 rounded-xl bg-white/10 border border-white/12 text-center text-sm font-black text-white outline-none focus:border-emerald-500/60 focus:bg-emerald-500/8 transition-all";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="shrink-0 text-[10px] font-black text-white/35 w-8 text-center">
+        {setIdx + 1}
+      </span>
+      {/* Weight */}
+      <div className="relative flex-1">
+        <input
+          type="text" inputMode="decimal" pattern="[0-9.]*"
+          value={rawW} placeholder="0"
+          className={`${inp} w-full placeholder:text-white/20`}
+          onFocus={autoSel}
+          onChange={(e) => {
+            setRawW(e.target.value);
+            const v = parseFloat(e.target.value);
+            if (!isNaN(v) && v >= 0) onChange({ ...entry, weight_kg: parseFloat(v.toFixed(2)) });
+          }}
+          onBlur={() => { const v = parseFloat(rawW); if (isNaN(v) || v < 0) setRawW(entry.weight_kg > 0 ? String(entry.weight_kg) : ""); }}
+        />
+        <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-white/25 pointer-events-none">kg</span>
+      </div>
+      {/* Reps / seconds */}
+      <div className="flex-1">
+        <input
+          type="text" inputMode="numeric" pattern="[0-9]*"
+          value={rawR}
+          className={`${inp} w-full ${isTimeMode ? "border-cyan-500/30 focus:border-cyan-500/60" : ""}`}
+          onFocus={autoSel}
+          onChange={(e) => {
+            setRawR(e.target.value);
+            const v = parseInt(e.target.value);
+            if (!isNaN(v) && v >= 1) onChange({ ...entry, reps: v });
+          }}
+          onBlur={() => { const v = parseInt(rawR); if (isNaN(v) || v < 1) setRawR(String(entry.reps)); }}
+        />
+      </div>
+      {/* Remove button — hidden if only 1 set */}
+      <button
+        onClick={onRemove}
+        disabled={isOnly}
+        className={`shrink-0 h-7 w-7 rounded-lg flex items-center justify-center transition-all ${
+          isOnly ? "opacity-0 pointer-events-none" : "bg-red-500/15 text-red-400 hover:bg-red-500/25 active:scale-95"
+        }`}
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
 }
 
 function BuilderExerciseRow({
@@ -1609,38 +1683,28 @@ function BuilderExerciseRow({
   const toggleTimeMode = () => onChange({ ...ex, isTimeBased: !isTimeMode });
   const toggleWarmup   = () => onChange({ ...ex, isWarmup: !ex.isWarmup });
 
-  // ── Local raw-string state ───────────────────────────────────────
-  const [rawSets,   setRawSets]   = useState(String(ex.sets));
-  const [rawReps,   setRawReps]   = useState(String(ex.reps));
-  const [rawWeight, setRawWeight] = useState(ex.weight_kg > 0 ? String(ex.weight_kg) : "");
-
-  useEffect(() => setRawSets(String(ex.sets)),   [ex.sets]);
-  useEffect(() => setRawReps(String(ex.reps)),   [ex.reps]);
-  useEffect(() => {
-    setRawWeight(ex.weight_kg > 0 ? String(ex.weight_kg) : "");
-  }, [ex.weight_kg]);
-
-  // ── Tab-to-next ──────────────────────────────────────────────────
-  const focusNext = (field: "sets" | "reps" | "weight") => (e: React.KeyboardEvent) => {
-    if (e.key !== "Tab" || e.shiftKey) return;
-    if (field === "sets") {
-      e.preventDefault();
-      (document.querySelector(`[data-brow="${idx}"][data-bfield="reps"]`) as HTMLInputElement)?.focus();
-    } else if (field === "reps") {
-      e.preventDefault();
-      (document.querySelector(`[data-brow="${idx}"][data-bfield="weight"]`) as HTMLInputElement)?.focus();
-    } else {
-      e.preventDefault();
-      (document.querySelector(`[data-brow="${idx + 1}"][data-bfield="sets"]`) as HTMLInputElement)?.focus();
-    }
+  // ── Dynamic sets helpers ─────────────────────────────────────────
+  const updateSet = (si: number, v: SetEntry) => {
+    const next = ex.setsData.map((s, i) => i === si ? v : s);
+    const last = next.at(-1)!;
+    onChange({ ...ex, setsData: next, sets: next.length, reps: last.reps, weight_kg: last.weight_kg });
+  };
+  const removeSet = (si: number) => {
+    if (ex.setsData.length <= 1) return;
+    const next = ex.setsData.filter((_, i) => i !== si);
+    const last = next.at(-1)!;
+    onChange({ ...ex, setsData: next, sets: next.length, reps: last.reps, weight_kg: last.weight_kg });
+  };
+  const addSet = () => {
+    const last = ex.setsData.at(-1) ?? { reps: ex.reps, weight_kg: ex.weight_kg };
+    const next = [...ex.setsData, { ...last }];
+    onChange({ ...ex, setsData: next, sets: next.length, reps: last.reps, weight_kg: last.weight_kg });
+  };
+  const incWeight = (d: number) => {
+    const si = ex.setsData.length - 1;
+    updateSet(si, { ...ex.setsData[si], weight_kg: parseFloat(Math.max(0, (ex.setsData[si]?.weight_kg ?? 0) + d).toFixed(2)) });
   };
 
-  const autoSel   = (e: React.FocusEvent<HTMLInputElement>) => e.target.select();
-  const incSets   = (d: number) => onChange({ ...ex, sets:      Math.max(1, ex.sets + d) });
-  const incReps   = (d: number) => onChange({ ...ex, reps:      Math.max(1, ex.reps + d) });
-  const incWeight = (d: number) => onChange({ ...ex, weight_kg: parseFloat(Math.max(0, ex.weight_kg + d).toFixed(2)) });
-
-  const inputCls = "w-full h-9 rounded-xl bg-white/10 border border-white/12 text-center text-sm font-black text-white outline-none focus:border-emerald-500/60 focus:bg-emerald-500/8 transition-all";
   const microBtn = "h-6 rounded-lg text-[9px] font-bold active:scale-95 transition-all flex items-center justify-center";
 
   return (
@@ -1754,73 +1818,41 @@ function BuilderExerciseRow({
           </div>
         )}
 
-        {/* ── Stats grid (hidden when collapsed) ────────────────── */}
+        {/* ── Dynamic sets (hidden when collapsed) ─────────────── */}
         {!isCollapsed && (
-          <div className="grid grid-cols-3 gap-2">
-            {/* Sets */}
-            <div className="space-y-1.5">
-              <p className="text-[9px] text-white/40 font-medium text-center">סטים</p>
-              <input
-                data-brow={idx} data-bfield="sets"
-                type="text" inputMode="numeric" pattern="[0-9]*"
-                value={rawSets}
-                onChange={(e) => { setRawSets(e.target.value); const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) onChange({ ...ex, sets: v }); }}
-                onBlur={() => { const v = parseInt(rawSets); if (isNaN(v) || v < 1) setRawSets(String(ex.sets)); }}
-                onFocus={autoSel}
-                onKeyDown={focusNext("sets")}
-                className={inputCls}
-              />
-              <div className="flex gap-1 justify-center">
-                <button onClick={() => incSets(-1)} className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>−1</button>
-                <button onClick={() => incSets(+1)} className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>+1</button>
-              </div>
-            </div>
-
-            {/* Reps / Time ── dynamic label + micro-buttons */}
-            <div className="space-y-1.5">
-              <p className={`text-[9px] font-medium text-center ${isTimeMode ? "text-cyan-400/80" : "text-white/40"}`}>
+          <div className="space-y-2">
+            {/* Column headers */}
+            <div className="flex items-center gap-2 px-0.5">
+              <span className="w-8 shrink-0" />
+              <p className="flex-1 text-[9px] text-white/35 font-medium text-center">משקל (kg)</p>
+              <p className={`flex-1 text-[9px] font-medium text-center ${isTimeMode ? "text-cyan-400/60" : "text-white/35"}`}>
                 {isTimeMode ? "שניות" : "חזרות"}
               </p>
-              <input
-                data-brow={idx} data-bfield="reps"
-                type="text" inputMode="numeric" pattern="[0-9]*"
-                value={rawReps}
-                onChange={(e) => { setRawReps(e.target.value); const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) onChange({ ...ex, reps: v }); }}
-                onBlur={() => { const v = parseInt(rawReps); if (isNaN(v) || v < 1) setRawReps(String(ex.reps)); }}
-                onFocus={autoSel}
-                onKeyDown={focusNext("reps")}
-                className={`${inputCls} ${isTimeMode ? "border-cyan-500/30 focus:border-cyan-500/60 focus:bg-cyan-500/8" : ""}`}
-              />
-              {isTimeMode ? (
-                <div className="flex gap-1 justify-center">
-                  <button onClick={() => incReps(-15)} className={`${microBtn} px-1.5 bg-white/8 text-white/50 hover:bg-white/15`}>-15</button>
-                  <button onClick={() => incReps(+15)} className={`${microBtn} px-1.5 bg-cyan-500/15 text-cyan-400 hover:bg-cyan-500/25`}>+15</button>
-                </div>
-              ) : (
-                <div className="flex gap-1 justify-center">
-                  <button onClick={() => incReps(-1)} className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>−1</button>
-                  <button onClick={() => incReps(+1)} className={`${microBtn} px-2 bg-white/8 text-white/50 hover:bg-white/15`}>+1</button>
-                </div>
-              )}
+              <span className="w-7 shrink-0" />
             </div>
 
-            {/* Weight */}
-            <div className="space-y-1.5">
-              <p className="text-[9px] text-white/40 font-medium text-center">משקל</p>
-              <div className="relative">
-                <input
-                  data-brow={idx} data-bfield="weight"
-                  type="text" inputMode="decimal" pattern="[0-9.]*"
-                  value={rawWeight} placeholder="0"
-                  onChange={(e) => { setRawWeight(e.target.value); const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 0) onChange({ ...ex, weight_kg: parseFloat(v.toFixed(2)) }); }}
-                  onBlur={() => { const v = parseFloat(rawWeight); if (isNaN(v) || v < 0) setRawWeight(ex.weight_kg > 0 ? String(ex.weight_kg) : ""); }}
-                  onFocus={autoSel}
-                  onKeyDown={focusNext("weight")}
-                  className={`${inputCls} placeholder:text-white/20`}
-                />
-                <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-white/25 pointer-events-none">kg</span>
-              </div>
-              <div className="flex gap-0.5 justify-center">
+            {/* Per-set rows */}
+            {ex.setsData.map((s, si) => (
+              <SetRow
+                key={si}
+                setIdx={si}
+                entry={s}
+                isTimeMode={isTimeMode}
+                isOnly={ex.setsData.length === 1}
+                onChange={(v) => updateSet(si, v)}
+                onRemove={() => removeSet(si)}
+              />
+            ))}
+
+            {/* Add set + weight quick-adjust */}
+            <div className="flex items-center gap-2 pt-0.5">
+              <button
+                onClick={addSet}
+                className="flex-1 py-1.5 rounded-xl bg-emerald-500/12 text-emerald-400 border border-emerald-500/20 text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-emerald-500/20 active:scale-95 transition-all"
+              >
+                <Plus className="h-3 w-3" />הוסף סט
+              </button>
+              <div className="flex gap-0.5">
                 <button onClick={() => incWeight(-2.5)} className={`${microBtn} px-1.5 bg-white/8 text-white/50 hover:bg-white/15`}>-2.5</button>
                 <button onClick={() => incWeight(+2.5)} className={`${microBtn} px-1.5 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25`}>+2.5</button>
                 <button onClick={() => incWeight(+5)}   className={`${microBtn} px-1.5 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25`}>+5</button>
@@ -1917,6 +1949,27 @@ const toDbCategory = (cat: string | undefined): WorkoutDbCategory => {
   return valid.includes(cat as WorkoutDbCategory) ? (cat as WorkoutDbCategory) : "weights";
 };
 
+function AIProcessingOverlay() {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(18px)" }}
+    >
+      <div
+        className="w-72 rounded-3xl border border-white/15 bg-white/8 p-8 text-center space-y-5 shadow-2xl"
+        style={{ animation: "prBounce 0.42s cubic-bezier(.17,.67,.35,1.4) both" }}
+      >
+        <div className="flex justify-center">
+          <Loader2 className="h-10 w-10 text-emerald-400 animate-spin" />
+        </div>
+        <p className="text-sm font-bold text-white leading-relaxed" dir="rtl">
+          האימון נשמר! ה-AI מנתח כעת את הנתונים ומכין עבורך דוח מפורט...
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function WorkoutBuilderTab({
   externalTemplate,
   onExternalTemplateConsumed,
@@ -1933,7 +1986,7 @@ function WorkoutBuilderTab({
   const [subTab, setSubTab] = useState<"ai" | "custom">("custom");
   const [workoutName, setWorkoutName]         = useState("");
   const [workoutCategory, setWorkoutCategory] = useState<WorkoutDbCategory>("weights");
-  const [exercises, setExercises]             = useState<BuilderEx[]>([{ name: "", sets: 3, reps: 10, weight_kg: 0, group: 0 }]);
+  const [exercises, setExercises]             = useState<BuilderEx[]>([{ name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: 0 }]);
   const [groupCounter, setGroupCounter]       = useState(0);
   const [showLibraryPicker, setShowLibraryPicker] = useState(false);
   const addTemplate    = useAddWorkoutTemplate();
@@ -1949,11 +2002,14 @@ function WorkoutBuilderTab({
   // ── Duration modal (Task 3) ──────────────────────────────────────
   const [showDurationModal, setShowDurationModal] = useState(false);
   const [durationMinutes,   setDurationMinutes]   = useState("45");
+  const [loadedTemplateId, setLoadedTemplateId] = useState<string | null>(null);
+  const updateTemplate = useUpdateWorkoutTemplate();
   const pendingWorkout = useRef<{ filled: BuilderEx[]; category: string; name: string } | null>(null);
 
   // ── Workout summary (Task 4) ─────────────────────────────────────
   const [workoutSummary, setWorkoutSummary] = useState<{ mins: number; calories: number; name: string; muscles?: string } | null>(null);
   const [coachMsg, setCoachMsg]             = useState<string | null>(null);
+  const [aiProcessing, setAiProcessing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Load template pushed from the dashboard
@@ -1961,10 +2017,12 @@ function WorkoutBuilderTab({
     if (!externalTemplate) return;
     setWorkoutName(externalTemplate.name ?? "");
     setWorkoutCategory(toDbCategory(externalTemplate.category));
+    setLoadedTemplateId(externalTemplate.id ?? null);
     setExercises(
-      (externalTemplate.exercises ?? []).map((e: any) => ({
-        name: e.name, sets: e.sets ?? 3, reps: e.reps ?? 10, weight_kg: e.weight_kg ?? 0,
-      }))
+      (externalTemplate.exercises ?? []).map((e: any) => {
+        const s = e.sets ?? 3; const r = Number(e.reps) || 10; const w = e.weight_kg ?? 0;
+        return { name: e.name, sets: s, reps: r, weight_kg: w, setsData: e.sets_data ?? toSetsData(s, r, w) };
+      })
     );
     setSubTab("custom");
     onExternalTemplateConsumed?.();
@@ -1981,13 +2039,10 @@ function WorkoutBuilderTab({
       const newGroup = prevG + 1;
       setExercises((prev) => [
         ...prev.filter((e) => e.name.trim()),
-        ...pendingExercises.map((ex) => ({
-          name: ex.name,
-          sets: ex.defaultSets,
-          reps: parseReps(ex.defaultReps),
-          weight_kg: 0,
-          group: newGroup,
-        })),
+        ...pendingExercises.map((ex) => {
+          const s = ex.defaultSets; const r = parseReps(ex.defaultReps);
+          return { name: ex.name, sets: s, reps: r, weight_kg: 0, setsData: toSetsData(s, r, 0), group: newGroup };
+        }),
       ]);
       toast.success(`✅ ${pendingExercises.length} תרגילים נוספו לאימון`);
       return newGroup;
@@ -2000,9 +2055,8 @@ function WorkoutBuilderTab({
   const removeEx = (i: number) => setExercises((prev) => prev.filter((_, idx) => idx !== i));
   const dupEx    = (i: number) => setExercises((prev) => { const c = [...prev]; c.splice(i + 1, 0, { ...prev[i] }); return c; });
   const addEx    = () => setExercises((prev) => {
-    // New manual exercise joins the last group (or starts group 0)
     const lastGroup = prev.length ? (prev[prev.length - 1].group ?? 0) : 0;
-    return [...prev, { name: "", sets: 3, reps: 10, weight_kg: 0, group: lastGroup }];
+    return [...prev, { name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: lastGroup }];
   });
 
   const handleSaveTemplate = async () => {
@@ -2012,7 +2066,7 @@ function WorkoutBuilderTab({
     try {
       await addTemplate.mutateAsync({ name: workoutName, category: workoutCategory, exercises: filled });
       toast.success("תבנית נשמרה ✅");
-      setWorkoutName(""); setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
+      setWorkoutName(""); setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0) }]);
     } catch { toast.error("שגיאה בשמירה"); }
   };
 
@@ -2026,7 +2080,7 @@ function WorkoutBuilderTab({
     setShowDurationModal(true);
   };
 
-  // ── Step 2: duration confirmed → calorie engine → DB save → summary ──
+  // ── Step 2: duration confirmed → calorie engine → DB save → AI → summary ──
   const handleConfirmDuration = async (mins: number) => {
     const pw = pendingWorkout.current;
     if (!pw) return;
@@ -2038,16 +2092,24 @@ function WorkoutBuilderTab({
     const calories    = Math.round(met * bodyWeight * (mins / 60));
 
     try {
-      // ── 1. Save workout row (with calories_burned) ───────────
+      // ── 1. Save workout row ──────────────────────────────────
+      const exercisesPayload = pw.filled.map((e) => ({
+        name:       e.name,
+        sets:       e.setsData.length,
+        reps:       e.setsData.at(-1)?.reps ?? e.reps,
+        weight_kg:  e.setsData.at(-1)?.weight_kg ?? e.weight_kg,
+        sets_data:  e.setsData,
+      }));
       await addWorkout.mutateAsync({
         category:         toDbCategory(pw.category),
-        exercises:        pw.filled,
+        exercises:        exercisesPayload,
         notes:            pw.name,
         duration_minutes: mins,
         calories_burned:  calories,
+        template_id:      loadedTemplateId ?? undefined,
       });
 
-      // ── 2. Nutrition sync: push burned cals to today's log ───
+      // ── 2. Nutrition sync ────────────────────────────────────
       try {
         await addNutrition.mutateAsync({
           name:      `פעילות גופנית — ${pw.name}`,
@@ -2056,42 +2118,71 @@ function WorkoutBuilderTab({
         });
       } catch {/* non-critical */}
 
-      // ── 3. Auto-PR detection ─────────────────────────────────
-      const withWeight = pw.filled.filter((e) => e.weight_kg > 0);
+      // ── 3. Smart Template Auto-Update ───────────────────────
+      if (loadedTemplateId) {
+        const allTemplates: any[] = qc.getQueryData(["workout-templates"]) ?? [];
+        const base = allTemplates.find((t: any) => t.id === loadedTemplateId);
+        if (base) {
+          const doneMap = new Map(pw.filled.map((e) => [e.name, e]));
+          const merged = (base.exercises ?? []).map((te: any) => {
+            const done = doneMap.get(te.name);
+            if (!done) return te;
+            return {
+              ...te,
+              sets:       done.setsData.length,
+              reps:       done.setsData.at(-1)?.reps ?? te.reps,
+              weight_kg:  done.setsData.at(-1)?.weight_kg ?? te.weight_kg,
+              sets_data:  done.setsData,
+            };
+          });
+          try { updateTemplate.mutate({ id: loadedTemplateId, exercises: merged }); } catch {/* non-critical */}
+        }
+      }
+
+      // ── 4. Auto-PR detection ─────────────────────────────────
+      const withWeight = pw.filled.filter((e) => (e.setsData.at(-1)?.weight_kg ?? e.weight_kg) > 0);
       if (withWeight.length > 0) {
         const cachedPRs: any[] = qc.getQueryData(["personal-records"]) ?? [];
         const newlyHit: { name: string; value: number }[] = [];
         for (const ex of withWeight) {
+          const topWeight = Math.max(...ex.setsData.map((s) => s.weight_kg));
           const bestKg = cachedPRs
             .filter((pr: any) => pr.exercise_name === ex.name && pr.unit === "kg")
             .reduce((best: number, pr: any) => Math.max(best, Number(pr.value)), 0);
-          if (ex.weight_kg > bestKg) {
+          if (topWeight > bestKg) {
             try {
               await autoPR.mutateAsync({
                 exercise_name: ex.name,
-                value:         ex.weight_kg,
+                value:         topWeight,
                 unit:          "kg",
                 category:      pw.category === "running" ? "mixed" : pw.category,
               });
-              newlyHit.push({ name: ex.name, value: ex.weight_kg });
+              newlyHit.push({ name: ex.name, value: topWeight });
             } catch {/* non-critical */}
           }
         }
         if (newlyHit.length > 0) setCelebPRs(newlyHit);
       }
 
-      // ── 4. Reset builder & show summary overlay ──────────────
-      const muscles = [...new Set(pw.filled.map((e: any) => e.name).slice(0, 3))].join(", ");
+      // ── 5. Reset builder state ───────────────────────────────
+      const muscles = [...new Set(pw.filled.map((e) => e.name).slice(0, 3))].join(", ");
       setWorkoutName("");
-      setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0 }]);
+      setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0) }]);
+      setLoadedTemplateId(null);
       pendingWorkout.current = null;
-      setCoachMsg(null);
+
+      // ── 6. AI processing overlay ─────────────────────────────
+      setAiProcessing(true);
+      const coachText = await Promise.race([
+        generateCoachFeedback({ mins, calories, name: pw.name, muscles }),
+        new Promise<string>((res) => setTimeout(() => res(""), 8000)),
+      ]).catch(() => "");
+      setAiProcessing(false);
+      setCoachMsg(coachText.trim() || null);
       setWorkoutSummary({ mins, calories, name: pw.name, muscles });
-      // fire-and-forget — non-critical
-      generateCoachFeedback({ mins, calories, name: pw.name, muscles })
-        .then((msg) => setCoachMsg(msg.trim()))
-        .catch(() => {/* silent */});
+
     } catch (err: any) {
+      setAiProcessing(false);
       const msg = err?.message ?? err?.error_description ?? JSON.stringify(err) ?? "unknown";
       console.error("[handleConfirmDuration] save failed:", msg, err);
       toast.error(`שגיאה בשמירה: ${msg.slice(0, 80)}`);
@@ -2101,7 +2192,11 @@ function WorkoutBuilderTab({
   const handleLoadTemplate = (t: any) => {
     setWorkoutName(t.name);
     setWorkoutCategory(toDbCategory(t.category));
-    setExercises((t.exercises ?? []).map((e: any) => ({ name: e.name, sets: e.sets, reps: Number(e.reps) || 10, weight_kg: e.weight_kg || 0 })));
+    setLoadedTemplateId(t.id ?? null);
+    setExercises((t.exercises ?? []).map((e: any) => {
+      const s = e.sets ?? 3; const r = Number(e.reps) || 10; const w = e.weight_kg || 0;
+      return { name: e.name, sets: s, reps: r, weight_kg: w, setsData: e.sets_data ?? toSetsData(s, r, w) };
+    }));
     toast.info(`טעינת תבנית: ${t.name}`);
   };
 
@@ -2207,7 +2302,7 @@ function WorkoutBuilderTab({
             <button
               onClick={() => setGroupCounter((g) => {
                 const ng = g + 1;
-                setExercises((prev) => [...prev, { name: "", sets: 3, reps: 10, weight_kg: 0, group: ng }]);
+                setExercises((prev) => [...prev, { name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: ng }]);
                 return ng;
               })}
               className="flex items-center justify-center gap-1.5 px-3 py-3 rounded-2xl border border-dashed border-white/15 text-white/35 hover:border-blue-500/40 hover:text-blue-400 transition-all text-xs font-semibold whitespace-nowrap"
@@ -2327,6 +2422,9 @@ function WorkoutBuilderTab({
       )}
     </div>
 
+    {/* ── AI Processing Overlay ───────────────────────────────────── */}
+    {aiProcessing && <AIProcessingOverlay />}
+
     {/* ── Workout Summary Modal (Task 4) ──────────────────────────── */}
     {workoutSummary && (
       <div
@@ -2384,17 +2482,12 @@ function WorkoutBuilderTab({
           </div>
 
           {/* Coach feedback */}
-          <div className="rounded-2xl border border-purple-500/20 bg-purple-500/8 px-4 py-3 min-h-[48px] flex items-center gap-2.5">
-            <span className="text-xl flex-shrink-0">🤖</span>
-            {coachMsg
-              ? <p className="text-[12px] text-purple-200 leading-relaxed" dir="rtl">{coachMsg}</p>
-              : <div className="flex gap-1 items-center">
-                  <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "120ms" }} />
-                  <div className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: "240ms" }} />
-                </div>
-            }
-          </div>
+          {coachMsg && (
+            <div className="rounded-2xl border border-purple-500/20 bg-purple-500/8 px-4 py-3 flex items-center gap-2.5">
+              <span className="text-xl flex-shrink-0">🤖</span>
+              <p className="text-[12px] text-purple-200 leading-relaxed" dir="rtl">{coachMsg}</p>
+            </div>
+          )}
 
           {/* PR badge (shown when PRs were broken in the same session) */}
           {celebPRs.length > 0 && (
@@ -2480,13 +2573,11 @@ function WorkoutBuilderTab({
             onAddToWorkout={(exs) => {
               setExercises((prev) => {
                 const nonEmpty = prev.filter((e) => e.name.trim() !== "");
-                const toAdd: BuilderEx[] = exs.map((e) => ({
-                  name: e.name,
-                  sets: typeof e.defaultSets === "number" ? e.defaultSets : parseInt(String(e.defaultSets)) || 3,
-                  reps: parseInt(e.defaultReps) || 10,
-                  weight_kg: 0,
-                  group: 0,
-                }));
+                const toAdd: BuilderEx[] = exs.map((e) => {
+                  const s = typeof e.defaultSets === "number" ? e.defaultSets : parseInt(String(e.defaultSets)) || 3;
+                  const r = parseInt(e.defaultReps) || 10;
+                  return { name: e.name, sets: s, reps: r, weight_kg: 0, setsData: toSetsData(s, r, 0), group: 0 };
+                });
                 return [...nonEmpty, ...toAdd];
               });
               toast.success(exs.length === 1 ? `${exs[0].name} נוסף לאימון ✓` : `${exs.length} תרגילים נוספו ✓`);
@@ -3889,6 +3980,96 @@ function WorkoutHistoryStrip() {
   );
 }
 
+function WorkoutHistoryGrouped() {
+  const { data: workouts, isLoading } = useWorkoutHistory();
+  const [openKey, setOpenKey] = useState<string | null>(null);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const w of workouts ?? []) {
+      const key = (w as any).notes || "אימון ללא שם";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(w);
+    }
+    return [...map.entries()];
+  }, [workouts]);
+
+  const CATEGORY_EMOJI: Record<string, string> = {
+    weights: "🏋️", calisthenics: "🤸", running: "🏃", mixed: "⚡",
+  };
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <BookOpen className="h-4 w-4 text-blue-400" />
+        <p className="text-sm font-black text-white">היסטוריה לפי תבנית</p>
+        <span className="text-[10px] text-white/30 mr-auto">{workouts?.length ?? 0} אחרונים</span>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-4">
+          <Loader2 className="h-5 w-5 text-white/30 animate-spin" />
+        </div>
+      ) : grouped.length === 0 ? (
+        <p className="text-xs text-white/25 text-center py-4">אין אימונים לתצוגה עדיין</p>
+      ) : (
+        <div className="space-y-2">
+          {grouped.map(([templateName, wList]) => {
+            const isOpen = openKey === templateName;
+            const totalMins = wList.reduce((s: number, w: any) => s + (w.duration_minutes || 0), 0);
+            const totalCal  = wList.reduce((s: number, w: any) => s + (w.calories_burned  || 0), 0);
+            const emoji = CATEGORY_EMOJI[(wList[0] as any).category] ?? "💪";
+            return (
+              <div key={templateName} className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden">
+                {/* Accordion header */}
+                <button
+                  className="w-full flex items-center gap-3 px-3 py-3 text-right active:bg-white/5 transition-all"
+                  onClick={() => setOpenKey(isOpen ? null : templateName)}
+                >
+                  <span className="text-lg">{emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-white truncate" dir="rtl">{templateName}</p>
+                    <p className="text-[10px] text-white/35">{wList.length} אימונים · {totalMins} דק׳ · {totalCal} קל׳</p>
+                  </div>
+                  <span className={`text-white/30 text-xs transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>▾</span>
+                </button>
+
+                {/* Accordion body */}
+                {isOpen && (
+                  <div className="border-t border-white/8 divide-y divide-white/5">
+                    {wList.map((w: any) => (
+                      <div key={w.id} className="px-3 py-2.5 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-white/50">
+                            {new Date(w.date).toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "numeric", year: "2-digit" })}
+                          </p>
+                          <div className="flex items-center gap-2 text-[10px] text-white/35">
+                            <span><Clock className="h-2.5 w-2.5 inline mr-0.5" />{w.duration_minutes || "—"} דק׳</span>
+                            {w.calories_burned > 0 && <span>🔥 {w.calories_burned}</span>}
+                          </div>
+                        </div>
+                        {(w.workout_exercises ?? []).length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {(w.workout_exercises as any[]).map((ex: any) => (
+                              <span key={ex.id} className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/6 text-white/40 border border-white/8">
+                                {ex.name} {ex.sets}×{ex.reps}{ex.weight_kg ? ` @${ex.weight_kg}kg` : ""}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 //  TASK 5 — Running Module & Visual Progress
 // ═══════════════════════════════════════════════════════════════════════
@@ -4619,7 +4800,7 @@ function ProgressTab() {
         <div className="space-y-4">
           <PRSection />
           <VolumeChart />
-          <WorkoutHistoryStrip />
+          <WorkoutHistoryGrouped />
         </div>
       )}
 
