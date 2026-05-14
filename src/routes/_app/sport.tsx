@@ -87,9 +87,10 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "chest", label: "חזה", emoji: "💪", color: "#3b82f6",
     subGroups: [
-      { key: "chest_upper", label: "חזה עליון",  emoji: "⬆️", exerciseNames: ["לחיצת דמבלים משופעת","לחיצת מוט משופעת","פרפר משופע","Cable Fly מלמטה","Dumbbell Pullover"] },
-      { key: "chest_mid",   label: "חזה אמצעי",  emoji: "🎯", exerciseNames: ["לחיצת חזה שכיבה","שכיבות סמיכה","פרפר (Fly)","לחיצת חזה במכונה","קרוסאובר (כבלים)","Pec Deck מכונה","Squeeze Press","Cable Crossover רחב"] },
-      { key: "chest_lower", label: "חזה תחתון",  emoji: "⬇️", exerciseNames: ["לחיצת דמבלים ירידה","מקבילים לחזה","שכיבות ירידה","Cable Fly מגבוה"] },
+      { key: "chest_upper", label: "חזה עליון",  emoji: "⬆️", exerciseNames: ["לחיצת דמבלים משופעת","לחיצת מוט משופעת","פרפר משופע","Cable Fly מלמטה","Dumbbell Pullover","לחיצת דמבלים משופעת צרה","Incline Cable Fly","DB Squeeze Press משופע","Landmine Press חזה","Low to High Cable Fly","Incline Dumbbell Press כבד","Incline Barbell Press צר","Weighted Push-up משופע","CG Incline Press"] },
+      { key: "chest_mid",   label: "חזה אמצעי",  emoji: "🎯", exerciseNames: ["לחיצת חזה שכיבה","שכיבות סמיכה","פרפר (Fly)","לחיצת חזה במכונה","קרוסאובר (כבלים)","Pec Deck מכונה","Squeeze Press","Cable Crossover רחב","High to Low Cable Fly","Cable Fly אמצע","Neutral Grip DB Press","DB Press עם הטיה","Guillotine Press","Svend Press","Wide Grip Bench Press","Weighted Push-up","Flat DB Press כבד","Pin Press","Dumbbell Squeeze Press","Floor Press"] },
+      { key: "chest_lower", label: "חזה תחתון",  emoji: "⬇️", exerciseNames: ["לחיצת דמבלים ירידה","מקבילים לחזה","שכיבות ירידה","Cable Fly מגבוה","High Cable Crossover","Decline Barbell Press","Decline DB Press","Dips לחזה"] },
+      { key: "chest_machine", label: "מכונות חזה", emoji: "🤖", exerciseNames: ["Machine Chest Press","Smith Machine Bench","Iso-Lateral Chest Press","Machine Incline Press","Pec Deck Single Arm","Reverse Pec Deck","Pec Deck מכונה","Smith Machine Flat Press","Hammer Strength Flat Press","Hammer Strength Incline Press","Incline Smith Machine Press","Decline Smith Machine Press","Hammer Strength Decline"] },
     ],
     exercises: [
       { name: "לחיצת חזה שכיבה", muscles: "חזה, כתפיים קדמיות, טריצפס", tips: ["שמור על גב שטוח", "הורד לאיטיות — 3 שניות", "נשוף בלחיצה"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט", youtubeQuery: "bench+press+form+tutorial" },
@@ -102,9 +103,9 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "back", label: "גב", emoji: "🦾", color: "#8b5cf6",
     subGroups: [
-      { key: "back_lats",  label: "רחב גבי",  emoji: "⬆️", exerciseNames: ["מתח (Pull-up)","לט פולדאון","Lat Pulldown רחב","Lat Pulldown צר","Straight Arm Pulldown"] },
-      { key: "back_traps", label: "טרפזים",   emoji: "🔄", exerciseNames: ["חתירה (Barbell Row)","חתירה כבלים ישיבה","T-Bar Row","Single Arm Dumbbell Row","Chest Supported Row","Meadows Row","Seal Row","Renegade Row"] },
-      { key: "back_lower", label: "גב תחתון", emoji: "⬇️", exerciseNames: ["דדליפט","Rack Pull","Back Extension","Good Morning"] },
+      { key: "back_lats",  label: "רחב גבי",  emoji: "⬆️", exerciseNames: ["מתח (Pull-up)","לט פולדאון","Lat Pulldown רחב","Lat Pulldown צר","Straight Arm Pulldown","Close Grip Lat Pulldown","Neutral Grip Pulldown","Single Arm Lat Pulldown","Pullover מכונה","Cable Pullover","Lat Pulldown אחורי","Wide Grip Pull-up","Pull-up אחיזה צרה","Assisted Pull-up","Machine Pull-up","Hammer Strength Pulldown","Iso-Lateral Pulldown","Lat Pulldown V-Bar","Kneeling Cable Pulldown","Single Arm Cable Pulldown"] },
+      { key: "back_traps", label: "טרפזים",   emoji: "🔄", exerciseNames: ["חתירה (Barbell Row)","חתירה כבלים ישיבה","T-Bar Row","Single Arm Dumbbell Row","Chest Supported Row","Meadows Row","Seal Row","Renegade Row","Cable Row ישיבה רחב","Cable Row אחיזה גבוהה","High Row מכונה","Incline Dumbbell Row","Reverse Fly מכונה","Seated Cable Row V-Bar","Hammer Strength Row","Iso-Lateral Row","Machine Row","Smith Machine Row","Pendlay Row","DB Chest Supported Row"] },
+      { key: "back_lower", label: "גב תחתון", emoji: "⬇️", exerciseNames: ["דדליפט","Rack Pull","Back Extension","Good Morning","Hyperextension","Stiff-Leg Deadlift","Romanian Deadlift גב","Cable Pull-Through גב","Back Extension משקל","45° Back Extension","Good Morning ישיבה"] },
     ],
     exercises: [
       { name: "מתח (Pull-up)", muscles: "גב רחב, ביצפס, ליבה", tips: ["תלייה מלאה בתחתית", "הוצא חזה אל הבר", "אל תתנועע"], defaultSets: 4, defaultReps: "6-10", equipment: "מוט מתח", youtubeQuery: "pull+up+perfect+form" },
@@ -117,9 +118,9 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "shoulders", label: "כתפיים", emoji: "🏋️", color: "#f97316",
     subGroups: [
-      { key: "sh_front", label: "כתף קדמית",  emoji: "🔵", exerciseNames: ["לחיצת כתפיים (OHP)","הרמות קדמיות (Front Raise)","Arnold Press","לחיצת כתפיים בישיבה","Cuban Press"] },
-      { key: "sh_mid",   label: "כתף אמצעית", emoji: "⚡", exerciseNames: ["הרמות צד (Lateral Raise)","Lateral Raise כבלים","Machine Lateral Raise","Upright Row","Shrug — כיווץ כתפיים"] },
-      { key: "sh_rear",  label: "כתף אחורית", emoji: "🔙", exerciseNames: ["Face Pull","Rear Delt Fly דמבלים","Cable Rear Delt Fly","Band Pull-Apart"] },
+      { key: "sh_front", label: "כתף קדמית",  emoji: "🔵", exerciseNames: ["לחיצת כתפיים (OHP)","הרמות קדמיות (Front Raise)","Arnold Press","לחיצת כתפיים בישיבה","Cuban Press","Cable Front Raise","Cross Body Cable Raise","Machine Shoulder Press","Smith Machine OHP","Machine Front Raise","Plate Front Raise","Cable Single Arm Front Raise","Half-Kneeling Cable Press","Barbell OHP (Overhead Press)","Seated DB OHP","הרמות קדמיות דמבלים","הרמות קדמיות כבל","הרמות קדמיות מוט","Z-Press","Landmine Press כתפיים","Standing DB OHP"] },
+      { key: "sh_mid",   label: "כתף אמצעית", emoji: "⚡", exerciseNames: ["הרמות צד (Lateral Raise)","Lateral Raise כבלים","Machine Lateral Raise","Upright Row","Shrug — כיווץ כתפיים","Cable Upright Row","Single Arm Cable Lateral","Lying Cable Lateral Raise","Leaning Cable Lateral","Cable Y-Raise","Cable Behind-Back Lateral","Cable Rope Upright Row","הרמות צד דמבלים","הרמות צד ישיבה","הרמות צד כבל","Leaning Lateral Raise","Upright Row מוט","Upright Row כבל","Upright Row דמבלים","45° Incline Lateral Raise","One Arm Cable Lateral","Barbell Shrug","DB Shrug"] },
+      { key: "sh_rear",  label: "כתף אחורית", emoji: "🔙", exerciseNames: ["Face Pull","Rear Delt Fly דמבלים","Cable Rear Delt Fly","Band Pull-Apart","Rope Face Pull מתקדם","High Cable Rear Delt Fly","Low Cable Rear Delt","Cable External Rotation","Cable Internal Rotation","Machine Rear Delt Fly","Rear Delt Fly DB","Pec Deck Reverse","Face Pull כבל","Prone Incline Rear Delt Fly","Machine Rear Delt","Bent Over Lateral Raise","Dumbbell Rear Delt Row"] },
     ],
     exercises: [
       { name: "לחיצת כתפיים (OHP)", muscles: "דלטואיד קדמי ואמצע, טריצפס", tips: ["עמוד יציב", "נסגר בראש", "אל תרכין גב"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט / דמבלים", youtubeQuery: "overhead+press+form+tutorial" },
@@ -131,9 +132,9 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "arms", label: "ידיים", emoji: "💪", color: "#ec4899",
     subGroups: [
-      { key: "arms_bi",   label: "יד קדמית",  emoji: "💪", exerciseNames: ["כפיפות מרפק (Bicep Curl)","Hammer Curl","Preacher Curl","Incline Dumbbell Curl","Concentration Curl","Spider Curl","Cable Curl","Hammer Curl כבלים"] },
-      { key: "arms_tri",  label: "יד אחורית", emoji: "💎", exerciseNames: ["פשיטת מרפק (Tricep Extension)","מקבילים (Dips)","Skull Crusher","Close Grip Bench","Overhead Tricep Extension","Tricep Pushdown V-Bar","Tricep Kickback"] },
-      { key: "arms_fore", label: "אמות",       emoji: "🦾", exerciseNames: ["Reverse Curl","Wrist Curl"] },
+      { key: "arms_bi",   label: "יד קדמית",  emoji: "💪", exerciseNames: ["כפיפות מרפק (Bicep Curl)","Hammer Curl","Preacher Curl","Incline Dumbbell Curl","Concentration Curl","Spider Curl","Cable Curl","Hammer Curl כבלים","Cable Concentration Curl","Rope Hammer Curl","High Cable Curl","Low Cable Curl","Cable 21s ביצפס","Unilateral Cable Curl","Machine Preacher Curl","EZ Bar Curl","Barbell Preacher Curl","Cable Spider Curl","Zottman Curl","Cable Drag Curl","Barbell Curl","Incline DB Curl","Preacher Curl EZ","Preacher Curl Machine","Cross Body Hammer Curl","Cable Curl בר","Cable Curl חבל","Machine Curl","21s Curl"] },
+      { key: "arms_tri",  label: "יד אחורית", emoji: "💎", exerciseNames: ["פשיטת מרפק (Tricep Extension)","מקבילים (Dips)","Skull Crusher","Close Grip Bench","Overhead Tricep Extension","Tricep Pushdown V-Bar","Tricep Kickback","Rope Pushdown","Reverse Grip Pushdown","Single Arm Pushdown","Overhead Cable Ext Rope","Single Arm Cable Overhead","Cable Kickback","Rope Overhead Ext","Cable Bar Pushdown","Machine Tricep Ext","Tricep Dip Machine","JM Press","Tate Press","Board Press","Cable Long Head Ext","Skull Crusher מוט","Skull Crusher EZ","Tricep Pushdown חבל","Tricep Pushdown בר","Overhead Tricep Ext DB","Overhead Tricep Ext כבל","Lying DB Tricep Extension","Weighted Dips"] },
+      { key: "arms_fore", label: "אמות",       emoji: "🦾", exerciseNames: ["Reverse Curl","Wrist Curl","Reverse Cable Curl","Reverse Curl מוט","Reverse Curl EZ","Wrist Curl מוט","Wrist Curl DB","Reverse Wrist Curl","Farmer's Walk","Plate Pinch"] },
     ],
     exercises: [
       { name: "כפיפות מרפק (Bicep Curl)", muscles: "ביצפס, ברכיאליס", tips: ["אל תנופף", "סיום מלא בפסגה", "בקרה בירידה"], defaultSets: 3, defaultReps: "10-12", equipment: "דמבלים / מוט", youtubeQuery: "bicep+curl+form+tutorial" },
@@ -145,10 +146,10 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "legs", label: "רגליים", emoji: "🦵", color: "#eab308",
     subGroups: [
-      { key: "legs_quads",  label: "ארבע ראשי", emoji: "🦵", exerciseNames: ["סקוואט (Squat)","לאנג' (Lunges)","לג פרס (Leg Press)","Hack Squat מכונה","Leg Extension","Goblet Squat","Step Up לספסל","Sumo Squat","Hip Adduction מכונה","Hip Abduction מכונה","Bulgarian Split Squat"] },
-      { key: "legs_hams",   label: "האמסטרינג", emoji: "🏃", exerciseNames: ["כפיפות ברכיים (Hamstring Curl)","Romanian Deadlift","Nordic Hamstring Curl","Good Morning רגליים"] },
-      { key: "legs_glutes", label: "ישבן",       emoji: "🍑", exerciseNames: ["Hip Thrust","Glute Bridge","Donkey Kicks"] },
-      { key: "legs_calves", label: "תאומים",     emoji: "👟", exerciseNames: ["הרמות עקב (Calf Raise)","Seated Calf Raise"] },
+      { key: "legs_quads",  label: "ארבע ראשי", emoji: "🦵", exerciseNames: ["סקוואט (Squat)","לאנג' (Lunges)","לג פרס (Leg Press)","Hack Squat מכונה","Leg Extension","Goblet Squat","Step Up לספסל","Sumo Squat","Hip Adduction מכונה","Hip Abduction מכונה","Bulgarian Split Squat","Smith Machine Squat","Cable Hip Flexion","Smith Machine Lunge","Back Squat","Front Squat","Leg Extension מכונה","Leg Press רגלים גבוהות","Leg Press רגלים נמוכות","Bulgarian Split Squat DB","Heel Elevated Squat","Box Squat","Pause Squat","Step Up משקל","Sissy Squat מכונה"] },
+      { key: "legs_hams",   label: "האמסטרינג", emoji: "🏃", exerciseNames: ["כפיפות ברכיים (Hamstring Curl)","Romanian Deadlift","Nordic Hamstring Curl","Good Morning רגליים","Lying Leg Curl","Cable Romanian DL","Standing Leg Curl","Seated Leg Curl","Romanian Deadlift DB","Single Leg RDL","Glute Ham Raise","Stiff Leg Deadlift","Kneeling Leg Curl","Cable Leg Curl עמידה","Good Morning מוט"] },
+      { key: "legs_glutes", label: "ישבן",       emoji: "🍑", exerciseNames: ["Hip Thrust","Glute Bridge","Donkey Kicks","Cable Pull-Through","Machine Glute Kickback","Hip Thrust מוט","Hip Thrust מכונה","Single Leg Glute Bridge","Cable Kickback","Donkey Kick Machine","Sumo Squat DB","Clamshell + לולאה"] },
+      { key: "legs_calves", label: "תאומים",     emoji: "👟", exerciseNames: ["הרמות עקב (Calf Raise)","Seated Calf Raise","Standing Calf Raise מכונה","Seated Calf Raise מכונה","Leg Press Calf Raise","Single Leg Calf Raise DB","Donkey Calf Raise","Tibialis Raise"] },
     ],
     exercises: [
       { name: "סקוואט (Squat)", muscles: "קוואדריצפס, ישבן, גב תחתון", tips: ["ברכיים מעל אצבעות", "ירד עד מקביל לפחות", "גב ישר — חובה"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט", youtubeQuery: "squat+form+tutorial+beginners" },
@@ -161,8 +162,8 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "core", label: "ליבה", emoji: "🎯", color: "#06b6d4",
     subGroups: [
-      { key: "core_straight", label: "בטן ישרה", emoji: "🎯", exerciseNames: ["סיט אפ (Sit-up)","ברכיים לחזה (Knee Tucks)","פלנק (Plank)","Dead Bug","Cable Crunch","Dragon Flag","Ab Wheel Rollout","Hanging Leg Raise","V-Up","Hollow Crunch"] },
-      { key: "core_obliques", label: "אלכסונים", emoji: "🔄", exerciseNames: ["רוסיאן טוויסט","Woodchop (גרזן)","Pallof Press","Side Plank","Landmine Rotation"] },
+      { key: "core_straight", label: "בטן ישרה", emoji: "🎯", exerciseNames: ["סיט אפ (Sit-up)","ברכיים לחזה (Knee Tucks)","פלנק (Plank)","Dead Bug","Cable Crunch","Dragon Flag","Ab Wheel Rollout","Hanging Leg Raise","V-Up","Hollow Crunch","Cable Crunch ברכיים","Machine Crunch","Dragon Flag ספסל","Decline Crunch","Hanging Leg Raise ישר","Medicine Ball Slam","Stability Ball Crunch","TRX Jackknife","Decline Sit-up","High Cable Crunch עמידה","Hollow Body Rock","Reverse Crunch משוקל","Ab Wheel Standing","Barbell Rollout"] },
+      { key: "core_obliques", label: "אלכסונים", emoji: "🔄", exerciseNames: ["רוסיאן טוויסט","Woodchop (גרזן)","Pallof Press","Side Plank","Landmine Rotation","Cable Oblique Crunch","Standing Cable Lift","Cable Anti-Rotation Hold","Kneeling Cable Oblique","Woodchop גבוה-נמוך","Woodchop נמוך-גבוה","Pallof Press עמידה","Pallof Press ברכיים","Side Bend DB","Russian Twist משקל","Cable Side Crunch","Rotational Med Ball Throw","Side Plank + DB"] },
     ],
     exercises: [
       { name: "פלנק (Plank)", muscles: "ליבה, כתפיים, ישבן", tips: ["גוף קרש ישר", "אל תרים ישבן", "נשום בשלווה"], defaultSets: 3, defaultReps: "45-60 שניות", equipment: "ללא", youtubeQuery: "plank+form+tutorial" },
@@ -177,6 +178,13 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
 const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "chest", label: "חזה", emoji: "💪", color: "#3b82f6",
+    subGroups: [
+      { key: "chest_bw_mid",      label: "שכיבות בסיסיות", emoji: "🤸", exerciseNames: ["שכיבות סמיכה","שכיבות יהלום","שכיבות רחבות","Spiderman Push-up","Hindu Push-up","Dive Bomber Push-up","שכיבות עם עצירה (Pause Push-up)","Walking Push-up","Staggered Push-up"] },
+      { key: "chest_bw_upper",    label: "חזה עליון",       emoji: "⬆️", exerciseNames: ["שכיבות פייק","Pseudo Planche Push-up","שכיבות ירידה (Decline Push-up)","Pike Fly Push-up"] },
+      { key: "chest_bw_lower",    label: "חזה תחתון",       emoji: "⬇️", exerciseNames: ["Korean Dip","שכיבות עלייה (Incline Push-up)"] },
+      { key: "chest_bw_advanced", label: "מתקדמות",         emoji: "🔥", exerciseNames: ["שכיבות ארצ'ר","Typewriter Push-up","Archer Push-up מתקדם","Tuck Planche","Straddle Planche","Planche Push-up (Tuck)","Superman Push-up","Wide Clap Push-up","Straddle Planche Push-up","שכיבת יד אחת (One-Arm Push-up)","שכיבות מחיאת כף (Clap Push-up)","Tiger Bend Push-up","Assisted One-Arm Push-up"] },
+      { key: "chest_rings",       label: "טבעות",           emoji: "💍", exerciseNames: ["Ring Push-up","Ring Fly","Ring Dip","Ring Push-up Lean","Ring Support Hold","Ring Push-up Narrow","Ring Chest Fly Hold","Ring Push-up Lean Wide"] },
+    ],
     exercises: [
       { name: "שכיבות סמיכה", muscles: "חזה, טריצפס, ליבה", tips: ["גוף קרש ישר", "מרפקים 45° מהגוף", "ירידה עד הרצפה"], defaultSets: 4, defaultReps: "12-15", equipment: "ללא", youtubeQuery: "push+up+perfect+form" },
       { name: "שכיבות יהלום", muscles: "טריצפס, חזה פנימי", tips: ["ידיים בצורת יהלום מתחת לחזה", "מרפקים צמודים לגוף", "גוף ישר"], defaultSets: 3, defaultReps: "8-12", equipment: "ללא", youtubeQuery: "diamond+push+up+form" },
@@ -187,6 +195,12 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
   },
   {
     key: "back", label: "גב", emoji: "🦾", color: "#8b5cf6",
+    subGroups: [
+      { key: "back_bw_pullup",   label: "מתח",      emoji: "⬆️", exerciseNames: ["מתח (Pull-up)","מתח אחיזה הפוכה (Chin-up)","L-Sit Pull-up","Wide Grip Pull-up","Commando Pull-up","Scapula Pull-up","Passive Hang","Active Hang","Negative Pull-up איטי","Jumping Pull-up","Hollow Body Pull-up","Narrow Grip Pull-up","Hanging Scapular Retraction"] },
+      { key: "back_bw_row",      label: "חתירות",   emoji: "🔄", exerciseNames: ["מתח אוסטרלי (Row)","Pike Row","Bat Wing Row Hold"] },
+      { key: "back_bw_advanced", label: "מתקדמות",  emoji: "🔥", exerciseNames: ["Muscle-Up (עליות כוח)","Tuck Front Lever","Straddle Front Lever","Full Front Lever","Front Lever Row","Front Lever Pull-up","Typewriter Pull-up","Archer Pull-up","Explosive Pull-up","One Arm Pull-up Neg","Negative Muscle-Up","Stacked Grip Pull-up","Tuck Front Lever Raises","Front Lever Raises (Full)","Tuck Back Lever Raises","Half Muscle-Up Hold"] },
+      { key: "back_rings",       label: "טבעות",    emoji: "💍", exerciseNames: ["Ring Muscle-Up","Tuck Back Lever","Full Back Lever","Skin the Cat","Ring Row","Ring Pull-up","Ring Inverted Row","One-Arm Ring Row","Ring Tuck Row","Ring Face Pull","Muscle-Up Transition Hold"] },
+    ],
     exercises: [
       { name: "מתח (Pull-up)", muscles: "גב רחב, ביצפס, ליבה", tips: ["תלייה מלאה בתחתית", "הוצא חזה אל הבר", "אל תתנועע"], defaultSets: 4, defaultReps: "5-10", equipment: "מוט מתח", youtubeQuery: "pull+up+perfect+form" },
       { name: "מתח אחיזה הפוכה (Chin-up)", muscles: "ביצפס, גב רחב", tips: ["כפות ידיים כלפיך", "משוך מרפקים לצלעות", "תלייה מלאה"], defaultSets: 3, defaultReps: "5-8", equipment: "מוט מתח", youtubeQuery: "chin+up+form+tutorial" },
@@ -196,6 +210,12 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
   },
   {
     key: "shoulders", label: "כתפיים", emoji: "🏋️", color: "#f97316",
+    subGroups: [
+      { key: "sh_bw_press",     label: "לחיצות",   emoji: "🔵", exerciseNames: ["שכיבות פייק","שכיבות ארצ'ר","Pike Push-up Elevated","Box Pike Push-up","Pike Push-up + Push-up Combo"] },
+      { key: "sh_bw_hspu",      label: "הנדסטנד",  emoji: "🤸", exerciseNames: ["הנדסטנד Push-up (בקיר)","HSPU בקיר","Strict HSPU","Wall Walk","Handstand Hold בקיר","Freestanding Handstand","Handstand Walk","Korean HSPU","HSPU אחיזה צרה (Tricep Focus)","L-Sit to Press Prep","Tuck Planche Push-up","Tiger Bend HSPU","Wall Walk + HSPU"] },
+      { key: "sh_bw_stability", label: "יציבות",   emoji: "⚡", exerciseNames: ["כפפות כתפיים (Shoulder Taps)","Planche Lean","Superman Hold","Reverse Plank","Hollow Body to Arch","Pseudo Planche Push-up Lean","Maltese Lean Hold","Superman Push-up","Straddle Planche Lean Floor"] },
+      { key: "sh_rings",        label: "טבעות",    emoji: "💍", exerciseNames: ["Ring HSPU","Ring Shoulder Press","Ring L-Sit Press","Ring HSPU Elevated","Ring Lateral Raise","Elevated Ring Pike Push-up","Ring L-Sit to Shoulder Press","Ring Dip to Support Hold"] },
+    ],
     exercises: [
       { name: "שכיבות פייק", muscles: "דלטואיד קדמי ואמצע, טריצפס", tips: ["ישבן גבוה — V הפוך", "ירידה לכיוון הראש", "בסיס להנדסטנד"], defaultSets: 3, defaultReps: "10-12", equipment: "ללא", youtubeQuery: "pike+push+up+form" },
       { name: "הנדסטנד Push-up (בקיר)", muscles: "כתפיים, טריצפס, ליבה", tips: ["גב לקיר", "ירידה מבוקרת", "פתח מרפקים כלפי חוץ"], defaultSets: 3, defaultReps: "5-8", equipment: "קיר", youtubeQuery: "handstand+push+up+wall+form" },
@@ -205,6 +225,12 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
   },
   {
     key: "arms", label: "ידיים", emoji: "💪", color: "#ec4899",
+    subGroups: [
+      { key: "arms_bw_bi",  label: "ביצפס",    emoji: "💪", exerciseNames: ["מתח אחיזה הפוכה","Towel Pull-up Curl","Around the World Pull-up","Assisted One-Arm Chin-up","Hammer Grip Pull-up","Negative One-Arm Chin-up","Towel Chin-up","False Grip Chin-up"] },
+      { key: "arms_bw_tri", label: "טריצפס",   emoji: "💎", exerciseNames: ["מקבילים (Dips)","שכיבות יהלום","Tricep Push-up","L-Sit Dips","Korean Dips (Tricep)","Slow Negative Dips","Forearm to Push-up","Pike Push-up Dip Combo","Korean Dip Eccentric","Forearm Stand Push-up","Narrow Parallette Dip"] },
+      { key: "arms_bw_fore", label: "אמות",    emoji: "🦾", exerciseNames: ["Hanging Straight Hold","Wrist Push-up"] },
+      { key: "arms_rings",  label: "טבעות",    emoji: "💍", exerciseNames: ["Ring Dips מתקדם","Ring Tricep Ext","Ring Bicep Curl","Ring Face Pull","Ring Rows מתקדם","Ring Turn Out Dip","Ring Chin-up with Pause","Ring Bicep Curl Supination","Ring Tricep Dip Slow","Ring Row Underhand","Ring Around The World","Ring Overhead Tricep Extension","Ring Push-up Narrow to Wide","Ring Lockout Hold"] },
+    ],
     exercises: [
       { name: "מקבילים (Dips)", muscles: "טריצפס, חזה תחתון", tips: ["כסא / מקבילים", "הורד עד מרפק 90°", "עלה בלחיצת טריצפס"], defaultSets: 3, defaultReps: "10-15", equipment: "כסא / מקבילים", youtubeQuery: "tricep+dips+bench+form" },
       { name: "שכיבות יהלום", muscles: "טריצפס, חזה פנימי", tips: ["ידיים בצורת יהלום", "מרפקים צמודים", "גוף ישר"], defaultSets: 3, defaultReps: "8-12", equipment: "ללא", youtubeQuery: "diamond+push+up+form" },
@@ -214,6 +240,14 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
   },
   {
     key: "legs", label: "רגליים", emoji: "🦵", color: "#eab308",
+    subGroups: [
+      { key: "legs_bw_quads",   label: "ארבע ראשי", emoji: "🦵", exerciseNames: ["סקוואט משקל גוף","לאנג' (Lunges)","ישיבת קיר (Wall Sit)","Bulgarian Split Squat","Cossack Squat","Sissy Squat","Reverse Nordic Curl","Single Leg Wall Sit","Lateral Lunge","Frog Squat"] },
+      { key: "legs_bw_hams",    label: "האמסטרינג", emoji: "🏃", exerciseNames: ["Single Leg RDL BW","Nordic Curl Eccentric","Nordic Curl על טבעות"] },
+      { key: "legs_bw_glutes",  label: "ישבן",       emoji: "🍑", exerciseNames: ["Single Leg Glute Bridge BW","Curtsy Lunge","Glute Bridge Marching"] },
+      { key: "legs_bw_plyo",    label: "פליומטרי",  emoji: "⚡", exerciseNames: ["סקוואט קפיצה (Jump Squat)","Tuck Jump","Broad Jump","180 Jump Squat","Box Jump","Depth Jump","Plyometric Lunge","Explosive Step-up","Sprint Bounds","Lateral Box Jump","Single Leg Hop Continuous","Single Leg Box Jump"] },
+      { key: "legs_bw_advanced", label: "מתקדמות",  emoji: "🔥", exerciseNames: ["Pistol Squat","Shrimp Squat","Skater Squat","Dragon Squat","Pistol Squat Progression","Burpee + Pistol","Single Leg Squat to Box","Assisted Pistol Squat","Eccentric Pistol Squat","Step-Down Eccentric","Cossack Squat Deep","Dragon Squat Advanced"] },
+      { key: "legs_bw_calves",  label: "תאומים",    emoji: "👟", exerciseNames: ["Single Leg Calf Raise BW"] },
+    ],
     exercises: [
       { name: "סקוואט משקל גוף", muscles: "קוואדריצפס, ישבן, המסטרינג", tips: ["ברכיים מעל אצבעות", "ירד עד מקביל", "גב ישר — חובה"], defaultSets: 4, defaultReps: "15-20", equipment: "ללא", youtubeQuery: "bodyweight+squat+form" },
       { name: "לאנג' (Lunges)", muscles: "קוואדריצפס, ישבן, המסטרינג", tips: ["פסיעה ארוכה", "ברך קדמית לא תחצה", "גב ישר"], defaultSets: 3, defaultReps: "12 כל צד", equipment: "ללא", youtubeQuery: "lunges+form+tutorial" },
@@ -224,6 +258,14 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
   },
   {
     key: "core", label: "ליבה", emoji: "🎯", color: "#06b6d4",
+    subGroups: [
+      { key: "core_bw_straight",  label: "בטן ישרה",  emoji: "🎯", exerciseNames: ["פלנק (Plank)","Hollow Body Hold","Dead Bug","Hollow Body Rock","Ab Wheel from Knees","Copenhagen Plank","Stir the Pot","Reverse Crunch","Ab Wheel Standing Rollout"] },
+      { key: "core_bw_lsit",      label: "L-Sit",     emoji: "🤸", exerciseNames: ["L-Sit (בין כסאות)","L-Sit (מקבילים)","V-Sit","Tuck L-Sit","Straddle L-Sit","Straddle L-Sit Floor","V-Sit Hold"] },
+      { key: "core_bw_hanging",   label: "תלייה",     emoji: "🏋️", exerciseNames: ["הרמות ברכיים תלויות","Toes to Bar","Windshield Wipers","Hanging Leg Raise ישר","Knee Raises on Parallettes","Windshield Wipers Tuck Hanging"] },
+      { key: "core_bw_advanced",  label: "מתקדמות",  emoji: "🔥", exerciseNames: ["Human Flag (Tuck)","Full Human Flag","Dragon Flag (Full)","Dragon Flag Negative","Dragon Flag Incline","Planche Shrug","Tuck Planche Shrug"] },
+      { key: "core_rings",        label: "טבעות",    emoji: "💍", exerciseNames: ["Ring L-Sit","Ring Tuck L-Sit","Ring Ab Rollout"] },
+      { key: "core_bw_obliques",  label: "אלכסונים", emoji: "🔄", exerciseNames: ["Side Plank Hip Raises","Bicycle Crunch Premium","Plank Knee to Elbow"] },
+    ],
     exercises: [
       { name: "פלנק (Plank)", muscles: "ליבה, כתפיים, ישבן", tips: ["גוף קרש ישר", "אל תרים ישבן", "נשום בשלווה"], defaultSets: 3, defaultReps: "45-60 שניות", equipment: "ללא", youtubeQuery: "plank+form+tutorial" },
       { name: "Hollow Body Hold", muscles: "ליבה עמוק, בטן", tips: ["גב תחתון מרוסק לרצפה", "ידיים ורגליים מורמות", "בסיס לכל תרגיל גימנסטיקה"], defaultSets: 3, defaultReps: "20-30 שניות", equipment: "ללא", youtubeQuery: "hollow+body+hold+form" },
@@ -3319,8 +3361,8 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
         </>
       )}
 
-      {/* ── WEIGHTS inside group: sub-muscle grid ───────────────────── */}
-      {workoutType === "weights" && selectedGroup && selectedGroup.subGroups && !selectedSubGroup && !selectedEquip && !showAllExercises && (
+      {/* ── WEIGHTS / CALISTHENICS inside group: sub-muscle grid ──────── */}
+      {(workoutType === "weights" || workoutType === "calisthenics") && selectedGroup && selectedGroup.subGroups && !selectedSubGroup && !selectedEquip && !showAllExercises && (
         <div className="grid grid-cols-2 gap-3">
           {selectedGroup.subGroups.map((sg) => {
             const count = selectedGroup.exercises.filter(
@@ -3423,7 +3465,8 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
       )}
 
       {/* ── CALISTHENICS / STRETCHING inside group: exercise list ─────── */}
-      {(workoutType === "calisthenics" || workoutType === "stretching") && selectedGroup && (
+      {(workoutType === "calisthenics" || workoutType === "stretching") && selectedGroup &&
+       (!selectedGroup.subGroups || selectedSubGroup || showAllExercises) && (
         <div className="space-y-2 animate-in fade-in duration-300">
           {groupExercises.map((ex) => (
             <ExerciseRow
@@ -3761,6 +3804,9 @@ function PRSection() {
   const [expandedEx,     setExpandedEx]     = useState<string | null>(null);
   // toggle: grouped-by-template (true) vs flat list (false)
   const [groupByTemplate, setGroupByTemplate] = useState(true);
+  // progressive disclosure — show first 3 items by default
+  const [showAllPRs,     setShowAllPRs]     = useState(false);
+  const VISIBLE_PR_COUNT = 3;
 
   // ── Global PR source of truth: keyed by exercise_name ────────────────────
   // PRs are NEVER isolated per-template — a PR set on any workout reflects here.
@@ -3996,19 +4042,43 @@ function PRSection() {
           </div>
         );
 
+        /* ── Show-more toggle button ─────────────────────────────────── */
+        const ShowMoreBtn = ({ total }: { total: number }) =>
+          total > VISIBLE_PR_COUNT ? (
+            <button
+              onClick={() => setShowAllPRs((v) => !v)}
+              className="w-full mt-1 py-2 rounded-2xl border border-white/10 bg-white/5 text-[11px] font-bold text-white/45 hover:bg-white/8 hover:text-white/65 transition-all active:scale-[0.98]"
+            >
+              {showAllPRs ? `הצג פחות ▲` : `הצג הכל (${total}) ▼`}
+            </button>
+          ) : null;
+
         /* ── FLAT view ───────────────────────────────────────────────── */
-        if (!groupByTemplate) return (
-          <div className="space-y-1">{prGroups.map((g) => ExerciseRow(g))}</div>
-        );
+        if (!groupByTemplate) {
+          const visible = showAllPRs ? prGroups : prGroups.slice(0, VISIBLE_PR_COUNT);
+          return (
+            <div className="space-y-1">
+              {visible.map((g) => ExerciseRow(g))}
+              <ShowMoreBtn total={prGroups.length} />
+            </div>
+          );
+        }
 
         /* ── GROUPED-BY-TEMPLATE view ────────────────────────────────── */
-        if (templateGroups.length === 0) return (
-          <div className="space-y-1">{prGroups.map((g) => ExerciseRow(g))}</div>
-        );
+        if (templateGroups.length === 0) {
+          const visible = showAllPRs ? prGroups : prGroups.slice(0, VISIBLE_PR_COUNT);
+          return (
+            <div className="space-y-1">
+              {visible.map((g) => ExerciseRow(g))}
+              <ShowMoreBtn total={prGroups.length} />
+            </div>
+          );
+        }
 
+        const visibleGroups = showAllPRs ? templateGroups : templateGroups.slice(0, VISIBLE_PR_COUNT);
         return (
           <div className="space-y-3">
-            {templateGroups.map((tg) => (
+            {visibleGroups.map((tg) => (
               <div key={tg.id} className="space-y-1">
                 {/* Template section header */}
                 <div className="flex items-center gap-2 px-1">
@@ -4025,6 +4095,7 @@ function PRSection() {
                 {tg.prs.map((g) => ExerciseRow(g))}
               </div>
             ))}
+            <ShowMoreBtn total={templateGroups.length} />
           </div>
         );
       })()}
@@ -4150,6 +4221,8 @@ function WorkoutHistoryStrip() {
 function WorkoutHistoryGrouped() {
   const { data: workouts, isLoading } = useWorkoutHistory();
   const [openKey, setOpenKey] = useState<string | null>(null);
+  const [showAllWorkouts, setShowAllWorkouts] = useState(false);
+  const VISIBLE_WORKOUT_COUNT = 3;
 
   const grouped = useMemo(() => {
     const map = new Map<string, any[]>();
@@ -4181,7 +4254,7 @@ function WorkoutHistoryGrouped() {
         <p className="text-xs text-white/25 text-center py-4">אין אימונים לתצוגה עדיין</p>
       ) : (
         <div className="space-y-2">
-          {grouped.map(([templateName, wList]) => {
+          {(showAllWorkouts ? grouped : grouped.slice(0, VISIBLE_WORKOUT_COUNT)).map(([templateName, wList]) => {
             const isOpen = openKey === templateName;
             const totalMins = wList.reduce((s: number, w: any) => s + (w.duration_minutes || 0), 0);
             const totalCal  = wList.reduce((s: number, w: any) => s + (w.calories_burned  || 0), 0);
@@ -4231,6 +4304,14 @@ function WorkoutHistoryGrouped() {
               </div>
             );
           })}
+          {grouped.length > VISIBLE_WORKOUT_COUNT && (
+            <button
+              onClick={() => setShowAllWorkouts((v) => !v)}
+              className="w-full py-2 rounded-2xl border border-white/10 bg-white/5 text-[11px] font-bold text-white/45 hover:bg-white/8 hover:text-white/65 transition-all active:scale-[0.98]"
+            >
+              {showAllWorkouts ? `הצג פחות ▲` : `הצג הכל (${grouped.length}) ▼`}
+            </button>
+          )}
         </div>
       )}
     </div>
