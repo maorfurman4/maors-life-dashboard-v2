@@ -19,6 +19,11 @@ import {
   useAddNutrition,
 } from "@/hooks/use-sport-data";
 import { generateWorkoutPlan, generateCoachFeedback, type WorkoutPlan } from "@/lib/ai-service";
+import {
+  CARDIO_SPORTS, INTENSITY_LABELS,
+  calcCardioCalories,
+  type Intensity,
+} from "@/utils/calorieCalculator";
 import { toast } from "sonner";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -37,7 +42,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "dashboard", label: "בית"        },
   { key: "builder",   label: "אימונים"    },
   { key: "library",   label: "ספרייה"     },
-  { key: "running",   label: "🏃 ריצה"    },
+  { key: "running",   label: "🏅 אירובי"  },
   { key: "progress",  label: "התקדמות"    },
 ];
 
@@ -4800,10 +4805,151 @@ function BodyProgressGallery() {
 }
 
 // ─── Running Tab ──────────────────────────────────────────────────────────────
-function RunningTab() {
+// ─── Other-sport cardio log (non-running) ────────────────────────────────────
+function OtherCardioLogSection({ sport }: { sport: typeof CARDIO_SPORTS[number] }) {
+  const addWorkout = useAddWorkout();
+  const { data: settings } = useUserSettings();
+  const bodyWeight = (settings as any)?.weight_kg ?? 75;
+
+  const [minsRaw,   setMinsRaw]   = useState("30");
+  const [intensity, setIntensity] = useState<Intensity>("medium");
+  const [notes,     setNotes]     = useState("");
+
+  const minutes  = parseInt(minsRaw) || 0;
+  const calories = calcCardioCalories(sport.key, intensity, minutes, bodyWeight);
+
+  const handleSave = async () => {
+    if (minutes <= 0) return toast.error("הזן זמן אימון");
+    try {
+      await addWorkout.mutateAsync({
+        category:         sport.dbCategory,
+        duration_minutes: minutes,
+        calories_burned:  calories || undefined,
+        notes:            notes || sport.labelHe,
+      });
+      toast.success(`${sport.emoji} ${sport.labelHe} נרשם! ${calories ? calories + " קלוריות" : ""}`);
+      setMinsRaw("30"); setNotes("");
+    } catch {
+      toast.error("שגיאה בשמירה");
+    }
+  };
+
   return (
-    <div className="px-4 pt-8 pb-6 space-y-4">
-      <RunningLogSection />
+    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <span className="text-xl">{sport.emoji}</span>
+        <p className="text-sm font-black text-white">{sport.labelHe}</p>
+      </div>
+
+      {/* Duration */}
+      <div className="flex items-center gap-2.5">
+        <Timer className="h-4 w-4 shrink-0" style={{ color: sport.color }} />
+        <div className="flex-1 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5">
+          <input
+            type="text" inputMode="numeric" pattern="[0-9]*"
+            value={minsRaw}
+            onChange={(e) => setMinsRaw(e.target.value.replace(/\D/g, ""))}
+            onFocus={(e) => e.target.select()}
+            placeholder="30"
+            className="flex-1 bg-transparent text-sm font-bold text-white placeholder:text-white/20 outline-none text-left"
+            dir="ltr"
+          />
+          <span className="text-xs font-bold shrink-0" style={{ color: sport.color + "bb" }}>דקות</span>
+        </div>
+      </div>
+
+      {/* Intensity picker */}
+      <div className="space-y-1.5">
+        <p className="text-[11px] font-bold text-white/40">עצימות</p>
+        <div className="flex gap-2">
+          {(["low", "medium", "high"] as Intensity[]).map((lvl) => (
+            <button key={lvl} onClick={() => setIntensity(lvl)}
+              className={`flex-1 py-2 rounded-2xl text-xs font-black transition-all ${
+                intensity === lvl
+                  ? "text-white shadow-sm"
+                  : "bg-white/5 text-white/35 hover:text-white/55"
+              }`}
+              style={intensity === lvl ? { background: sport.color + "33", border: `1px solid ${sport.color}55` } : {}}
+            >
+              {INTENSITY_LABELS[lvl]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Live calorie preview */}
+      {calories > 0 && (
+        <div className="flex items-center justify-center gap-2 rounded-2xl border py-3 transition-all"
+          style={{ borderColor: sport.color + "33", background: sport.color + "11" }}>
+          <Flame className="h-4 w-4" style={{ color: sport.color }} />
+          <span className="text-2xl font-black text-white">{calories.toLocaleString()}</span>
+          <span className="text-sm font-bold" style={{ color: sport.color }}>קלוריות</span>
+        </div>
+      )}
+
+      {/* Notes */}
+      <input
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="הערות (מסלול, תחושה...)..."
+        className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/20 outline-none"
+        dir="rtl"
+      />
+
+      {/* Save */}
+      <button
+        onClick={handleSave}
+        disabled={addWorkout.isPending || minutes <= 0}
+        className="w-full py-3.5 rounded-2xl text-white font-black text-sm disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg min-h-[44px]"
+        style={{ background: sport.color, boxShadow: `0 8px 24px ${sport.color}33` }}
+      >
+        {addWorkout.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+        שמור {sport.labelHe}
+      </button>
+    </div>
+  );
+}
+
+// ─── Cardio Tab (renamed from RunningTab, now with sport picker) ──────────────
+function CardioTab() {
+  const [selectedSport, setSelectedSport] = useState<string>("running");
+  const sport = CARDIO_SPORTS.find((s) => s.key === selectedSport) ?? CARDIO_SPORTS[0];
+
+  return (
+    <div className="px-4 pt-6 pb-8 space-y-4">
+      {/* Sport picker */}
+      <div>
+        <p className="text-sm font-black text-white mb-3">בחר ספורט</p>
+        <div className="grid grid-cols-4 gap-2">
+          {CARDIO_SPORTS.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setSelectedSport(s.key)}
+              className={`flex flex-col items-center gap-1 rounded-2xl border py-3 px-1 transition-all active:scale-[0.95] ${
+                selectedSport === s.key
+                  ? "border-opacity-60 shadow-sm"
+                  : "border-white/8 bg-white/5 hover:bg-white/8"
+              }`}
+              style={selectedSport === s.key
+                ? { borderColor: s.color + "55", background: s.color + "18" }
+                : {}}
+            >
+              <span className="text-xl">{s.emoji}</span>
+              <span className="text-[9px] font-bold text-center leading-tight"
+                style={{ color: selectedSport === s.key ? s.color : "rgba(255,255,255,0.45)" }}>
+                {s.labelHe}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sport-specific form */}
+      {sport.key === "running"
+        ? <RunningLogSection />
+        : <OtherCardioLogSection sport={sport} />
+      }
     </div>
   );
 }
@@ -4922,7 +5068,7 @@ function SportPage() {
             />
           )}
           {activeTab === "library" && <ExerciseLibraryTab onAddToWorkout={handleAddExercisesToWorkout} />}
-          {activeTab === "running"  && <RunningTab />}
+          {activeTab === "running"  && <CardioTab />}
           {activeTab === "progress" && <ProgressTab />}
         </div>
       </div>
