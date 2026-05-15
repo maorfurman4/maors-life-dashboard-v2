@@ -76,6 +76,16 @@ export function AIConfirmationCard({ result, onAdd, onEdit, onDismiss }: Props) 
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-purple-400" />
             <p className="text-[11px] font-black text-purple-400 uppercase">זוהה על ידי AI</p>
+            {result.confidence === "low" && (
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[9px] font-bold text-amber-300">
+                בדוק ערכים
+              </span>
+            )}
+            {result.confidence === "high" && (
+              <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] font-bold text-emerald-300">
+                ✓ בטוח
+              </span>
+            )}
           </div>
           <button
             onClick={onDismiss}
@@ -87,6 +97,13 @@ export function AIConfirmationCard({ result, onAdd, onEdit, onDismiss }: Props) 
 
         {/* ── Meal name ── */}
         <p className="text-xl font-black text-white leading-tight">{result.name}</p>
+
+        {/* ── Low-confidence nudge ── */}
+        {result.confidence === "low" && (
+          <p className="text-[10px] text-amber-400/80 leading-relaxed">
+            ⚠️ התמונה לא ברורה לגמרי — מומלץ לבדוק ולערוך את הערכים לפני ההוספה
+          </p>
+        )}
 
         {/* ── Macro grid ── */}
         <div className="grid grid-cols-4 gap-2">
