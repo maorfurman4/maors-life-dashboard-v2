@@ -75,14 +75,14 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "gpt-4o",
         response_format: { type: "json_object" },
-        max_tokens: 220,
+        max_tokens: 300,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           {
             role: "user",
             content: [
               // detail:"low" — sufficient for food ID at 800px, saves tokens & latency
-              { type: "image_url", image_url: { url: dataUrl, detail: "low" } },
+              { type: "image_url", image_url: { url: dataUrl, detail: "high" } },
               { type: "text", text: "Analyze this food image and return the JSON." },
             ],
           },
