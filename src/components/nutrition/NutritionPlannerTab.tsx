@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Sparkles, Save, Loader2, ChevronDown, ChevronUp,
-  Flame, X,
+  Sparkles, Save, X,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +9,6 @@ import {
   calcTDEE, ACTIVITY_LABELS, ACTIVITY_MULTIPLIER, GOAL_LABELS,
   type ActivityLevel, type Goal, type Sex,
 } from "@/lib/tdee";
-import { generateText, parseAIJson } from "@/lib/ai-service";
 import { useProfile } from "@/hooks/use-profile";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -19,22 +17,6 @@ async function getUserId() {
   if (!user) throw new Error("Not authenticated");
   return user.id;
 }
-
-// ─── types ───────────────────────────────────────────────────────────────────
-interface DayPlan {
-  day: string;
-  breakfast: MealSlot;
-  lunch:     MealSlot;
-  dinner:    MealSlot;
-  snack:     MealSlot;
-  total_calories: number;
-}
-interface MealSlot {
-  name:     string;
-  calories: number;
-  protein:  number;
-}
-interface WeeklyPlan { days: DayPlan[] }
 
 // ─── glass field helper ───────────────────────────────────────────────────────
 function GlassField({ label, children }: { label: string; children: React.ReactNode }) {
@@ -78,9 +60,6 @@ export function NutritionPlannerTab() {
   // ── Planner state ──
   const [exclusions,  setExclusions]  = useState<string[]>([]);
   const [tagInput,    setTagInput]    = useState("");
-  const [weekPlan,    setWeekPlan]    = useState<WeeklyPlan | null>(null);
-  const [generating,  setGenerating]  = useState(false);
-  const [openDay,     setOpenDay]     = useState<number | null>(null);
 
   // ── Load saved settings ──
   const { data: settings } = useQuery({
@@ -172,50 +151,6 @@ export function NutritionPlannerTab() {
   };
   const removeTag = (t: string) => setExclusions((p) => p.filter((x) => x !== t));
 
-  // ── Generate weekly meal plan ──
-  const generatePlan = async () => {
-    if (!profile?.diet_type) { toast.error("בחר סוג דיאטה בטאב 'מתכונים' תחילה"); return; }
-    setGenerating(true);
-    setWeekPlan(null);
-    setOpenDay(null);
-    try {
-      const dietLabel = profile.diet_type;
-      const excStr    = exclusions.length > 0 ? exclusions.join(", ") : "אין";
-      const prompt    = `אתה דיאטן ישראלי מקצועי. צור תפריט שבועי מלא בפורמט JSON בלבד.
-
-פרמטרים:
-- סוג דיאטה: ${dietLabel}
-- קלוריות יומיות: ${result.targetCalories}
-- יעד חלבון יומי: ${result.protein}g
-- מרכיבים אסורים: ${excStr}
-
-פורמט JSON חובה (7 ימים, ישראלי, ריאלי):
-{
-  "days": [
-    {
-      "day": "ראשון",
-      "breakfast": { "name": "שם ארוחת בוקר", "calories": 0, "protein": 0 },
-      "lunch":     { "name": "שם ארוחת צהריים", "calories": 0, "protein": 0 },
-      "dinner":    { "name": "שם ארוחת ערב", "calories": 0, "protein": 0 },
-      "snack":     { "name": "שם חטיף", "calories": 0, "protein": 0 },
-      "total_calories": 0
-    }
-  ]
-}
-
-כללים: 7 ימים בדיוק (ראשון עד שבת). ארוחות ישראליות אמיתיות. אל תחרוג מ${excStr} לעולם. JSON בלבד ללא markdown.`;
-
-      const raw  = await generateText(prompt);
-      const plan = parseAIJson<WeeklyPlan>(raw);
-      setWeekPlan(plan);
-      setOpenDay(0);
-    } catch {
-      toast.error("שגיאה ביצירת תפריט — נסה שנית");
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div className="px-4 pt-4 space-y-5 pb-4">
@@ -249,8 +184,21 @@ export function NutritionPlannerTab() {
         {/* Age / Height / Weight */}
         <div className="grid grid-cols-3 gap-3">
           <GlassField label='גיל'>
-            <input type="number" value={age} onChange={(e) => setAge(+e.target.value)}
-              className={inputCls} dir="ltr" />
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={2}
+              value={age}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").replace(/^0+(\d)/, "$1");
+                if (digits === "" || (Number(digits) > 0 && Number(digits) < 100)) {
+                  setAge(digits === "" ? 0 : Number(digits));
+                }
+              }}
+              className={inputCls}
+              dir="ltr"
+            />
           </GlassField>
           <GlassField label='גובה (ס"מ)'>
             <input type="number" value={height} onChange={(e) => setHeight(+e.target.value)}
@@ -392,91 +340,13 @@ export function NutritionPlannerTab() {
         )}
       </div>
 
-      {/* ══ SECTION 4: AI GENERATE BUTTON ════════════════════════════════════ */}
-      <button
-        onClick={generatePlan}
-        disabled={generating || !profile?.diet_type}
-        className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-black text-sm transition-all min-h-[56px] ${
-          profile?.diet_type
-            ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-2xl shadow-emerald-500/30 active:scale-[0.98]"
-            : "bg-white/10 border border-white/10 opacity-40 cursor-not-allowed"
-        } disabled:opacity-50`}
-      >
-        {generating ? (
-          <>
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span>יוצר תפריט שבועי עם AI...</span>
-          </>
-        ) : (
-          <>
-            <Flame className="h-5 w-5" />
-            <span>צור תפריט שבועי עם AI ✨</span>
-          </>
-        )}
-      </button>
-
-      {/* ══ SECTION 5: WEEKLY PLAN RESULTS ══════════════════════════════════ */}
-      {weekPlan && (
-        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="h-4 w-4 text-emerald-400" />
-            <p className="text-sm font-black text-white">
-              תפריט שבועי — {profile?.diet_type}
-            </p>
-          </div>
-
-          {weekPlan.days.map((day, i) => (
-            <div key={i}
-              className={`rounded-2xl border overflow-hidden transition-all ${
-                openDay === i ? "border-emerald-500/30 bg-emerald-500/5" : "border-white/8 bg-white/3"
-              }`}>
-              {/* Day header */}
-              <button
-                onClick={() => setOpenDay(openDay === i ? null : i)}
-                className="w-full flex items-center justify-between px-4 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className={`text-sm font-black ${openDay === i ? "text-emerald-300" : "text-white/80"}`}>
-                    {day.day}
-                  </span>
-                  <span className="text-[10px] text-white/30">{day.total_calories?.toLocaleString() ?? "—"} קל׳</span>
-                </div>
-                {openDay === i
-                  ? <ChevronUp  className="h-4 w-4 text-emerald-400" />
-                  : <ChevronDown className="h-4 w-4 text-white/30" />}
-              </button>
-
-              {/* Day meals */}
-              {openDay === i && (
-                <div className="px-4 pb-4 space-y-2">
-                  {(
-                    [
-                      { key: "breakfast", label: "🌅 בוקר"   },
-                      { key: "lunch",     label: "☀️ צהריים" },
-                      { key: "dinner",    label: "🌙 ערב"    },
-                      { key: "snack",     label: "🍎 חטיף"   },
-                    ] as { key: keyof DayPlan; label: string }[]
-                  ).map(({ key, label }) => {
-                    const meal = day[key] as MealSlot | undefined;
-                    if (!meal) return null;
-                    return (
-                      <div key={key} className="flex items-start justify-between gap-3 py-1.5 border-b border-white/5 last:border-0">
-                        <span className="text-[10px] text-white/40 shrink-0 pt-0.5">{label}</span>
-                        <div className="flex-1 min-w-0 text-left">
-                          <p className="text-sm text-white/90 font-medium leading-tight">{meal.name}</p>
-                          <p className="text-[10px] text-white/30 mt-0.5">
-                            {meal.calories} קל׳ · {meal.protein}g חלבון
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* ── Weekly menu is now in מתכונים tab ── */}
+      <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl border border-teal-500/20 bg-teal-500/5">
+        <span className="text-base">📋</span>
+        <p className="text-xs text-teal-300/80">
+          יצירת תפריט שבועי עברה לטאב <span className="font-bold">מתכונים</span>
+        </p>
+      </div>
     </div>
   );
 }
