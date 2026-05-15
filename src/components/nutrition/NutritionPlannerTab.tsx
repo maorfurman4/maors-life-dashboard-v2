@@ -184,8 +184,21 @@ export function NutritionPlannerTab() {
         {/* Age / Height / Weight */}
         <div className="grid grid-cols-3 gap-3">
           <GlassField label='גיל'>
-            <input type="number" value={age} onChange={(e) => setAge(+e.target.value)}
-              className={inputCls} dir="ltr" />
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={2}
+              value={age}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").replace(/^0+(\d)/, "$1");
+                if (digits === "" || (Number(digits) > 0 && Number(digits) < 100)) {
+                  setAge(digits === "" ? 0 : Number(digits));
+                }
+              }}
+              className={inputCls}
+              dir="ltr"
+            />
           </GlassField>
           <GlassField label='גובה (ס"מ)'>
             <input type="number" value={height} onChange={(e) => setHeight(+e.target.value)}
