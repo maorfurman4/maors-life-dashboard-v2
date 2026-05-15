@@ -196,8 +196,8 @@ function NutritionPage() {
       const b64    = await compressImageToBase64(file);
       const result = await recognizeMeal(b64);
       setAiResult(result);
-    } catch {
-      toast.error("לא הצלחתי לזהות — נסה תמונה ברורה יותר");
+    } catch (err: any) {
+      toast.error(err?.message ?? "לא הצלחתי לזהות — נסה תמונה ברורה יותר");
     } finally {
       setAiScanning(false);
     }
@@ -357,13 +357,6 @@ function NutritionPage() {
                   <span className="text-[10px] text-white/30">
                     / {(waterGoal / 1000).toFixed(1)}L
                   </span>
-                  <button
-                    onClick={() => { setWaterEditMode((v) => !v); setWaterInputVal(String(totalWaterMl)); }}
-                    className="p-1 rounded-lg hover:bg-cyan-500/15 transition-colors"
-                    title="עריכה ידנית"
-                  >
-                    <Pencil className="h-3 w-3 text-white/30 hover:text-cyan-400 transition-colors" />
-                  </button>
                   {totalWaterMl > 0 && (
                     <button
                       onClick={() => addWaterMl.mutate({ addMl: -totalWaterMl, currentMl: totalWaterMl })}
@@ -393,10 +386,11 @@ function NutritionPage() {
               {waterEditMode ? (
                 <div className="flex items-center gap-2">
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={waterInputVal}
-                    onChange={(e) => setWaterInputVal(e.target.value)}
+                    onChange={(e) => setWaterInputVal(e.target.value.replace(/\D/g, ""))}
                     onKeyDown={(e) => { if (e.key === "Enter") handleWaterManualSave(); if (e.key === "Escape") setWaterEditMode(false); }}
                     placeholder="הזן ml..."
                     className="flex-1 bg-white/8 border border-cyan-500/30 rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-cyan-400/60 text-left"
@@ -417,7 +411,7 @@ function NutritionPage() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {[
                     { label: "+500ml", ml: 500  },
                     { label: "+750ml", ml: 750  },
@@ -432,6 +426,12 @@ function NutritionPage() {
                       {label}
                     </button>
                   ))}
+                  <button
+                    onClick={() => { setWaterEditMode(true); setWaterInputVal(String(totalWaterMl)); }}
+                    className="py-2 rounded-xl border border-white/20 bg-white/5 text-white/40 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/10 transition-all flex items-center justify-center"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               )}
             </div>
