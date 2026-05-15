@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, Loader2, Star, X, BookOpen,
   TrendingUp, Scale, Medal, BarChart3, Camera,
   Pencil, Check, Trash2, Heart, EyeOff, Eye,
-  Share2, MapPin, Timer, Download, Settings2, Youtube, Search, Layers,
+  Share2, MapPin, Timer, Download, Settings2, Youtube, Search, Layers, Info,
 } from "lucide-react";
 import {
   usePersonalRecords, useAddPersonalRecord,
@@ -183,7 +183,7 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
       { key: "chest_bw_upper",    label: "חזה עליון",       emoji: "⬆️", exerciseNames: ["שכיבות פייק","Pseudo Planche Push-up","שכיבות ירידה (Decline Push-up)","Pike Fly Push-up"] },
       { key: "chest_bw_lower",    label: "חזה תחתון",       emoji: "⬇️", exerciseNames: ["Korean Dip","שכיבות עלייה (Incline Push-up)"] },
       { key: "chest_bw_advanced", label: "מתקדמות",         emoji: "🔥", exerciseNames: ["שכיבות ארצ'ר","Typewriter Push-up","Archer Push-up מתקדם","Tuck Planche","Straddle Planche","Planche Push-up (Tuck)","Superman Push-up","Wide Clap Push-up","Straddle Planche Push-up","שכיבת יד אחת (One-Arm Push-up)","שכיבות מחיאת כף (Clap Push-up)","Tiger Bend Push-up","Assisted One-Arm Push-up"] },
-      { key: "chest_rings",       label: "טבעות",           emoji: "💍", exerciseNames: ["Ring Push-up","Ring Fly","Ring Dip","Ring Push-up Lean","Ring Support Hold","Ring Push-up Narrow","Ring Chest Fly Hold","Ring Push-up Lean Wide"] },
+      { key: "chest_rings",       label: "טבעות",           emoji: "⭕", exerciseNames: ["Ring Push-up","Ring Fly","Ring Dip","Ring Push-up Lean","Ring Support Hold","Ring Push-up Narrow","Ring Chest Fly Hold","Ring Push-up Lean Wide"] },
     ],
     exercises: [
       { name: "שכיבות סמיכה", muscles: "חזה, טריצפס, ליבה", tips: ["גוף קרש ישר", "מרפקים 45° מהגוף", "ירידה עד הרצפה"], defaultSets: 4, defaultReps: "12-15", equipment: "ללא", youtubeQuery: "push+up+perfect+form" },
@@ -199,7 +199,7 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
       { key: "back_bw_pullup",   label: "מתח",      emoji: "⬆️", exerciseNames: ["מתח (Pull-up)","מתח אחיזה הפוכה (Chin-up)","L-Sit Pull-up","Wide Grip Pull-up","Commando Pull-up","Scapula Pull-up","Passive Hang","Active Hang","Negative Pull-up איטי","Jumping Pull-up","Hollow Body Pull-up","Narrow Grip Pull-up","Hanging Scapular Retraction"] },
       { key: "back_bw_row",      label: "חתירות",   emoji: "🔄", exerciseNames: ["מתח אוסטרלי (Row)","Pike Row","Bat Wing Row Hold"] },
       { key: "back_bw_advanced", label: "מתקדמות",  emoji: "🔥", exerciseNames: ["Muscle-Up (עליות כוח)","Tuck Front Lever","Straddle Front Lever","Full Front Lever","Front Lever Row","Front Lever Pull-up","Typewriter Pull-up","Archer Pull-up","Explosive Pull-up","One Arm Pull-up Neg","Negative Muscle-Up","Stacked Grip Pull-up","Tuck Front Lever Raises","Front Lever Raises (Full)","Tuck Back Lever Raises","Half Muscle-Up Hold"] },
-      { key: "back_rings",       label: "טבעות",    emoji: "💍", exerciseNames: ["Ring Muscle-Up","Tuck Back Lever","Full Back Lever","Skin the Cat","Ring Row","Ring Pull-up","Ring Inverted Row","One-Arm Ring Row","Ring Tuck Row","Ring Face Pull","Muscle-Up Transition Hold"] },
+      { key: "back_rings",       label: "טבעות",    emoji: "⭕", exerciseNames: ["Ring Muscle-Up","Tuck Back Lever","Full Back Lever","Skin the Cat","Ring Row","Ring Pull-up","Ring Inverted Row","One-Arm Ring Row","Ring Tuck Row","Ring Face Pull","Muscle-Up Transition Hold"] },
     ],
     exercises: [
       { name: "מתח (Pull-up)", muscles: "גב רחב, ביצפס, ליבה", tips: ["תלייה מלאה בתחתית", "הוצא חזה אל הבר", "אל תתנועע"], defaultSets: 4, defaultReps: "5-10", equipment: "מוט מתח", youtubeQuery: "pull+up+perfect+form" },
@@ -214,7 +214,7 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
       { key: "sh_bw_press",     label: "לחיצות",   emoji: "🔵", exerciseNames: ["שכיבות פייק","שכיבות ארצ'ר","Pike Push-up Elevated","Box Pike Push-up","Pike Push-up + Push-up Combo"] },
       { key: "sh_bw_hspu",      label: "הנדסטנד",  emoji: "🤸", exerciseNames: ["הנדסטנד Push-up (בקיר)","HSPU בקיר","Strict HSPU","Wall Walk","Handstand Hold בקיר","Freestanding Handstand","Handstand Walk","Korean HSPU","HSPU אחיזה צרה (Tricep Focus)","L-Sit to Press Prep","Tuck Planche Push-up","Tiger Bend HSPU","Wall Walk + HSPU"] },
       { key: "sh_bw_stability", label: "יציבות",   emoji: "⚡", exerciseNames: ["כפפות כתפיים (Shoulder Taps)","Planche Lean","Superman Hold","Reverse Plank","Hollow Body to Arch","Pseudo Planche Push-up Lean","Maltese Lean Hold","Superman Push-up","Straddle Planche Lean Floor"] },
-      { key: "sh_rings",        label: "טבעות",    emoji: "💍", exerciseNames: ["Ring HSPU","Ring Shoulder Press","Ring L-Sit Press","Ring HSPU Elevated","Ring Lateral Raise","Elevated Ring Pike Push-up","Ring L-Sit to Shoulder Press","Ring Dip to Support Hold"] },
+      { key: "sh_rings",        label: "טבעות",    emoji: "⭕", exerciseNames: ["Ring HSPU","Ring Shoulder Press","Ring L-Sit Press","Ring HSPU Elevated","Ring Lateral Raise","Elevated Ring Pike Push-up","Ring L-Sit to Shoulder Press","Ring Dip to Support Hold"] },
     ],
     exercises: [
       { name: "שכיבות פייק", muscles: "דלטואיד קדמי ואמצע, טריצפס", tips: ["ישבן גבוה — V הפוך", "ירידה לכיוון הראש", "בסיס להנדסטנד"], defaultSets: 3, defaultReps: "10-12", equipment: "ללא", youtubeQuery: "pike+push+up+form" },
@@ -229,7 +229,7 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
       { key: "arms_bw_bi",  label: "ביצפס",    emoji: "💪", exerciseNames: ["מתח אחיזה הפוכה","Towel Pull-up Curl","Around the World Pull-up","Assisted One-Arm Chin-up","Hammer Grip Pull-up","Negative One-Arm Chin-up","Towel Chin-up","False Grip Chin-up"] },
       { key: "arms_bw_tri", label: "טריצפס",   emoji: "💎", exerciseNames: ["מקבילים (Dips)","שכיבות יהלום","Tricep Push-up","L-Sit Dips","Korean Dips (Tricep)","Slow Negative Dips","Forearm to Push-up","Pike Push-up Dip Combo","Korean Dip Eccentric","Forearm Stand Push-up","Narrow Parallette Dip"] },
       { key: "arms_bw_fore", label: "אמות",    emoji: "🦾", exerciseNames: ["Hanging Straight Hold","Wrist Push-up"] },
-      { key: "arms_rings",  label: "טבעות",    emoji: "💍", exerciseNames: ["Ring Dips מתקדם","Ring Tricep Ext","Ring Bicep Curl","Ring Face Pull","Ring Rows מתקדם","Ring Turn Out Dip","Ring Chin-up with Pause","Ring Bicep Curl Supination","Ring Tricep Dip Slow","Ring Row Underhand","Ring Around The World","Ring Overhead Tricep Extension","Ring Push-up Narrow to Wide","Ring Lockout Hold"] },
+      { key: "arms_rings",  label: "טבעות",    emoji: "⭕", exerciseNames: ["Ring Dips מתקדם","Ring Tricep Ext","Ring Bicep Curl","Ring Face Pull","Ring Rows מתקדם","Ring Turn Out Dip","Ring Chin-up with Pause","Ring Bicep Curl Supination","Ring Tricep Dip Slow","Ring Row Underhand","Ring Around The World","Ring Overhead Tricep Extension","Ring Push-up Narrow to Wide","Ring Lockout Hold"] },
     ],
     exercises: [
       { name: "מקבילים (Dips)", muscles: "טריצפס, חזה תחתון", tips: ["כסא / מקבילים", "הורד עד מרפק 90°", "עלה בלחיצת טריצפס"], defaultSets: 3, defaultReps: "10-15", equipment: "כסא / מקבילים", youtubeQuery: "tricep+dips+bench+form" },
@@ -263,7 +263,7 @@ const CALISTHENICS_MUSCLE_GROUPS: MuscleGroup[] = [
       { key: "core_bw_lsit",      label: "L-Sit",     emoji: "🤸", exerciseNames: ["L-Sit (בין כסאות)","L-Sit (מקבילים)","V-Sit","Tuck L-Sit","Straddle L-Sit","Straddle L-Sit Floor","V-Sit Hold"] },
       { key: "core_bw_hanging",   label: "תלייה",     emoji: "🏋️", exerciseNames: ["הרמות ברכיים תלויות","Toes to Bar","Windshield Wipers","Hanging Leg Raise ישר","Knee Raises on Parallettes","Windshield Wipers Tuck Hanging"] },
       { key: "core_bw_advanced",  label: "מתקדמות",  emoji: "🔥", exerciseNames: ["Human Flag (Tuck)","Full Human Flag","Dragon Flag (Full)","Dragon Flag Negative","Dragon Flag Incline","Planche Shrug","Tuck Planche Shrug"] },
-      { key: "core_rings",        label: "טבעות",    emoji: "💍", exerciseNames: ["Ring L-Sit","Ring Tuck L-Sit","Ring Ab Rollout"] },
+      { key: "core_rings",        label: "טבעות",    emoji: "⭕", exerciseNames: ["Ring L-Sit","Ring Tuck L-Sit","Ring Ab Rollout"] },
       { key: "core_bw_obliques",  label: "אלכסונים", emoji: "🔄", exerciseNames: ["Side Plank Hip Raises","Bicycle Crunch Premium","Plank Knee to Elbow"] },
     ],
     exercises: [
@@ -2854,6 +2854,7 @@ function ExerciseModal({
   isFavorite,
   onToggleFavorite,
   onToggleHidden,
+  openTemplate = false,
 }: {
   ex: LibraryExercise;
   groupKey?: string;
@@ -2861,8 +2862,9 @@ function ExerciseModal({
   isFavorite: boolean;
   onToggleFavorite: () => void;
   onToggleHidden: () => void;
+  openTemplate?: boolean;
 }) {
-  const [showTemplates, setShowTemplates] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(openTemplate);
   const { data: templates } = useWorkoutTemplates();
   const updateTemplate   = useUpdateWorkoutTemplate();
   const addTemplate      = useAddWorkoutTemplate();
@@ -3058,12 +3060,13 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
   const [workoutType,    setWorkoutType]    = useState<LibraryWorkoutType>("weights");
   const [selectedGroup,  setSelectedGroup]  = useState<MuscleGroup | null>(null);
   const [selectedEquip,  setSelectedEquip]  = useState<EquipmentCategory | null>(null);
-  const [selectedEx,     setSelectedEx]     = useState<{ ex: LibraryExercise; groupKey: string } | null>(null);
+  const [selectedEx,     setSelectedEx]     = useState<{ ex: LibraryExercise; groupKey: string; openTemplate?: boolean } | null>(null);
   const [checked,          setChecked]          = useState<Set<string>>(new Set());
   const [showHidden,       setShowHidden]       = useState(false);
-  const [showAllExercises, setShowAllExercises] = useState(false);
-  const [selectedSubGroup, setSelectedSubGroup] = useState<SubMuscleGroup | null>(null);
-  const [searchQuery,      setSearchQuery]      = useState("");
+  const [searchQuery,        setSearchQuery]        = useState("");
+  // flat filter state (replaces stepped selectedSubGroup / selectedEquip / showAllExercises)
+  const [activeSubFilters,   setActiveSubFilters]   = useState<string[]>([]);
+  const [activeEquipFilters, setActiveEquipFilters]  = useState<EquipmentCategory[]>([]);
 
   const { data: settings } = useUserSettings();
   const updateSettings = useUpdateUserSettings();
@@ -3105,44 +3108,49 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
   const handleTypeChange = (t: LibraryWorkoutType) => {
     setWorkoutType(t);
     setSelectedGroup(null);
-    setSelectedEquip(null);
-    setShowAllExercises(false);
-    setSelectedSubGroup(null);
+    setActiveSubFilters([]);
+    setActiveEquipFilters([]);
     setChecked(new Set());
   };
 
   const handleGroupSelect = (g: MuscleGroup) => {
     setSelectedGroup(g);
-    setSelectedEquip(null);
-    setShowAllExercises(false);
-    setSelectedSubGroup(null);
+    setActiveSubFilters([]);
+    setActiveEquipFilters([]);
   };
 
   const handleBack = () => {
-    if (selectedEquip)      { setSelectedEquip(null); return; }
-    if (showAllExercises)   { setShowAllExercises(false); return; }
-    if (selectedSubGroup)   { setSelectedSubGroup(null); return; }
+    setActiveSubFilters([]);
+    setActiveEquipFilters([]);
     setSelectedGroup(null);
   };
 
-  // Source exercises: sub-group subset if selected, otherwise whole group
-  const groupSource = (() => {
+  // Equipment categories present in the whole selected group
+  const equipCategories: EquipmentCategory[] = useMemo(() =>
+    selectedGroup
+      ? [...new Set(selectedGroup.exercises.map((ex) => getEquipCat(ex.equipment)))]
+      : []
+  , [selectedGroup]);
+
+  // Flat-filtered exercise list (sub-group chips + equipment chips)
+  const filteredExercises = useMemo(() => {
     if (!selectedGroup) return [];
-    if (selectedSubGroup) return selectedGroup.exercises.filter((ex) => selectedSubGroup.exerciseNames.includes(ex.name));
-    return selectedGroup.exercises;
-  })();
+    let exs = selectedGroup.exercises.filter((ex) => showHidden || !hidden.includes(ex.name));
 
-  // Exercises in the current group, optionally filtered by equipment
-  const groupExercises = (() => {
-    let exs = groupSource.filter((ex) => showHidden || !hidden.includes(ex.name));
-    if (selectedEquip) exs = exs.filter((ex) => getEquipCat(ex.equipment) === selectedEquip);
+    if (activeSubFilters.length > 0 && selectedGroup.subGroups) {
+      const allowed = new Set<string>();
+      selectedGroup.subGroups
+        .filter((sg) => activeSubFilters.includes(sg.key))
+        .forEach((sg) => sg.exerciseNames.forEach((n) => allowed.add(n)));
+      exs = exs.filter((ex) => allowed.has(ex.name));
+    }
+
+    if (activeEquipFilters.length > 0) {
+      exs = exs.filter((ex) => activeEquipFilters.includes(getEquipCat(ex.equipment)));
+    }
+
     return exs;
-  })();
-
-  // Equipment categories present in current source (weights only)
-  const equipCategories: EquipmentCategory[] = selectedGroup
-    ? [...new Set(groupSource.map((ex) => getEquipCat(ex.equipment)))]
-    : [];
+  }, [selectedGroup, activeSubFilters, activeEquipFilters, hidden, showHidden]);
 
   // Favorite exercises for the current type
   const favForType = favorites.filter((name) => {
@@ -3225,7 +3233,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
             <div className="space-y-2 animate-in fade-in duration-300">
               <p className="text-[11px] font-bold text-white/40">{searchResults.length} תוצאות</p>
               {searchResults.map(({ ex, groupKey }) => (
-                <ExerciseRow
+                <ExerciseCard
                   key={ex.name}
                   ex={ex}
                   groupKey={groupKey}
@@ -3233,6 +3241,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
                   isFavorite={favorites.includes(ex.name)}
                   onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
                   onOpen={() => setSelectedEx({ ex, groupKey })}
+                  onQuickAdd={() => setSelectedEx({ ex, groupKey, openTemplate: true })}
                 />
               ))}
             </div>
@@ -3246,6 +3255,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
               isFavorite={favorites.includes(selectedEx.ex.name)}
               onToggleFavorite={() => toggleFavorite(selectedEx.ex.name)}
               onToggleHidden={() => toggleHidden(selectedEx.ex.name)}
+              openTemplate={selectedEx.openTemplate ?? false}
             />
           )}
         </>
@@ -3306,39 +3316,8 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
         </div>
       )}
 
-      {/* ── Back button + breadcrumb (when in a group) ─────────────── */}
-      {selectedGroup && (
-        <div className="flex items-center gap-3">
-          <button onClick={handleBack}
-            className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15">
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-xl">{selectedGroup.emoji}</span>
-            <div className="min-w-0">
-              <p className="text-sm font-black text-white leading-tight">
-                {selectedGroup.label}
-                {selectedSubGroup && <span className="text-white/40 font-normal"> · {selectedSubGroup.label}</span>}
-                {selectedEquip && <span className="text-white/40 font-normal"> · {EQUIP_META[selectedEquip].label}</span>}
-                {!selectedEquip && showAllExercises && <span className="text-white/40 font-normal"> · כל התרגילים</span>}
-              </p>
-            </div>
-          </div>
-          {hidden.length > 0 && (
-            <button
-              onClick={() => setShowHidden((v) => !v)}
-              className={`h-7 px-2.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
-                showHidden ? "bg-white/15 text-white" : "bg-white/5 text-white/30"
-              }`}
-            >
-              <Eye className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* ── WEIGHTS / CALISTHENICS root: muscle group grid ─────────── */}
-      {(workoutType === "weights" || workoutType === "calisthenics" || workoutType === "stretching") && !selectedGroup && (
+      {/* ── Root: muscle group grid ─────────────────────────────────── */}
+      {!selectedGroup && (
         <>
           <p className="text-sm font-black text-white">בחר קבוצת שרירים</p>
           <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
@@ -3361,128 +3340,105 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
         </>
       )}
 
-      {/* ── WEIGHTS / CALISTHENICS inside group: sub-muscle grid ──────── */}
-      {(workoutType === "weights" || workoutType === "calisthenics") && selectedGroup && selectedGroup.subGroups && !selectedSubGroup && !selectedEquip && !showAllExercises && (
-        <div className="grid grid-cols-2 gap-3">
-          {selectedGroup.subGroups.map((sg) => {
-            const count = selectedGroup.exercises.filter(
-              (ex) => sg.exerciseNames.includes(ex.name) && (showHidden || !hidden.includes(ex.name))
-            ).length;
-            return (
-              <button key={sg.key} onClick={() => setSelectedSubGroup(sg)}
-                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.97] transition-all"
-                style={{ borderColor: selectedGroup.color + "33" }}
+      {/* ── Inside group: flat filter + exercise list ───────────────── */}
+      {selectedGroup && (
+        <div className="space-y-3 animate-in fade-in duration-300">
+
+          {/* Breadcrumb + back */}
+          <div className="flex items-center gap-3">
+            <button onClick={handleBack}
+              className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <span className="text-xl">{selectedGroup.emoji}</span>
+            <p className="text-sm font-black text-white flex-1">{selectedGroup.label}</p>
+            {hidden.length > 0 && (
+              <button
+                onClick={() => setShowHidden((v) => !v)}
+                className={`h-7 px-2.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                  showHidden ? "bg-white/15 text-white" : "bg-white/5 text-white/30"
+                }`}
               >
-                <div className="h-10 w-10 rounded-xl flex items-center justify-center text-lg shrink-0"
-                  style={{ background: selectedGroup.color + "22" }}>
-                  {sg.emoji}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-black text-white truncate">{sg.label}</p>
-                  <p className="text-[10px] text-white/35">{count} תרגילים</p>
-                </div>
+                <Eye className="h-3 w-3" />
               </button>
-            );
-          })}
-          {/* "All exercises" catch-all — ensures batch-injected orphan exercises are always reachable */}
-          <button
-            onClick={() => setShowAllExercises(true)}
-            className="col-span-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/8 p-3 text-right flex items-center gap-3 active:scale-[0.97] transition-all hover:bg-emerald-500/12"
-          >
-            <div className="h-9 w-9 rounded-xl bg-emerald-500/20 flex items-center justify-center text-base shrink-0">🔍</div>
-            <div>
-              <p className="text-sm font-black text-white">כל התרגילים</p>
-              <p className="text-[10px] text-emerald-400/70">
-                {selectedGroup.exercises.filter((ex) => showHidden || !hidden.includes(ex.name)).length} תרגילים
-              </p>
-            </div>
-          </button>
-        </div>
-      )}
+            )}
+          </div>
 
-      {/* ── WEIGHTS: equipment grid (after sub-group selected, or no sub-groups) */}
-      {workoutType === "weights" && selectedGroup && !selectedEquip && !showAllExercises &&
-       (!selectedGroup.subGroups || selectedSubGroup) && (
-        <div className="grid grid-cols-2 gap-3">
-          {/* Always-visible "All Exercises" tile */}
-          <button
-            onClick={() => setShowAllExercises(true)}
-            className="col-span-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/8 p-4 text-right flex items-center gap-3 active:scale-[0.97] transition-all hover:bg-emerald-500/12"
-          >
-            <div className="h-11 w-11 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-xl shrink-0">
-              🔍
+          {/* Sub-group chip row */}
+          {selectedGroup.subGroups && selectedGroup.subGroups.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {selectedGroup.subGroups.map((sg) => (
+                <button key={sg.key}
+                  onClick={() => setActiveSubFilters((prev) =>
+                    prev.includes(sg.key) ? prev.filter((k) => k !== sg.key) : [...prev, sg.key]
+                  )}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap ${
+                    activeSubFilters.includes(sg.key)
+                      ? "bg-white/20 text-white border border-white/30"
+                      : "bg-white/6 text-white/45 border border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  <span>{sg.emoji}</span>{sg.label}
+                </button>
+              ))}
             </div>
-            <div>
-              <p className="text-sm font-black text-white">כל התרגילים</p>
-              <p className="text-[10px] text-emerald-400/70">{groupExercises.length} תרגילים</p>
+          )}
+
+          {/* Equipment chip row */}
+          {equipCategories.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {equipCategories.map((cat) => (
+                <button key={cat}
+                  onClick={() => setActiveEquipFilters((prev) =>
+                    prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+                  )}
+                  className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap ${
+                    activeEquipFilters.includes(cat)
+                      ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/40"
+                      : "bg-white/6 text-white/40 border border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  {EQUIP_META[cat].emoji} {EQUIP_META[cat].label}
+                </button>
+              ))}
             </div>
-          </button>
-          {/* Equipment tiles — QW-card gradient style, hidden if empty */}
-          {equipCategories.map((cat) => {
-            const meta  = EQUIP_META[cat];
-            const img   = EQUIPMENT_IMAGES[cat];
-            const count = groupSource.filter(
-              (ex) => getEquipCat(ex.equipment) === cat && (showHidden || !hidden.includes(ex.name))
-            ).length;
-            if (count === 0) return null;
-            return (
-              <button key={cat} onClick={() => setSelectedEquip(cat)}
-                className="relative rounded-2xl overflow-hidden border border-white/10 h-28 active:scale-[0.97] transition-all hover:border-white/25"
-                style={{ backgroundImage: `url(${img})`, backgroundSize: "cover", backgroundPosition: "center" }}
+          )}
+
+          {/* Active filter count + clear */}
+          {(activeSubFilters.length > 0 || activeEquipFilters.length > 0) && (
+            <div className="flex items-center justify-between px-0.5">
+              <span className="text-[10px] text-white/35">{filteredExercises.length} תרגילים</span>
+              <button
+                onClick={() => { setActiveSubFilters([]); setActiveEquipFilters([]); }}
+                className="text-[10px] text-white/35 hover:text-white/60 transition-colors"
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                <div className="relative z-10 h-full flex flex-col items-end justify-end gap-0.5 p-3">
-                  <span className="text-xl">{meta.emoji}</span>
-                  <p className="text-[11px] font-black text-white text-right leading-tight">{meta.label}</p>
-                  <p className="text-[9px] text-white/55">{count} תרגילים</p>
-                </div>
+                נקה סינון ✕
               </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── WEIGHTS with equip selected OR show-all: exercise list ──── */}
-      {workoutType === "weights" && selectedGroup && (selectedEquip || showAllExercises) && (
-        <div className="space-y-2 animate-in fade-in duration-300">
-          {groupExercises.length === 0 ? (
-            <div className="text-center py-8 text-white/30 text-xs">
-              כל התרגילים מוסתרים —{" "}
-              <button onClick={() => setShowHidden(true)} className="underline">הצג מוסתרים</button>
             </div>
-          ) : groupExercises.map((ex) => (
-            <ExerciseRow
-              key={ex.name}
-              ex={ex}
-              groupKey={selectedGroup.key}
-              isChecked={checked.has(ex.name)}
-              isFavorite={favorites.includes(ex.name)}
-              onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
-              onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
-            />
-          ))}
-        </div>
-      )}
+          )}
 
-      {/* ── CALISTHENICS / STRETCHING inside group: exercise list ─────── */}
-      {(workoutType === "calisthenics" || workoutType === "stretching") && selectedGroup &&
-       (!selectedGroup.subGroups || selectedSubGroup || showAllExercises) && (
-        <div className="space-y-2 animate-in fade-in duration-300">
-          {groupExercises.map((ex) => (
-            <ExerciseRow
-              key={ex.name}
-              ex={ex}
-              groupKey={selectedGroup.key}
-              isChecked={checked.has(ex.name)}
-              isFavorite={favorites.includes(ex.name)}
-              onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
-              onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
-            />
-          ))}
-          {groupExercises.length === 0 && (
+          {/* Exercise list */}
+          {filteredExercises.length === 0 ? (
             <div className="text-center py-8 text-white/30 text-xs">
-              כל התרגילים מוסתרים —{" "}
-              <button onClick={() => setShowHidden(true)} className="underline">הצג מוסתרים</button>
+              {(activeSubFilters.length > 0 || activeEquipFilters.length > 0)
+                ? "אין תרגילים עם הסינון הנוכחי"
+                : <>כל התרגילים מוסתרים —{" "}<button onClick={() => setShowHidden(true)} className="underline">הצג מוסתרים</button></>
+              }
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredExercises.map((ex) => (
+                <ExerciseCard
+                  key={ex.name}
+                  ex={ex}
+                  groupKey={selectedGroup.key}
+                  isChecked={checked.has(ex.name)}
+                  isFavorite={favorites.includes(ex.name)}
+                  onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
+                  onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
+                  onQuickAdd={() => setSelectedEx({ ex, groupKey: selectedGroup.key, openTemplate: true })}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -3497,6 +3453,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
           isFavorite={favorites.includes(selectedEx.ex.name)}
           onToggleFavorite={() => toggleFavorite(selectedEx.ex.name)}
           onToggleHidden={() => toggleHidden(selectedEx.ex.name)}
+          openTemplate={selectedEx.openTemplate ?? false}
         />
       )}
       </> /* end hierarchy wrapper */}
@@ -3519,6 +3476,89 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── ExerciseCard sub-component (rich card with quick-add) ────────────────────
+function ExerciseCard({
+  ex,
+  groupKey,
+  isChecked,
+  isFavorite,
+  onCheck,
+  onOpen,
+  onQuickAdd,
+}: {
+  ex: LibraryExercise;
+  groupKey: string;
+  isChecked: boolean;
+  isFavorite: boolean;
+  onCheck: () => void;
+  onOpen: () => void;
+  onQuickAdd: () => void;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border overflow-hidden transition-all cursor-pointer ${
+        isChecked
+          ? "border-emerald-500/50 bg-emerald-500/10"
+          : "border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/6"
+      }`}
+      onClick={onCheck}
+    >
+      <div className="flex items-stretch gap-0">
+        {/* Left: muscle visual */}
+        <div className="w-14 shrink-0 bg-white/5 border-l border-white/6 flex items-center justify-center p-2">
+          {BODY_DOTS[groupKey]
+            ? <MuscleBodyIcon muscleKey={groupKey} size={34} />
+            : <span className="text-2xl">{groupKey === "calisthenics" ? "🤸" : "💪"}</span>
+          }
+        </div>
+
+        {/* Right: content */}
+        <div className="flex-1 p-3 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-black text-white leading-tight truncate">{ex.name}</p>
+                {isFavorite && <Heart className="h-3 w-3 text-red-400 fill-red-400 shrink-0" />}
+              </div>
+              <p className="text-[10px] text-white/45 mt-0.5 leading-tight truncate">{ex.muscles}</p>
+            </div>
+            {/* Checkbox */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onCheck(); }}
+              className={`shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                isChecked ? "bg-emerald-500 border-emerald-500" : "border-white/25"
+              }`}
+            >
+              {isChecked && <Check className="h-3 w-3 text-white" />}
+            </button>
+          </div>
+
+          {/* Badges + action buttons */}
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            <span className="text-[9px] px-2 py-0.5 rounded-lg bg-white/8 text-white/40 border border-white/8">{ex.equipment}</span>
+            <span className="text-[9px] px-2 py-0.5 rounded-lg bg-emerald-500/12 text-emerald-400 border border-emerald-500/20">{ex.defaultSets}×{ex.defaultReps}</span>
+            <div className="flex-1" />
+            {/* Quick add to template */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onQuickAdd(); }}
+              className="h-6 px-2 rounded-lg bg-white/8 border border-white/10 text-[9px] text-white/40 hover:bg-amber-500/15 hover:text-amber-400 hover:border-amber-500/25 transition-all flex items-center gap-1"
+            >
+              <BookOpen className="h-3 w-3" /> תבנית
+            </button>
+            {/* Open detail modal */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpen(); }}
+              className="h-6 w-6 rounded-lg bg-white/6 flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/12 transition-all"
+            >
+              <Info className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
