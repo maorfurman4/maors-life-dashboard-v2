@@ -1,4 +1,4 @@
-const MAX_DIMENSION = 1024;
+const MAX_DIMENSION = 800;
 const QUALITY = 0.7;
 
 /**

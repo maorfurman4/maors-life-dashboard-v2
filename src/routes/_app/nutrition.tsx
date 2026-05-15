@@ -1,18 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import {
-  Camera, PenLine, Dumbbell, Droplets,
+  Camera, ImageIcon, PenLine, Pencil, Droplets, Check, X as XIcon,
   X, Plus, UtensilsCrossed, Loader2,
 } from "lucide-react";
 import {
   useNutritionEntries, useUserSettings, useWaterEntry,
-  useAddWaterMl,
+  useAddWaterMl, useUpsertWater,
 } from "@/hooks/use-sport-data";
 import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
 import { NutritionPlannerTab } from "@/components/nutrition/NutritionPlannerTab";
 import { NutritionJournalTab } from "@/components/nutrition/NutritionJournalTab";
 import { NutritionCulinaryTab } from "@/components/nutrition/NutritionCulinaryTab";
-import { recognizeMeal } from "@/lib/ai-service";
+import { recognizeMeal, type MealRecognitionResult } from "@/lib/ai-service";
+import { compressImageToBase64 } from "@/lib/image-utils";
+import { AIConfirmationCard } from "@/components/nutrition/AIConfirmationCard";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/nutrition")({
@@ -24,9 +26,9 @@ type Tab = "dashboard" | "planner" | "journal" | "culinary";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "dashboard", label: "מסך ראשי"  },
+  { key: "culinary",  label: "מתכונים"   },
   { key: "planner",   label: "מחשבון AI" },
   { key: "journal",   label: "היסטוריה"  },
-  { key: "culinary",  label: "מתכונים"   },
 ];
 
 // ─── SVG Ring ─────────────────────────────────────────────────────────────────
@@ -61,65 +63,30 @@ function Ring({
   );
 }
 
-// ─── Training Toggle ──────────────────────────────────────────────────────────
-function TrainingToggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
-  return (
-    <button
-      onClick={onToggle}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border backdrop-blur-xl transition-all duration-300 text-right ${
-        active
-          ? "border-emerald-500/40 bg-emerald-500/10"
-          : "border-white/10 bg-white/5"
-      }`}
-    >
-      {/* Icon */}
-      <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-        active ? "bg-emerald-500/25" : "bg-white/10"
-      }`}>
-        <Dumbbell className={`h-4 w-4 ${active ? "text-emerald-400" : "text-white/50"}`} />
-      </div>
-
-      {/* Label */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-white leading-tight">
-          {active ? "🔥 יום אימון" : "יום מנוחה"}
-        </p>
-        <p className="text-[11px] text-white/40 mt-0.5">
-          {active ? "יעדים מוגברים פעילים" : "הפעל ליום אימון"}
-        </p>
-      </div>
-
-      {/* Toggle pill */}
-      <div className={`relative w-12 h-6 rounded-full shrink-0 transition-colors duration-300 ${
-        active ? "bg-emerald-500" : "bg-white/15"
-      }`}>
-        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-300 ${
-          active ? "translate-x-6" : "translate-x-0.5"
-        }`} />
-      </div>
-    </button>
-  );
-}
-
 // ─── Floating Action Button ───────────────────────────────────────────────────
-// Two distinct flows: AI Vision (camera/gallery) vs Manual entry
 function QuickAddFAB({
+  onCamera,
+  onGallery,
   onManual,
-  onAIVision,
 }: {
-  onManual: () => void;
-  onAIVision: () => void;
+  onCamera:  () => void;
+  onGallery: () => void;
+  onManual:  () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
   const options = [
     {
-      icon: Camera,  label: "זיהוי AI מתמונה", color: "#a855f7",
-      action: () => { onAIVision(); setExpanded(false); },
+      icon: Camera,    label: "צלם עכשיו",   color: "#a855f7",
+      action: () => { onCamera();  setExpanded(false); },
     },
     {
-      icon: PenLine, label: "הזנה ידנית",       color: "#10b981",
-      action: () => { onManual();   setExpanded(false); },
+      icon: ImageIcon, label: "בחר מגלריה",  color: "#3b82f6",
+      action: () => { onGallery(); setExpanded(false); },
+    },
+    {
+      icon: PenLine,   label: "הזנה ידנית",  color: "#10b981",
+      action: () => { onManual();  setExpanded(false); },
     },
   ];
 
@@ -160,14 +127,17 @@ function QuickAddFAB({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 function NutritionPage() {
-  const [activeTab,   setActiveTab]   = useState<Tab>("dashboard");
-  const [isTraining,  setIsTraining]  = useState(false);
-  const [addMealOpen, setAddMealOpen] = useState(false);
+  const [activeTab,     setActiveTab]     = useState<Tab>("dashboard");
+  const [addMealOpen,   setAddMealOpen]   = useState(false);
+  const [waterEditMode, setWaterEditMode] = useState(false);
+  const [waterInputVal, setWaterInputVal] = useState("");
 
   // ── AI Vision state ──
-  const aiFileRef                     = useRef<HTMLInputElement>(null);
-  const [aiScanning, setAiScanning]   = useState(false);
-  const [prefill, setPrefill]         = useState<{
+  const cameraFileRef                   = useRef<HTMLInputElement>(null);
+  const galleryFileRef                  = useRef<HTMLInputElement>(null);
+  const [aiScanning,  setAiScanning]    = useState(false);
+  const [aiResult,    setAiResult]      = useState<MealRecognitionResult | null>(null);
+  const [prefill,     setPrefill]       = useState<{
     name?: string; calories?: number; protein?: number; carbs?: number; fat?: number;
   }>({});
 
@@ -175,13 +145,26 @@ function NutritionPage() {
   const { data: meals    } = useNutritionEntries();
   const { data: settings } = useUserSettings();
   const { data: waterEntry } = useWaterEntry();
-  const addWaterMl = useAddWaterMl();
+  const addWaterMl  = useAddWaterMl();
+  const upsertWater = useUpsertWater();
+
+  const handleWaterManualSave = () => {
+    const ml = Math.round(Number(waterInputVal));
+    if (isNaN(ml) || ml < 0) return;
+    upsertWater.mutate(
+      { glasses: ml },
+      {
+        onSuccess: () => { setWaterEditMode(false); setWaterInputVal(""); },
+        onError:   (e) => toast.error("שגיאה: " + (e as Error).message),
+      }
+    );
+  };
 
   // ── Macro totals ──
   const foodMeals = (meals ?? []).filter((m: any) => m.meal_type !== "exercise");
   const foodCal   = foodMeals.reduce((s, m) => s + (m.calories ?? 0), 0);
   const burnedCal = (meals ?? []).filter((m: any) => m.meal_type === "exercise").reduce((s, m) => s + (m.calories ?? 0), 0);
-  const totalCal  = foodCal;  // ring tracks food consumed; burned shown separately
+  const netCal    = foodCal - burnedCal;
   const totalProt = foodMeals.reduce((s, m) => s + (Number(m.protein_g) || 0), 0);
   const totalCarb = foodMeals.reduce((s, m) => s + (Number(m.carbs_g)   || 0), 0);
   const totalFat  = foodMeals.reduce((s, m) => s + (Number(m.fat_g)     || 0), 0);
@@ -191,11 +174,12 @@ function NutritionPage() {
 
   // ── Goals — switch on training day ──
   const s = settings as any;
-  const calGoal   = isTraining ? (s?.training_day_calories ?? 2400) : (s?.daily_calories_goal  ?? 2000);
-  const protGoal  = isTraining ? (s?.training_day_protein  ?? 160)  : (s?.daily_protein_goal   ?? 120);
+  const calGoal   = s?.daily_calories_goal ?? 2000;
+  const protGoal  = s?.daily_protein_goal  ?? 120;
   const carbGoal  = s?.daily_carbs_goal ?? 250;
   const fatGoal   = s?.daily_fat_goal   ?? 65;
   const waterGoal = s?.daily_water_ml   ?? 2500;
+  const remaining = calGoal - netCal;
 
   // ── Water quick-add ──
   const handleAddWater = (ml: number) => {
@@ -205,31 +189,32 @@ function NutritionPage() {
     );
   };
 
-  // ── AI Vision flow: file → recognizeMeal → prefill AddMealDrawer ──
+  // ── AI Vision flow: file → compress → recognizeMeal → show confirmation card ──
   const handleAIFile = async (file: File) => {
     setAiScanning(true);
     try {
-      const reader = new FileReader();
-      const b64 = await new Promise<string>((res, rej) => {
-        reader.onload = () => res((reader.result as string).split(",")[1]);
-        reader.onerror = rej;
-        reader.readAsDataURL(file);
-      });
+      const b64    = await compressImageToBase64(file);
       const result = await recognizeMeal(b64);
-      setPrefill({
-        name:     result.name,
-        calories: Math.round(result.calories),
-        protein:  Math.round(result.protein_g),
-        carbs:    Math.round(result.carbs_g ?? 0),
-        fat:      Math.round(result.fat_g   ?? 0),
-      });
-      setAddMealOpen(true);
-      toast.success(`זוהה: ${result.name}`);
+      setAiResult(result);
     } catch {
       toast.error("לא הצלחתי לזהות — נסה תמונה ברורה יותר");
     } finally {
       setAiScanning(false);
     }
+  };
+
+  // ── "Edit" from confirmation card → transfer to AddMealDrawer ──
+  const handleAIEdit = () => {
+    if (!aiResult) return;
+    setPrefill({
+      name:     aiResult.name,
+      calories: Math.round(aiResult.calories),
+      protein:  Math.round(aiResult.protein_g),
+      carbs:    Math.round(aiResult.carbs_g ?? 0),
+      fat:      Math.round(aiResult.fat_g   ?? 0),
+    });
+    setAiResult(null);
+    setAddMealOpen(true);
   };
 
   return (
@@ -277,12 +262,6 @@ function NutritionPage() {
         {activeTab === "dashboard" && (
           <div className="px-4 pt-8 space-y-4">
 
-            {/* Training Day Toggle */}
-            <TrainingToggle
-              active={isTraining}
-              onToggle={() => setIsTraining((v) => !v)}
-            />
-
             {/* ── Main Macro Glass Panel ── */}
             <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">
               <p className="text-[10px] font-bold text-white/40 text-center mb-5 uppercase tracking-widest">
@@ -290,28 +269,55 @@ function NutritionPage() {
               </p>
 
               {/* Primary — large Calories ring */}
-              <div className="flex justify-center mb-6">
-                <div className="flex flex-col items-center gap-2">
-                  <Ring value={totalCal} max={calGoal} color="#10b981" size={170} stroke={14}>
-                    <span className="text-3xl font-black text-white leading-none">
-                      {Math.round(totalCal).toLocaleString("he")}
-                    </span>
-                    <span className="text-[10px] text-white/40">
-                      / {calGoal.toLocaleString("he")} קל׳
-                    </span>
-                    <span className="text-[9px] font-bold text-emerald-400 mt-0.5">
-                      {calGoal > 0 ? Math.round((totalCal / calGoal) * 100) : 0}%
-                    </span>
-                  </Ring>
-                  <p className="text-xs font-bold text-white/60">קלוריות</p>
-                  {burnedCal > 0 && (
-                    <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-orange-500/15 border border-orange-500/25">
-                      <span className="text-sm">🔥</span>
-                      <span className="text-[11px] font-bold text-orange-400">
-                        {Math.round(burnedCal).toLocaleString("he")} קל׳ נשרפו
-                      </span>
-                    </div>
-                  )}
+              <div className="flex justify-center mb-4">
+                <Ring value={netCal} max={calGoal} color="#10b981" size={170} stroke={14}>
+                  <span className="text-3xl font-black text-white leading-none">
+                    {Math.round(netCal).toLocaleString("he")}
+                  </span>
+                  <span className="text-[10px] text-white/40">
+                    / {calGoal.toLocaleString("he")} קל׳
+                  </span>
+                  <span className="text-[9px] font-bold text-emerald-400 mt-0.5">
+                    {calGoal > 0 ? Math.round((netCal / calGoal) * 100) : 0}%
+                  </span>
+                </Ring>
+              </div>
+
+              {/* Calorie breakdown: Eaten | Burned | Remaining */}
+              <div className="grid grid-cols-3 gap-2 mb-6">
+                {/* אכלת */}
+                <div className="flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-xl bg-white/5">
+                  <span className="text-[10px] text-white/40">אכלת</span>
+                  <span className="text-sm font-black text-white">{Math.round(foodCal).toLocaleString("he")}</span>
+                  <span className="text-[9px] text-white/30">קל׳</span>
+                </div>
+                {/* נשרפו */}
+                {burnedCal > 0 ? (
+                  <div className="flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                    <span className="text-[10px] text-orange-400/70">נשרפו</span>
+                    <span className="text-sm font-black text-orange-400">-{Math.round(burnedCal).toLocaleString("he")}</span>
+                    <span className="text-[9px] text-orange-400/50">קל׳</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-xl bg-white/5">
+                    <span className="text-[10px] text-white/40">נשרפו</span>
+                    <span className="text-sm font-black text-white/25">—</span>
+                    <span className="text-[9px] text-white/20">קל׳</span>
+                  </div>
+                )}
+                {/* נותרו */}
+                <div className={`flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-xl ${
+                  remaining >= 0
+                    ? "bg-emerald-500/10 border border-emerald-500/20"
+                    : "bg-rose-500/10 border border-rose-500/20"
+                }`}>
+                  <span className={`text-[10px] ${remaining >= 0 ? "text-emerald-400/70" : "text-rose-400/70"}`}>נותרו</span>
+                  <span className={`text-sm font-black ${remaining >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    {Math.round(Math.abs(remaining)).toLocaleString("he")}
+                  </span>
+                  <span className={`text-[9px] ${remaining >= 0 ? "text-emerald-400/50" : "text-rose-400/50"}`}>
+                    {remaining < 0 ? "חריגה!" : "קל׳"}
+                  </span>
                 </div>
               </div>
 
@@ -351,6 +357,13 @@ function NutritionPage() {
                   <span className="text-[10px] text-white/30">
                     / {(waterGoal / 1000).toFixed(1)}L
                   </span>
+                  <button
+                    onClick={() => { setWaterEditMode((v) => !v); setWaterInputVal(String(totalWaterMl)); }}
+                    className="p-1 rounded-lg hover:bg-cyan-500/15 transition-colors"
+                    title="עריכה ידנית"
+                  >
+                    <Pencil className="h-3 w-3 text-white/30 hover:text-cyan-400 transition-colors" />
+                  </button>
                   {totalWaterMl > 0 && (
                     <button
                       onClick={() => addWaterMl.mutate({ addMl: -totalWaterMl, currentMl: totalWaterMl })}
@@ -376,23 +389,51 @@ function NutritionPage() {
                 </div>
               </div>
 
-              {/* Quick-add buttons */}
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { label: "+500ml", ml: 500  },
-                  { label: "+750ml", ml: 750  },
-                  { label: "+1.5L",  ml: 1500 },
-                ].map(({ label, ml }) => (
+              {/* Quick-add buttons / manual input */}
+              {waterEditMode ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    value={waterInputVal}
+                    onChange={(e) => setWaterInputVal(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleWaterManualSave(); if (e.key === "Escape") setWaterEditMode(false); }}
+                    placeholder="הזן ml..."
+                    className="flex-1 bg-white/8 border border-cyan-500/30 rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-cyan-400/60 text-left"
+                    autoFocus
+                  />
                   <button
-                    key={ml}
-                    onClick={() => handleAddWater(ml)}
-                    disabled={addWaterMl.isPending}
-                    className="py-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-bold hover:bg-cyan-500/20 active:scale-95 transition-all disabled:opacity-40"
+                    onClick={handleWaterManualSave}
+                    disabled={upsertWater.isPending}
+                    className="p-2 rounded-xl bg-cyan-500/20 border border-cyan-500/30 hover:bg-cyan-500/35 transition-colors disabled:opacity-40"
                   >
-                    {label}
+                    <Check className="h-4 w-4 text-cyan-400" />
                   </button>
-                ))}
-              </div>
+                  <button
+                    onClick={() => setWaterEditMode(false)}
+                    className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                  >
+                    <XIcon className="h-4 w-4 text-white/40" />
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: "+500ml", ml: 500  },
+                    { label: "+750ml", ml: 750  },
+                    { label: "+1.5L",  ml: 1500 },
+                  ].map(({ label, ml }) => (
+                    <button
+                      key={ml}
+                      onClick={() => handleAddWater(ml)}
+                      disabled={addWaterMl.isPending}
+                      className="py-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-bold hover:bg-cyan-500/20 active:scale-95 transition-all disabled:opacity-40"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* ── Today's Meals ── */}
@@ -458,12 +499,24 @@ function NutritionPage() {
         </div>{/* end: relative z-10 content */}
       </div>{/* end: bg wrapper */}
 
-      {/* ── AI Vision hidden file input ── */}
+      {/* ── Camera input (forces device camera) ── */}
       <input
-        ref={aiFileRef}
+        ref={cameraFileRef}
         type="file"
         accept="image/*"
         capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleAIFile(f);
+          e.target.value = "";
+        }}
+      />
+      {/* ── Gallery input (no capture — opens photo library) ── */}
+      <input
+        ref={galleryFileRef}
+        type="file"
+        accept="image/*"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -482,11 +535,22 @@ function NutritionPage() {
         </div>
       )}
 
+      {/* ── AI Confirmation Card ── */}
+      {aiResult && (
+        <AIConfirmationCard
+          result={aiResult}
+          onAdd={()     => setAiResult(null)}
+          onEdit={handleAIEdit}
+          onDismiss={() => setAiResult(null)}
+        />
+      )}
+
       {/* ── FAB — Tab 1 only ── */}
       {activeTab === "dashboard" && (
         <QuickAddFAB
+          onCamera={()  => cameraFileRef.current?.click()}
+          onGallery={() => galleryFileRef.current?.click()}
           onManual={() => { setPrefill({}); setAddMealOpen(true); }}
-          onAIVision={() => aiFileRef.current?.click()}
         />
       )}
 

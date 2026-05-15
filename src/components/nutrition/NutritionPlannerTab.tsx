@@ -36,18 +36,6 @@ interface MealSlot {
 }
 interface WeeklyPlan { days: DayPlan[] }
 
-// ─── DIET OPTIONS ─────────────────────────────────────────────────────────────
-const DIETS = [
-  { key: "mediterranean", label: "ים תיכונית",       emoji: "🫒", desc: "שמן זית, ירקות, דגים" },
-  { key: "keto",          label: "קטוגנית",           emoji: "🥑", desc: "שומנים גבוהים, אפס פחמימות" },
-  { key: "paleo",         label: "פליאו",             emoji: "🥩", desc: "בשר, ירקות, פירות" },
-  { key: "vegan",         label: "טבעוני",            emoji: "🌱", desc: "ללא מוצרים מהחי" },
-  { key: "intermittent",  label: "צום לסירוגין 16:8", emoji: "⏰", desc: "חלון אכילה 8 שעות" },
-  { key: "balanced",      label: "מאוזנת",            emoji: "⚖️", desc: "מגוון וגמיש" },
-] as const;
-
-type DietKey = (typeof DIETS)[number]["key"];
-
 // ─── glass field helper ───────────────────────────────────────────────────────
 function GlassField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -71,16 +59,23 @@ export function NutritionPlannerTab() {
   const qc = useQueryClient();
   const { data: profile } = useProfile();
 
-  // ── TDEE state ──
-  const [sex,      setSex]      = useState<Sex>("male");
-  const [age,      setAge]      = useState(28);
+  // ── TDEE state — lazy-init from localStorage where applicable ──
+  const [sex,      setSex]      = useState<Sex>(() =>
+    (localStorage.getItem("tdee_sex") as Sex) ?? "male"
+  );
+  const [age,      setAge]      = useState(() =>
+    parseInt(localStorage.getItem("tdee_age") ?? "28", 10)
+  );
   const [height,   setHeight]   = useState(175);
   const [weight,   setWeight]   = useState(75);
-  const [activity, setActivity] = useState<ActivityLevel>("moderate");
-  const [goal,     setGoal]     = useState<Goal>("maintain");
+  const [activity, setActivity] = useState<ActivityLevel>(() =>
+    (localStorage.getItem("tdee_activity") as ActivityLevel) ?? "moderate"
+  );
+  const [goal,     setGoal]     = useState<Goal>(() =>
+    (localStorage.getItem("tdee_goal") as Goal) ?? "maintain"
+  );
 
   // ── Planner state ──
-  const [diet,        setDiet]        = useState<DietKey | null>(null);
   const [exclusions,  setExclusions]  = useState<string[]>([]);
   const [tagInput,    setTagInput]    = useState("");
   const [weekPlan,    setWeekPlan]    = useState<WeeklyPlan | null>(null);
@@ -105,7 +100,21 @@ export function NutritionPlannerTab() {
     if (!settings) return;
     if (settings.height_cm) setHeight(Number(settings.height_cm));
     if (settings.weight_kg) setWeight(Number(settings.weight_kg));
+    if (settings.date_of_birth) {
+      const dob   = new Date(settings.date_of_birth);
+      const today = new Date();
+      let computed = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) computed--;
+      if (computed > 0 && computed < 120) setAge(computed);
+    }
   }, [settings]);
+
+  // ── Persist calculator-specific inputs to localStorage ──
+  useEffect(() => { localStorage.setItem("tdee_sex",      sex);              }, [sex]);
+  useEffect(() => { localStorage.setItem("tdee_age",      String(age));      }, [age]);
+  useEffect(() => { localStorage.setItem("tdee_activity", activity);         }, [activity]);
+  useEffect(() => { localStorage.setItem("tdee_goal",     goal);             }, [goal]);
 
   // ── Auto-load profile allergies ──
   useEffect(() => {
@@ -165,12 +174,12 @@ export function NutritionPlannerTab() {
 
   // ── Generate weekly meal plan ──
   const generatePlan = async () => {
-    if (!diet) { toast.error("בחר סוג דיאטה תחילה"); return; }
+    if (!profile?.diet_type) { toast.error("בחר סוג דיאטה בטאב 'מתכונים' תחילה"); return; }
     setGenerating(true);
     setWeekPlan(null);
     setOpenDay(null);
     try {
-      const dietLabel = DIETS.find((d) => d.key === diet)?.label ?? diet;
+      const dietLabel = profile.diet_type;
       const excStr    = exclusions.length > 0 ? exclusions.join(", ") : "אין";
       const prompt    = `אתה דיאטן ישראלי מקצועי. צור תפריט שבועי מלא בפורמט JSON בלבד.
 
@@ -329,35 +338,17 @@ export function NutritionPlannerTab() {
         </button>
       </div>
 
-      {/* ══ SECTION 2: DIET SELECTOR ═════════════════════════════════════════ */}
-      <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🥗</span>
-          <div>
-            <p className="text-sm font-black text-white">סוג דיאטה</p>
-            <p className="text-[10px] text-white/40">בחר מתודולוגיה לתפריט השבועי</p>
+      {/* ── Diet type indicator (set in מתכונים tab) ── */}
+      {profile?.diet_type && (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/8">
+          <span className="text-base">🥗</span>
+          <div className="min-w-0">
+            <p className="text-[10px] text-white/40">דיאטה פעילה</p>
+            <p className="text-sm font-bold text-emerald-300">{profile.diet_type}</p>
           </div>
+          <p className="text-[9px] text-white/25 mr-auto">שנה בטאב מתכונים</p>
         </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          {DIETS.map((d) => (
-            <button key={d.key} onClick={() => setDiet(d.key)}
-              className={`flex items-center gap-2.5 p-3 rounded-2xl border text-right transition-all ${
-                diet === d.key
-                  ? "border-emerald-500/60 bg-emerald-500/15 shadow-lg shadow-emerald-500/10"
-                  : "border-white/10 bg-white/4 hover:bg-white/8"
-              }`}>
-              <span className="text-2xl shrink-0">{d.emoji}</span>
-              <div className="min-w-0">
-                <p className={`text-xs font-bold leading-tight ${diet === d.key ? "text-emerald-300" : "text-white/80"}`}>
-                  {d.label}
-                </p>
-                <p className="text-[9px] text-white/35 truncate">{d.desc}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* ══ SECTION 3: EXCLUSIONS ════════════════════════════════════════════ */}
       <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-3">
@@ -404,9 +395,9 @@ export function NutritionPlannerTab() {
       {/* ══ SECTION 4: AI GENERATE BUTTON ════════════════════════════════════ */}
       <button
         onClick={generatePlan}
-        disabled={generating || !diet}
+        disabled={generating || !profile?.diet_type}
         className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-black text-sm transition-all min-h-[56px] ${
-          diet
+          profile?.diet_type
             ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-2xl shadow-emerald-500/30 active:scale-[0.98]"
             : "bg-white/10 border border-white/10 opacity-40 cursor-not-allowed"
         } disabled:opacity-50`}
@@ -430,7 +421,7 @@ export function NutritionPlannerTab() {
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="h-4 w-4 text-emerald-400" />
             <p className="text-sm font-black text-white">
-              תפריט שבועי — {DIETS.find((d) => d.key === diet)?.label}
+              תפריט שבועי — {profile?.diet_type}
             </p>
           </div>
 
