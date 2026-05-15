@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Camera, Search, Sparkles, Loader2, ChevronDown, ChevronUp,
   Clock, Users, Flame, Zap,
 } from "lucide-react";
 import { recognizeMeal, generateText, parseAIJson } from "@/lib/ai-service";
+import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { toast } from "sonner";
 
 // ─── types ───────────────────────────────────────────────────────────────────
@@ -19,6 +20,16 @@ interface RecipeResult {
   steps:                 string[];
   tip:                   string;
 }
+
+// ─── preferred diet options (saved to user_profile.diet_type) ────────────────
+const DIETS = [
+  { label: "ים תיכונית",       emoji: "🫒", desc: "שמן זית, ירקות, דגים" },
+  { label: "קטוגנית",           emoji: "🥑", desc: "שומנים גבוהים, אפס פחמימות" },
+  { label: "פליאו",             emoji: "🥩", desc: "בשר, ירקות, פירות" },
+  { label: "טבעוני",            emoji: "🌱", desc: "ללא מוצרים מהחי" },
+  { label: "צום לסירוגין 16:8", emoji: "⏰", desc: "חלון אכילה 8 שעות" },
+  { label: "מאוזנת",            emoji: "⚖️", desc: "מגוון וגמיש" },
+];
 
 // ─── quick-filter diets ───────────────────────────────────────────────────────
 const DIET_FILTERS = [
@@ -154,6 +165,23 @@ function RecipeCard({ recipe }: { recipe: RecipeResult }) {
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 export function NutritionCulinaryTab() {
+  // ── Profile / diet preference ──
+  const { data: profile }  = useProfile();
+  const updateProfile      = useUpdateProfile();
+  const [activeDiet, setActiveDiet] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile?.diet_type) setActiveDiet(profile.diet_type);
+  }, [profile]);
+
+  const handleDietSelect = (label: string) => {
+    setActiveDiet(label);
+    updateProfile.mutate(
+      { diet_type: label },
+      { onError: (e: any) => toast.error(e?.message ?? "שגיאה בשמירה") }
+    );
+  };
+
   // ── Fridge Scanner state ──
   const fileRef                   = useRef<HTMLInputElement>(null);
   const [scanning, setScanning]   = useState(false);
@@ -240,6 +268,40 @@ export function NutritionCulinaryTab() {
 
   return (
     <div className="px-4 pt-4 space-y-5 pb-4">
+
+      {/* ══ DIET PREFERENCE SELECTOR ════════════════════════════════════════ */}
+      <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🥗</span>
+          <div>
+            <p className="text-sm font-black text-white">סוג דיאטה מועדף</p>
+            <p className="text-[10px] text-white/40">נשמר לפרופיל — משפיע על תפריט ה-AI</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          {DIETS.map((d) => (
+            <button
+              key={d.label}
+              onClick={() => handleDietSelect(d.label)}
+              disabled={updateProfile.isPending}
+              className={`flex items-center gap-2.5 p-3 rounded-2xl border text-right transition-all disabled:opacity-50 ${
+                activeDiet === d.label
+                  ? "border-emerald-500/60 bg-emerald-500/15 shadow-lg shadow-emerald-500/10"
+                  : "border-white/10 bg-white/4 hover:bg-white/8"
+              }`}
+            >
+              <span className="text-2xl shrink-0">{d.emoji}</span>
+              <div className="min-w-0">
+                <p className={`text-xs font-bold leading-tight ${activeDiet === d.label ? "text-emerald-300" : "text-white/80"}`}>
+                  {d.label}
+                </p>
+                <p className="text-[9px] text-white/35 truncate">{d.desc}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* ══ FRIDGE SCANNER ══════════════════════════════════════════════════ */}
       <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-4">
