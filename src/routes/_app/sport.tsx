@@ -87,10 +87,10 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "chest", label: "חזה", emoji: "💪", color: "#3b82f6",
     subGroups: [
-      { key: "chest_upper", label: "חזה עליון",  emoji: "⬆️", exerciseNames: ["לחיצת דמבלים משופעת","לחיצת מוט משופעת","פרפר משופע","Cable Fly מלמטה","Dumbbell Pullover","לחיצת דמבלים משופעת צרה","Incline Cable Fly","DB Squeeze Press משופע","Landmine Press חזה","Low to High Cable Fly","Incline Dumbbell Press כבד","Incline Barbell Press צר","Weighted Push-up משופע","CG Incline Press"] },
-      { key: "chest_mid",   label: "חזה אמצעי",  emoji: "🎯", exerciseNames: ["לחיצת חזה שכיבה","שכיבות סמיכה","פרפר (Fly)","לחיצת חזה במכונה","קרוסאובר (כבלים)","Pec Deck מכונה","Squeeze Press","Cable Crossover רחב","High to Low Cable Fly","Cable Fly אמצע","Neutral Grip DB Press","DB Press עם הטיה","Guillotine Press","Svend Press","Wide Grip Bench Press","Weighted Push-up","Flat DB Press כבד","Pin Press","Dumbbell Squeeze Press","Floor Press"] },
-      { key: "chest_lower", label: "חזה תחתון",  emoji: "⬇️", exerciseNames: ["לחיצת דמבלים ירידה","מקבילים לחזה","שכיבות ירידה","Cable Fly מגבוה","High Cable Crossover","Decline Barbell Press","Decline DB Press","Dips לחזה"] },
-      { key: "chest_machine", label: "מכונות חזה", emoji: "🤖", exerciseNames: ["Machine Chest Press","Smith Machine Bench","Iso-Lateral Chest Press","Machine Incline Press","Pec Deck Single Arm","Reverse Pec Deck","Pec Deck מכונה","Smith Machine Flat Press","Hammer Strength Flat Press","Hammer Strength Incline Press","Incline Smith Machine Press","Decline Smith Machine Press","Hammer Strength Decline"] },
+      { key: "chest_upper", label: "חזה עליון",  emoji: "⬆️", exerciseNames: ["לחיצת דמבלים משופעת","לחיצת מוט משופעת","פרפר משופע","Cable Fly מלמטה","Dumbbell Pullover","Incline Cable Fly","Landmine Press חזה","Low to High Cable Fly","לחיצת מוט משופעת (Incline Barbell)","פרפר דמבלים משופע","כבל נמוך-לגבוה (Low-to-High)","Incline Smith Machine Press","Squeeze Press משופע","Hammer Strength Incline Press","כבל חד-צדדי משופע","DB Pullover (Lat-Chest)","High-Incline 75° DB Press","Reverse Grip Bench Press","Cable Upper Chest Fly","Cable Chest Pullover","Machine Incline Press"] },
+      { key: "chest_mid",   label: "חזה אמצעי",  emoji: "🎯", exerciseNames: ["לחיצת חזה שכיבה","שכיבות סמיכה","פרפר (Fly)","לחיצת חזה במכונה","קרוסאובר (כבלים)","Pec Deck מכונה","Squeeze Press","Cable Crossover רחב","High to Low Cable Fly","Cable Fly אמצעי","Single Arm Cable Fly","Cable Chest Press עמידה","Cable Squeeze חזה","Cable Fly Neutral Grip","Cable Crossover Neutral","Pause Bench Press","Flat Dumbbell Fly","Cable Crossover אמצע","Neutral Grip DB Press","Squeeze Press שטוח","Wide Grip Bench Press","Close Grip Bench Press","Cable Fly מקביל לחזה"] },
+      { key: "chest_lower", label: "חזה תחתון",  emoji: "⬇️", exerciseNames: ["לחיצת דמבלים ירידה","מקבילים לחזה","שכיבות ירידה","Cable Fly מגבוה","High to Low Cable Fly","High-to-Low Cable Fly","לחיצת מוט שיפוע שלילי","לחיצת דמבלים שיפוע שלילי","Decline Dumbbell Fly","Chest Dips מקבילים","Decline Smith Machine Press","Hammer Strength Decline","Cable Crossover תחתון","Weighted Decline Push-up"] },
+      { key: "chest_machine", label: "מכונות חזה", emoji: "🤖", exerciseNames: ["לחיצת חזה במכונה","Machine Chest Press","Smith Machine Bench","Iso-Lateral Chest Press","Machine Incline Press","Pec Deck Single Arm","Reverse Pec Deck","Pec Deck מכונה","Smith Machine Flat Press","Hammer Strength Flat Press","Hammer Strength Incline Press","Incline Smith Machine Press","Decline Smith Machine Press","Hammer Strength Decline","Chest Dips מקבילים"] },
     ],
     exercises: [
       { name: "לחיצת חזה שכיבה", muscles: "חזה, כתפיים קדמיות, טריצפס", tips: ["שמור על גב שטוח", "הורד לאיטיות — 3 שניות", "נשוף בלחיצה"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט", youtubeQuery: "bench+press+form+tutorial" },
@@ -103,9 +103,9 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
   {
     key: "back", label: "גב", emoji: "🦾", color: "#8b5cf6",
     subGroups: [
-      { key: "back_lats",  label: "רחב גבי",  emoji: "⬆️", exerciseNames: ["מתח (Pull-up)","לט פולדאון","Lat Pulldown רחב","Lat Pulldown צר","Straight Arm Pulldown","Close Grip Lat Pulldown","Neutral Grip Pulldown","Single Arm Lat Pulldown","Pullover מכונה","Cable Pullover","Lat Pulldown אחורי","Wide Grip Pull-up","Pull-up אחיזה צרה","Assisted Pull-up","Machine Pull-up","Hammer Strength Pulldown","Iso-Lateral Pulldown","Lat Pulldown V-Bar","Kneeling Cable Pulldown","Single Arm Cable Pulldown"] },
-      { key: "back_traps", label: "טרפזים",   emoji: "🔄", exerciseNames: ["חתירה (Barbell Row)","חתירה כבלים ישיבה","T-Bar Row","Single Arm Dumbbell Row","Chest Supported Row","Meadows Row","Seal Row","Renegade Row","Cable Row ישיבה רחב","Cable Row אחיזה גבוהה","High Row מכונה","Incline Dumbbell Row","Reverse Fly מכונה","Seated Cable Row V-Bar","Hammer Strength Row","Iso-Lateral Row","Machine Row","Smith Machine Row","Pendlay Row","DB Chest Supported Row"] },
-      { key: "back_lower", label: "גב תחתון", emoji: "⬇️", exerciseNames: ["דדליפט","Rack Pull","Back Extension","Good Morning","Hyperextension","Stiff-Leg Deadlift","Romanian Deadlift גב","Cable Pull-Through גב","Back Extension משקל","45° Back Extension","Good Morning ישיבה"] },
+      { key: "back_lats",  label: "רחב גבי",  emoji: "⬆️", exerciseNames: ["מתח (Pull-up)","לט פולדאון","Lat Pulldown רחב","Lat Pulldown צר","Straight Arm Pulldown","Neutral Grip Lat Pulldown","Single Arm Lat Pulldown","Lat Pulldown אחיזה הפוכה","Machine Pullover","Cable Pullover גב","Cable Pullover (גב)","Assisted Pull-up Machine","Hammer Strength Lat Pull","Reverse Grip Lat Pulldown","Rope Pulldown","Unilateral Lat Pulldown","Hammer Strength Pulldown","Kneeling Lat Pulldown","One Arm Machine Pulldown","Incline DB Row (Lat Focus)","Prone Incline Cable Row","Cable Straight Arm Row"] },
+      { key: "back_traps", label: "טרפזים",   emoji: "🔄", exerciseNames: ["חתירה (Barbell Row)","חתירה כבלים ישיבה","T-Bar Row","Single Arm Dumbbell Row","Chest Supported Row","Meadows Row","Seal Row","Renegade Row","Pendlay Row","Kroc Row","Hammer Strength Row","Unilateral Cable Row","High Cable Row","Wide Grip Cable Row","Reverse Grip Cable Row","Underhand Cable Row","Machine Seated Row","Machine High Row","Barbell Row אחיזה רחבה","Yates Row","T-Bar Row רחב","DB Row כבד (Kroc Row)","Seated Cable Row רחב","Chest Supported DB Row","Single Arm Cable Row","Cross Body Cable Row","Chest Supported Machine Row","Low Seated Cable Row"] },
+      { key: "back_lower", label: "גב תחתון", emoji: "⬇️", exerciseNames: ["דדליפט","Rack Pull","Back Extension","Good Morning","Hyperextension מכונה","Cable Lower Back Ext","Back Extension עם משקל","Cable Pull-Through (גב)","Deficit Deadlift"] },
     ],
     exercises: [
       { name: "מתח (Pull-up)", muscles: "גב רחב, ביצפס, ליבה", tips: ["תלייה מלאה בתחתית", "הוצא חזה אל הבר", "אל תתנועע"], defaultSets: 4, defaultReps: "6-10", equipment: "מוט מתח", youtubeQuery: "pull+up+perfect+form" },
@@ -120,7 +120,7 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
     subGroups: [
       { key: "sh_front", label: "כתף קדמית",  emoji: "🔵", exerciseNames: ["לחיצת כתפיים (OHP)","הרמות קדמיות (Front Raise)","Arnold Press","לחיצת כתפיים בישיבה","Cuban Press","Cable Front Raise","Cross Body Cable Raise","Machine Shoulder Press","Smith Machine OHP","Machine Front Raise","Plate Front Raise","Cable Single Arm Front Raise","Half-Kneeling Cable Press","Barbell OHP (Overhead Press)","Seated DB OHP","הרמות קדמיות דמבלים","הרמות קדמיות כבל","הרמות קדמיות מוט","Z-Press","Landmine Press כתפיים","Standing DB OHP"] },
       { key: "sh_mid",   label: "כתף אמצעית", emoji: "⚡", exerciseNames: ["הרמות צד (Lateral Raise)","Lateral Raise כבלים","Machine Lateral Raise","Upright Row","Shrug — כיווץ כתפיים","Cable Upright Row","Single Arm Cable Lateral","Lying Cable Lateral Raise","Leaning Cable Lateral","Cable Y-Raise","Cable Behind-Back Lateral","Cable Rope Upright Row","הרמות צד דמבלים","הרמות צד ישיבה","הרמות צד כבל","Leaning Lateral Raise","Upright Row מוט","Upright Row כבל","Upright Row דמבלים","45° Incline Lateral Raise","One Arm Cable Lateral","Barbell Shrug","DB Shrug"] },
-      { key: "sh_rear",  label: "כתף אחורית", emoji: "🔙", exerciseNames: ["Face Pull","Rear Delt Fly דמבלים","Cable Rear Delt Fly","Band Pull-Apart","Rope Face Pull מתקדם","High Cable Rear Delt Fly","Low Cable Rear Delt","Cable External Rotation","Cable Internal Rotation","Machine Rear Delt Fly","Rear Delt Fly DB","Pec Deck Reverse","Face Pull כבל","Prone Incline Rear Delt Fly","Machine Rear Delt","Bent Over Lateral Raise","Dumbbell Rear Delt Row"] },
+      { key: "sh_rear",  label: "כתף אחורית", emoji: "🔙", exerciseNames: ["Face Pull","Rear Delt Fly דמבלים","Cable Rear Delt Fly","Band Pull-Apart","Rope Face Pull מתקדם","High Cable Rear Delt Fly","Low Cable Rear Delt","Cable External Rotation","Cable Internal Rotation","Machine Rear Delt Fly","Rear Delt Fly DB","Pec Deck Reverse","Face Pull כבל","Prone Incline Rear Delt Fly","Machine Rear Delt","Bent Over Lateral Raise","Dumbbell Rear Delt Row","Cable W-Raise","Cable Rope Face Pull"] },
     ],
     exercises: [
       { name: "לחיצת כתפיים (OHP)", muscles: "דלטואיד קדמי ואמצע, טריצפס", tips: ["עמוד יציב", "נסגר בראש", "אל תרכין גב"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט / דמבלים", youtubeQuery: "overhead+press+form+tutorial" },
@@ -148,7 +148,7 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
     subGroups: [
       { key: "legs_quads",  label: "ארבע ראשי", emoji: "🦵", exerciseNames: ["סקוואט (Squat)","לאנג' (Lunges)","לג פרס (Leg Press)","Hack Squat מכונה","Leg Extension","Goblet Squat","Step Up לספסל","Sumo Squat","Hip Adduction מכונה","Hip Abduction מכונה","Bulgarian Split Squat","Smith Machine Squat","Cable Hip Flexion","Smith Machine Lunge","Back Squat","Front Squat","Leg Extension מכונה","Leg Press רגלים גבוהות","Leg Press רגלים נמוכות","Bulgarian Split Squat DB","Heel Elevated Squat","Box Squat","Pause Squat","Step Up משקל","Sissy Squat מכונה"] },
       { key: "legs_hams",   label: "האמסטרינג", emoji: "🏃", exerciseNames: ["כפיפות ברכיים (Hamstring Curl)","Romanian Deadlift","Nordic Hamstring Curl","Good Morning רגליים","Lying Leg Curl","Cable Romanian DL","Standing Leg Curl","Seated Leg Curl","Romanian Deadlift DB","Single Leg RDL","Glute Ham Raise","Stiff Leg Deadlift","Kneeling Leg Curl","Cable Leg Curl עמידה","Good Morning מוט"] },
-      { key: "legs_glutes", label: "ישבן",       emoji: "🍑", exerciseNames: ["Hip Thrust","Glute Bridge","Donkey Kicks","Cable Pull-Through","Machine Glute Kickback","Hip Thrust מוט","Hip Thrust מכונה","Single Leg Glute Bridge","Cable Kickback","Donkey Kick Machine","Sumo Squat DB","Clamshell + לולאה"] },
+      { key: "legs_glutes", label: "ישבן",       emoji: "🍑", exerciseNames: ["Hip Thrust","Glute Bridge","Donkey Kicks","Cable Pull-Through","Machine Glute Kickback","Hip Thrust מוט","Hip Thrust מכונה","Single Leg Glute Bridge","Cable Glute Kickback","Donkey Kick Machine","Sumo Squat DB","Clamshell + לולאה"] },
       { key: "legs_calves", label: "תאומים",     emoji: "👟", exerciseNames: ["הרמות עקב (Calf Raise)","Seated Calf Raise","Standing Calf Raise מכונה","Seated Calf Raise מכונה","Leg Press Calf Raise","Single Leg Calf Raise DB","Donkey Calf Raise","Tibialis Raise"] },
     ],
     exercises: [
@@ -465,7 +465,7 @@ const _EX2: _ES[] = [
   ["Wide Grip Cable Row","back","כבלים","wide+grip+cable+row+form",3,"12","גב עליון, כתף אחורית","אחיזה רחבה, משוך לחזה עליון"],
   ["Reverse Grip Cable Row","back","כבלים","reverse+grip+cable+row+form",3,"12","גב אמצע, ביצפס","אחיזה תחתית — יותר ביצפס"],
   ["Underhand Cable Row","back","כבלים","underhand+cable+row+form",3,"12","גב אמצע, ביצפס","אחיזה הפוכה — דגש על גב תחתון"],
-  ["Cable W-Raise","back","כבלים","cable+w+raise+back+form",3,"15","כתף אחורית, טרפזים","ידיים בצורת W — מחזק שכמות"],
+  ["Cable W-Raise","shoulders","כבלים","cable+w+raise+back+form",3,"15","כתף אחורית, טרפזים","ידיים בצורת W — מחזק שכמות"],
   ["Cable Straight Arm Row","back","כבלים","cable+straight+arm+row+form",3,"15","גב רחב","ידיים ישרות, משוך מהמרפקים"],
   ["Cable Lower Back Ext","back","כבלים","cable+lower+back+extension+form",3,"15","גב תחתון","שמור גב ניטרלי, תנועה מהירכיים"],
   ["Machine Pullover","back","מכונה","machine+pullover+back+form",4,"12","גב רחב","כוון מניפה — תחושת מתיחה בגב רחב"],
@@ -477,7 +477,7 @@ const _EX2: _ES[] = [
   ["Pendlay Row","back","מוט","pendlay+row+form+back",4,"5-6","גב אמצע, טרפזים","מהרצפה בכל חזרה — כוח טהור"],
   ["Kroc Row","back","דמבלים","kroc+row+form+back",3,"15-20","גב עליון, ביצפס","חזרות גבוהות עם משקל כבד"],
   ["Yates Row","back","מוט","yates+row+form+back",4,"8-10","גב עליון, טרפזים","עמידה זקופה יותר מ-Barbell Row"],
-  ["Cable Rope Face Pull","back","כבלים","rope+face+pull+back+form",3,"15","כתף אחורית, טרפזים","פרוס כ-W בסיום — שרוול מסובב"],
+  ["Cable Rope Face Pull","shoulders","כבלים","rope+face+pull+back+form",3,"15","כתף אחורית, טרפזים","פרוס כ-W בסיום — שרוול מסובב"],
   ["Chest Supported Cable Row","back","כבלים","chest+supported+cable+row",3,"12","גב אמצע","חזה על הריפוד + כבל — אפס עזרת גוף"],
   // ── SHOULDERS (22) ──
   ["Cable Front Raise","shoulders","כבלים","cable+front+raise+shoulders+form",3,"12","כתף קדמית","כבל נמוך — מתח קבוע, אל תנפף"],
@@ -848,8 +848,6 @@ const _EX5: _ES[] = [
   ["Low Seated Cable Row","back","כבלים","low+seated+cable+row+lower+lats",4,"10-12","גב, גב רחב","ידית V"],
   // lower 8
   ["Rack Pull","back","מוט","rack+pull+form+lower+back+trap",4,"5-6","גב תחתון, טרפזים","מתחת לברך"],
-  ["Romanian Deadlift","back","מוט","romanian+deadlift+barbell+form",4,"8-10","גב תחתון, המסטרינג","גב ישר לאורך"],
-  ["Stiff Leg Deadlift","back","מוט","stiff+leg+deadlift+form+lower+back",3,"10-12","גב תחתון, המסטרינג","ברכיים כמעט ישרות"],
   ["Back Extension עם משקל","back","מכונה","weighted+back+extension+form",3,"12-15","גב תחתון, ישבן","משקולת על חזה"],
   ["Good Morning","back","מוט","good+morning+exercise+lower+back+form",3,"10-12","גב תחתון, המסטרינג","ירכיים ראשון"],
   ["Hyperextension מכונה","back","מכונה","hyperextension+machine+lower+back+form",3,"12-15","גב תחתון","מכונת ירך"],
@@ -959,7 +957,7 @@ const _EX5: _ES[] = [
   ["Hip Thrust מוט","legs","מוט","barbell+hip+thrust+glute+form",4,"10-12","ישבן, המסטרינג","לסד בסוף"],
   ["Hip Thrust מכונה","legs","מכונה","machine+hip+thrust+glute+form",4,"10-12","ישבן","Isolate מכונה"],
   ["Single Leg Glute Bridge","legs","ספסל + דמבלים","single+leg+glute+bridge+weighted+form",3,"12 כל צד","ישבן","רגל אחת"],
-  ["Cable Kickback","legs","כבלים","cable+kickback+glute+form",3,"15 כל צד","ישבן","כף רגל מכוונת"],
+  ["Cable Glute Kickback","legs","כבלים","cable+kickback+glute+form",3,"15 כל צד","ישבן","כף רגל מכוונת"],
   ["Donkey Kick Machine","legs","מכונה","donkey+kick+machine+glute+form",3,"15 כל צד","ישבן","מכונת Kickback"],
   ["Hip Abduction מכונה","legs","מכונה","hip+abduction+machine+glute+form",3,"12-15","ישבן חיצוני, ירך","סגרי רחב"],
   ["Hip Adduction מכונה","legs","מכונה","hip+adduction+machine+inner+thigh+form",3,"12-15","מפשעה פנימי","סגרי צר"],
@@ -1092,6 +1090,9 @@ function getEquipCat(equipment: string): EquipmentCategory {
   if (equipment.includes("ללא")) return "mat";
   if (equipment.includes("ספסל")) return "bench";
   if (equipment.includes("טבעות")) return "rings";
+  if (equipment.includes("מתח")) return "bar";   // calisthenics pull-up bar (bare "מתח")
+  if (equipment.includes("מזרן")) return "mat";  // stretching mat
+  if (equipment.includes("קיר")) return "mat";   // wall exercises
   return "free_weights";
 }
 
@@ -3341,7 +3342,10 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
               }
             </div>
           ) : (
-            <div className="space-y-2">
+            <div
+              key={`${activeSubFilter ?? "all"}-${activeEquipFilter ?? "all"}`}
+              className="space-y-2 animate-in fade-in duration-200"
+            >
               {filteredExercises.map((ex) => (
                 <ExerciseCard
                   key={ex.name}
