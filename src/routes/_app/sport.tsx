@@ -3096,8 +3096,8 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
       {/* ── selectionMode banner ──────────────────────────────────── */}
       {selectionMode && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/12 border border-emerald-500/25">
-          <Plus className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-          <p className="text-xs font-bold text-emerald-300">הקש על תרגיל להוסיפו לאימון</p>
+          <BookOpen className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+          <p className="text-xs font-bold text-emerald-300">הקש על תרגיל להוסיפו לתבנית</p>
         </div>
       )}
       {/* ── Glassmorphism search bar ──────────────────────────────── */}
@@ -3135,9 +3135,9 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
                   key={ex.name}
                   ex={ex}
                   groupKey={groupKey}
-                  isChecked={selectionMode ? false : checked.has(ex.name)}
+                  isChecked={false}
                   isFavorite={favorites.includes(ex.name)}
-                  onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
+                  onCheck={() => setTemplateSheetEx(ex)}
                   onOpen={() => setSelectedEx({ ex, groupKey })}
                   onQuickAdd={() => setTemplateSheetEx(ex)}
                   onToggleFavorite={() => toggleFavorite(ex.name)}
@@ -3193,7 +3193,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
                       ? "border-emerald-500/60 bg-emerald-500/15"
                       : "border-white/10 bg-white/5"
                   }`}
-                  onClick={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(name)}
+                  onClick={() => setTemplateSheetEx(ex)}
                 >
                   <div className={`h-4 w-4 rounded-md border flex items-center justify-center shrink-0 transition-all ${
                     isChecked ? "border-emerald-500 bg-emerald-500" : "border-white/25"
@@ -3351,9 +3351,9 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
                   key={ex.name}
                   ex={ex}
                   groupKey={selectedGroup.key}
-                  isChecked={checked.has(ex.name)}
+                  isChecked={false}
                   isFavorite={favorites.includes(ex.name)}
-                  onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
+                  onCheck={() => setTemplateSheetEx(ex)}
                   onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
                   onQuickAdd={() => setTemplateSheetEx(ex)}
                   onToggleFavorite={() => toggleFavorite(ex.name)}
@@ -3393,24 +3393,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
       )}
       </> /* end hierarchy wrapper */}
 
-      {/* ── Floating add bar ──────────────────────────────────────── */}
-      {checked.size > 0 && !selectionMode && (
-        <div className="fixed bottom-20 left-4 right-4 z-40 flex items-center gap-2 p-2.5 rounded-2xl bg-emerald-500 shadow-xl shadow-emerald-500/40">
-          <button
-            onClick={() => setChecked(new Set())}
-            className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <button
-            onClick={handleAddToWorkout}
-            className="flex-1 text-sm font-black text-white text-center min-h-[36px] flex items-center justify-center gap-1.5"
-          >
-            <Plus className="h-4 w-4" />
-            הוסף {checked.size} {checked.size === 1 ? "תרגיל" : "תרגילים"} לאימון
-          </button>
-        </div>
-      )}
+      {/* ── Floating add bar removed — template sheet handles per-exercise adds ── */}
     </div>
   );
 }
