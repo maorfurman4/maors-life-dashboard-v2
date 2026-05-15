@@ -1,13 +1,38 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera, Search, Sparkles, Loader2, ChevronDown, ChevronUp,
-  Clock, Users, Flame, Zap,
+  Clock, Users, Flame, Zap, BookmarkPlus, Trash2, ArrowLeftRight,
 } from "lucide-react";
 import { recognizeMeal, generateText, parseAIJson } from "@/lib/ai-service";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  calcTDEE,
+  type ActivityLevel, type Goal, type Sex,
+} from "@/lib/tdee";
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+async function getUserId() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+  return user.id;
+}
 
 // ─── types ───────────────────────────────────────────────────────────────────
+interface DayPlan {
+  day:            string;
+  breakfast:      MealSlot;
+  lunch:          MealSlot;
+  dinner:         MealSlot;
+  snack:          MealSlot;
+  total_calories: number;
+}
+interface MealSlot { name: string; calories: number; protein: number; }
+interface WeeklyPlan { days: DayPlan[] }
+interface PlanTemplate { id: string; name: string; diet_type: string | null; plan_data: WeeklyPlan; created_at: string; }
+
 interface RecipeResult {
   name:                  string;
   difficulty:            string;   // "קל" | "בינוני" | "מתקדם"
@@ -165,6 +190,8 @@ function RecipeCard({ recipe }: { recipe: RecipeResult }) {
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 export function NutritionCulinaryTab() {
+  const qc = useQueryClient();
+
   // ── Profile / diet preference ──
   const { data: profile }  = useProfile();
   const updateProfile      = useUpdateProfile();
@@ -180,6 +207,116 @@ export function NutritionCulinaryTab() {
       { diet_type: label },
       { onError: (e: any) => toast.error(e?.message ?? "שגיאה בשמירה") }
     );
+  };
+
+  // ── TDEE (read from localStorage — set by Planner tab) ──
+  const tdeeCalories = useMemo(() => {
+    const sex      = (localStorage.getItem("tdee_sex")      ?? "male") as Sex;
+    const age      = parseInt(localStorage.getItem("tdee_age")      ?? "28", 10);
+    const activity = (localStorage.getItem("tdee_activity") ?? "moderate") as ActivityLevel;
+    const goal     = (localStorage.getItem("tdee_goal")     ?? "maintain") as Goal;
+    return calcTDEE({ sex, age, heightCm: 175, weightKg: 75, activityLevel: activity, goal });
+  }, []);
+
+  // ── Weekly plan state ──
+  const [weekPlan,      setWeekPlan]      = useState<WeeklyPlan | null>(null);
+  const [planGenerating, setPlanGenerating] = useState(false);
+  const [openDay,       setOpenDay]       = useState<number | null>(null);
+  const [saveModal,  setSaveModal]  = useState(false);
+  const [templateName, setTemplateName] = useState("");
+
+  // ── Saved templates ──
+  const { data: templates = [] } = useQuery<PlanTemplate[]>({
+    queryKey: ["meal-plan-templates"],
+    queryFn: async () => {
+      const userId = await getUserId();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("meal_plan_templates")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as PlanTemplate[];
+    },
+  });
+
+  const saveTemplate = useMutation({
+    mutationFn: async (name: string) => {
+      if (!weekPlan) return;
+      const userId = await getUserId();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from("meal_plan_templates").insert({
+        user_id:   userId,
+        name,
+        diet_type: profile?.diet_type ?? null,
+        plan_data: weekPlan,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("תבנית נשמרה!");
+      qc.invalidateQueries({ queryKey: ["meal-plan-templates"] });
+      setSaveModal(false);
+      setTemplateName("");
+    },
+    onError: (e: any) => toast.error(e?.message ?? "שגיאה בשמירה"),
+  });
+
+  const deleteTemplate = useMutation({
+    mutationFn: async (id: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from("meal_plan_templates").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("תבנית נמחקה");
+      qc.invalidateQueries({ queryKey: ["meal-plan-templates"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "שגיאה במחיקה"),
+  });
+
+  // ── Generate weekly plan ──
+  const generatePlan = async () => {
+    if (!profile?.diet_type) { toast.error("בחר סוג דיאטה תחילה"); return; }
+    setPlanGenerating(true);
+    setWeekPlan(null);
+    setOpenDay(null);
+    try {
+      const excStr  = "אין";
+      const prompt  = `אתה דיאטן ישראלי מקצועי. צור תפריט שבועי מלא בפורמט JSON בלבד.
+
+פרמטרים:
+- סוג דיאטה: ${profile.diet_type}
+- קלוריות יומיות: ${tdeeCalories.targetCalories}
+- יעד חלבון יומי: ${tdeeCalories.protein}g
+- מרכיבים אסורים: ${excStr}
+
+פורמט JSON חובה (7 ימים, ישראלי, ריאלי):
+{
+  "days": [
+    {
+      "day": "ראשון",
+      "breakfast": { "name": "שם ארוחת בוקר", "calories": 0, "protein": 0 },
+      "lunch":     { "name": "שם ארוחת צהריים", "calories": 0, "protein": 0 },
+      "dinner":    { "name": "שם ארוחת ערב", "calories": 0, "protein": 0 },
+      "snack":     { "name": "שם חטיף", "calories": 0, "protein": 0 },
+      "total_calories": 0
+    }
+  ]
+}
+
+כללים: 7 ימים בדיוק (ראשון עד שבת). ארוחות ישראליות אמיתיות. JSON בלבד ללא markdown.`;
+
+      const raw  = await generateText(prompt);
+      const plan = parseAIJson<WeeklyPlan>(raw);
+      setWeekPlan(plan);
+      setOpenDay(0);
+    } catch {
+      toast.error("שגיאה ביצירת תפריט — נסה שנית");
+    } finally {
+      setPlanGenerating(false);
+    }
   };
 
   // ── Fridge Scanner state ──
@@ -302,6 +439,161 @@ export function NutritionCulinaryTab() {
           ))}
         </div>
       </div>
+
+      {/* ══ WEEKLY MENU GENERATOR ═══════════════════════════════════════════ */}
+      <button
+        onClick={generatePlan}
+        disabled={planGenerating || !profile?.diet_type}
+        className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-white font-black text-sm transition-all min-h-[56px] ${
+          profile?.diet_type
+            ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-2xl shadow-emerald-500/30 active:scale-[0.98]"
+            : "bg-white/10 border border-white/10 opacity-40 cursor-not-allowed"
+        } disabled:opacity-50`}
+      >
+        {planGenerating ? (
+          <><Loader2 className="h-5 w-5 animate-spin" /><span>יוצר תפריט שבועי עם AI...</span></>
+        ) : (
+          <><Flame className="h-5 w-5" /><span>צור תפריט שבועי עם AI ✨</span></>
+        )}
+      </button>
+
+      {/* ── Weekly plan results ── */}
+      {weekPlan && (
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-3">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-emerald-400" />
+              <p className="text-sm font-black text-white">תפריט שבועי — {profile?.diet_type}</p>
+            </div>
+            <button
+              onClick={() => { setTemplateName(""); setSaveModal(true); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 transition-all"
+            >
+              <BookmarkPlus className="h-3.5 w-3.5" />
+              שמור
+            </button>
+          </div>
+
+          {weekPlan.days.map((day, i) => (
+            <div key={i}
+              className={`rounded-2xl border overflow-hidden transition-all ${
+                openDay === i ? "border-emerald-500/30 bg-emerald-500/5" : "border-white/8 bg-white/3"
+              }`}>
+              <button
+                onClick={() => setOpenDay(openDay === i ? null : i)}
+                className="w-full flex items-center justify-between px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-black ${openDay === i ? "text-emerald-300" : "text-white/80"}`}>{day.day}</span>
+                  <span className="text-[10px] text-white/30">{day.total_calories?.toLocaleString() ?? "—"} קל׳</span>
+                </div>
+                {openDay === i
+                  ? <ChevronUp   className="h-4 w-4 text-emerald-400" />
+                  : <ChevronDown className="h-4 w-4 text-white/30" />}
+              </button>
+              {openDay === i && (
+                <div className="px-4 pb-4 space-y-2">
+                  {([
+                    { key: "breakfast", label: "🌅 בוקר"   },
+                    { key: "lunch",     label: "☀️ צהריים" },
+                    { key: "dinner",    label: "🌙 ערב"    },
+                    { key: "snack",     label: "🍎 חטיף"   },
+                  ] as { key: keyof DayPlan; label: string }[]).map(({ key, label }) => {
+                    const meal = day[key] as MealSlot | undefined;
+                    if (!meal) return null;
+                    return (
+                      <div key={key} className="flex items-start justify-between gap-3 py-1.5 border-b border-white/5 last:border-0">
+                        <span className="text-[10px] text-white/40 shrink-0 pt-0.5">{label}</span>
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="text-sm text-white/90 font-medium leading-tight">{meal.name}</p>
+                          <p className="text-[10px] text-white/30 mt-0.5">{meal.calories} קל׳ · {meal.protein}g חלבון</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Save template modal ── */}
+      {saveModal && (
+        <div
+          className="fixed inset-0 z-[70] flex items-end justify-center pb-8 px-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setSaveModal(false)}
+        >
+          <div
+            dir="rtl"
+            className="w-full max-w-sm rounded-3xl border border-white/15 bg-white/8 backdrop-blur-2xl p-5 space-y-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-black text-white">שמור תבנית</p>
+            <input
+              autoFocus
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && templateName.trim() && saveTemplate.mutate(templateName.trim())}
+              placeholder="שם התבנית (למשל: 'שבוע ים תיכוני')"
+              className="w-full rounded-xl bg-white/8 border border-white/15 text-white px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500/60 placeholder:text-white/25"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSaveModal(false)}
+                className="flex-1 py-3 rounded-xl border border-white/15 bg-white/5 text-white/70 text-sm font-bold hover:bg-white/10 transition-all"
+              >
+                ביטול
+              </button>
+              <button
+                onClick={() => templateName.trim() && saveTemplate.mutate(templateName.trim())}
+                disabled={saveTemplate.isPending || !templateName.trim()}
+                className="flex-1 py-3 rounded-xl bg-emerald-500 text-white text-sm font-black hover:bg-emerald-400 transition-all disabled:opacity-50"
+              >
+                {saveTemplate.isPending ? "שומר..." : "שמור"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ SAVED TEMPLATES ═════════════════════════════════════════════════ */}
+      {templates.length > 0 && (
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📋</span>
+            <div>
+              <p className="text-sm font-black text-white">תבניות שמורות</p>
+              <p className="text-[10px] text-white/40">טען תפריט שמור והמשך לעבוד איתו</p>
+            </div>
+          </div>
+          {templates.map((t) => (
+            <div key={t.id} className="flex items-center gap-3 p-3 rounded-2xl border border-white/8 bg-white/3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white/90 truncate">{t.name}</p>
+                {t.diet_type && (
+                  <p className="text-[10px] text-white/35">{t.diet_type}</p>
+                )}
+              </div>
+              <button
+                onClick={() => { setWeekPlan(t.plan_data); setOpenDay(0); toast.success("תפריט נטען!"); }}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 text-teal-300 text-[11px] font-bold hover:bg-teal-500/20 transition-all shrink-0"
+              >
+                <ArrowLeftRight className="h-3 w-3" />
+                טען
+              </button>
+              <button
+                onClick={() => deleteTemplate.mutate(t.id)}
+                disabled={deleteTemplate.isPending}
+                className="p-1.5 rounded-xl hover:bg-rose-500/15 text-white/25 hover:text-rose-400 transition-all"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ══ FRIDGE SCANNER ══════════════════════════════════════════════════ */}
       <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-4">
