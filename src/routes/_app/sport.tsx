@@ -2854,7 +2854,6 @@ function ExerciseModal({
   isFavorite,
   onToggleFavorite,
   onToggleHidden,
-  openTemplate = false,
 }: {
   ex: LibraryExercise;
   groupKey?: string;
@@ -2862,44 +2861,7 @@ function ExerciseModal({
   isFavorite: boolean;
   onToggleFavorite: () => void;
   onToggleHidden: () => void;
-  openTemplate?: boolean;
 }) {
-  const [showTemplates, setShowTemplates] = useState(openTemplate);
-  const { data: templates } = useWorkoutTemplates();
-  const updateTemplate   = useUpdateWorkoutTemplate();
-  const addTemplate      = useAddWorkoutTemplate();
-
-  const userTemplates = ((templates ?? []) as any[]).filter((t) => !t.is_system);
-
-  const parseSets = (s: string | number) => { const n = parseInt(String(s)); return isNaN(n) ? 3 : n; };
-  const parseReps = (s: string)          => { const n = parseInt(s);          return isNaN(n) ? 10 : n; };
-
-  const handleAddToTemplate = (t: any) => {
-    const existing: any[] = t.exercises ?? [];
-    if (existing.some((e: any) => e.name === ex.name)) {
-      toast.info("התרגיל כבר קיים בתבנית זו");
-      return;
-    }
-    updateTemplate.mutate({
-      id: t.id,
-      exercises: [
-        ...existing,
-        { name: ex.name, sets: parseSets(ex.defaultSets), reps: parseReps(ex.defaultReps), weight_kg: 0 },
-      ],
-    });
-    toast.success(`נוסף ל"${t.name}" ✓`);
-    // intentionally keep picker open so user sees the updated checkmark
-  };
-
-  const handleCreateNew = () => {
-    addTemplate.mutate({
-      name: ex.name,
-      category: "weights",
-      exercises: [{ name: ex.name, sets: parseSets(ex.defaultSets), reps: parseReps(ex.defaultReps), weight_kg: 0 }],
-    });
-    toast.success("תבנית חדשה נוצרה ✓");
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
       <div
@@ -2908,147 +2870,71 @@ function ExerciseModal({
       >
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto" />
 
-        {showTemplates ? (
-          /* ── Apple Music style template picker ───────────────── */
-          <div className="space-y-3">
-            {/* Header */}
-            <div className="flex items-center gap-3">
-              <button onClick={() => setShowTemplates(false)}
-                className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15 transition-all shrink-0">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <div className="flex-1 min-w-0" dir="rtl">
-                <p className="text-sm font-black text-white truncate">הוסף לרשימת השמעה</p>
-                <p className="text-[10px] text-white/40 truncate">{ex.name}</p>
-              </div>
-            </div>
-
-            {/* Template list — Apple Music inner card */}
-            {userTemplates.length === 0 ? (
-              <p className="text-xs text-white/35 text-center py-8">אין תבניות שמורות עדיין</p>
-            ) : (
-              <div className="rounded-2xl overflow-hidden border border-white/10 bg-white/4 max-h-56 overflow-y-auto scrollbar-hide">
-                {userTemplates.map((t: any, idx: number) => {
-                  const alreadyIn = (t.exercises ?? []).some((e: any) => e.name === ex.name);
-                  const hue = (t.name.charCodeAt(0) * 47) % 360;
-                  return (
-                    <button key={t.id}
-                      onClick={() => !alreadyIn && handleAddToTemplate(t)}
-                      disabled={updateTemplate.isPending}
-                      className={`w-full flex items-center gap-3 px-4 py-3.5 transition-all active:bg-white/8 ${
-                        idx > 0 ? "border-t border-white/6" : ""
-                      }`}
-                    >
-                      {/* "Album art" */}
-                      <div className="h-10 w-10 rounded-xl shrink-0 flex items-center justify-center text-sm font-black text-white"
-                        style={{ background: `hsl(${hue},50%,30%)` }}>
-                        {t.name.charAt(0)}
-                      </div>
-                      {/* Text */}
-                      <div className="flex-1 min-w-0 text-right" dir="rtl">
-                        <p className="text-sm font-semibold text-white truncate">{t.name}</p>
-                        <p className="text-[10px] text-white/40">{(t.exercises ?? []).length} תרגילים</p>
-                      </div>
-                      {/* Action circle */}
-                      <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                        alreadyIn ? "bg-emerald-500" : "bg-white/12 hover:bg-white/20"
-                      }`}>
-                        {alreadyIn
-                          ? <Check className="h-3.5 w-3.5 text-white" />
-                          : <Plus className="h-3.5 w-3.5 text-white/70" />
-                        }
-                      </div>
-                    </button>
-                  );
-                })}
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            {groupKey && BODY_DOTS[groupKey] && (
+              <div className="shrink-0 mt-0.5">
+                <MuscleBodyIcon muscleKey={groupKey} size={28} />
               </div>
             )}
-
-            {/* Create new */}
-            <button onClick={handleCreateNew} disabled={addTemplate.isPending}
-              className="w-full py-3 rounded-2xl border border-dashed border-white/12 text-white/45 text-xs font-bold flex items-center justify-center gap-2 hover:border-emerald-500/30 hover:text-emerald-400 active:scale-[0.98] transition-all disabled:opacity-40">
-              <Plus className="h-3.5 w-3.5" />צור תבנית חדשה
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-black text-white leading-tight">{ex.name}</h3>
+              <p className="text-xs text-white/40 mt-0.5">{ex.muscles}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+              className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all ${
+                isFavorite ? "bg-red-500/20 text-red-400" : "bg-white/8 text-white/40 hover:bg-white/15"
+              }`}
+            >
+              <Heart className={`h-3.5 w-3.5 ${isFavorite ? "fill-red-400" : ""}`} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleHidden(); onClose(); }}
+              className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/40 hover:bg-white/15 transition-all"
+              title="הסתר תרגיל"
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={onClose} className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:bg-white/15">
+              <X className="h-4 w-4" />
             </button>
           </div>
-        ) : (
-          /* ── Normal exercise detail ──────────────────────────── */
-          <>
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                {groupKey && BODY_DOTS[groupKey] && (
-                  <div className="shrink-0 mt-0.5">
-                    <MuscleBodyIcon muscleKey={groupKey} size={28} />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-black text-white leading-tight">{ex.name}</h3>
-                  <p className="text-xs text-white/40 mt-0.5">{ex.muscles}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
-                  className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all ${
-                    isFavorite ? "bg-red-500/20 text-red-400" : "bg-white/8 text-white/40 hover:bg-white/15"
-                  }`}
-                >
-                  <Heart className={`h-3.5 w-3.5 ${isFavorite ? "fill-red-400" : ""}`} />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onToggleHidden(); onClose(); }}
-                  className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/40 hover:bg-white/15 transition-all"
-                  title="הסתר תרגיל"
-                >
-                  <EyeOff className="h-3.5 w-3.5" />
-                </button>
-                <button onClick={onClose} className="h-8 w-8 rounded-xl bg-white/8 flex items-center justify-center text-white/50 hover:bg-white/15">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-2 text-center">
+          {[["סטים", ex.defaultSets], ["חזרות", ex.defaultReps], ["ציוד", ex.equipment]].map(([label, val]) => (
+            <div key={String(label)} className="rounded-xl border border-white/8 bg-white/5 p-2.5">
+              <p className="text-[9px] text-white/35">{label}</p>
+              <p className="text-sm font-black text-white mt-0.5 leading-tight">{val}</p>
             </div>
+          ))}
+        </div>
 
-            {/* Stats row */}
-            <div className="grid grid-cols-3 gap-2 text-center">
-              {[["סטים", ex.defaultSets], ["חזרות", ex.defaultReps], ["ציוד", ex.equipment]].map(([label, val]) => (
-                <div key={String(label)} className="rounded-xl border border-white/8 bg-white/5 p-2.5">
-                  <p className="text-[9px] text-white/35">{label}</p>
-                  <p className="text-sm font-black text-white mt-0.5 leading-tight">{val}</p>
-                </div>
-              ))}
+        {/* Tips */}
+        <div className="space-y-2">
+          <p className="text-[11px] font-bold text-white/50">💡 טיפים לביצוע נכון</p>
+          {ex.tips.map((tip, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <span className="h-5 w-5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+              <p className="text-xs text-white/70">{tip}</p>
             </div>
+          ))}
+        </div>
 
-            {/* Tips */}
-            <div className="space-y-2">
-              <p className="text-[11px] font-bold text-white/50">💡 טיפים לביצוע נכון</p>
-              {ex.tips.map((tip, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <span className="h-5 w-5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                  <p className="text-xs text-white/70">{tip}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Add to template */}
-            <button
-              onClick={() => setShowTemplates(true)}
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-sm hover:bg-emerald-500/15 transition-all active:scale-[0.98]"
-            >
-              <Plus className="h-4 w-4" />
-              הוסף לתבנית
-            </button>
-
-            {/* YouTube */}
-            <a
-              href={`https://www.youtube.com/results?search_query=${ex.youtubeQuery}`}
-              target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-sm hover:bg-red-500/15 transition-all"
-            >
-              <Youtube className="h-4 w-4" />
-              <span>סרטון הדרכה ב-YouTube</span>
-            </a>
-          </>
-        )}
+        {/* YouTube */}
+        <a
+          href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.youtubeQuery ?? ex.name)}`}
+          target="_blank" rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-sm hover:bg-red-500/15 transition-all"
+        >
+          <Youtube className="h-4 w-4" />
+          <span>סרטון הדרכה ב-YouTube</span>
+        </a>
       </div>
     </div>
   );
@@ -3059,14 +2945,15 @@ type LibraryWorkoutType = "weights" | "calisthenics" | "stretching";
 function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?: (exs: LibraryExercise[]) => void; selectionMode?: boolean }) {
   const [workoutType,    setWorkoutType]    = useState<LibraryWorkoutType>("weights");
   const [selectedGroup,  setSelectedGroup]  = useState<MuscleGroup | null>(null);
-  const [selectedEquip,  setSelectedEquip]  = useState<EquipmentCategory | null>(null);
   const [selectedEx,     setSelectedEx]     = useState<{ ex: LibraryExercise; groupKey: string; openTemplate?: boolean } | null>(null);
   const [checked,          setChecked]          = useState<Set<string>>(new Set());
   const [showHidden,       setShowHidden]       = useState(false);
   const [searchQuery,        setSearchQuery]        = useState("");
-  // flat filter state (replaces stepped selectedSubGroup / selectedEquip / showAllExercises)
-  const [activeSubFilters,   setActiveSubFilters]   = useState<string[]>([]);
-  const [activeEquipFilters, setActiveEquipFilters]  = useState<EquipmentCategory[]>([]);
+  // flat filter state — single-select
+  const [activeSubFilter,   setActiveSubFilter]   = useState<string | null>(null);
+  const [activeEquipFilter, setActiveEquipFilter]  = useState<EquipmentCategory | null>(null);
+  const [templateSheetEx,   setTemplateSheetEx]   = useState<LibraryExercise | null>(null);
+  const [showSettings,      setShowSettings]      = useState(false);
 
   const { data: settings } = useUserSettings();
   const updateSettings = useUpdateUserSettings();
@@ -3108,20 +2995,20 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
   const handleTypeChange = (t: LibraryWorkoutType) => {
     setWorkoutType(t);
     setSelectedGroup(null);
-    setActiveSubFilters([]);
-    setActiveEquipFilters([]);
+    setActiveSubFilter(null);
+    setActiveEquipFilter(null);
     setChecked(new Set());
   };
 
   const handleGroupSelect = (g: MuscleGroup) => {
     setSelectedGroup(g);
-    setActiveSubFilters([]);
-    setActiveEquipFilters([]);
+    setActiveSubFilter(null);
+    setActiveEquipFilter(null);
   };
 
   const handleBack = () => {
-    setActiveSubFilters([]);
-    setActiveEquipFilters([]);
+    setActiveSubFilter(null);
+    setActiveEquipFilter(null);
     setSelectedGroup(null);
   };
 
@@ -3137,20 +3024,30 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
     if (!selectedGroup) return [];
     let exs = selectedGroup.exercises.filter((ex) => showHidden || !hidden.includes(ex.name));
 
-    if (activeSubFilters.length > 0 && selectedGroup.subGroups) {
-      const allowed = new Set<string>();
-      selectedGroup.subGroups
-        .filter((sg) => activeSubFilters.includes(sg.key))
-        .forEach((sg) => sg.exerciseNames.forEach((n) => allowed.add(n)));
-      exs = exs.filter((ex) => allowed.has(ex.name));
+    if (activeSubFilter && selectedGroup.subGroups) {
+      const sg = selectedGroup.subGroups.find((s) => s.key === activeSubFilter);
+      if (sg) {
+        const allowed = new Set(sg.exerciseNames);
+        exs = exs.filter((ex) => allowed.has(ex.name));
+      }
     }
 
-    if (activeEquipFilters.length > 0) {
-      exs = exs.filter((ex) => activeEquipFilters.includes(getEquipCat(ex.equipment)));
+    if (activeEquipFilter) {
+      exs = exs.filter((ex) => getEquipCat(ex.equipment) === activeEquipFilter);
     }
 
-    return exs;
-  }, [selectedGroup, activeSubFilters, activeEquipFilters, hidden, showHidden]);
+    // Favorites always first
+    return [...exs].sort((a, b) => {
+      const aF = favorites.includes(a.name) ? 0 : 1;
+      const bF = favorites.includes(b.name) ? 0 : 1;
+      return aF - bF;
+    });
+  }, [selectedGroup, activeSubFilter, activeEquipFilter, hidden, showHidden, favorites]);
+
+  const allExercises = useMemo(() =>
+    [...MUSCLE_GROUPS, ...CALISTHENICS_MUSCLE_GROUPS, ...STRETCHING_MUSCLE_GROUPS]
+      .flatMap((g) => g.exercises)
+  , []);
 
   // Favorite exercises for the current type
   const favForType = favorites.filter((name) => {
@@ -3241,7 +3138,8 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
                   isFavorite={favorites.includes(ex.name)}
                   onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
                   onOpen={() => setSelectedEx({ ex, groupKey })}
-                  onQuickAdd={() => setSelectedEx({ ex, groupKey, openTemplate: true })}
+                  onQuickAdd={() => setTemplateSheetEx(ex)}
+                  onToggleFavorite={() => toggleFavorite(ex.name)}
                 />
               ))}
             </div>
@@ -3255,7 +3153,6 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
               isFavorite={favorites.includes(selectedEx.ex.name)}
               onToggleFavorite={() => toggleFavorite(selectedEx.ex.name)}
               onToggleHidden={() => toggleHidden(selectedEx.ex.name)}
-              openTemplate={selectedEx.openTemplate ?? false}
             />
           )}
         </>
@@ -3362,20 +3259,36 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
                 <Eye className="h-3 w-3" />
               </button>
             )}
+            <button
+              onClick={() => setShowSettings(true)}
+              className="h-7 w-7 rounded-lg bg-white/5 flex items-center justify-center text-white/30 hover:bg-white/12 hover:text-white/60 transition-all"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+            </button>
           </div>
 
           {/* Sub-group chip row */}
           {selectedGroup.subGroups && selectedGroup.subGroups.length > 0 && (
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <button
+                onClick={() => setActiveSubFilter(null)}
+                className={`shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all whitespace-nowrap border ${
+                  activeSubFilter === null
+                    ? "bg-white/20 text-white border-white/30"
+                    : "bg-white/5 text-white/20 border-white/8"
+                }`}
+              >
+                הכל
+              </button>
               {selectedGroup.subGroups.map((sg) => (
                 <button key={sg.key}
-                  onClick={() => setActiveSubFilters((prev) =>
-                    prev.includes(sg.key) ? prev.filter((k) => k !== sg.key) : [...prev, sg.key]
-                  )}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap ${
-                    activeSubFilters.includes(sg.key)
-                      ? "bg-white/20 text-white border border-white/30"
-                      : "bg-white/6 text-white/45 border border-white/10 hover:bg-white/10"
+                  onClick={() => setActiveSubFilter((prev) => prev === sg.key ? null : sg.key)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all whitespace-nowrap border ${
+                    activeSubFilter === sg.key
+                      ? "bg-white/22 text-white border-white/35 scale-105"
+                      : activeSubFilter !== null
+                        ? "bg-white/4 text-white/15 border-white/6 opacity-40"
+                        : "bg-white/6 text-white/45 border-white/10 hover:bg-white/10"
                   }`}
                 >
                   <span>{sg.emoji}</span>{sg.label}
@@ -3387,15 +3300,25 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
           {/* Equipment chip row */}
           {equipCategories.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <button
+                onClick={() => setActiveEquipFilter(null)}
+                className={`shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all whitespace-nowrap border ${
+                  activeEquipFilter === null
+                    ? "bg-emerald-500/30 text-emerald-200 border-emerald-500/50"
+                    : "bg-white/5 text-white/20 border-white/8"
+                }`}
+              >
+                הכל
+              </button>
               {equipCategories.map((cat) => (
                 <button key={cat}
-                  onClick={() => setActiveEquipFilters((prev) =>
-                    prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-                  )}
-                  className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap ${
-                    activeEquipFilters.includes(cat)
-                      ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/40"
-                      : "bg-white/6 text-white/40 border border-white/10 hover:bg-white/10"
+                  onClick={() => setActiveEquipFilter((prev) => prev === cat ? null : cat)}
+                  className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all whitespace-nowrap border ${
+                    activeEquipFilter === cat
+                      ? "bg-emerald-500/30 text-emerald-200 border-emerald-500/50 scale-105"
+                      : activeEquipFilter !== null
+                        ? "bg-white/4 text-white/15 border-white/6 opacity-40"
+                        : "bg-white/6 text-white/40 border-white/10 hover:bg-white/10"
                   }`}
                 >
                   {EQUIP_META[cat].emoji} {EQUIP_META[cat].label}
@@ -3404,23 +3327,15 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
             </div>
           )}
 
-          {/* Active filter count + clear */}
-          {(activeSubFilters.length > 0 || activeEquipFilters.length > 0) && (
-            <div className="flex items-center justify-between px-0.5">
-              <span className="text-[10px] text-white/35">{filteredExercises.length} תרגילים</span>
-              <button
-                onClick={() => { setActiveSubFilters([]); setActiveEquipFilters([]); }}
-                className="text-[10px] text-white/35 hover:text-white/60 transition-colors"
-              >
-                נקה סינון ✕
-              </button>
-            </div>
+          {/* Active filter count */}
+          {(activeSubFilter || activeEquipFilter) && (
+            <p className="text-[10px] text-white/35 text-right px-0.5">{filteredExercises.length} תרגילים</p>
           )}
 
           {/* Exercise list */}
           {filteredExercises.length === 0 ? (
             <div className="text-center py-8 text-white/30 text-xs">
-              {(activeSubFilters.length > 0 || activeEquipFilters.length > 0)
+              {(activeSubFilter || activeEquipFilter)
                 ? "אין תרגילים עם הסינון הנוכחי"
                 : <>כל התרגילים מוסתרים —{" "}<button onClick={() => setShowHidden(true)} className="underline">הצג מוסתרים</button></>
               }
@@ -3436,7 +3351,8 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
                   isFavorite={favorites.includes(ex.name)}
                   onCheck={() => selectionMode ? handleSelectionClick(ex) : toggleCheck(ex.name)}
                   onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
-                  onQuickAdd={() => setSelectedEx({ ex, groupKey: selectedGroup.key, openTemplate: true })}
+                  onQuickAdd={() => setTemplateSheetEx(ex)}
+                  onToggleFavorite={() => toggleFavorite(ex.name)}
                 />
               ))}
             </div>
@@ -3453,7 +3369,22 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
           isFavorite={favorites.includes(selectedEx.ex.name)}
           onToggleFavorite={() => toggleFavorite(selectedEx.ex.name)}
           onToggleHidden={() => toggleHidden(selectedEx.ex.name)}
-          openTemplate={selectedEx.openTemplate ?? false}
+        />
+      )}
+      {/* ── Template bottom sheet ────────────────────────────────── */}
+      {templateSheetEx && (
+        <TemplateBottomSheet ex={templateSheetEx} onClose={() => setTemplateSheetEx(null)} />
+      )}
+
+      {/* ── Settings sheet ───────────────────────────────────────── */}
+      {showSettings && (
+        <LibrarySettingsSheet
+          onClose={() => setShowSettings(false)}
+          hidden={hidden}
+          favorites={favorites}
+          onUnhide={(name) => toggleHidden(name)}
+          onUnfavorite={(name) => toggleFavorite(name)}
+          exercises={allExercises}
         />
       )}
       </> /* end hierarchy wrapper */}
@@ -3480,6 +3411,137 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
   );
 }
 
+// ── TemplateBottomSheet ───────────────────────────────────────────────────────
+function TemplateBottomSheet({ ex, onClose }: { ex: LibraryExercise; onClose: () => void }) {
+  const { data: templates } = useWorkoutTemplates();
+  const updateTemplate = useUpdateWorkoutTemplate();
+  const addTemplate = useAddWorkoutTemplate();
+  const userTemplates = ((templates ?? []) as any[]).filter((t: any) => !t.is_system);
+
+  const parseSets = (s: string | number) => { const n = parseInt(String(s)); return isNaN(n) ? 3 : n; };
+  const parseReps = (r: string | number) => { const n = parseInt(String(r)); return isNaN(n) ? 10 : n; };
+
+  const handleAdd = (t: any) => {
+    const already = (t.exercises ?? []).some((e: any) => e.name === ex.name);
+    if (already) { toast.info(`${ex.name} כבר קיים בתבנית`); onClose(); return; }
+    updateTemplate.mutate({ id: t.id, exercises: [...(t.exercises ?? []), { name: ex.name, sets: parseSets(ex.defaultSets), reps: parseReps(ex.defaultReps), weight_kg: 0 }] });
+    toast.success(`נוסף ל-${t.name} ✓`);
+    onClose();
+  };
+
+  const handleCreate = () => {
+    addTemplate.mutate({ name: ex.name, category: "weights", exercises: [{ name: ex.name, sets: parseSets(ex.defaultSets), reps: parseReps(ex.defaultReps), weight_kg: 0 }] });
+    toast.success("תבנית חדשה נוצרה ✓");
+    onClose();
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#0f0f0f] border border-white/10 border-b-0 p-5 pb-10 animate-in slide-in-from-bottom duration-300 max-h-[70vh] flex flex-col">
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5 shrink-0" />
+        <p className="text-sm font-black text-white text-center mb-1 shrink-0">הוסף לתבנית</p>
+        <p className="text-[11px] text-white/40 text-center mb-4 shrink-0 truncate px-4">{ex.name}</p>
+        <div className="space-y-2 overflow-y-auto flex-1 mb-3">
+          {userTemplates.length === 0 && (
+            <p className="text-xs text-white/25 text-center py-6">אין תבניות עדיין</p>
+          )}
+          {userTemplates.map((t: any) => (
+            <button key={t.id} onClick={() => handleAdd(t)}
+              className="w-full text-right p-3.5 rounded-2xl bg-white/6 border border-white/8 hover:bg-white/10 active:scale-[0.98] transition-all flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-white truncate">{t.name}</p>
+                <p className="text-[10px] text-white/35 mt-0.5">{(t.exercises ?? []).length} תרגילים</p>
+              </div>
+              <Plus className="h-4 w-4 text-white/40 shrink-0" />
+            </button>
+          ))}
+        </div>
+        <button onClick={handleCreate}
+          className="w-full p-3.5 rounded-2xl border border-dashed border-white/15 text-xs text-white/40 hover:border-white/30 hover:text-white/60 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shrink-0">
+          <Plus className="h-3.5 w-3.5" /> צור תבנית חדשה
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ── LibrarySettingsSheet ──────────────────────────────────────────────────────
+function LibrarySettingsSheet({
+  onClose,
+  hidden,
+  favorites,
+  onUnhide,
+  onUnfavorite,
+  exercises,
+}: {
+  onClose: () => void;
+  hidden: string[];
+  favorites: string[];
+  onUnhide: (name: string) => void;
+  onUnfavorite: (name: string) => void;
+  exercises: LibraryExercise[];
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#0f0f0f] border border-white/10 border-b-0 p-5 pb-10 max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />
+        <p className="text-sm font-black text-white text-center mb-5">הגדרות ספרייה</p>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-2 mb-5">
+          {[
+            { label: "תרגילים", value: exercises.length, color: "text-white" },
+            { label: "מועדפים", value: favorites.length, color: "text-red-400" },
+            { label: "מוסתרים", value: hidden.length, color: "text-white/40" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="rounded-2xl bg-white/5 border border-white/8 p-3 text-center">
+              <p className={`text-xl font-black ${color}`}>{value}</p>
+              <p className="text-[10px] text-white/35 mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Hidden exercises */}
+        {hidden.length > 0 && (
+          <section className="mb-5">
+            <p className="text-xs font-black text-white/50 mb-2 px-0.5">מוסתרים ({hidden.length})</p>
+            <div className="space-y-1.5">
+              {hidden.map((name) => (
+                <div key={name} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/8">
+                  <span className="text-xs text-white/70 truncate flex-1 mr-3">{name}</span>
+                  <button onClick={() => onUnhide(name)} className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 shrink-0">חשוף ✓</button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Favorites */}
+        {favorites.length > 0 && (
+          <section className="mb-5">
+            <p className="text-xs font-black text-white/50 mb-2 px-0.5">מועדפים ({favorites.length})</p>
+            <div className="space-y-1.5">
+              {favorites.map((name) => (
+                <div key={name} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/8">
+                  <span className="text-xs text-white/70 truncate flex-1 mr-3">{name}</span>
+                  <button onClick={() => onUnfavorite(name)} className="text-[11px] font-bold text-red-400 hover:text-red-300 shrink-0">הסר ✕</button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Custom exercise placeholder */}
+        <button className="w-full p-3.5 rounded-2xl border border-dashed border-white/12 text-xs text-white/30 flex items-center justify-center gap-2 cursor-not-allowed">
+          <Plus className="h-3.5 w-3.5" /> הוסף תרגיל מותאם אישית (בקרוב)
+        </button>
+      </div>
+    </>
+  );
+}
+
 // ── ExerciseCard sub-component (rich card with quick-add) ────────────────────
 function ExerciseCard({
   ex,
@@ -3489,6 +3551,7 @@ function ExerciseCard({
   onCheck,
   onOpen,
   onQuickAdd,
+  onToggleFavorite,
 }: {
   ex: LibraryExercise;
   groupKey: string;
@@ -3497,66 +3560,83 @@ function ExerciseCard({
   onCheck: () => void;
   onOpen: () => void;
   onQuickAdd: () => void;
+  onToggleFavorite: () => void;
 }) {
   return (
     <div
       className={`rounded-2xl border overflow-hidden transition-all cursor-pointer ${
-        isChecked
-          ? "border-emerald-500/50 bg-emerald-500/10"
-          : "border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/6"
+        isChecked ? "border-emerald-500/50 bg-emerald-500/10" : "border-white/8 bg-white/4 hover:border-white/18 hover:bg-white/6"
       }`}
       onClick={onCheck}
     >
-      <div className="flex items-stretch gap-0">
+      <div className="flex items-stretch">
         {/* Left: muscle visual */}
         <div className="w-14 shrink-0 bg-white/5 border-l border-white/6 flex items-center justify-center p-2">
           {BODY_DOTS[groupKey]
             ? <MuscleBodyIcon muscleKey={groupKey} size={34} />
-            : <span className="text-2xl">{groupKey === "calisthenics" ? "🤸" : "💪"}</span>
+            : <span className="text-xl">💪</span>
           }
         </div>
 
         {/* Right: content */}
-        <div className="flex-1 p-3 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
+        <div className="flex-1 min-w-0">
+          <div className="p-3 pb-2">
+            {/* Name + checkbox row */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-black text-white leading-tight truncate">{ex.name}</p>
-                {isFavorite && <Heart className="h-3 w-3 text-red-400 fill-red-400 shrink-0" />}
+                <p className="text-[10px] text-white/45 mt-0.5 leading-tight truncate">{ex.muscles}</p>
               </div>
-              <p className="text-[10px] text-white/45 mt-0.5 leading-tight truncate">{ex.muscles}</p>
+              <button
+                onClick={(e) => { e.stopPropagation(); onCheck(); }}
+                className={`shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                  isChecked ? "bg-emerald-500 border-emerald-500" : "border-white/25"
+                }`}
+              >
+                {isChecked && <Check className="h-3 w-3 text-white" />}
+              </button>
             </div>
-            {/* Checkbox */}
-            <button
-              onClick={(e) => { e.stopPropagation(); onCheck(); }}
-              className={`shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                isChecked ? "bg-emerald-500 border-emerald-500" : "border-white/25"
-              }`}
-            >
-              {isChecked && <Check className="h-3 w-3 text-white" />}
-            </button>
+
+            {/* Badges + action buttons */}
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+              <span className="text-[9px] px-2 py-0.5 rounded-lg bg-white/8 text-white/40 border border-white/8">{ex.equipment}</span>
+              <span className="text-[9px] px-2 py-0.5 rounded-lg bg-emerald-500/12 text-emerald-400 border border-emerald-500/20">{ex.defaultSets}×{ex.defaultReps}</span>
+              <div className="flex-1" />
+              {/* Heart — always visible */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+                className="h-6 w-6 rounded-lg flex items-center justify-center transition-all active:scale-90"
+              >
+                <Heart className={`h-3.5 w-3.5 transition-all ${isFavorite ? "text-red-400 fill-red-400" : "text-white/25"}`} />
+              </button>
+              {/* Add to template */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onQuickAdd(); }}
+                className="h-6 px-2 rounded-lg bg-white/8 border border-white/10 text-[9px] text-white/40 hover:bg-amber-500/15 hover:text-amber-400 hover:border-amber-500/25 transition-all flex items-center gap-1"
+              >
+                <BookOpen className="h-3 w-3" /> תבנית
+              </button>
+              {/* Info */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                className="h-6 w-6 rounded-lg bg-white/6 flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/12 transition-all"
+              >
+                <Info className="h-3 w-3" />
+              </button>
+            </div>
           </div>
 
-          {/* Badges + action buttons */}
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            <span className="text-[9px] px-2 py-0.5 rounded-lg bg-white/8 text-white/40 border border-white/8">{ex.equipment}</span>
-            <span className="text-[9px] px-2 py-0.5 rounded-lg bg-emerald-500/12 text-emerald-400 border border-emerald-500/20">{ex.defaultSets}×{ex.defaultReps}</span>
-            <div className="flex-1" />
-            {/* Quick add to template */}
-            <button
-              onClick={(e) => { e.stopPropagation(); onQuickAdd(); }}
-              className="h-6 px-2 rounded-lg bg-white/8 border border-white/10 text-[9px] text-white/40 hover:bg-amber-500/15 hover:text-amber-400 hover:border-amber-500/25 transition-all flex items-center gap-1"
-            >
-              <BookOpen className="h-3 w-3" /> תבנית
-            </button>
-            {/* Open detail modal */}
-            <button
-              onClick={(e) => { e.stopPropagation(); onOpen(); }}
-              className="h-6 w-6 rounded-lg bg-white/6 flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/12 transition-all"
-            >
-              <Info className="h-3 w-3" />
-            </button>
-          </div>
+          {/* YouTube red bar */}
+          <a
+            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.youtubeQuery ?? ex.name)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center justify-center gap-1.5 py-1.5 bg-red-600/15 border-t border-red-500/15 hover:bg-red-600/28 transition-all group"
+          >
+            <Youtube className="h-3 w-3 text-red-400/70 group-hover:text-red-400 transition-all" />
+            <span className="text-[10px] font-bold text-red-400/70 group-hover:text-red-400 transition-all">צפה בהדגמה ביוטיוב</span>
+          </a>
         </div>
       </div>
     </div>
@@ -3846,6 +3926,8 @@ function PRSection() {
   const [groupByTemplate, setGroupByTemplate] = useState(true);
   // progressive disclosure — show first 3 items by default
   const [showAllPRs,     setShowAllPRs]     = useState(false);
+  // per-template-group expand/collapse
+  const [expandedTg,     setExpandedTg]     = useState<Set<string>>(new Set());
   const VISIBLE_PR_COUNT = 3;
 
   // ── Global PR source of truth: keyed by exercise_name ────────────────────
@@ -4116,25 +4198,43 @@ function PRSection() {
         }
 
         const visibleGroups = showAllPRs ? templateGroups : templateGroups.slice(0, VISIBLE_PR_COUNT);
+        const VISIBLE_PER_GROUP = 2;
         return (
           <div className="space-y-3">
-            {visibleGroups.map((tg) => (
-              <div key={tg.id} className="space-y-1">
-                {/* Template section header */}
-                <div className="flex items-center gap-2 px-1">
-                  <div className={`h-px flex-1 ${tg.id === "__none__" ? "bg-white/8" : "bg-amber-500/20"}`} />
-                  <span className={`text-[10px] font-black shrink-0 ${tg.id === "__none__" ? "text-white/30" : "text-amber-400/70"}`}>
-                    {tg.id === "__none__" ? "✨ ללא תבנית" : `📋 ${tg.label}`}
-                  </span>
-                  <span className="text-[9px] text-white/20 bg-white/5 rounded-md px-1 py-0.5 shrink-0">
-                    {tg.prs.length}
-                  </span>
-                  <div className={`h-px flex-1 ${tg.id === "__none__" ? "bg-white/8" : "bg-amber-500/20"}`} />
+            {visibleGroups.map((tg) => {
+              const isExpanded = expandedTg.has(tg.id);
+              const visiblePrs = isExpanded ? tg.prs : tg.prs.slice(0, VISIBLE_PER_GROUP);
+              return (
+                <div key={tg.id} className="space-y-1">
+                  {/* Template section header */}
+                  <div className="flex items-center gap-2 px-1">
+                    <div className={`h-px flex-1 ${tg.id === "__none__" ? "bg-white/8" : "bg-amber-500/20"}`} />
+                    <span className={`text-[10px] font-black shrink-0 ${tg.id === "__none__" ? "text-white/30" : "text-amber-400/70"}`}>
+                      {tg.id === "__none__" ? "✨ ללא תבנית" : `📋 ${tg.label}`}
+                    </span>
+                    <span className="text-[9px] text-white/20 bg-white/5 rounded-md px-1 py-0.5 shrink-0">
+                      {tg.prs.length}
+                    </span>
+                    <div className={`h-px flex-1 ${tg.id === "__none__" ? "bg-white/8" : "bg-amber-500/20"}`} />
+                  </div>
+                  {/* Exercise rows under this template — draw from global prGroups */}
+                  {visiblePrs.map((g) => ExerciseRow(g))}
+                  {/* Per-group expand/collapse */}
+                  {tg.prs.length > VISIBLE_PER_GROUP && (
+                    <button
+                      onClick={() => setExpandedTg((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(tg.id)) next.delete(tg.id); else next.add(tg.id);
+                        return next;
+                      })}
+                      className="w-full py-1.5 rounded-xl border border-white/8 bg-white/4 text-[10px] font-bold text-white/35 hover:bg-white/8 hover:text-white/55 transition-all active:scale-[0.98]"
+                    >
+                      {isExpanded ? `הצג פחות ▲` : `הצג הכל (${tg.prs.length}) ▼`}
+                    </button>
+                  )}
                 </div>
-                {/* Exercise rows under this template — draw from global prGroups */}
-                {tg.prs.map((g) => ExerciseRow(g))}
-              </div>
-            ))}
+              );
+            })}
             <ShowMoreBtn total={templateGroups.length} />
           </div>
         );
