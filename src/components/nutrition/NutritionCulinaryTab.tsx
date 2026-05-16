@@ -753,20 +753,28 @@ difficulty: קל/בינוני/מתקדם בלבד. JSON בלבד ללא כל ט�
               {openDay === i && (
                 <div className="px-4 pb-4 space-y-2">
                   {([
-                    { key: "breakfast", label: "🌅 בוקר"   },
-                    { key: "lunch",     label: "☀️ צהריים" },
-                    { key: "dinner",    label: "🌙 ערב"    },
-                    { key: "snack",     label: "🍎 חטיף"   },
+                    { key: "breakfast", label: "🌅 ארוחת בוקר"   },
+                    { key: "lunch",     label: "☀️ ארוחת צהריים" },
+                    { key: "dinner",    label: "🌙 ארוחת ערב"    },
+                    { key: "snack",     label: "🍎 חטיף"          },
                   ] as { key: keyof DayPlan; label: string }[]).map(({ key, label }) => {
                     const meal = day[key] as MealSlot | undefined;
                     if (!meal) return null;
+                    const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent("מתכון " + meal.name)}`;
                     return (
-                      <div key={key} className="flex items-start justify-between gap-3 py-1.5 border-b border-white/5 last:border-0">
-                        <span className="text-[10px] text-white/40 shrink-0 pt-0.5">{label}</span>
-                        <div className="flex-1 min-w-0 text-left">
-                          <p className="text-sm text-white/90 font-medium leading-tight">{meal.name}</p>
-                          <p className="text-[10px] text-white/30 mt-0.5">{meal.calories} קל׳ · {meal.protein}g חלבון</p>
+                      <div key={key} className="py-2 border-b border-white/5 last:border-0 space-y-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="text-[10px] text-white/40 shrink-0 pt-0.5 font-bold">{label}</span>
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="text-sm text-white/90 font-medium leading-tight">{meal.name}</p>
+                            <p className="text-[10px] text-white/30 mt-0.5">{meal.calories} קל׳ · {meal.protein}g חלבון</p>
+                          </div>
                         </div>
+                        <a href={ytUrl} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-[10px] text-rose-400/70 hover:text-rose-400 transition-colors font-semibold pr-1">
+                          <Youtube className="h-3 w-3 shrink-0" />
+                          צפה בסרטון הכנה
+                        </a>
                       </div>
                     );
                   })}
