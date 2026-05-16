@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera, Search, Sparkles, Loader2, ChevronDown, ChevronUp,
-  Clock, Users, Flame, Zap, BookmarkPlus, Trash2, ArrowLeftRight,
+  Clock, Users, Flame, Zap, BookmarkPlus, Trash2, ArrowLeftRight, X,
 } from "lucide-react";
-import { recognizeMeal, generateText, parseAIJson } from "@/lib/ai-service";
+import { analyzeImage, generateText, parseAIJson } from "@/lib/ai-service";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -196,10 +196,28 @@ export function NutritionCulinaryTab() {
   const { data: profile }  = useProfile();
   const updateProfile      = useUpdateProfile();
   const [activeDiet, setActiveDiet] = useState<string | null>(null);
+  const [localAllergies, setLocalAllergies] = useState<string[]>([]);
+  const [allergyInput, setAllergyInput] = useState("");
 
   useEffect(() => {
     if (profile?.diet_type) setActiveDiet(profile.diet_type);
+    if (profile?.food_allergies) setLocalAllergies(profile.food_allergies);
   }, [profile]);
+
+  const addAllergy = () => {
+    const val = allergyInput.trim();
+    if (!val || localAllergies.includes(val)) return;
+    const next = [...localAllergies, val];
+    setLocalAllergies(next);
+    setAllergyInput("");
+    updateProfile.mutate({ food_allergies: next }, { onError: (e: any) => toast.error(e?.message ?? "שגיאה") });
+  };
+
+  const removeAllergy = (tag: string) => {
+    const next = localAllergies.filter((x) => x !== tag);
+    setLocalAllergies(next);
+    updateProfile.mutate({ food_allergies: next }, { onError: (e: any) => toast.error(e?.message ?? "שגיאה") });
+  };
 
   const handleDietSelect = (label: string) => {
     setActiveDiet(label);
@@ -283,7 +301,7 @@ export function NutritionCulinaryTab() {
     setWeekPlan(null);
     setOpenDay(null);
     try {
-      const excStr  = "אין";
+      const excStr = localAllergies.length ? localAllergies.join(", ") : "אין";
       const prompt  = `אתה דיאטן ישראלי מקצועי. צור תפריט שבועי מלא בפורמט JSON בלבד.
 
 פרמטרים:
@@ -341,13 +359,20 @@ export function NutritionCulinaryTab() {
     setRecipes([]);
     try {
       const b64 = await fileToBase64(file);
-      const result = await recognizeMeal(b64);
-      // use items list as ingredients
-      const ings = result.items?.length ? result.items : [result.name];
-      setScanIngredients(ings);
+      const raw = await analyzeImage(
+        b64,
+        "image/jpeg",
+        `You are a food ingredient detector. Identify all food ingredients visible in this fridge or pantry image.
+Return ONLY a valid JSON array of ingredient names in Hebrew.
+Example: ["עגבניות", "גבינה לבנה", "ביצים", "חסה", "גזר"]
+No explanation, no markdown. JSON array only.`
+      );
+      const ings = parseAIJson<string[]>(raw);
+      const list = Array.isArray(ings) && ings.length > 0 ? ings : ["מרכיב לא ידוע"];
+      setScanIngredients(list);
       setScanDone(true);
-      setQuery(ings.join(", "));
-      toast.success(`זוהו ${ings.length} מרכיבים!`);
+      setQuery(list.join(", "));
+      toast.success(`זוהו ${list.length} מרכיבים!`);
     } catch {
       toast.error("לא הצלחתי לזהות מרכיבים — נסה תמונה אחרת");
     } finally {
@@ -361,9 +386,12 @@ export function NutritionCulinaryTab() {
     setGenerating(true);
     setRecipes([]);
     try {
-      const dietClause = dietFilter     ? `\n- דיאטה מועדפת: ${dietFilter}` : "";
-      const calClause  = targetCalories ? `\n- יעד קלוריות למנה: ${targetCalories} קק"ל (חובה לעמוד בטווח ±10%)` : "";
-      const protClause = targetProtein  ? `\n- יעד חלבון למנה: ${targetProtein}g (חובה לעמוד בטווח ±5g)` : "";
+      const dietClause = dietFilter       ? `\n- דיאטה מועדפת: ${dietFilter}` : "";
+      const calClause  = targetCalories   ? `\n- יעד קלוריות למנה: ${targetCalories} קק"ל (חובה לעמוד בטווח ±10%)` : "";
+      const protClause = targetProtein    ? `\n- יעד חלבון למנה: ${targetProtein}g (חובה לעמוד בטווח ±5g)` : "";
+      const excClause  = localAllergies.length
+        ? `\n- מרכיבים אסורים (אלרגיות): ${localAllergies.join(", ")} — אסור בהחלט לכלול אותם`
+        : "";
 
       const macroInstruction = (targetCalories || targetProtein)
         ? `\n\nחשוב ביותר: עליך לבנות את המתכון כך שיגיע בדיוק ליעדי המאקרו שצוינו. חשב את הכמויות בהתאם.`
@@ -371,7 +399,7 @@ export function NutritionCulinaryTab() {
 
       const prompt = `אתה שף ודיאטן ישראלי מקצועי. צור 3 מתכונים מפורטים בפורמט JSON בלבד.
 
-בקשה: "${query}"${dietClause}${calClause}${protClause}${macroInstruction}
+בקשה: "${query}"${dietClause}${calClause}${protClause}${excClause}${macroInstruction}
 
 פורמט JSON חובה:
 {
@@ -438,6 +466,48 @@ export function NutritionCulinaryTab() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* ══ ALLERGIES & EXCLUSIONS ══════════════════════════════════════════ */}
+      <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🚫</span>
+          <div>
+            <p className="text-sm font-black text-white">אלרגיות והגבלות</p>
+            <p className="text-[10px] text-white/40">משפיע על תפריט ומתכונים שנוצרים עם AI</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={allergyInput}
+            onChange={(e) => setAllergyInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addAllergy()}
+            placeholder="גלוטן, חלב, אגוזים..."
+            className={inputCls + " flex-1"}
+          />
+          <button
+            onClick={addAllergy}
+            className="px-4 rounded-xl bg-white/10 border border-white/15 text-white text-sm font-bold hover:bg-white/15 transition-colors min-h-[44px]"
+          >
+            + הוסף
+          </button>
+        </div>
+        {localAllergies.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {localAllergies.map((tag) => (
+              <span
+                key={tag}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold"
+              >
+                {tag}
+                <button onClick={() => removeAllergy(tag)} className="opacity-60 hover:opacity-100">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ══ WEEKLY MENU GENERATOR ═══════════════════════════════════════════ */}

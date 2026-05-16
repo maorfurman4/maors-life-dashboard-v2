@@ -1,5 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -109,7 +107,48 @@ async function searchUSDA(query: string): Promise<FoodResult[]> {
   }
 }
 
-serve(async (req) => {
+async function estimateWithAI(query: string): Promise<FoodResult[]> {
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) return [];
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        max_tokens: 200,
+        messages: [
+          {
+            role: "system",
+            content: `Return per-100g nutritional values for the food item the user names.
+Respond with ONLY a JSON object: { "name_he": "<Hebrew name>", "calories": <number>, "protein": <number>, "carbs": <number>, "fat": <number> }
+Use USDA standard values. No markdown, no explanation.`,
+          },
+          { role: "user", content: query },
+        ],
+      }),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content ?? "{}";
+    const cleaned = text.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (!parsed.name_he) return [];
+    return [{
+      name:     parsed.name_he,
+      calories: Math.round(parsed.calories ?? 0),
+      protein:  Math.round((parsed.protein ?? 0) * 10) / 10,
+      carbs:    Math.round((parsed.carbs   ?? 0) * 10) / 10,
+      fat:      Math.round((parsed.fat     ?? 0) * 10) / 10,
+      source:   "ai",
+    }];
+  } catch (e) {
+    console.error("AI estimate error:", e);
+    return [];
+  }
+}
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -171,6 +210,10 @@ serve(async (req) => {
         }
       }
       results = merged;
+    }
+
+    if (results.length === 0) {
+      results = await estimateWithAI(query);
     }
 
     return new Response(JSON.stringify({ results: results.slice(0, 12) }), {
