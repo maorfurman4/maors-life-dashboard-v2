@@ -1,11 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
-import { Loader2, Plus, ScanLine, UtensilsCrossed, Search } from "lucide-react";
+import { Loader2, Plus, UtensilsCrossed, Search } from "lucide-react";
 import { useAddNutrition } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
-import { BarcodeScanner } from "./BarcodeScanner";
 import { MealPhotoCapture } from "./MealPhotoCapture";
 import { supabase } from "@/integrations/supabase/client";
+
+function autoMealType(): "breakfast" | "lunch" | "snack" | "dinner" {
+  const h = new Date().getHours();
+  if (h >= 6  && h < 10) return "breakfast";
+  if (h >= 10 && h < 15) return "lunch";
+  if (h >= 15 && h < 19) return "snack";
+  if (h >= 19 && h < 23) return "dinner";
+  return "snack";
+}
 
 interface FoodResult {
   name: string;
@@ -56,7 +64,6 @@ export function AddMealDrawer({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<FoodResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [scanOpen, setScanOpen] = useState(false);
   const [selectedBase, setSelectedBase] = useState<FoodBase | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,27 +94,6 @@ export function AddMealDrawer({
     setCarbs((selectedBase.carbs * factor).toFixed(1));
     setFat((selectedBase.fat * factor).toFixed(1));
   }, [grams, selectedBase]);
-
-  const handleBarcode = async (barcode: string) => {
-    setScanOpen(false);
-    setLoading(true);
-    try {
-      const { data } = await supabase.functions.invoke("food-search", {
-        body: { barcode },
-      });
-      const product = data?.product;
-      if (product) {
-        toast.success(`נמצא: ${product.name}`);
-        selectFood(product);
-      } else {
-        toast.error("מוצר לא נמצא — הזן ידנית");
-      }
-    } catch (e: any) {
-      toast.error("שגיאה: " + (e?.message || "לא ידוע"));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const selectFood = (food: FoodResult) => {
     // Store per-100g base so gram changes can recalculate
@@ -140,7 +126,7 @@ export function AddMealDrawer({
     addNutrition.mutate(
       {
         name,
-        meal_type: "lunch",
+        meal_type: autoMealType(),
         calories: calories ? parseInt(calories) : undefined,
         protein_g: protein ? parseFloat(protein) : undefined,
         carbs_g: carbs ? parseFloat(carbs) : undefined,
@@ -219,31 +205,21 @@ export function AddMealDrawer({
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="חפש: חזה עוף, אורז, מלפפון..."
-                  className="w-full px-3 py-2.5 pr-9 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                />
-                {loading && (
-                  <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-nutrition" />
-                )}
-              </div>
-              <button
-                onClick={() => setScanOpen(true)}
-                type="button"
-                className="px-3 rounded-xl bg-nutrition text-nutrition-foreground text-sm font-medium hover:opacity-90 min-h-[44px] flex items-center gap-1"
-                title="סרוק ברקוד"
-              >
-                <ScanLine className="h-4 w-4" />
-              </button>
+            <div className="relative">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="חפש: חזה עוף, אורז, מלפפון..."
+                className="w-full px-3 py-2.5 pr-9 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+              />
+              {loading && (
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-nutrition" />
+              )}
             </div>
 
             {results.length > 0 && (
@@ -353,7 +329,6 @@ export function AddMealDrawer({
           {addNutrition.isPending ? "שומר..." : "שמור ארוחה"}
         </button>
       </div>
-      <BarcodeScanner open={scanOpen} onClose={() => setScanOpen(false)} onDetected={handleBarcode} />
     </AddItemDrawer>
   );
 }

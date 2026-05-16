@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, Loader2, Sparkles, X } from "lucide-react";
+import { Camera, FolderOpen, Image, Loader2, Sparkles, X } from "lucide-react";
 import { recognizeMeal } from "@/lib/ai-service";
 import { compressImageToBase64 } from "@/lib/image-utils";
 import { toast } from "sonner";
@@ -17,8 +17,9 @@ interface MealPhotoCaptureProps {
 }
 
 export function MealPhotoCapture({ onRecognized }: MealPhotoCaptureProps) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(false);
+  const cameraRef  = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading]       = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const handleFile = async (file: File) => {
@@ -28,13 +29,12 @@ export function MealPhotoCapture({ onRecognized }: MealPhotoCaptureProps) {
     setLoading(true);
     try {
       const base64 = await compressImageToBase64(file);
-      const meal = await recognizeMeal(base64);
+      const meal   = await recognizeMeal(base64);
       toast.success(`זוהה: ${meal.name}`);
       onRecognized(meal);
       setPreviewUrl(null);
       URL.revokeObjectURL(objectUrl);
     } catch (e: any) {
-      console.error(e);
       toast.error("שגיאה בזיהוי: " + (e?.message || "לא ידוע"));
     } finally {
       setLoading(false);
@@ -43,26 +43,36 @@ export function MealPhotoCapture({ onRecognized }: MealPhotoCaptureProps) {
 
   return (
     <div className="space-y-2">
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-      />
+      {/* Hidden inputs — camera forces capture, gallery opens picker */}
+      <input ref={cameraRef}  type="file" accept="image/*" capture="environment" className="hidden"
+        onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ""; }} />
+      <input ref={galleryRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ""; }} />
 
       {!previewUrl && (
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-l from-nutrition/20 to-nutrition/5 border border-nutrition/30 text-nutrition font-semibold text-sm hover:from-nutrition/30 transition-colors min-h-[48px] disabled:opacity-50"
-        >
-          <Sparkles className="h-4 w-4" />
-          <Camera className="h-4 w-4" />
-          צלם ארוחה — AI יזהה ויחשב
-        </button>
+        <div className="space-y-1.5">
+          <p className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
+            <Sparkles className="h-3 w-3 text-nutrition" />
+            AI יזהה ויחשב ערכים תזונתיים
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            <button type="button" onClick={() => cameraRef.current?.click()} disabled={loading}
+              className="flex flex-col items-center gap-1 py-2.5 rounded-xl bg-nutrition/10 border border-nutrition/25 text-nutrition text-[10px] font-bold hover:bg-nutrition/20 transition-colors disabled:opacity-50 min-h-[52px]">
+              <Camera className="h-4 w-4" />
+              מצלמה
+            </button>
+            <button type="button" onClick={() => galleryRef.current?.click()} disabled={loading}
+              className="flex flex-col items-center gap-1 py-2.5 rounded-xl bg-nutrition/10 border border-nutrition/25 text-nutrition text-[10px] font-bold hover:bg-nutrition/20 transition-colors disabled:opacity-50 min-h-[52px]">
+              <Image className="h-4 w-4" />
+              גלריה
+            </button>
+            <button type="button" onClick={() => galleryRef.current?.click()} disabled={loading}
+              className="flex flex-col items-center gap-1 py-2.5 rounded-xl bg-nutrition/10 border border-nutrition/25 text-nutrition text-[10px] font-bold hover:bg-nutrition/20 transition-colors disabled:opacity-50 min-h-[52px]">
+              <FolderOpen className="h-4 w-4" />
+              קבצים
+            </button>
+          </div>
+        </div>
       )}
 
       {previewUrl && (
@@ -75,10 +85,8 @@ export function MealPhotoCapture({ onRecognized }: MealPhotoCaptureProps) {
             </div>
           )}
           {!loading && (
-            <button
-              onClick={() => setPreviewUrl(null)}
-              className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 flex items-center justify-center text-white"
-            >
+            <button onClick={() => setPreviewUrl(null)}
+              className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 flex items-center justify-center text-white">
               <X className="h-4 w-4" />
             </button>
           )}
