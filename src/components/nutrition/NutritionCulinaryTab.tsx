@@ -314,14 +314,18 @@ export function NutritionCulinaryTab() {
     setWeekPlan(null);
     setOpenDay(null);
     try {
-      const excStr = localAllergies.length ? localAllergies.join(", ") : "אין";
-      const prompt  = `אתה דיאטן ישראלי מקצועי. צור תפריט שבועי מלא בפורמט JSON בלבד.
+      const excStr   = localAllergies.length ? localAllergies.join(", ") : "אין";
+      const dietRule = DIET_RULES[profile.diet_type] ?? "";
+
+      const prompt = `אתה דיאטן ישראלי מקצועי. צור תפריט שבועי מלא בפורמט JSON בלבד.
 
 פרמטרים:
-- סוג דיאטה: ${profile.diet_type}
 - קלוריות יומיות: ${tdeeCalories.targetCalories}
 - יעד חלבון יומי: ${tdeeCalories.protein}g
 - מרכיבים אסורים: ${excStr}
+${dietRule}
+
+חובה לעמוד בכל כללי הדיאטה שצוינו לעיל בכל ארוחה. אסור לחרוג.
 
 פורמט JSON חובה (7 ימים, ישראלי, ריאלי):
 {
@@ -337,7 +341,7 @@ export function NutritionCulinaryTab() {
   ]
 }
 
-כללים: 7 ימים בדיוק (ראשון עד שבת). ארוחות ישראליות אמיתיות. JSON בלבד ללא markdown.`;
+7 ימים בדיוק (ראשון עד שבת). JSON בלבד ללא markdown.`;
 
       const raw  = await generateText(prompt);
       const plan = parseAIJson<WeeklyPlan>(raw);
@@ -473,7 +477,7 @@ ${NUTRITION_TABLE}
 ${macroTargetBlock}
 
 תהליך חובה לכל מתכון:
-1. בחר מרכיבים וכמויות
+1. בחר מרכיבים וכמויות מדויקות — כולל תבלינים בכמויות מדויקות (לדוגמה: "½ כפית כמון", "1 כפית פפריקה מתוקה", "2 שיני שום כתושות", "¼ כפית פלפל שחור")
 2. חשב: חלבון_כולל = סכום(כמות_g × חלבון_ל100g ÷ 100) לכל מרכיב
 3. חשב: קלוריות_כולל = סכום(כמות_g × קל_ל100g ÷ 100) לכל מרכיב
 4. חלק במספר המנות → חלבון_למנה, קלוריות_למנה
@@ -490,7 +494,7 @@ ${macroTargetBlock}
       "calories_per_serving": 350,
       "protein_per_serving": 25,
       "tags": ["בריא", "מהיר"],
-      "ingredients": ["100g עוף", "2 כפות שמן זית"],
+      "ingredients": ["200g חזה עוף", "1 כף שמן זית", "½ כפית כמון", "1 כפית פפריקה", "¼ כפית מלח", "פלפל שחור לפי טעם"],
       "steps": ["שלב 1: ...", "שלב 2: ..."],
       "tip": "טיפ להגשה מושלמת"
     }
