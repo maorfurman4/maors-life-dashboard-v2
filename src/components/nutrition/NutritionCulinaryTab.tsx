@@ -266,12 +266,41 @@ export function NutritionCulinaryTab() {
   const dailyCalTarget  = savedGoals?.daily_calories_goal ?? tdeeCalories.targetCalories;
   const dailyProtTarget = savedGoals?.daily_protein_goal  ?? tdeeCalories.protein;
 
-  // ── Weekly plan state ──
-  const [weekPlan,      setWeekPlan]      = useState<WeeklyPlan | null>(null);
+  // ── Weekly plan state (persisted for 7 days in localStorage) ──
+  const [weekPlan,      setWeekPlan]      = useState<WeeklyPlan | null>(() => {
+    try {
+      const raw = localStorage.getItem("current_week_plan");
+      if (!raw) return null;
+      const { plan, createdAt } = JSON.parse(raw);
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      if (Date.now() - createdAt > sevenDays) { localStorage.removeItem("current_week_plan"); return null; }
+      return plan as WeeklyPlan;
+    } catch { return null; }
+  });
+  const [weekPlanDate, setWeekPlanDate] = useState<number | null>(() => {
+    try {
+      const raw = localStorage.getItem("current_week_plan");
+      if (!raw) return null;
+      return JSON.parse(raw).createdAt as number;
+    } catch { return null; }
+  });
   const [planGenerating, setPlanGenerating] = useState(false);
   const [openDay,       setOpenDay]       = useState<number | null>(null);
   const [saveModal,  setSaveModal]  = useState(false);
   const [templateName, setTemplateName] = useState("");
+
+  const saveCurrentWeekPlan = (plan: WeeklyPlan) => {
+    const createdAt = Date.now();
+    localStorage.setItem("current_week_plan", JSON.stringify({ plan, createdAt }));
+    setWeekPlanDate(createdAt);
+  };
+
+  const clearCurrentWeekPlan = () => {
+    localStorage.removeItem("current_week_plan");
+    setWeekPlan(null);
+    setWeekPlanDate(null);
+    setOpenDay(null);
+  };
 
   // ── Saved templates ──
   const { data: templates = [] } = useQuery<PlanTemplate[]>({
@@ -369,6 +398,7 @@ ${dietRule}
       const raw  = await generateText(prompt);
       const plan = parseAIJson<WeeklyPlan>(raw);
       setWeekPlan(plan);
+      saveCurrentWeekPlan(plan);
       setOpenDay(0);
     } catch {
       toast.error("שגיאה ביצירת תפריט — נסה שנית");
@@ -639,15 +669,36 @@ difficulty: קל/בינוני/מתקדם בלבד. JSON בלבד ללא כל ט�
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-emerald-400" />
-              <p className="text-sm font-black text-white">תפריט שבועי — {profile?.diet_type}</p>
+              <div>
+                <p className="text-sm font-black text-white">תפריט שבועי — {profile?.diet_type}</p>
+                {weekPlanDate && (() => {
+                  const created = new Date(weekPlanDate);
+                  const expires = new Date(weekPlanDate + 7 * 24 * 60 * 60 * 1000);
+                  const daysLeft = Math.ceil((expires.getTime() - Date.now()) / 86_400_000);
+                  return (
+                    <p className="text-[9px] text-white/30 mt-0.5">
+                      נוצר {created.toLocaleDateString("he-IL", { day: "numeric", month: "short" })} · בתוקף עוד {daysLeft} ימים
+                    </p>
+                  );
+                })()}
+              </div>
             </div>
-            <button
-              onClick={() => { setTemplateName(""); setSaveModal(true); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 transition-all"
-            >
-              <BookmarkPlus className="h-3.5 w-3.5" />
-              שמור
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setTemplateName(""); setSaveModal(true); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 transition-all"
+              >
+                <BookmarkPlus className="h-3.5 w-3.5" />
+                שמור
+              </button>
+              <button
+                onClick={clearCurrentWeekPlan}
+                className="p-1.5 rounded-xl hover:bg-rose-500/15 text-white/25 hover:text-rose-400 transition-all"
+                title="מחק תפריט"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
 
           {weekPlan.days.map((day, i) => (
