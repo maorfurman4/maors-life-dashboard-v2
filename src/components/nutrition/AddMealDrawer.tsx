@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
-import { Search, Loader2, Plus, ScanLine, UtensilsCrossed } from "lucide-react";
+import { Loader2, Plus, ScanLine, UtensilsCrossed } from "lucide-react";
 import { useAddNutrition } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { MealPhotoCapture } from "./MealPhotoCapture";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FoodResult {
   name: string;
@@ -48,56 +49,31 @@ export function AddMealDrawer({
 
   const addNutrition = useAddNutrition();
 
-  const searchFood = async () => {
-    if (!query.trim()) return;
-    setLoading(true);
-    try {
-      // Israeli-first search via Open Food Facts
-      const res = await fetch(
-        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,brands,nutriments,serving_size&tagtype_0=countries&tag_contains_0=contains&tag_0=israel`
-      );
-      const data = await res.json();
-      let products = (data.products || []).filter((p: any) => p.product_name && p.nutriments);
-      // Fallback to global if < 3 results
-      if (products.length < 3) {
-        const res2 = await fetch(
-          `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,brands,nutriments,serving_size`
-        );
-        const data2 = await res2.json();
-        products = (data2.products || []).filter((p: any) => p.product_name && p.nutriments);
-      }
-      setResults(products.map((p: any) => ({
-        name:     p.product_name,
-        brand:    p.brands || undefined,
-        calories: Math.round(p.nutriments["energy-kcal_100g"] ?? p.nutriments["energy-kcal"] ?? 0),
-        protein:  Math.round((p.nutriments.proteins_100g ?? 0) * 10) / 10,
-        carbs:    Math.round((p.nutriments.carbohydrates_100g ?? 0) * 10) / 10,
-        fat:      Math.round((p.nutriments.fat_100g ?? 0) * 10) / 10,
-      })));
-    } catch {
-      toast.error("שגיאה בחיפוש");
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Debounced search via food-search edge function (OFF → USDA → AI fallback)
+  useEffect(() => {
+    if (query.trim().length < 2) { setResults([]); return; }
+    const t = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const { data } = await supabase.functions.invoke("food-search", {
+          body: { query: query.trim() },
+        });
+        setResults(data?.results ?? []);
+      } catch { setResults([]); }
+      finally { setLoading(false); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
 
   const handleBarcode = async (barcode: string) => {
     setScanOpen(false);
     setLoading(true);
     try {
-      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
-      const data = await res.json();
-      if (data.status === 1 && data.product) {
-        const p = data.product;
-        const product: FoodResult = {
-          name:     p.product_name || p.product_name_he || "מוצר לא ידוע",
-          brand:    p.brands || undefined,
-          calories: Math.round(p.nutriments?.["energy-kcal_100g"] ?? 0),
-          protein:  Math.round((p.nutriments?.proteins_100g ?? 0) * 10) / 10,
-          carbs:    Math.round((p.nutriments?.carbohydrates_100g ?? 0) * 10) / 10,
-          fat:      Math.round((p.nutriments?.fat_100g ?? 0) * 10) / 10,
-        };
+      const { data } = await supabase.functions.invoke("food-search", {
+        body: { barcode },
+      });
+      const product = data?.product;
+      if (product) {
         toast.success(`נמצא: ${product.name}`);
         selectFood(product);
       } else {
@@ -185,21 +161,18 @@ export function AddMealDrawer({
         {mode === "search" && (
           <div className="space-y-2">
             <div className="flex gap-2">
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && searchFood()}
-                placeholder="חפש: חזה עוף, אורז, במבה, קוטג׳..."
-                className="flex-1 px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
-              />
-              <button
-                onClick={searchFood}
-                disabled={loading || !query.trim()}
-                className="px-3 rounded-xl bg-nutrition/15 text-nutrition text-sm font-medium hover:bg-nutrition/25 disabled:opacity-50 min-h-[44px]"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              </button>
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="חפש: חזה עוף, אורז, במבה, קוטג׳..."
+                  className="w-full px-3 py-2.5 pr-9 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
+                />
+                {loading && (
+                  <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-nutrition" />
+                )}
+              </div>
               <button
                 onClick={() => setScanOpen(true)}
                 type="button"

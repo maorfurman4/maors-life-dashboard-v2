@@ -9,19 +9,58 @@ const errResponse = (msg: string, status = 500) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const SYSTEM_PROMPT = `You are an expert nutritionist and food analyst specializing in Israeli cuisine.
+const SYSTEM_PROMPT = `You are a clinical nutritionist with access to USDA and Israeli food databases. Your job is to calculate calories and macros with maximum precision — NOT to guess holistically.
 
-Analyze the food in this image. Use the report_meal function to return your analysis.
+Follow these exact steps:
 
-Guidelines:
-- Even if the image is blurry, dark, or partially unclear — make your best effort to identify the most likely food items. Never refuse to guess.
-- Estimate realistic portion sizes using visual cues: plate diameter relative to utensils or hands, food height and spread.
-- If multiple dishes are visible, analyze the entire meal as one combined entry (sum all macros).
-- If a packaged product is visible, read the nutrition label when legible; otherwise estimate from product type and visible quantity.
-- For beverages visible alongside food, include their calories and macros in the total.
-- meal_name must be in Hebrew (e.g. "חזה עוף עם אורז וירקות").
-- Set no_food to true ONLY when absolutely no food is detectable (empty room, random objects, fully black image).
-- Set confidence to "high" when food is clearly identifiable, "medium" when somewhat blurry or ambiguous, "low" when heavily obscured but still guessable.`;
+STEP 1 — LIST COMPONENTS
+Identify every food item visible in the image. For each item, estimate its weight in grams using visual cues:
+- A standard dinner plate is ~26cm diameter. Use utensils, hands, or plate rim as scale references.
+- Judge food height (stacked rice vs thin layer) and spread area.
+- Include beverages if visible alongside food.
+
+STEP 2 — APPLY USDA REFERENCE VALUES PER 100g
+For each component, use these known nutritional values (do NOT deviate from these reference points):
+- חזה עוף מבושל/אפוי: 165 קל׳, חלבון 31g, פחמימות 0g, שומן 3.6g
+- שוק עוף מבושל (עם עור): 245 קל׳, חלבון 27g, פחמימות 0g, שומן 15g
+- בשר בקר טחון (90% רזה): 215 קל׳, חלבון 26g, פחמימות 0g, שומן 12g
+- סטייק בקר רזה (סינטה): 200 קל׳, חלבון 28g, פחמימות 0g, שומן 9g
+- פילה סלמון: 208 קל׳, חלבון 20g, פחמימות 0g, שומן 13g
+- טונה (קופסה, במים): 116 קל׳, חלבון 26g, פחמימות 0g, שומן 1g
+- ביצה שלמה (גודל L ~60g): 85 קל׳, חלבון 7g, פחמימות 0.6g, שומן 5.5g
+- אורז לבן מבושל: 130 קל׳, חלבון 2.7g, פחמימות 28g, שומן 0.3g
+- פסטה מבושלת: 131 קל׳, חלבון 5g, פחמימות 25g, שומן 1g
+- לחם לבן (פרוסה ~30g): 80 קל׳, חלבון 2.5g, פחמימות 15g, שומן 1g
+- פיתה (1 יחידה ~60g): 165 קל׳, חלבון 5.5g, פחמימות 33g, שומן 0.7g
+- תפוח אדמה מבושל: 86 קל׳, חלבון 1.8g, פחמימות 20g, שומן 0.1g
+- גזר גולמי: 41 קל׳, חלבון 0.9g, פחמימות 10g, שומן 0.2g
+- עגבנייה: 18 קל׳, חלבון 0.9g, פחמימות 3.9g, שומן 0.2g
+- מלפפון: 16 קל׳, חלבון 0.7g, פחמימות 3.6g, שומן 0.1g
+- חסה: 15 קל׳, חלבון 1.4g, פחמימות 2.9g, שומן 0.2g
+- שמן זית/שמן (1 כף = 14g): 120 קל׳, חלבון 0g, פחמימות 0g, שומן 14g
+- חמאה (1 כף = 14g): 100 קל׳, חלבון 0.1g, פחמימות 0g, שומן 11.5g
+- גבינה צהובה (צ׳דר): 402 קל׳, חלבון 25g, פחמימות 1.3g, שומן 33g
+- קוטג׳ 5%: 85 קל׳, חלבון 11g, פחמימות 3.4g, שומן 3g
+- יוגורט 3%: 61 קל׳, חלבון 3.5g, פחמימות 4.7g, שומן 3g
+- חומוס (מוכן): 166 קל׳, חלבון 9g, פחמימות 27g, שומן 3g
+- עדשים מבושלות: 116 קל׳, חלבון 9g, פחמימות 20g, שומן 0.4g
+- אבוקדו: 160 קל׳, חלבון 2g, פחמימות 9g, שומן 15g
+- בננה: 89 קל׳, חלבון 1.1g, פחמימות 23g, שומן 0.3g
+For foods not listed — use the closest USDA equivalent and apply same precision.
+
+STEP 3 — CALCULATE
+Multiply each component's weight × (reference per 100g ÷ 100), then sum all components.
+
+STEP 4 — REPORT
+Call report_meal with:
+- meal_name in Hebrew describing the full meal
+- The mathematically summed totals for calories, protein_g, carbs_g, fat_g
+- portion_grams: total estimated gram weight of all food combined
+- confidence: "high" if food clearly identified, "medium" if somewhat ambiguous, "low" if heavily obscured
+- no_food: true ONLY when absolutely no food is visible (empty room, random objects, black image)
+
+Never refuse to analyze. Even blurry images must produce a best-effort calculation.`;
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -85,7 +124,8 @@ Deno.serve(async (req) => {
                 carbs_g:    { type: "number",  description: "פחמימות בגרמים" },
                 fat_g:      { type: "number",  description: "שומן בגרמים" },
                 confidence: { type: "string",  enum: ["high", "medium", "low"] },
-                no_food:    { type: "boolean", description: "true only when absolutely no food is visible" },
+                no_food:       { type: "boolean", description: "true only when absolutely no food is visible" },
+                portion_grams: { type: "number",  description: "total estimated gram weight of all food combined" },
               },
               required: ["meal_name", "calories", "protein_g", "carbs_g", "fat_g", "confidence", "no_food"],
             },
@@ -133,12 +173,13 @@ Deno.serve(async (req) => {
       : "medium") as "high" | "medium" | "low";
 
     const meal = {
-      name:       String(parsed.meal_name ?? "ארוחה לא ידועה"),
-      calories:   Number(parsed.calories  ?? 0),
-      protein_g:  Number(parsed.protein_g ?? 0),
-      carbs_g:    Number(parsed.carbs_g   ?? 0),
-      fat_g:      Number(parsed.fat_g     ?? 0),
-      items:      [] as string[],
+      name:          String(parsed.meal_name    ?? "ארוחה לא ידועה"),
+      calories:      Number(parsed.calories     ?? 0),
+      protein_g:     Number(parsed.protein_g    ?? 0),
+      carbs_g:       Number(parsed.carbs_g      ?? 0),
+      fat_g:         Number(parsed.fat_g        ?? 0),
+      portion_grams: Number(parsed.portion_grams ?? 0),
+      items:         [] as string[],
       confidence,
     };
 

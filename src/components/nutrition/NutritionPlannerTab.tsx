@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Sparkles, Save, X,
+  Sparkles, Save,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,6 @@ import {
   calcTDEE, ACTIVITY_LABELS, ACTIVITY_MULTIPLIER, GOAL_LABELS,
   type ActivityLevel, type Goal, type Sex,
 } from "@/lib/tdee";
-import { useProfile } from "@/hooks/use-profile";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 async function getUserId() {
@@ -39,7 +38,6 @@ const selectCls =
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export function NutritionPlannerTab() {
   const qc = useQueryClient();
-  const { data: profile } = useProfile();
 
   // ── TDEE state — lazy-init from localStorage where applicable ──
   const [sex,      setSex]      = useState<Sex>(() =>
@@ -56,10 +54,6 @@ export function NutritionPlannerTab() {
   const [goal,     setGoal]     = useState<Goal>(() =>
     (localStorage.getItem("tdee_goal") as Goal) ?? "maintain"
   );
-
-  // ── Planner state ──
-  const [exclusions,  setExclusions]  = useState<string[]>([]);
-  const [tagInput,    setTagInput]    = useState("");
 
   // ── Load saved settings ──
   const { data: settings } = useQuery({
@@ -94,13 +88,6 @@ export function NutritionPlannerTab() {
   useEffect(() => { localStorage.setItem("tdee_age",      String(age));      }, [age]);
   useEffect(() => { localStorage.setItem("tdee_activity", activity);         }, [activity]);
   useEffect(() => { localStorage.setItem("tdee_goal",     goal);             }, [goal]);
-
-  // ── Auto-load profile allergies ──
-  useEffect(() => {
-    if (profile?.food_allergies?.length) {
-      setExclusions(profile.food_allergies);
-    }
-  }, [profile]);
 
   // ── TDEE result (live) ──
   const result = useMemo(
@@ -140,16 +127,6 @@ export function NutritionPlannerTab() {
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה בשמירה"),
   });
-
-  // ── Tag input handlers ──
-  const addTag = () => {
-    const val = tagInput.trim();
-    if (val && !exclusions.includes(val)) {
-      setExclusions((p) => [...p, val]);
-      setTagInput("");
-    }
-  };
-  const removeTag = (t: string) => setExclusions((p) => p.filter((x) => x !== t));
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
@@ -286,67 +263,6 @@ export function NutritionPlannerTab() {
         </button>
       </div>
 
-      {/* ── Diet type indicator (set in מתכונים tab) ── */}
-      {profile?.diet_type && (
-        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/8">
-          <span className="text-base">🥗</span>
-          <div className="min-w-0">
-            <p className="text-[10px] text-white/40">דיאטה פעילה</p>
-            <p className="text-sm font-bold text-emerald-300">{profile.diet_type}</p>
-          </div>
-          <p className="text-[9px] text-white/25 mr-auto">שנה בטאב מתכונים</p>
-        </div>
-      )}
-
-      {/* ══ SECTION 3: EXCLUSIONS ════════════════════════════════════════════ */}
-      <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🚫</span>
-          <div>
-            <p className="text-sm font-black text-white">אלרגיות והגבלות</p>
-            <p className="text-[10px] text-white/40">מרכיבים שלעולם לא יופיעו בתפריט</p>
-          </div>
-        </div>
-
-        {/* Tag input */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addTag()}
-            placeholder="גלוטן, חלב, אגוזים..."
-            className={inputCls + " flex-1"}
-          />
-          <button onClick={addTag}
-            className="px-4 rounded-xl bg-white/10 border border-white/15 text-white text-sm font-bold hover:bg-white/15 transition-colors min-h-[44px]">
-            + הוסף
-          </button>
-        </div>
-
-        {/* Tags */}
-        {exclusions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {exclusions.map((t) => (
-              <span key={t}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold">
-                {t}
-                <button onClick={() => removeTag(t)} className="opacity-60 hover:opacity-100">
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Weekly menu is now in מתכונים tab ── */}
-      <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl border border-teal-500/20 bg-teal-500/5">
-        <span className="text-base">📋</span>
-        <p className="text-xs text-teal-300/80">
-          יצירת תפריט שבועי עברה לטאב <span className="font-bold">מתכונים</span>
-        </p>
-      </div>
     </div>
   );
 }
