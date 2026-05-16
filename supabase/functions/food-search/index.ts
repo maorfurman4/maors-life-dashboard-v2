@@ -212,8 +212,14 @@ Deno.serve(async (req) => {
       results = merged;
     }
 
-    if (results.length === 0) {
-      results = await estimateWithAI(query);
+    // Always prepend AI estimate so basic whole foods (מלפפון, עגבנייה etc.)
+    // always appear even when OFF returns only processed variants (מלפפון חמוץ)
+    const aiResults = await estimateWithAI(query);
+    const seenNames = new Set(results.map((r) => r.name.toLowerCase()));
+    for (const r of aiResults) {
+      if (!seenNames.has(r.name.toLowerCase())) {
+        results = [r, ...results];
+      }
     }
 
     return new Response(JSON.stringify({ results: results.slice(0, 12) }), {

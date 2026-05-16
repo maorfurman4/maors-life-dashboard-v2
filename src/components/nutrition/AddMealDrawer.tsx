@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { Loader2, Plus, ScanLine, UtensilsCrossed, Search } from "lucide-react";
 import { useAddNutrition } from "@/hooks/use-sport-data";
@@ -8,6 +8,16 @@ import { MealPhotoCapture } from "./MealPhotoCapture";
 import { supabase } from "@/integrations/supabase/client";
 
 interface FoodResult {
+  name: string;
+  brand?: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+// Per-100g base stored after selection so grams can recalculate
+interface FoodBase {
   name: string;
   brand?: string;
   calories: number;
@@ -46,6 +56,8 @@ export function AddMealDrawer({
   const [results, setResults] = useState<FoodResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
+  const [selectedBase, setSelectedBase] = useState<FoodBase | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const addNutrition = useAddNutrition();
 
@@ -64,6 +76,16 @@ export function AddMealDrawer({
     }, 300);
     return () => clearTimeout(t);
   }, [query]);
+
+  // Recalculate macros whenever grams changes (only if a food is selected)
+  useEffect(() => {
+    if (!selectedBase) return;
+    const factor = (parseFloat(grams) || 100) / 100;
+    setCalories(Math.round(selectedBase.calories * factor).toString());
+    setProtein((selectedBase.protein * factor).toFixed(1));
+    setCarbs((selectedBase.carbs * factor).toFixed(1));
+    setFat((selectedBase.fat * factor).toFixed(1));
+  }, [grams, selectedBase]);
 
   const handleBarcode = async (barcode: string) => {
     setScanOpen(false);
@@ -87,6 +109,15 @@ export function AddMealDrawer({
   };
 
   const selectFood = (food: FoodResult) => {
+    // Store per-100g base so gram changes can recalculate
+    setSelectedBase({
+      name: food.name,
+      brand: food.brand,
+      calories: food.calories,
+      protein: food.protein,
+      carbs: food.carbs,
+      fat: food.fat,
+    });
     setName(food.name + (food.brand ? ` (${food.brand})` : ""));
     const factor = (parseFloat(grams) || 100) / 100;
     setCalories(Math.round(food.calories * factor).toString());
@@ -100,7 +131,7 @@ export function AddMealDrawer({
 
   const resetForm = () => {
     setName(""); setCalories(""); setProtein(""); setCarbs(""); setFat("");
-    setQuery(""); setResults([]); setMode("search");
+    setQuery(""); setResults([]); setMode("search"); setSelectedBase(null); setGrams("100");
   };
 
   const handleSave = () => {
@@ -108,7 +139,7 @@ export function AddMealDrawer({
     addNutrition.mutate(
       {
         name,
-        meal_type: "lunch", // unified — no type shown to user
+        meal_type: "lunch",
         calories: calories ? parseInt(calories) : undefined,
         protein_g: protein ? parseFloat(protein) : undefined,
         carbs_g: carbs ? parseFloat(carbs) : undefined,
@@ -160,30 +191,7 @@ export function AddMealDrawer({
 
         {mode === "search" && (
           <div className="space-y-2">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="חפש: חזה עוף, אורז, במבה, קוטג׳..."
-                  className="w-full px-3 py-2.5 pr-9 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
-                />
-                {loading && (
-                  <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-nutrition" />
-                )}
-              </div>
-              <button
-                onClick={() => setScanOpen(true)}
-                type="button"
-                className="px-3 rounded-xl bg-nutrition text-nutrition-foreground text-sm font-medium hover:opacity-90 min-h-[44px] flex items-center gap-1"
-                title="סרוק ברקוד"
-              >
-                <ScanLine className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Gram selector */}
+            {/* Gram selector — always visible so user picks before selecting */}
             <div>
               <label className="text-[10px] font-medium text-muted-foreground mb-1 block">כמות (גרם)</label>
               <div className="flex gap-1.5">
@@ -210,6 +218,33 @@ export function AddMealDrawer({
               </div>
             </div>
 
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="חפש: חזה עוף, אורז, מלפפון..."
+                  className="w-full px-3 py-2.5 pr-9 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                />
+                {loading && (
+                  <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-nutrition" />
+                )}
+              </div>
+              <button
+                onClick={() => setScanOpen(true)}
+                type="button"
+                className="px-3 rounded-xl bg-nutrition text-nutrition-foreground text-sm font-medium hover:opacity-90 min-h-[44px] flex items-center gap-1"
+                title="סרוק ברקוד"
+              >
+                <ScanLine className="h-4 w-4" />
+              </button>
+            </div>
+
             {results.length > 0 && (
               <div className="space-y-1 max-h-64 overflow-y-auto">
                 {results.map((r, i) => (
@@ -224,6 +259,8 @@ export function AddMealDrawer({
                         {r.brand && <span className="truncate">{r.brand}</span>}
                         <span>{r.calories} קל׳/100g</span>
                         <span>P:{r.protein}g</span>
+                        <span>C:{r.carbs}g</span>
+                        <span>F:{r.fat}g</span>
                       </div>
                     </div>
                     <Plus className="h-4 w-4 text-nutrition shrink-0" />
@@ -231,7 +268,7 @@ export function AddMealDrawer({
                 ))}
               </div>
             )}
-            {!loading && query && results.length === 0 && (
+            {!loading && query.length >= 2 && results.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-2">אין תוצאות — נסה מילה אחרת</p>
             )}
           </div>
@@ -239,6 +276,35 @@ export function AddMealDrawer({
 
         {mode === "manual" && (
           <>
+            {/* Gram selector in manual mode too (recalculates if food was selected) */}
+            {selectedBase && (
+              <div>
+                <label className="text-[10px] font-medium text-muted-foreground mb-1 block">כמות (גרם) — מחשב מחדש אוטומטית</label>
+                <div className="flex gap-1.5">
+                  {[50, 100, 150, 200, 300].map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setGrams(g.toString())}
+                      className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-colors min-h-[32px] ${
+                        grams === g.toString()
+                          ? "bg-nutrition/20 text-nutrition border border-nutrition/40"
+                          : "bg-secondary/30 text-muted-foreground border border-transparent"
+                      }`}
+                    >
+                      {g}g
+                    </button>
+                  ))}
+                  <input
+                    type="number"
+                    value={grams}
+                    onChange={(e) => setGrams(e.target.value)}
+                    className="w-16 px-2 rounded-lg border border-border bg-card text-[11px] text-center"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">שם המזון / הארוחה</label>
               <input
