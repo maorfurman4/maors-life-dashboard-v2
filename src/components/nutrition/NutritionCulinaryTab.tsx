@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera, Search, Sparkles, Loader2, ChevronDown, ChevronUp,
-  Clock, Users, Flame, Zap, BookmarkPlus, Trash2, ArrowLeftRight, X,
+  Clock, Users, Flame, Zap, BookmarkPlus, Trash2, ArrowLeftRight, X, Youtube,
 } from "lucide-react";
 import { analyzeImage, generateText, parseAIJson } from "@/lib/ai-service";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
@@ -184,6 +184,19 @@ function RecipeCard({ recipe }: { recipe: RecipeResult }) {
           </p>
         </div>
       )}
+
+      {/* YouTube search link */}
+      <div className="border-t border-white/8 px-5 py-3">
+        <a
+          href={`https://www.youtube.com/results?search_query=${encodeURIComponent("מתכון " + recipe.name)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-[11px] text-rose-400/80 hover:text-rose-400 transition-colors font-semibold"
+        >
+          <Youtube className="h-3.5 w-3.5 shrink-0" />
+          צפה בסרטון הכנה ב-YouTube
+        </a>
+      </div>
     </div>
   );
 }
