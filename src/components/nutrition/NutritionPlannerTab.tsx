@@ -321,6 +321,62 @@ If conditions are not nutrition-relevant or you are unsure, return adjustment_kc
               </div>
             )}
           </div>
+
+          {/* Target date picker inline in timeline */}
+          <div className="space-y-2 pt-1 border-t border-white/8">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold text-white/40 uppercase tracking-widest">תאריך יעד</label>
+              {targetDate && (
+                <button onClick={() => setTargetDate("")}
+                  className="text-[10px] text-white/30 hover:text-white/60 transition-colors px-1.5 py-0.5 rounded-lg hover:bg-white/5">
+                  ✕ נקה
+                </button>
+              )}
+            </div>
+            <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)}
+              className={inputCls} dir="ltr" />
+
+            {/* Scenario suggestions — tap to apply */}
+            {result.scenarios.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-white/30">
+                  {targetDate ? "תאריכים חלופיים מומלצים:" : "תאריכים מומלצים — לחץ להגדרה:"}
+                </p>
+                <div className="flex gap-1.5">
+                  {result.scenarios.map((s) => {
+                    const isoDate = new Date(Date.now() + s.weeks * 7 * 86_400_000).toISOString().split("T")[0];
+                    const isActive = targetDate === isoDate ||
+                      (!targetDate && (
+                        (s.delta === 250 && deficitLevel === "mild") ||
+                        (s.delta === 500 && deficitLevel === "moderate") ||
+                        (s.delta === 750 && deficitLevel === "aggressive")
+                      ));
+                    return (
+                      <button key={s.label} onClick={() => setTargetDate(isoDate)}
+                        className={`flex-1 rounded-xl py-2 px-1 text-center border transition-all ${
+                          isActive
+                            ? "border-emerald-500/60 bg-emerald-500/15"
+                            : "border-white/10 bg-white/5 hover:border-white/20"
+                        }`}>
+                        <p className="text-[9px] text-white/50 mb-0.5">{s.label}</p>
+                        <p className={`text-xs font-black ${isActive ? "text-emerald-300" : "text-white/70"}`}>
+                          {s.weeks} שב׳
+                        </p>
+                        <p className="text-[8px] text-white/30 mt-0.5 leading-tight">{s.targetDate}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Prompt to set target weight if no scenarios available */}
+            {result.scenarios.length === 0 && goal !== "maintain" && (
+              <p className="text-[10px] text-white/30 text-center py-1">
+                הגדר משקל יעד בטופס למטה כדי לראות תאריכים מומלצים
+              </p>
+            )}
+          </div>
         </div>
       )}
 
