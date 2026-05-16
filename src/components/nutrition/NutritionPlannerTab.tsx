@@ -153,6 +153,7 @@ export function NutritionPlannerTab() {
         .limit(30);
       return (data ?? []).map((r: any) => ({
         date: new Date(r.created_at).toLocaleDateString("he-IL", { day: "numeric", month: "numeric" }),
+        rawDate: r.created_at as string,
         calories: r.target_calories,
         weight: r.weight_kg,
       }));
@@ -290,8 +291,9 @@ If conditions are not nutrition-relevant or you are unsure, return adjustment_kc
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <input type="number" value={steps} step={500} min={0} max={30000}
-                onChange={(e) => setSteps(Math.max(0, +e.target.value))}
+              <input type="number" value={steps === 0 ? "" : steps} step={500} min={0} max={30000}
+                placeholder="0"
+                onChange={(e) => setSteps(e.target.value === "" ? 0 : Math.max(0, parseInt(e.target.value) || 0))}
                 className={inputCls} dir="ltr" />
               {result.stepCalories > 0 && (
                 <span className="text-[11px] text-emerald-300 font-bold shrink-0 whitespace-nowrap">
@@ -525,6 +527,31 @@ If conditions are not nutrition-relevant or you are unsure, return adjustment_kc
             </div>
           </div>
         )}
+
+        {/* Process tracking banner */}
+        {history.length > 0 && (() => {
+          const start = new Date((history[0] as any).rawDate);
+          const daysIn = Math.floor((Date.now() - start.getTime()) / 86_400_000);
+          const daysLeft = targetDate
+            ? Math.max(0, Math.round((new Date(targetDate).getTime() - Date.now()) / 86_400_000))
+            : null;
+          return (
+            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2.5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black text-emerald-300">יום {daysIn + 1} לתהליך</p>
+                <p className="text-[10px] text-white/40">
+                  התחלת: {start.toLocaleDateString("he-IL", { day: "numeric", month: "long" })}
+                </p>
+              </div>
+              {daysLeft !== null && (
+                <div className="text-right">
+                  <p className="text-xs font-black text-white/70">{daysLeft}</p>
+                  <p className="text-[10px] text-white/40">ימים לסיום</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Save button */}
         <button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}

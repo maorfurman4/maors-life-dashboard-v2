@@ -358,10 +358,10 @@ export function NutritionCulinaryTab() {
     setScanIngredients([]);
     setRecipes([]);
     try {
-      const b64 = await fileToBase64(file);
+      const { b64, mime } = await fileToSmallBase64(file);
       const raw = await analyzeImage(
         b64,
-        "image/jpeg",
+        mime,
         `You are a food ingredient detector. Identify all food ingredients visible in this fridge or pantry image.
 Return ONLY a valid JSON array of ingredient names in Hebrew.
 Example: ["עגבניות", "גבינה לבנה", "ביצים", "חסה", "גזר"]
@@ -373,8 +373,8 @@ No explanation, no markdown. JSON array only.`
       setScanDone(true);
       setQuery(list.join(", "));
       toast.success(`זוהו ${list.length} מרכיבים!`);
-    } catch {
-      toast.error("לא הצלחתי לזהות מרכיבים — נסה תמונה אחרת");
+    } catch (err: any) {
+      toast.error(err?.message?.includes("גדולה") ? err.message : "לא הצלחתי לזהות מרכיבים — נסה תמונה אחרת");
     } finally {
       setScanning(false);
     }
@@ -855,16 +855,27 @@ No explanation, no markdown. JSON array only.`
   );
 }
 
-// ─── file → base64 ────────────────────────────────────────────────────────────
-function fileToBase64(file: File): Promise<string> {
+// ─── file → resized base64 (max 800px, 0.75 JPEG quality → well under 5MB limit) ─
+function fileToSmallBase64(file: File): Promise<{ b64: string; mime: string }> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // strip the data:image/...;base64, prefix
-      resolve(result.split(",")[1]);
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 800;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+        else                { width = Math.round(width * MAX / height); height = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+      resolve({ b64: dataUrl.split(",")[1], mime: "image/jpeg" });
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("לא ניתן לקרוא את התמונה")); };
+    img.src = url;
   });
 }
