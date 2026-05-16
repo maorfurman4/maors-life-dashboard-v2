@@ -857,9 +857,28 @@ difficulty: קל/בינוני/מתקדם בלבד. JSON בלבד ללא כל ט�
 
         {/* ── Precision Macro Targets ── */}
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
-          <p className="text-[10px] font-black text-amber-400/80 uppercase tracking-widest">
-            🎯 יעדי מאקרו מדויקים (אופציונלי)
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-black text-amber-400/80 uppercase tracking-widest">
+              🎯 יעדי מאקרו למנה
+            </p>
+            <button
+              onClick={() => {
+                setTargetCalories(String(Math.round(tdeeCalories.targetCalories / 3)));
+                setTargetProtein(String(Math.round(tdeeCalories.protein / 3)));
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold hover:bg-emerald-500/25 transition-all"
+            >
+              ⚡ סנכרן עם היעדים שלי
+            </button>
+          </div>
+
+          {/* TDEE reference */}
+          <div className="flex gap-2 text-[9px] text-white/30">
+            <span>יומי: {tdeeCalories.targetCalories} קל׳ · {tdeeCalories.protein}g חלבון</span>
+            <span className="text-white/15">→</span>
+            <span>לארוחה (÷3): {Math.round(tdeeCalories.targetCalories / 3)} קל׳ · {Math.round(tdeeCalories.protein / 3)}g חלבון</span>
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <label className="text-[9px] text-white/40 font-bold uppercase tracking-wide block">
@@ -869,7 +888,7 @@ difficulty: קל/בינוני/מתקדם בלבד. JSON בלבד ללא כל ט�
                 type="number"
                 value={targetCalories}
                 onChange={(e) => setTargetCalories(e.target.value)}
-                placeholder="למשל: 450"
+                placeholder={String(Math.round(tdeeCalories.targetCalories / 3))}
                 className={inputCls}
                 dir="ltr"
               />
@@ -882,15 +901,15 @@ difficulty: קל/בינוני/מתקדם בלבד. JSON בלבד ללא כל ט�
                 type="number"
                 value={targetProtein}
                 onChange={(e) => setTargetProtein(e.target.value)}
-                placeholder="למשל: 35"
+                placeholder={String(Math.round(tdeeCalories.protein / 3))}
                 className={inputCls}
                 dir="ltr"
               />
             </div>
           </div>
           {(targetCalories || targetProtein) && (
-            <p className="text-[9px] text-amber-400/60">
-              ✓ AI יבנה מתכונים שמגיעים בדיוק לערכים אלו
+            <p className="text-[9px] text-emerald-400/70">
+              ✓ AI יחשב מרכיבים וכמויות שמגיעים בדיוק לערכים אלו
             </p>
           )}
         </div>
