@@ -14,6 +14,7 @@ interface FoodResult {
   protein: number;
   carbs: number;
   fat: number;
+  source?: string;
 }
 
 // Per-100g base stored after selection so grams can recalculate
@@ -254,7 +255,12 @@ export function AddMealDrawer({
                     className="w-full flex items-center gap-2 p-2 rounded-xl bg-secondary/20 hover:bg-secondary/35 transition-colors text-right"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{r.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium truncate">{r.name}</p>
+                        {r.source === "ai" && (
+                          <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20 font-semibold">אומדן AI</span>
+                        )}
+                      </div>
                       <div className="flex gap-2 text-[10px] text-muted-foreground">
                         {r.brand && <span className="truncate">{r.brand}</span>}
                         <span>{r.calories} קל׳/100g</span>

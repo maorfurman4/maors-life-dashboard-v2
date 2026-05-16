@@ -12,7 +12,7 @@ interface AddItemDrawerProps {
 export function AddItemDrawer({ open, onClose, title, children }: AddItemDrawerProps) {
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="max-h-[85vh]" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DrawerHeader className="flex items-center justify-between border-b border-border pb-3">
           <DrawerTitle className="text-base font-bold">{title}</DrawerTitle>
           <DrawerClose asChild>

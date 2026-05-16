@@ -212,13 +212,14 @@ Deno.serve(async (req) => {
       results = merged;
     }
 
-    // Always prepend AI estimate so basic whole foods (מלפפון, עגבנייה etc.)
-    // always appear even when OFF returns only processed variants (מלפפון חמוץ)
+    // Append AI estimate at the end as a fallback option.
+    // For whole foods with no real DB results, it's the only option.
+    // For branded products (protein powder etc.), real results appear first.
     const aiResults = await estimateWithAI(query);
     const seenNames = new Set(results.map((r) => r.name.toLowerCase()));
     for (const r of aiResults) {
       if (!seenNames.has(r.name.toLowerCase())) {
-        results = [r, ...results];
+        results = [...results, r];
       }
     }
 
