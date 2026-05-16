@@ -4902,6 +4902,7 @@ function BodyProgressGallery() {
   const [newFile,    setNewFile]    = useState<File | null>(null);
   const [newPreview, setNewPreview] = useState<string | null>(null);
   const [notes,      setNotes]      = useState("");
+  const [photoDate,  setPhotoDate]  = useState(() => new Date().toISOString().slice(0, 10));
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -4933,10 +4934,12 @@ function BodyProgressGallery() {
   const handleSave = async () => {
     if (!newFile) return toast.error("בחר תמונה");
     try {
-      await addPhoto.mutateAsync({ file: newFile, angle, notes });
+      await addPhoto.mutateAsync({ file: newFile, angle, notes, date: photoDate });
       const lbl = BODY_ANGLES.find((a) => a.key === angle)?.label ?? angle;
-      toast.success(`📸 תמונה נשמרה — ${lbl}`);
+      const dateFormatted = new Date(photoDate + "T12:00:00").toLocaleDateString("he-IL", { day: "numeric", month: "numeric", year: "2-digit" });
+      toast.success(`📸 תמונה נשמרה — ${lbl} · ${dateFormatted}`);
       setNewFile(null); setNewPreview(null); setNotes("");
+      setPhotoDate(new Date().toISOString().slice(0, 10));
     } catch {/* handled in hook */}
   };
 
@@ -5015,21 +5018,36 @@ function BodyProgressGallery() {
 
             {/* After */}
             <div className="flex-1 rounded-2xl overflow-hidden relative">
-              <img src={newPreview} alt="עכשיו" className="w-full h-full object-cover" />
+              <img src={newPreview} alt="חדש" className="w-full h-full object-cover" />
               <div className="absolute bottom-0 inset-x-0 bg-emerald-500/55 py-1 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-white">עכשיו</span>
+                <span className="text-[10px] font-bold text-white">
+                  {new Date(photoDate + "T12:00:00").toLocaleDateString("he-IL", { day: "numeric", month: "numeric", year: "2-digit" })}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Notes */}
-          <input
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="הערות (משקל, תחושה, תאריך...)..."
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/20 outline-none"
-            dir="rtl"
-          />
+          {/* Date + Notes row */}
+          <div className="flex gap-2">
+            {/* Date picker */}
+            <div className="relative flex-shrink-0">
+              <input
+                type="date"
+                value={photoDate}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setPhotoDate(e.target.value)}
+                className="rounded-2xl border border-violet-500/30 bg-violet-500/10 px-3 py-2.5 text-sm text-violet-200 outline-none focus:border-violet-500/60 transition-all w-36 [color-scheme:dark]"
+              />
+            </div>
+            {/* Notes */}
+            <input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="הערות (משקל, תחושה...)..."
+              className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/20 outline-none"
+              dir="rtl"
+            />
+          </div>
 
           {/* Actions */}
           <div className="flex gap-2">
