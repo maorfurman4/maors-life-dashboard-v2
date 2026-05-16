@@ -1,23 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Sparkles, Save,
-} from "lucide-react";
+import { Sparkles, Save, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+} from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { generateText, parseAIJson } from "@/lib/ai-service";
 import {
-  calcTDEE, ACTIVITY_LABELS, ACTIVITY_MULTIPLIER, GOAL_LABELS,
+  calcTDEE,
+  ACTIVITY_LABELS, ACTIVITY_MULTIPLIER, GOAL_LABELS,
+  WORK_STYLE_LABELS, MACRO_PRESET_LABELS, DEFICIT_LABELS,
   type ActivityLevel, type Goal, type Sex,
+  type DeficitLevel, type WorkStyle, type MacroPreset,
 } from "@/lib/tdee";
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
 async function getUserId() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
   return user.id;
 }
 
-// ─── glass field helper ───────────────────────────────────────────────────────
 function GlassField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
@@ -35,27 +38,57 @@ const selectCls =
   "w-full rounded-xl bg-white/8 border border-white/15 text-white px-3 py-2.5 text-sm min-h-[44px] " +
   "focus:outline-none focus:border-emerald-500/60 backdrop-blur-sm appearance-none";
 
+function ToggleChips<T extends string>({
+  options, value, onChange,
+}: {
+  options: { key: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex gap-1.5">
+      {options.map(({ key, label }) => (
+        <button key={key} onClick={() => onChange(key)}
+          className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${
+            value === key
+              ? "border-emerald-500/60 bg-emerald-500/20 text-emerald-300"
+              : "border-white/10 bg-white/5 text-white/50"
+          }`}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export function NutritionPlannerTab() {
   const qc = useQueryClient();
 
-  // ── TDEE state — lazy-init from localStorage where applicable ──
-  const [sex,      setSex]      = useState<Sex>(() =>
-    (localStorage.getItem("tdee_sex") as Sex) ?? "male"
-  );
-  const [age,      setAge]      = useState(() =>
-    parseInt(localStorage.getItem("tdee_age") ?? "28", 10)
-  );
+  // ── Core TDEE state ──
+  const [sex,      setSex]      = useState<Sex>(() => (localStorage.getItem("tdee_sex") as Sex) ?? "male");
+  const [age,      setAge]      = useState(() => parseInt(localStorage.getItem("tdee_age") ?? "28", 10));
   const [height,   setHeight]   = useState(175);
   const [weight,   setWeight]   = useState(75);
-  const [activity, setActivity] = useState<ActivityLevel>(() =>
-    (localStorage.getItem("tdee_activity") as ActivityLevel) ?? "moderate"
-  );
-  const [goal,     setGoal]     = useState<Goal>(() =>
-    (localStorage.getItem("tdee_goal") as Goal) ?? "maintain"
-  );
+  const [activity, setActivity] = useState<ActivityLevel>(() => (localStorage.getItem("tdee_activity") as ActivityLevel) ?? "moderate");
+  const [goal,     setGoal]     = useState<Goal>(() => (localStorage.getItem("tdee_goal") as Goal) ?? "maintain");
 
-  // ── Load saved settings ──
+  // ── New inputs ──
+  const [deficitLevel, setDeficitLevel] = useState<DeficitLevel>(() => (localStorage.getItem("tdee_deficit") as DeficitLevel) ?? "moderate");
+  const [workStyle,    setWorkStyle]    = useState<WorkStyle>(() => (localStorage.getItem("tdee_work") as WorkStyle) ?? "desk");
+  const [steps,        setSteps]        = useState(() => parseInt(localStorage.getItem("tdee_steps") ?? "0", 10));
+  const [macroPreset,  setMacroPreset]  = useState<MacroPreset>(() => (localStorage.getItem("tdee_macro") as MacroPreset) ?? "auto");
+
+  const [targetWeight, setTargetWeight] = useState("");
+  const [targetDate,   setTargetDate]   = useState("");
+
+  const [healthOpen,       setHealthOpen]       = useState(false);
+  const [healthConditions, setHealthConditions] = useState("");
+  const [healthAdjustment, setHealthAdjustment] = useState(0);
+  const [healthNote,       setHealthNote]       = useState("");
+  const [analyzing,        setAnalyzing]        = useState(false);
+
+  // ── Load settings from DB ──
   const { data: settings } = useQuery({
     queryKey: ["user-settings-tdee"],
     queryFn: async () => {
@@ -74,7 +107,7 @@ export function NutritionPlannerTab() {
     if (settings.height_cm) setHeight(Number(settings.height_cm));
     if (settings.weight_kg) setWeight(Number(settings.weight_kg));
     if (settings.date_of_birth) {
-      const dob   = new Date(settings.date_of_birth);
+      const dob = new Date(settings.date_of_birth);
       const today = new Date();
       let computed = today.getFullYear() - dob.getFullYear();
       const m = today.getMonth() - dob.getMonth();
@@ -83,19 +116,50 @@ export function NutritionPlannerTab() {
     }
   }, [settings]);
 
-  // ── Persist calculator-specific inputs to localStorage ──
-  useEffect(() => { localStorage.setItem("tdee_sex",      sex);              }, [sex]);
-  useEffect(() => { localStorage.setItem("tdee_age",      String(age));      }, [age]);
-  useEffect(() => { localStorage.setItem("tdee_activity", activity);         }, [activity]);
-  useEffect(() => { localStorage.setItem("tdee_goal",     goal);             }, [goal]);
+  // ── Persist to localStorage ──
+  useEffect(() => { localStorage.setItem("tdee_sex",     sex);           }, [sex]);
+  useEffect(() => { localStorage.setItem("tdee_age",     String(age));   }, [age]);
+  useEffect(() => { localStorage.setItem("tdee_activity", activity);     }, [activity]);
+  useEffect(() => { localStorage.setItem("tdee_goal",    goal);          }, [goal]);
+  useEffect(() => { localStorage.setItem("tdee_deficit", deficitLevel);  }, [deficitLevel]);
+  useEffect(() => { localStorage.setItem("tdee_work",    workStyle);     }, [workStyle]);
+  useEffect(() => { localStorage.setItem("tdee_steps",   String(steps)); }, [steps]);
+  useEffect(() => { localStorage.setItem("tdee_macro",   macroPreset);   }, [macroPreset]);
 
   // ── TDEE result (live) ──
-  const result = useMemo(
-    () => calcTDEE({ sex, age, heightCm: height, weightKg: weight, activityLevel: activity, goal }),
-    [sex, age, height, weight, activity, goal]
-  );
+  const result = useMemo(() => calcTDEE({
+    sex, age, heightCm: height, weightKg: weight,
+    activityLevel: activity, goal,
+    deficitLevel,
+    workStyle,
+    averageSteps: steps,
+    targetWeightKg: targetWeight ? parseFloat(targetWeight) : undefined,
+    targetDate: targetDate || undefined,
+    macroPreset,
+    healthAdjustment,
+  }), [sex, age, height, weight, activity, goal, deficitLevel, workStyle, steps,
+       targetWeight, targetDate, macroPreset, healthAdjustment]);
 
-  // ── Save goals to DB ──
+  // ── Load history ──
+  const { data: history = [] } = useQuery({
+    queryKey: ["tdee-history"],
+    queryFn: async () => {
+      const uid = await getUserId();
+      const { data } = await supabase
+        .from("tdee_history")
+        .select("created_at,target_calories,weight_kg,tdee")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: true })
+        .limit(30);
+      return (data ?? []).map((r: any) => ({
+        date: new Date(r.created_at).toLocaleDateString("he-IL", { day: "numeric", month: "numeric" }),
+        calories: r.target_calories,
+        weight: r.weight_kg,
+      }));
+    },
+  });
+
+  // ── Save to DB ──
   const saveMutation = useMutation({
     mutationFn: async () => {
       const userId = await getUserId();
@@ -110,8 +174,7 @@ export function NutritionPlannerTab() {
         height_cm: height,
         weight_kg: weight,
       };
-      const { data: existing } = await supabase
-        .from("user_settings").select("id").eq("user_id", userId).maybeSingle();
+      const { data: existing } = await supabase.from("user_settings").select("id").eq("user_id", userId).maybeSingle();
       if (existing) {
         const { error } = await supabase.from("user_settings").update(updates).eq("user_id", userId);
         if (error) throw error;
@@ -119,99 +182,260 @@ export function NutritionPlannerTab() {
         const { error } = await supabase.from("user_settings").insert({ user_id: userId, ...updates });
         if (error) throw error;
       }
+      await supabase.from("tdee_history").insert({
+        user_id:         userId,
+        weight_kg:       weight,
+        tdee:            result.tdee,
+        target_calories: result.targetCalories,
+        protein:         result.protein,
+        carbs:           result.carbs,
+        fat:             result.fat,
+        deficit_kcal:    result.deficitKcal,
+      });
     },
     onSuccess: () => {
       toast.success("יעדים עודכנו בהצלחה!");
       qc.invalidateQueries({ queryKey: ["user-settings-tdee"] });
       qc.invalidateQueries({ queryKey: ["nutrition-goals"] });
+      qc.invalidateQueries({ queryKey: ["tdee-history"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה בשמירה"),
   });
+
+  // ── AI health analysis (#15) ──
+  const analyzeHealth = async () => {
+    if (!healthConditions.trim()) return;
+    setAnalyzing(true);
+    try {
+      const raw = await generateText(`
+User TDEE: ${result.tdee} kcal/day. Health conditions: "${healthConditions}".
+Based on established clinical nutrition guidelines, should their daily caloric target be adjusted?
+Respond ONLY as valid JSON (no markdown): { "adjustment_kcal": <integer from -300 to 300>, "note": "<Hebrew explanation, max 25 words>" }
+If conditions are not nutrition-relevant or you are unsure, return adjustment_kcal: 0.
+`);
+      const parsed = parseAIJson<{ adjustment_kcal: number; note: string }>(raw);
+      setHealthAdjustment(parsed?.adjustment_kcal ?? 0);
+      setHealthNote(parsed?.note ?? "");
+      toast.success("ניתוח הושלם");
+    } catch {
+      toast.error("לא ניתן לנתח — נסה שוב");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div className="px-4 pt-4 space-y-5 pb-4">
 
-      {/* ══ SECTION 1: TDEE CALCULATOR ═══════════════════════════════════════ */}
+      {/* ══ TDEE CALCULATOR CARD ═════════════════════════════════════════════ */}
       <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-lg">🔬</span>
           <div>
-            <p className="text-sm font-black text-white">מחשבון TDEE</p>
-            <p className="text-[10px] text-white/40">נוסחת Mifflin-St Jeor — הסטנדרט המדעי</p>
+            <p className="text-sm font-black text-white">מחשבון TDEE מדויק</p>
+            <p className="text-[10px] text-white/40">Mifflin-St Jeor + NEAT + צעדים + מסה רזה</p>
           </div>
         </div>
 
         {/* Sex */}
         <GlassField label="מגדר">
-          <div className="grid grid-cols-2 gap-2">
-            {(["male", "female"] as Sex[]).map((s) => (
-              <button key={s} onClick={() => setSex(s)}
-                className={`py-2.5 rounded-xl text-sm font-bold border transition-all ${
-                  sex === s
-                    ? "border-emerald-500/60 bg-emerald-500/20 text-emerald-300"
-                    : "border-white/10 bg-white/5 text-white/50"
-                }`}>
-                {s === "male" ? "זכר 👨" : "נקבה 👩"}
-              </button>
-            ))}
-          </div>
+          <ToggleChips
+            options={[{ key: "male" as Sex, label: "זכר 👨" }, { key: "female" as Sex, label: "נקבה 👩" }]}
+            value={sex} onChange={setSex}
+          />
         </GlassField>
 
         {/* Age / Height / Weight */}
         <div className="grid grid-cols-3 gap-3">
-          <GlassField label='גיל'>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={2}
-              value={age}
+          <GlassField label="גיל">
+            <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength={2} value={age}
               onChange={(e) => {
                 const digits = e.target.value.replace(/\D/g, "").replace(/^0+(\d)/, "$1");
-                if (digits === "" || (Number(digits) > 0 && Number(digits) < 100)) {
+                if (digits === "" || (Number(digits) > 0 && Number(digits) < 100))
                   setAge(digits === "" ? 0 : Number(digits));
-                }
               }}
-              className={inputCls}
-              dir="ltr"
-            />
+              className={inputCls} dir="ltr" />
           </GlassField>
           <GlassField label='גובה (ס"מ)'>
-            <input type="number" value={height} onChange={(e) => setHeight(+e.target.value)}
-              className={inputCls} dir="ltr" />
+            <input type="number" value={height} onChange={(e) => setHeight(+e.target.value)} className={inputCls} dir="ltr" />
           </GlassField>
           <GlassField label='משקל (ק"ג)'>
-            <input type="number" value={weight} onChange={(e) => setWeight(+e.target.value)}
-              className={inputCls} dir="ltr" />
+            <input type="number" value={weight} onChange={(e) => setWeight(+e.target.value)} className={inputCls} dir="ltr" />
           </GlassField>
         </div>
 
         {/* Activity */}
-        <GlassField label="רמת פעילות">
-          <select value={activity} onChange={(e) => setActivity(e.target.value as ActivityLevel)}
-            className={selectCls}>
+        <GlassField label="רמת פעילות גופנית">
+          <select value={activity} onChange={(e) => setActivity(e.target.value as ActivityLevel)} className={selectCls}>
             {(Object.keys(ACTIVITY_MULTIPLIER) as ActivityLevel[]).map((k) => (
               <option key={k} value={k}>{ACTIVITY_LABELS[k]}</option>
             ))}
           </select>
         </GlassField>
 
-        {/* Goal */}
-        <GlassField label="מטרה">
-          <div className="grid grid-cols-3 gap-2">
-            {(Object.keys(GOAL_LABELS) as Goal[]).map((g) => (
-              <button key={g} onClick={() => setGoal(g)}
-                className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${
-                  goal === g
-                    ? "border-emerald-500/60 bg-emerald-500/20 text-emerald-300"
-                    : "border-white/10 bg-white/5 text-white/50"
-                }`}>
-                {GOAL_LABELS[g]}
-              </button>
-            ))}
+        {/* Steps (#12) */}
+        <GlassField label="צעדים יומיים ממוצעים">
+          <div className="space-y-2">
+            <div className="flex gap-1.5">
+              {[0, 5000, 8000, 10000, 15000].map((s) => (
+                <button key={s} onClick={() => setSteps(s)}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
+                    steps === s
+                      ? "border-emerald-500/60 bg-emerald-500/20 text-emerald-300"
+                      : "border-white/10 bg-white/5 text-white/40"
+                  }`}>
+                  {s === 0 ? "0" : `${s / 1000}k`}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="number" value={steps} step={500} min={0} max={30000}
+                onChange={(e) => setSteps(Math.max(0, +e.target.value))}
+                className={inputCls} dir="ltr" />
+              {result.stepCalories > 0 && (
+                <span className="text-[11px] text-emerald-300 font-bold shrink-0 whitespace-nowrap">
+                  ≈ {result.stepCalories} קל׳ ביום
+                </span>
+              )}
+            </div>
           </div>
         </GlassField>
+
+        {/* Work style / NEAT (#5) */}
+        <GlassField label="סגנון עבודה / NEAT">
+          <ToggleChips
+            options={(["desk", "standing", "physical"] as WorkStyle[]).map((k) => ({
+              key: k, label: WORK_STYLE_LABELS[k],
+            }))}
+            value={workStyle} onChange={setWorkStyle}
+          />
+          <p className="text-[10px] text-white/30 text-center mt-1">
+            ישיבתי +0 · עמידה +300 · פיזי +600 קל׳ ליום
+          </p>
+        </GlassField>
+
+        {/* Goal */}
+        <GlassField label="מטרה">
+          <ToggleChips
+            options={(["lose", "maintain", "gain"] as Goal[]).map((g) => ({
+              key: g, label: GOAL_LABELS[g],
+            }))}
+            value={goal} onChange={setGoal}
+          />
+        </GlassField>
+
+        {/* Deficit precision (#7) — hidden for maintain */}
+        {goal !== "maintain" && (
+          <GlassField label={goal === "lose" ? "עוצמת גרעון" : "עוצמת עודף"}>
+            <ToggleChips
+              options={(["mild", "moderate", "aggressive"] as DeficitLevel[]).map((d) => ({
+                key: d, label: DEFICIT_LABELS[goal][d],
+              }))}
+              value={deficitLevel} onChange={setDeficitLevel}
+            />
+          </GlassField>
+        )}
+
+        {/* Goal timeline (#3) — shown when goal ≠ maintain */}
+        {goal !== "maintain" && (
+          <GlassField label="יעד כמותי עם לוח זמנים (אופציונלי)">
+            <div className="grid grid-cols-2 gap-2">
+              <input type="number" value={targetWeight} onChange={(e) => setTargetWeight(e.target.value)}
+                placeholder={`משקל יעד (ק"ג)`}
+                className={inputCls} dir="ltr" />
+              <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)}
+                className={inputCls} dir="ltr" />
+            </div>
+            {targetWeight && targetDate && (() => {
+              const daysUntil = Math.max(1, Math.round((new Date(targetDate).getTime() - Date.now()) / 86_400_000));
+              const kgDelta = weight - parseFloat(targetWeight);
+              const reqDelta = Math.round((kgDelta * 7700) / daysUntil);
+              const weeksAtCurrent = result.deficitKcal !== 0
+                ? Math.ceil(Math.abs(kgDelta) * 7700 / (Math.abs(result.deficitKcal) * 7))
+                : null;
+              return (
+                <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
+                  נדרש:{" "}
+                  <span className="text-white font-bold">{Math.abs(reqDelta)} קל׳</span>{" "}
+                  {reqDelta > 0 ? "גרעון" : "עודף"} ליום
+                  {weeksAtCurrent && (
+                    <>{" · "}בקצב הנוכחי:{" "}
+                      <span className="text-emerald-300 font-bold">{weeksAtCurrent} שבועות</span>
+                    </>
+                  )}
+                </p>
+              );
+            })()}
+          </GlassField>
+        )}
+
+        {/* Macro preset (#18) */}
+        <GlassField label="יחס מאקרו">
+          <ToggleChips
+            options={(["auto", "bulk", "cut", "cardio"] as MacroPreset[]).map((m) => ({
+              key: m, label: MACRO_PRESET_LABELS[m],
+            }))}
+            value={macroPreset} onChange={setMacroPreset}
+          />
+        </GlassField>
+
+        {/* Health conditions (#15) */}
+        <div className="rounded-xl border border-white/10 overflow-hidden">
+          <button
+            onClick={() => setHealthOpen((o) => !o)}
+            className="w-full flex items-center justify-between px-3 py-2.5 text-xs text-white/60 font-bold hover:text-white/80 transition-colors"
+          >
+            <span>🩺 מצבים בריאותיים / בעיות רפואיות (אופציונלי)</span>
+            {healthOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          </button>
+          {healthOpen && (
+            <div className="px-3 pb-3 space-y-2">
+              <textarea
+                value={healthConditions}
+                onChange={(e) => setHealthConditions(e.target.value)}
+                placeholder="לדוגמה: תת-פעילות בלוטת תריס, סוכרת סוג 2, PCOS, כולסטרול גבוה..."
+                rows={3}
+                className="w-full rounded-xl bg-white/8 border border-white/15 text-white px-3 py-2 text-sm focus:outline-none focus:border-emerald-500/60 placeholder:text-white/25 resize-none"
+              />
+              <button
+                onClick={analyzeHealth}
+                disabled={analyzing || !healthConditions.trim()}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/30 transition-colors disabled:opacity-40"
+              >
+                {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                נתח עם AI
+              </button>
+              {healthNote && (
+                <div className={`rounded-xl px-3 py-2 text-xs font-medium border ${
+                  healthAdjustment > 0
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                    : healthAdjustment < 0
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                      : "bg-white/5 border-white/15 text-white/60"
+                }`}>
+                  {healthAdjustment !== 0 && (
+                    <span className="font-black">
+                      {healthAdjustment > 0 ? "+" : ""}{healthAdjustment} קל׳ ·{" "}
+                    </span>
+                  )}
+                  {healthNote}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Safety warnings (#17) */}
+        {result.warnings.length > 0 && (
+          <div className="space-y-1.5">
+            {result.warnings.map((w, i) => (
+              <div key={i} className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-300 font-medium">
+                {w}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Results panel */}
         <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/8 p-4 space-y-3">
@@ -220,11 +444,11 @@ export function NutritionPlannerTab() {
             <span className="text-xs font-black text-emerald-400">היעדים המחושבים שלך</span>
           </div>
 
-          {/* Big numbers row */}
+          {/* Big calories row */}
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: "קלוריות יום רגיל",  value: `${result.targetCalories.toLocaleString()} קל׳`, big: true },
-              { label: "קלוריות יום אימון", value: `${result.trainingCalories.toLocaleString()} קל׳`, big: true },
+              { label: "קלוריות יום רגיל",  value: `${result.targetCalories.toLocaleString()} קל׳` },
+              { label: "קלוריות יום אימון", value: `${result.trainingCalories.toLocaleString()} קל׳` },
             ].map((s) => (
               <div key={s.label} className="rounded-xl bg-white/8 border border-white/10 p-3 text-center">
                 <p className="text-[10px] text-white/40 mb-1">{s.label}</p>
@@ -248,12 +472,59 @@ export function NutritionPlannerTab() {
             ))}
           </div>
 
-          {/* BMR / TDEE small */}
-          <div className="flex justify-between text-[10px] text-white/30 px-1">
-            <span>BMR: {result.bmr} קל׳</span>
-            <span>TDEE: {result.tdee} קל׳</span>
+          {/* Training protein */}
+          <div className="flex justify-center">
+            <span className="text-[10px] text-white/30">
+              חלבון אימון: <span className="text-white/50 font-bold">{result.trainingProtein}g</span>
+            </span>
+          </div>
+
+          {/* Breakdown line */}
+          <div className="rounded-xl bg-white/4 border border-white/8 px-3 py-2 space-y-1">
+            <div className="flex justify-between text-[10px] text-white/30">
+              <span>BMR: {result.bmr} קל׳</span>
+              <span>TDEE: {result.tdee} קל׳</span>
+              <span>BMI: {result.bmi}</span>
+            </div>
+            <div className="flex justify-between text-[10px] text-white/30">
+              <span>מסה רזה: <span className="text-white/50 font-bold">{result.leanMassKg}kg</span></span>
+              {(result.stepCalories > 0 || result.neatOffset > 0) && (
+                <span>NEAT+צעדים: <span className="text-emerald-400/70 font-bold">+{result.stepCalories + result.neatOffset} קל׳</span></span>
+              )}
+              <span>שינוי: <span className="text-white/50 font-bold">{result.deficitKcal > 0 ? "+" : ""}{result.deficitKcal} קל׳</span></span>
+            </div>
           </div>
         </div>
+
+        {/* 3-Scenario predictor (#20) — only when target weight is set */}
+        {result.scenarios.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">תחזית קצב השינוי</p>
+            <div className="grid grid-cols-3 gap-2">
+              {result.scenarios.map((s) => {
+                const isActive =
+                  (s.delta === 250 && deficitLevel === "mild") ||
+                  (s.delta === 500 && deficitLevel === "moderate") ||
+                  (s.delta === 750 && deficitLevel === "aggressive");
+                return (
+                  <div key={s.label}
+                    className={`rounded-xl p-2.5 text-center border transition-all ${
+                      isActive
+                        ? "border-emerald-500/60 bg-emerald-500/15"
+                        : "border-white/10 bg-white/5"
+                    }`}>
+                    <p className="text-[10px] font-bold text-white/60 mb-1">{s.label}</p>
+                    <p className={`text-base font-black ${isActive ? "text-emerald-300" : "text-white/80"}`}>
+                      {s.weeks}
+                    </p>
+                    <p className="text-[9px] text-white/30">שבועות</p>
+                    <p className="text-[9px] text-white/40 mt-0.5">{s.targetDate}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Save button */}
         <button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
@@ -262,6 +533,28 @@ export function NutritionPlannerTab() {
           {saveMutation.isPending ? "שומר..." : "החל יעדים → Tab 1"}
         </button>
       </div>
+
+      {/* ══ HISTORY GRAPH (#19) ══════════════════════════════════════════════ */}
+      {history.length >= 2 && (
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📈</span>
+            <p className="text-sm font-black text-white">היסטוריית קלוריות</p>
+          </div>
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={history} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+              <XAxis dataKey="date" tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: "rgba(255,255,255,0.3)" }} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 11 }}
+                labelStyle={{ color: "rgba(255,255,255,0.5)" }}
+                itemStyle={{ color: "#6ee7b7" }}
+              />
+              <Line type="monotone" dataKey="calories" stroke="#6ee7b7" strokeWidth={2} dot={{ r: 3, fill: "#6ee7b7" }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
     </div>
   );

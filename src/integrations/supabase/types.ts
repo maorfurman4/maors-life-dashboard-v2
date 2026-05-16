@@ -41,6 +41,99 @@ export type Database = {
         }
         Relationships: []
       }
+      coupons: {
+        Row: {
+          barcode: string | null
+          category: string | null
+          code: string | null
+          created_at: string | null
+          discount_amount: number | null
+          discount_percent: number | null
+          expiry_date: string | null
+          id: string
+          image_url: string | null
+          is_used: boolean | null
+          notes: string | null
+          store: string | null
+          title: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          barcode?: string | null
+          category?: string | null
+          code?: string | null
+          created_at?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          expiry_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_used?: boolean | null
+          notes?: string | null
+          store?: string | null
+          title: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          barcode?: string | null
+          category?: string | null
+          code?: string | null
+          created_at?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          expiry_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_used?: boolean | null
+          notes?: string | null
+          store?: string | null
+          title?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      debts: {
+        Row: {
+          annual_interest_rate: number
+          created_at: string
+          id: string
+          is_active: boolean
+          monthly_payment: number
+          months_elapsed: number
+          name: string
+          principal: number
+          type: string
+          user_id: string
+        }
+        Insert: {
+          annual_interest_rate?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          monthly_payment?: number
+          months_elapsed?: number
+          name: string
+          principal?: number
+          type?: string
+          user_id: string
+        }
+        Update: {
+          annual_interest_rate?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          monthly_payment?: number
+          months_elapsed?: number
+          name?: string
+          principal?: number
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       expense_categories: {
         Row: {
           budget_limit: number | null
@@ -188,6 +281,107 @@ export type Database = {
         }
         Relationships: []
       }
+      fixed_income: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          day_of_month: number
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          day_of_month?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          day_of_month?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      grocery_items: {
+        Row: {
+          barcode: string | null
+          created_at: string | null
+          id: string
+          is_checked: boolean | null
+          list_id: string | null
+          name: string
+          quantity: number | null
+          unit: string | null
+          user_id: string
+        }
+        Insert: {
+          barcode?: string | null
+          created_at?: string | null
+          id?: string
+          is_checked?: boolean | null
+          list_id?: string | null
+          name: string
+          quantity?: number | null
+          unit?: string | null
+          user_id: string
+        }
+        Update: {
+          barcode?: string | null
+          created_at?: string | null
+          id?: string
+          is_checked?: boolean | null
+          list_id?: string | null
+          name?: string
+          quantity?: number | null
+          unit?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grocery_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "grocery_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grocery_lists: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       income_entries: {
         Row: {
           amount: number
@@ -220,6 +414,57 @@ export type Database = {
           id?: string
           source?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      market_alerts: {
+        Row: {
+          created_at: string | null
+          direction: string
+          id: string
+          is_triggered: boolean
+          symbol: string
+          target_price: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          direction: string
+          id?: string
+          is_triggered?: boolean
+          symbol: string
+          target_price: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          direction?: string
+          id?: string
+          is_triggered?: boolean
+          symbol?: string
+          target_price?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      market_watchlist: {
+        Row: {
+          created_at: string | null
+          id: string
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          symbol?: string
           user_id?: string
         }
         Relationships: []
@@ -308,33 +553,6 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          display_name: string | null
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       stock_holdings: {
         Row: {
           avg_price: number
@@ -371,6 +589,218 @@ export type Database = {
         }
         Relationships: []
       }
+      task_projects: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          icon: string | null
+          id: string
+          name: string
+          sort_order: number | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          sort_order?: number | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          sort_order?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          project_id: string | null
+          sort_order: number | null
+          status: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          project_id?: string | null
+          sort_order?: number | null
+          status?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          project_id?: string | null
+          sort_order?: number | null
+          status?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "task_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tdee_history: {
+        Row: {
+          carbs: number | null
+          created_at: string | null
+          deficit_kcal: number | null
+          fat: number | null
+          id: string
+          protein: number | null
+          target_calories: number | null
+          tdee: number | null
+          user_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          carbs?: number | null
+          created_at?: string | null
+          deficit_kcal?: number | null
+          fat?: number | null
+          id?: string
+          protein?: number | null
+          target_calories?: number | null
+          tdee?: number | null
+          user_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          carbs?: number | null
+          created_at?: string | null
+          deficit_kcal?: number | null
+          fat?: number | null
+          id?: string
+          protein?: number | null
+          target_calories?: number | null
+          tdee?: number | null
+          user_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      user_profile: {
+        Row: {
+          age: number | null
+          city: string | null
+          created_at: string | null
+          diet_type: string | null
+          food_allergies: string[] | null
+          full_name: string | null
+          gender: string | null
+          height_cm: number | null
+          id: string
+          interest_topics: string[] | null
+          investment_level: string | null
+          investment_types: string[] | null
+          invests_in_market: boolean | null
+          macro_preference: string | null
+          monthly_budget: number | null
+          monthly_income: number | null
+          muscle_focus: string[] | null
+          onboarding_completed: boolean | null
+          physical_limitations: string[] | null
+          savings_goal_percent: number | null
+          sport_frequency: string | null
+          sport_goals: string[] | null
+          sport_level: string | null
+          sport_location: string | null
+          sport_types: string[] | null
+          target_weight_kg: number | null
+          updated_at: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          age?: number | null
+          city?: string | null
+          created_at?: string | null
+          diet_type?: string | null
+          food_allergies?: string[] | null
+          full_name?: string | null
+          gender?: string | null
+          height_cm?: number | null
+          id: string
+          interest_topics?: string[] | null
+          investment_level?: string | null
+          investment_types?: string[] | null
+          invests_in_market?: boolean | null
+          macro_preference?: string | null
+          monthly_budget?: number | null
+          monthly_income?: number | null
+          muscle_focus?: string[] | null
+          onboarding_completed?: boolean | null
+          physical_limitations?: string[] | null
+          savings_goal_percent?: number | null
+          sport_frequency?: string | null
+          sport_goals?: string[] | null
+          sport_level?: string | null
+          sport_location?: string | null
+          sport_types?: string[] | null
+          target_weight_kg?: number | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          age?: number | null
+          city?: string | null
+          created_at?: string | null
+          diet_type?: string | null
+          food_allergies?: string[] | null
+          full_name?: string | null
+          gender?: string | null
+          height_cm?: number | null
+          id?: string
+          interest_topics?: string[] | null
+          investment_level?: string | null
+          investment_types?: string[] | null
+          invests_in_market?: boolean | null
+          macro_preference?: string | null
+          monthly_budget?: number | null
+          monthly_income?: number | null
+          muscle_focus?: string[] | null
+          onboarding_completed?: boolean | null
+          physical_limitations?: string[] | null
+          savings_goal_percent?: number | null
+          sport_frequency?: string | null
+          sport_goals?: string[] | null
+          sport_level?: string | null
+          sport_location?: string | null
+          sport_types?: string[] | null
+          target_weight_kg?: number | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           alt_hourly_rate: number | null
@@ -388,12 +818,16 @@ export type Database = {
           education_fund_pct: number | null
           excellence_per_hour: number | null
           extra_harel_pct: number | null
+          favorite_exercises: string[]
           full_name: string | null
+          google_calendar_token: string | null
           harel_savings_pct: number | null
           harel_study_pct: number | null
           harel_travel_pct: number | null
           health_insurance_pct: number | null
           height_cm: number | null
+          hidden_exercises: string[]
+          hidden_modules: Json | null
           hourly_rate: number | null
           id: string
           income_sync_mode: string | null
@@ -402,11 +836,13 @@ export type Database = {
           pension_deduction_pct: number | null
           preferred_language: string | null
           recovery_per_hour: number | null
+          savings_goal_amount: number | null
           savings_goal_pct: number | null
           shabbat_holiday_multiplier: number | null
           shabbat_hourly_rate: number | null
           shift_manager_rate: number | null
           shoulder_sensitivity: boolean | null
+          sport_favorites: Json | null
           training_day_calories: number | null
           training_day_protein: number | null
           travel_allowance: number | null
@@ -420,9 +856,6 @@ export type Database = {
           weekly_workouts_goal: number | null
           weight_kg: number | null
           work_role: string | null
-          hidden_modules: Json | null
-          google_calendar_token: string | null
-          sport_favorites: Json | null
         }
         Insert: {
           alt_hourly_rate?: number | null
@@ -440,12 +873,16 @@ export type Database = {
           education_fund_pct?: number | null
           excellence_per_hour?: number | null
           extra_harel_pct?: number | null
+          favorite_exercises?: string[]
           full_name?: string | null
+          google_calendar_token?: string | null
           harel_savings_pct?: number | null
           harel_study_pct?: number | null
           harel_travel_pct?: number | null
           health_insurance_pct?: number | null
           height_cm?: number | null
+          hidden_exercises?: string[]
+          hidden_modules?: Json | null
           hourly_rate?: number | null
           id?: string
           income_sync_mode?: string | null
@@ -454,11 +891,13 @@ export type Database = {
           pension_deduction_pct?: number | null
           preferred_language?: string | null
           recovery_per_hour?: number | null
+          savings_goal_amount?: number | null
           savings_goal_pct?: number | null
           shabbat_holiday_multiplier?: number | null
           shabbat_hourly_rate?: number | null
           shift_manager_rate?: number | null
           shoulder_sensitivity?: boolean | null
+          sport_favorites?: Json | null
           training_day_calories?: number | null
           training_day_protein?: number | null
           travel_allowance?: number | null
@@ -472,9 +911,6 @@ export type Database = {
           weekly_workouts_goal?: number | null
           weight_kg?: number | null
           work_role?: string | null
-          hidden_modules?: Json | null
-          google_calendar_token?: string | null
-          sport_favorites?: Json | null
         }
         Update: {
           alt_hourly_rate?: number | null
@@ -492,12 +928,16 @@ export type Database = {
           education_fund_pct?: number | null
           excellence_per_hour?: number | null
           extra_harel_pct?: number | null
+          favorite_exercises?: string[]
           full_name?: string | null
+          google_calendar_token?: string | null
           harel_savings_pct?: number | null
           harel_study_pct?: number | null
           harel_travel_pct?: number | null
           health_insurance_pct?: number | null
           height_cm?: number | null
+          hidden_exercises?: string[]
+          hidden_modules?: Json | null
           hourly_rate?: number | null
           id?: string
           income_sync_mode?: string | null
@@ -506,11 +946,13 @@ export type Database = {
           pension_deduction_pct?: number | null
           preferred_language?: string | null
           recovery_per_hour?: number | null
+          savings_goal_amount?: number | null
           savings_goal_pct?: number | null
           shabbat_holiday_multiplier?: number | null
           shabbat_hourly_rate?: number | null
           shift_manager_rate?: number | null
           shoulder_sensitivity?: boolean | null
+          sport_favorites?: Json | null
           training_day_calories?: number | null
           training_day_protein?: number | null
           travel_allowance?: number | null
@@ -524,9 +966,6 @@ export type Database = {
           weekly_workouts_goal?: number | null
           weight_kg?: number | null
           work_role?: string | null
-          hidden_modules?: Json | null
-          google_calendar_token?: string | null
-          sport_favorites?: Json | null
         }
         Relationships: []
       }
@@ -635,33 +1074,42 @@ export type Database = {
       workout_exercises: {
         Row: {
           created_at: string
+          duration_seconds: number | null
           id: string
+          is_warmup: boolean
           name: string
           notes: string | null
           reps: number | null
           sets: number | null
+          sets_data: Json | null
           user_id: string
           weight_kg: number | null
           workout_id: string
         }
         Insert: {
           created_at?: string
+          duration_seconds?: number | null
           id?: string
+          is_warmup?: boolean
           name: string
           notes?: string | null
           reps?: number | null
           sets?: number | null
+          sets_data?: Json | null
           user_id: string
           weight_kg?: number | null
           workout_id: string
         }
         Update: {
           created_at?: string
+          duration_seconds?: number | null
           id?: string
+          is_warmup?: boolean
           name?: string
           notes?: string | null
           reps?: number | null
           sets?: number | null
+          sets_data?: Json | null
           user_id?: string
           weight_kg?: number | null
           workout_id?: string
@@ -725,10 +1173,11 @@ export type Database = {
           estimated_duration_minutes: number | null
           exercises: Json
           id: string
+          is_system: boolean
           name: string
           notes: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           category: string
@@ -737,10 +1186,11 @@ export type Database = {
           estimated_duration_minutes?: number | null
           exercises?: Json
           id?: string
+          is_system?: boolean
           name: string
           notes?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           category?: string
@@ -749,10 +1199,11 @@ export type Database = {
           estimated_duration_minutes?: number | null
           exercises?: Json
           id?: string
+          is_system?: boolean
           name?: string
           notes?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -765,6 +1216,7 @@ export type Database = {
           duration_minutes: number | null
           id: string
           notes: string | null
+          template_id: string | null
           updated_at: string
           user_id: string
         }
@@ -776,6 +1228,7 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           notes?: string | null
+          template_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -787,205 +1240,18 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           notes?: string | null
+          template_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
-      }
-      coupons: {
-        Row: {
-          id: string
-          user_id: string
-          title: string
-          code: string | null
-          barcode: string | null
-          store: string | null
-          discount_amount: number | null
-          discount_percent: number | null
-          expiry_date: string | null
-          category: string | null
-          is_used: boolean
-          image_url: string | null
-          notes: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          title: string
-          code?: string | null
-          barcode?: string | null
-          store?: string | null
-          discount_amount?: number | null
-          discount_percent?: number | null
-          expiry_date?: string | null
-          category?: string | null
-          is_used?: boolean
-          image_url?: string | null
-          notes?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          title?: string
-          code?: string | null
-          barcode?: string | null
-          store?: string | null
-          discount_amount?: number | null
-          discount_percent?: number | null
-          expiry_date?: string | null
-          category?: string | null
-          is_used?: boolean
-          image_url?: string | null
-          notes?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
-      task_projects: {
-        Row: {
-          id: string
-          user_id: string
-          name: string
-          color: string
-          icon: string | null
-          sort_order: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name: string
-          color?: string
-          icon?: string | null
-          sort_order?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          name?: string
-          color?: string
-          icon?: string | null
-          sort_order?: number
-          created_at?: string
-        }
-        Relationships: []
-      }
-      tasks: {
-        Row: {
-          id: string
-          user_id: string
-          project_id: string | null
-          title: string
-          description: string | null
-          status: string
-          priority: string
-          due_date: string | null
-          completed_at: string | null
-          sort_order: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          project_id?: string | null
-          title: string
-          description?: string | null
-          status?: string
-          priority?: string
-          due_date?: string | null
-          completed_at?: string | null
-          sort_order?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          project_id?: string | null
-          title?: string
-          description?: string | null
-          status?: string
-          priority?: string
-          due_date?: string | null
-          completed_at?: string | null
-          sort_order?: number
-          created_at?: string
-        }
         Relationships: [
           {
-            foreignKeyName: "tasks_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "workouts_template_id_fkey"
+            columns: ["template_id"]
             isOneToOne: false
-            referencedRelation: "task_projects"
+            referencedRelation: "workout_templates"
             referencedColumns: ["id"]
-          }
-        ]
-      }
-      grocery_lists: {
-        Row: {
-          id: string
-          user_id: string
-          name: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          name?: string
-          created_at?: string
-        }
-        Relationships: []
-      }
-      grocery_items: {
-        Row: {
-          id: string
-          list_id: string
-          user_id: string
-          name: string
-          quantity: number
-          unit: string | null
-          barcode: string | null
-          is_checked: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          list_id: string
-          user_id: string
-          name: string
-          quantity?: number
-          unit?: string | null
-          barcode?: string | null
-          is_checked?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          list_id?: string
-          user_id?: string
-          name?: string
-          quantity?: number
-          unit?: string | null
-          barcode?: string | null
-          is_checked?: boolean
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "grocery_items_list_id_fkey"
-            columns: ["list_id"]
-            isOneToOne: false
-            referencedRelation: "grocery_lists"
-            referencedColumns: ["id"]
-          }
+          },
         ]
       }
     }
