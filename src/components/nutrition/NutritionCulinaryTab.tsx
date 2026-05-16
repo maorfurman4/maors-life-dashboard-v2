@@ -406,7 +406,7 @@ ${dietRule}
   ]
 }
 
-7 ימים בדיוק (ראשון עד שבת). JSON בלבד ללא markdown.`;
+7 ימים בדיוק (ראשון עד שבת). כל שמות הארוחות בעברית בלבד — אסור לכתוב מילה אחת באנגלית. JSON בלבד ללא markdown.`;
 
       const raw  = await generateText(prompt);
       const plan = parseAIJson<WeeklyPlan>(raw);
