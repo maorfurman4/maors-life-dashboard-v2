@@ -225,9 +225,104 @@ If conditions are not nutrition-relevant or you are unsure, return adjustment_kc
     }
   };
 
+  // ─── Process timeline helpers ─────────────────────────────────────────────
+  const processStart   = history.length > 0 ? new Date((history[0] as any).rawDate as string) : null;
+  const processEnd     = targetDate ? new Date(targetDate) : null;
+  const daysElapsed    = processStart ? Math.max(0, Math.floor((Date.now() - processStart.getTime()) / 86_400_000)) : 0;
+  const totalDays      = processStart && processEnd ? Math.max(1, Math.round((processEnd.getTime() - processStart.getTime()) / 86_400_000)) : null;
+  const progressPct    = totalDays ? Math.min(100, Math.max(0, Math.round((daysElapsed / totalDays) * 100))) : null;
+  const daysLeft       = totalDays ? Math.max(0, totalDays - daysElapsed) : null;
+
   // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div className="px-4 pt-4 space-y-5 pb-4">
+
+      {/* ══ PROCESS TIMELINE ══════════════════════════════════════════════════ */}
+      {processStart && (
+        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🛤️</span>
+            <div>
+              <p className="text-sm font-black text-white">מסלול התהליך</p>
+              <p className="text-[10px] text-white/40">
+                {processEnd ? `${totalDays} ימים סה״כ · ${progressPct}% הושלם` : "קבע תאריך יעד לסרגל מלא"}
+              </p>
+            </div>
+          </div>
+
+          {/* Progress bar track */}
+          <div className="space-y-2.5">
+            <div className="relative h-4 rounded-full bg-white/10 overflow-visible">
+              {/* Filled portion */}
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-700"
+                style={{ width: processEnd ? `${progressPct}%` : "100%" }}
+              />
+              {/* "Now" dot */}
+              <div
+                className="absolute top-1/2 w-5 h-5 rounded-full bg-white border-2 border-emerald-400 shadow-lg shadow-emerald-500/60 z-10"
+                style={{
+                  left: processEnd ? `${progressPct}%` : "100%",
+                  transform: "translateX(-50%) translateY(-50%)",
+                }}
+              >
+                <div className="absolute inset-0.5 rounded-full bg-emerald-400" />
+              </div>
+            </div>
+
+            {/* Date labels */}
+            <div className="flex justify-between items-start text-[10px]">
+              <div>
+                <p className="text-white/50 font-bold">התחלה</p>
+                <p className="text-white/30">
+                  {processStart.toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "2-digit" })}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-emerald-300 font-black text-xs">עכשיו</p>
+                <p className="text-emerald-400/70">יום {daysElapsed + 1}</p>
+              </div>
+              {processEnd ? (
+                <div className="text-left">
+                  <p className="text-white/50 font-bold">סיום</p>
+                  <p className="text-white/30">
+                    {processEnd.toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "2-digit" })}
+                  </p>
+                </div>
+              ) : (
+                <div className="text-left opacity-40">
+                  <p className="text-white/40">יעד?</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Stats chips */}
+          <div className={`grid gap-2 text-center ${totalDays ? "grid-cols-3" : "grid-cols-2"}`}>
+            <div className="rounded-xl bg-white/5 border border-white/8 p-2.5">
+              <p className="text-sm font-black text-white">{daysElapsed + 1}</p>
+              <p className="text-[9px] text-white/40">ימים בתהליך</p>
+            </div>
+            {totalDays && progressPct !== null && (
+              <div className="rounded-xl bg-emerald-500/15 border border-emerald-500/30 p-2.5">
+                <p className="text-sm font-black text-emerald-300">{progressPct}%</p>
+                <p className="text-[9px] text-white/40">הושלם</p>
+              </div>
+            )}
+            {daysLeft !== null ? (
+              <div className="rounded-xl bg-white/5 border border-white/8 p-2.5">
+                <p className="text-sm font-black text-white">{daysLeft}</p>
+                <p className="text-[9px] text-white/40">ימים נותרו</p>
+              </div>
+            ) : (
+              <div className="rounded-xl bg-white/5 border border-white/8 p-2.5">
+                <p className="text-sm font-black text-white">{history.length}</p>
+                <p className="text-[9px] text-white/40">עדכוני יעדים</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ══ TDEE CALCULATOR CARD ═════════════════════════════════════════════ */}
       <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 space-y-4">
@@ -527,31 +622,6 @@ If conditions are not nutrition-relevant or you are unsure, return adjustment_kc
             </div>
           </div>
         )}
-
-        {/* Process tracking banner */}
-        {history.length > 0 && (() => {
-          const start = new Date((history[0] as any).rawDate);
-          const daysIn = Math.floor((Date.now() - start.getTime()) / 86_400_000);
-          const daysLeft = targetDate
-            ? Math.max(0, Math.round((new Date(targetDate).getTime() - Date.now()) / 86_400_000))
-            : null;
-          return (
-            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2.5 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black text-emerald-300">יום {daysIn + 1} לתהליך</p>
-                <p className="text-[10px] text-white/40">
-                  התחלת: {start.toLocaleDateString("he-IL", { day: "numeric", month: "long" })}
-                </p>
-              </div>
-              {daysLeft !== null && (
-                <div className="text-right">
-                  <p className="text-xs font-black text-white/70">{daysLeft}</p>
-                  <p className="text-[10px] text-white/40">ימים לסיום</p>
-                </div>
-              )}
-            </div>
-          );
-        })()}
 
         {/* Save button */}
         <button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
