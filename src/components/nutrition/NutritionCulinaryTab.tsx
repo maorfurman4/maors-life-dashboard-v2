@@ -380,33 +380,59 @@ No explanation, no markdown. JSON array only.`
     }
   };
 
+  // ─── Diet constraint definitions (strict, explicit) ─────────────────────
+  const DIET_RULES: Record<string, string> = {
+    "ים תיכונית": `
+חוקי דיאטה ים תיכונית (חובה לעמוד בהם):
+- מותר: שמן זית, ירקות, קטניות, דגים, עוף בכמות מתונה, גבינות כבשים/עיזים, אגוזים, פירות, דגנים מלאים
+- אסור: בשר אדום בכמות גבוהה, מזון מעובד, שמנים מזוקקים`,
+    "קטוגנית": `
+חוקי דיאטה קטוגנית (חובה לעמוד בהם):
+- מותר: בשר, עוף, דגים, ביצים, גבינות שמנות, שמן זית, חמאה, קרם, אגוזים, ירקות ירוקים
+- אסור לחלוטין: לחם, פסטה, אורז, תפוחי אדמה, סוכר, קמח, קטניות, פירות (למעט פירות יער בכמות קטנה)
+- פחמימות: מקסימום 5-10g למנה בלבד`,
+    "טבעוני": `
+חוקי דיאטה טבעונית (חובה מוחלט לעמוד בהם):
+- אסור לחלוטין — כל מוצר מהחי: בשר, עוף, דגים, פירות ים, ביצים, חלב, גבינה, יוגורט, חמאה, שמנת, דבש
+- מותר בלבד: ירקות, פירות, קטניות (עדשים, חומוס, שעועית), טופו, טמפה, שמנים צמחיים, אגוזים, זרעים, דגנים, חלב צמחי
+- אם מרכיב לא מפורש כצמחי — אל תכלול אותו`,
+    "חלבון גבוה": `
+חוקי דיאטה עתירת חלבון (חובה לעמוד בהם):
+- חלבון למנה: לפחות 30g
+- התמקד ב: עוף, הודו, ביצים, גבינת קוטג', טונה, סלמון, בשר רזה, טופו
+- הגבל: שומנים ופחמימות מיותרות`,
+  };
+
   // ─── Generate recipes from query ─────────────────────────────────────────
   const generateRecipes = async () => {
     if (!query.trim()) { toast.error("הכנס חומרים או שם מנה"); return; }
     setGenerating(true);
     setRecipes([]);
     try {
-      const dietClause = dietFilter     ? `\n- דיאטה מועדפת: ${dietFilter}` : "";
-      const calClause  = targetCalories ? `\n- יעד קלוריות למנה: ${targetCalories} קק"ל (חובה לעמוד בטווח ±10%)` : "";
-      const protClause = targetProtein  ? `\n- יעד חלבון למנה: ${targetProtein}g (חובה לעמוד בטווח ±5g)` : "";
-      const excClause  = localAllergies.length
-        ? `\n- מרכיבים אסורים (אלרגיות): ${localAllergies.join(", ")} — אסור בהחלט לכלול אותם`
+      const dietRules = dietFilter && DIET_RULES[dietFilter] ? DIET_RULES[dietFilter] : "";
+
+      const calClause = targetCalories
+        ? `\nיעד קלוריות למנה: בדיוק ${targetCalories} קק"ל (±10% מקסימום). חשב את משקל כל מרכיב כדי להגיע לערך זה בדיוק.`
+        : "";
+      const protClause = targetProtein
+        ? `\nיעד חלבון למנה: בדיוק ${targetProtein}g חלבון (±2g מקסימום). חשב: כל 100g עוף = ~23g חלבון, ביצה אחת = ~6g, 100g טופו = ~8g, 100g עדשים מבושלות = ~9g. התאם את הכמויות בהתאם.`
+        : "";
+      const excClause = localAllergies.length
+        ? `\nמרכיבים אסורים (אלרגיות): ${localAllergies.join(", ")} — אסור בהחלט לכלול אותם בשום צורה.`
         : "";
 
-      const macroInstruction = (targetCalories || targetProtein)
-        ? `\n\nחשוב ביותר: עליך לבנות את המתכון כך שיגיע בדיוק ליעדי המאקרו שצוינו. חשב את הכמויות בהתאם.`
-        : "";
-
-      // When ingredients come from a fridge scan, forbid adding anything outside that list
       const fridgeConstraint = scanDone
-        ? `\n\n⚠️ חשוב מאוד: המרכיבים לעיל נסרקו ישירות מהמקרר של המשתמש. אתה חייב להכין מתכונים תוך שימוש רק במרכיבים הרשומים. אסור בהחלט להוסיף כל מרכיב אחר שאינו ברשימה זו. אם מרכיב מסוים לא ברשימה — לא משתמשים בו.`
+        ? `\n⚠️ המרכיבים נסרקו מהמקרר — השתמש אך ורק במרכיבים הרשומים. אסור להוסיף כל מרכיב שאינו ברשימה.`
         : "";
 
-      const prompt = `אתה שף ודיאטן ישראלי מקצועי. צור 3 מתכונים מפורטים בפורמט JSON בלבד.
+      const prompt = `אתה שף ודיאטן ישראלי מקצועי ומדויק. צור 3 מתכונים בפורמט JSON בלבד.
 
-${scanDone ? `מרכיבים זמינים במקרר: "${query}"` : `בקשה: "${query}"`}${dietClause}${calClause}${protClause}${excClause}${fridgeConstraint}${macroInstruction}
+${scanDone ? `מרכיבים זמינים במקרר: "${query}"` : `בקשה: "${query}"`}
+${dietRules}${calClause}${protClause}${excClause}${fridgeConstraint}
 
-פורמט JSON חובה:
+חשוב: לפני שאתה כותב כל מתכון, חשב את ערכי המאקרו לפי המרכיבים והכמויות שבחרת. ודא שהתוצאה עומדת ביעדים שנדרשו.
+
+פורמט JSON (JSON בלבד, ללא markdown):
 {
   "recipes": [
     {
@@ -424,7 +450,7 @@ ${scanDone ? `מרכיבים זמינים במקרר: "${query}"` : `בקשה: "
   ]
 }
 
-כללים: מתכונים ישראליים ריאליים. difficulty: קל/בינוני/מתקדם. JSON בלבד ללא markdown.`;
+difficulty: קל/בינוני/מתקדם בלבד. JSON בלבד ללא כל טקסט נוסף.`;
 
       const raw    = await generateText(prompt);
       const parsed = parseAIJson<{ recipes: RecipeResult[] }>(raw);
