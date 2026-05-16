@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
-import { Loader2, Plus, ScanLine, UtensilsCrossed } from "lucide-react";
+import { Loader2, Plus, ScanLine, UtensilsCrossed, Search } from "lucide-react";
 import { useAddNutrition } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
 import { BarcodeScanner } from "./BarcodeScanner";
