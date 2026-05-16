@@ -384,30 +384,46 @@ export function NutritionCulinaryTab() {
       const dnProt = Math.round(dailyProtTarget * 0.35);
       const snProt = Math.round(dailyProtTarget * 0.10);
 
-      const prompt = `אתה דיאטן ישראלי מקצועי ומדויק. צור תפריט שבועי מלא בפורמט JSON בלבד.
+      // Some diets override macro ratios — note conflicts explicitly
+      const isZeroCarb = ["קרניבורית", "קטוגנית"].includes(profile.diet_type);
+      const isIfDiet   = profile.diet_type === "צום לסירוגין 16:8";
+      const carbNote   = isZeroCarb
+        ? `\n⚠️ דיאטה זו = אפס פחמימות — יעד הפחמימות הכללי אינו רלוונטי כאן. לא לכלול אף מרכיב פחמימתי.`
+        : "";
+      const ifNote = isIfDiet
+        ? `\n⚠️ דיאטת צום 16:8 — אסור ארוחת בוקר. ארוחה ראשונה = צהריים בלבד. שים "צום (קפה/מים)" בשדה breakfast עם 0 קלוריות.`
+        : "";
 
-יעדים יומיים מדויקים — חובה לעמוד בהם בכל יום:
-- קלוריות: ${dailyCalTarget} קק"ל (טווח: ${Math.round(dailyCalTarget * 0.97)}–${Math.round(dailyCalTarget * 1.03)})
-- חלבון: ${dailyProtTarget}g (טווח: ${dailyProtTarget - 5}–${dailyProtTarget + 5}g)
-- פחמימות: ${dailyCarbTarget}g (טווח: ${dailyCarbTarget - 10}–${dailyCarbTarget + 10}g)
-- שומן: ${dailyFatTarget}g (טווח: ${dailyFatTarget - 8}–${dailyFatTarget + 8}g)
-- מרכיבים אסורים: ${excStr}
-${dietRule}
+      const prompt = `אתה דיאטן ישראלי מקצועי. צור תפריט שבועי בפורמט JSON בלבד.
 
-חלוקה לארוחות (עמוד בה בדיוק):
-- בוקר:   ${bfCal} קק"ל · ${bfProt}g חלבון
-- צהריים: ${lnCal} קק"ל · ${lnProt}g חלבון
-- ערב:    ${dnCal} קק"ל · ${dnProt}g חלבון
-- חטיף:   ${snCal} קק"ל · ${snProt}g חלבון
+════ כלל #1 — גובר על הכל: חוקי הדיאטה ════
+סוג דיאטה: ${profile.diet_type}
+${dietRule}${carbNote}${ifNote}
 
-⚠️ כלל ברזל: סכום קלוריות 4 הארוחות חייב להיות ${dailyCalTarget}. סכום חלבון חייב להיות ${dailyProtTarget}g. כתוב בשדה total_calories את הסכום המחושב בפועל.
+לפני כל ארוחה שאתה כותב — בדוק: האם כל מרכיב בה מותר בדיאטה ${profile.diet_type}?
+אם מרכיב אחד אסור — החלף את כל הארוחה. אין פשרות.
+════════════════════════════════════════════
 
-פורמט JSON חובה (7 ימים, ישראלי, ריאלי):
+מרכיבים אסורים (אלרגיות): ${excStr}
+
+יעדי קלוריות יומיים (עמוד בהם ככל שהדיאטה מאפשרת):
+- קלוריות: ${dailyCalTarget} קק"ל (טווח: ${Math.round(dailyCalTarget * 0.95)}–${Math.round(dailyCalTarget * 1.05)})
+- חלבון: ${dailyProtTarget}g (טווח: ${dailyProtTarget - 8}–${dailyProtTarget + 8}g)
+${!isZeroCarb ? `- פחמימות: ${dailyCarbTarget}g (טווח: ${Math.max(0, dailyCarbTarget - 15)}–${dailyCarbTarget + 15}g)` : "- פחמימות: 0g (קרניבורית/קטוגנית)"}
+- שומן: ${dailyFatTarget}g (טווח: ${dailyFatTarget - 10}–${dailyFatTarget + 10}g)
+
+חלוקה לארוחות:
+- בוקר:   ${isIfDiet ? "0 קק\"ל (צום)" : `${bfCal} קק"ל · ${bfProt}g חלבון`}
+- צהריים: ${isIfDiet ? `${Math.round(dailyCalTarget * 0.40)} קק"ל · ${Math.round(dailyProtTarget * 0.40)}g חלבון` : `${lnCal} קק"ל · ${lnProt}g חלבון`}
+- ערב:    ${isIfDiet ? `${Math.round(dailyCalTarget * 0.40)} קק"ל · ${Math.round(dailyProtTarget * 0.40)}g חלבון` : `${dnCal} קק"ל · ${dnProt}g חלבון`}
+- חטיף:   ${isIfDiet ? `${Math.round(dailyCalTarget * 0.20)} קק"ל · ${Math.round(dailyProtTarget * 0.20)}g חלבון` : `${snCal} קק"ל · ${snProt}g חלבון`}
+
+פורמט JSON (7 ימים, JSON בלבד ללא markdown):
 {
   "days": [
     {
       "day": "ראשון",
-      "breakfast": { "name": "שם ארוחת בוקר",    "calories": ${bfCal}, "protein": ${bfProt} },
+      "breakfast": { "name": "שם ארוחת בוקר",    "calories": ${isIfDiet ? 0 : bfCal}, "protein": ${isIfDiet ? 0 : bfProt} },
       "lunch":     { "name": "שם ארוחת צהריים",   "calories": ${lnCal}, "protein": ${lnProt} },
       "dinner":    { "name": "שם ארוחת ערב",      "calories": ${dnCal}, "protein": ${dnProt} },
       "snack":     { "name": "שם חטיף",            "calories": ${snCal}, "protein": ${snProt} },
@@ -416,7 +432,7 @@ ${dietRule}
   ]
 }
 
-7 ימים בדיוק (ראשון עד שבת). כל שמות הארוחות בעברית בלבד — אסור לכתוב מילה אחת באנגלית. JSON בלבד ללא markdown.`;
+7 ימים (ראשון עד שבת). כל שמות הארוחות בעברית בלבד — אסור לכתוב מילה אחת באנגלית. JSON בלבד.`;
 
       const raw  = await generateText(prompt);
       const plan = parseAIJson<WeeklyPlan>(raw);
@@ -598,8 +614,15 @@ No explanation, no markdown. JSON array only.`
 
       const prompt = `אתה שף ודיאטן ישראלי מקצועי ומדויק. צור 3 מתכונים בפורמט JSON בלבד.
 
-${scanDone ? `מרכיבים זמינים במקרר: "${query}"` : `בקשה: "${query}"`}
-${dietRules}${excClause}${fridgeConstraint}
+${dietRules ? `════ חוקי הדיאטה — גוברים על הכל ════
+${dietRules}
+לפני כל מרכיב שאתה כותב — בדוק שהוא מותר לפי חוקי הדיאטה. אם אסור — החלף אותו. אין יוצאים מן הכלל.
+════════════════════════════════════════════
+
+` : ""}${excClause ? `מרכיבים אסורים (אלרגיות): ${excClause.replace(/\n/g, "")}
+
+` : ""}${scanDone ? `מרכיבים זמינים במקרר: "${query}"` : `בקשה: "${query}"`}
+${fridgeConstraint}
 ${NUTRITION_TABLE}
 ${macroTargetBlock}
 
