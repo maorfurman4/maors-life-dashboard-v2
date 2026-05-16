@@ -256,15 +256,17 @@ export function NutritionCulinaryTab() {
       const uid = await getUserId();
       const { data } = await supabase
         .from("user_settings")
-        .select("daily_calories_goal,daily_protein_goal")
+        .select("daily_calories_goal,daily_protein_goal,daily_carbs_goal,daily_fat_goal")
         .eq("user_id", uid)
         .maybeSingle();
       return data;
     },
   });
 
-  const dailyCalTarget  = (savedGoals?.daily_calories_goal  || 0) > 0 ? savedGoals!.daily_calories_goal!  : tdeeCalories.targetCalories;
-  const dailyProtTarget = (savedGoals?.daily_protein_goal   || 0) > 0 ? savedGoals!.daily_protein_goal!   : tdeeCalories.protein;
+  const dailyCalTarget  = (savedGoals?.daily_calories_goal || 0) > 0 ? savedGoals!.daily_calories_goal! : tdeeCalories.targetCalories;
+  const dailyProtTarget = (savedGoals?.daily_protein_goal  || 0) > 0 ? savedGoals!.daily_protein_goal!  : tdeeCalories.protein;
+  const dailyCarbTarget = (savedGoals?.daily_carbs_goal    || 0) > 0 ? savedGoals!.daily_carbs_goal!    : tdeeCalories.carbs;
+  const dailyFatTarget  = (savedGoals?.daily_fat_goal      || 0) > 0 ? savedGoals!.daily_fat_goal!      : tdeeCalories.fat;
 
   // ── Weekly plan state (persisted for 7 days in localStorage) ──
   const [weekPlan,      setWeekPlan]      = useState<WeeklyPlan | null>(() => {
@@ -363,31 +365,42 @@ export function NutritionCulinaryTab() {
       const excStr   = localAllergies.length ? localAllergies.join(", ") : "אין";
       const dietRule = DIET_RULES[profile.diet_type] ?? "";
 
+      const bfCal  = Math.round(dailyCalTarget * 0.25);
+      const lnCal  = Math.round(dailyCalTarget * 0.35);
+      const dnCal  = Math.round(dailyCalTarget * 0.30);
+      const snCal  = Math.round(dailyCalTarget * 0.10);
+      const bfProt = Math.round(dailyProtTarget * 0.20);
+      const lnProt = Math.round(dailyProtTarget * 0.35);
+      const dnProt = Math.round(dailyProtTarget * 0.35);
+      const snProt = Math.round(dailyProtTarget * 0.10);
+
       const prompt = `אתה דיאטן ישראלי מקצועי ומדויק. צור תפריט שבועי מלא בפורמט JSON בלבד.
 
-יעדים יומיים מחייבים:
-- קלוריות יומיות: ${dailyCalTarget} קק"ל בדיוק (טווח מותר: ${Math.round(dailyCalTarget * 0.97)}–${Math.round(dailyCalTarget * 1.03)})
-- חלבון יומי: ${dailyProtTarget}g (טווח מותר: ${Math.max(0, dailyProtTarget - 5)}–${dailyProtTarget + 5}g)
-- מרכיבים אסורים (אלרגיות): ${excStr}
+יעדים יומיים מדויקים — חובה לעמוד בהם בכל יום:
+- קלוריות: ${dailyCalTarget} קק"ל (טווח: ${Math.round(dailyCalTarget * 0.97)}–${Math.round(dailyCalTarget * 1.03)})
+- חלבון: ${dailyProtTarget}g (טווח: ${dailyProtTarget - 5}–${dailyProtTarget + 5}g)
+- פחמימות: ${dailyCarbTarget}g (טווח: ${dailyCarbTarget - 10}–${dailyCarbTarget + 10}g)
+- שומן: ${dailyFatTarget}g (טווח: ${dailyFatTarget - 8}–${dailyFatTarget + 8}g)
+- מרכיבים אסורים: ${excStr}
 ${dietRule}
 
-⚠️ כלל ברזל: לכל יום, חשב את סכום הקלוריות של כל 4 הארוחות. הסכום חייב להגיע ל-${dailyCalTarget} קק"ל. אם לא — שנה כמויות. אסור לרשום total_calories שלא תואם את סכום הארוחות.
+חלוקה לארוחות (עמוד בה בדיוק):
+- בוקר:   ${bfCal} קק"ל · ${bfProt}g חלבון
+- צהריים: ${lnCal} קק"ל · ${lnProt}g חלבון
+- ערב:    ${dnCal} קק"ל · ${dnProt}g חלבון
+- חטיף:   ${snCal} קק"ל · ${snProt}g חלבון
 
-חלוקה מומלצת ל-${dailyCalTarget} קק"ל:
-- ארוחת בוקר: ~${Math.round(dailyCalTarget * 0.25)} קק"ל
-- ארוחת צהריים: ~${Math.round(dailyCalTarget * 0.35)} קק"ל
-- ארוחת ערב: ~${Math.round(dailyCalTarget * 0.30)} קק"ל
-- חטיף: ~${Math.round(dailyCalTarget * 0.10)} קק"ל
+⚠️ כלל ברזל: סכום קלוריות 4 הארוחות חייב להיות ${dailyCalTarget}. סכום חלבון חייב להיות ${dailyProtTarget}g. כתוב בשדה total_calories את הסכום המחושב בפועל.
 
 פורמט JSON חובה (7 ימים, ישראלי, ריאלי):
 {
   "days": [
     {
       "day": "ראשון",
-      "breakfast": { "name": "שם ארוחת בוקר", "calories": ${Math.round(dailyCalTarget * 0.25)}, "protein": 0 },
-      "lunch":     { "name": "שם ארוחת צהריים", "calories": ${Math.round(dailyCalTarget * 0.35)}, "protein": 0 },
-      "dinner":    { "name": "שם ארוחת ערב", "calories": ${Math.round(dailyCalTarget * 0.30)}, "protein": 0 },
-      "snack":     { "name": "שם חטיף", "calories": ${Math.round(dailyCalTarget * 0.10)}, "protein": 0 },
+      "breakfast": { "name": "שם ארוחת בוקר",    "calories": ${bfCal}, "protein": ${bfProt} },
+      "lunch":     { "name": "שם ארוחת צהריים",   "calories": ${lnCal}, "protein": ${lnProt} },
+      "dinner":    { "name": "שם ארוחת ערב",      "calories": ${dnCal}, "protein": ${dnProt} },
+      "snack":     { "name": "שם חטיף",            "calories": ${snCal}, "protein": ${snProt} },
       "total_calories": ${dailyCalTarget}
     }
   ]
@@ -966,10 +979,9 @@ difficulty: קל/בינוני/מתקדם בלבד. JSON בלבד ללא כל ט�
           </div>
 
           {/* Saved goals reference */}
-          <div className="flex gap-2 text-[9px] text-white/30">
-            <span>יעד יומי שמור: {dailyCalTarget} קל׳ · {dailyProtTarget}g חלבון</span>
-            <span className="text-white/15">→</span>
-            <span>לארוחה (÷3): {Math.round(dailyCalTarget / 3)} קל׳ · {Math.round(dailyProtTarget / 3)}g חלבון</span>
+          <div className="text-[9px] text-white/30 space-y-0.5">
+            <span className="block">יעד יומי: {dailyCalTarget} קל׳ · {dailyProtTarget}g חלבון · {dailyCarbTarget}g פחמימות · {dailyFatTarget}g שומן</span>
+            <span className="block text-white/20">לארוחה (÷3): {Math.round(dailyCalTarget / 3)} קל׳ · {Math.round(dailyProtTarget / 3)}g חלבון</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
