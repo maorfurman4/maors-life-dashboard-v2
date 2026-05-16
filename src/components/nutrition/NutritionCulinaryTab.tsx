@@ -386,9 +386,9 @@ No explanation, no markdown. JSON array only.`
     setGenerating(true);
     setRecipes([]);
     try {
-      const dietClause = dietFilter       ? `\n- דיאטה מועדפת: ${dietFilter}` : "";
-      const calClause  = targetCalories   ? `\n- יעד קלוריות למנה: ${targetCalories} קק"ל (חובה לעמוד בטווח ±10%)` : "";
-      const protClause = targetProtein    ? `\n- יעד חלבון למנה: ${targetProtein}g (חובה לעמוד בטווח ±5g)` : "";
+      const dietClause = dietFilter     ? `\n- דיאטה מועדפת: ${dietFilter}` : "";
+      const calClause  = targetCalories ? `\n- יעד קלוריות למנה: ${targetCalories} קק"ל (חובה לעמוד בטווח ±10%)` : "";
+      const protClause = targetProtein  ? `\n- יעד חלבון למנה: ${targetProtein}g (חובה לעמוד בטווח ±5g)` : "";
       const excClause  = localAllergies.length
         ? `\n- מרכיבים אסורים (אלרגיות): ${localAllergies.join(", ")} — אסור בהחלט לכלול אותם`
         : "";
@@ -397,9 +397,14 @@ No explanation, no markdown. JSON array only.`
         ? `\n\nחשוב ביותר: עליך לבנות את המתכון כך שיגיע בדיוק ליעדי המאקרו שצוינו. חשב את הכמויות בהתאם.`
         : "";
 
+      // When ingredients come from a fridge scan, forbid adding anything outside that list
+      const fridgeConstraint = scanDone
+        ? `\n\n⚠️ חשוב מאוד: המרכיבים לעיל נסרקו ישירות מהמקרר של המשתמש. אתה חייב להכין מתכונים תוך שימוש רק במרכיבים הרשומים. אסור בהחלט להוסיף כל מרכיב אחר שאינו ברשימה זו. אם מרכיב מסוים לא ברשימה — לא משתמשים בו.`
+        : "";
+
       const prompt = `אתה שף ודיאטן ישראלי מקצועי. צור 3 מתכונים מפורטים בפורמט JSON בלבד.
 
-בקשה: "${query}"${dietClause}${calClause}${protClause}${excClause}${macroInstruction}
+${scanDone ? `מרכיבים זמינים במקרר: "${query}"` : `בקשה: "${query}"`}${dietClause}${calClause}${protClause}${excClause}${fridgeConstraint}${macroInstruction}
 
 פורמט JSON חובה:
 {
@@ -423,9 +428,10 @@ No explanation, no markdown. JSON array only.`
 
       const raw    = await generateText(prompt);
       const parsed = parseAIJson<{ recipes: RecipeResult[] }>(raw);
-      setRecipes(parsed.recipes ?? []);
-    } catch {
+      setRecipes(parsed?.recipes ?? []);
+    } catch (err: any) {
       toast.error("שגיאה ביצירת מתכונים — נסה שנית");
+      console.error("generateRecipes error:", err);
     } finally {
       setGenerating(false);
     }
