@@ -174,14 +174,14 @@ export function calcTDEE(input: TDEEInput): TDEEResult {
   let deficitKcal = DEFICIT_DELTA[goal][deficitLevel];
 
   // Override deficit when both target weight and date are provided
-  if (targetWeightKg !== undefined && targetDate) {
-    const daysUntil = Math.max(
-      1,
-      Math.round((new Date(targetDate).getTime() - Date.now()) / 86_400_000)
-    );
-    const kgDelta     = weightKg - targetWeightKg;
-    const requiredDelta = Math.round((kgDelta * 7700) / daysUntil);
-    deficitKcal = Math.max(-750, Math.min(500, -requiredDelta));
+  if (targetWeightKg !== undefined && !isNaN(targetWeightKg) && targetDate) {
+    const ts = new Date(targetDate).getTime();
+    if (!isNaN(ts)) {
+      const daysUntil = Math.max(1, Math.round((ts - Date.now()) / 86_400_000));
+      const kgDelta     = weightKg - targetWeightKg;
+      const requiredDelta = Math.round((kgDelta * 7700) / daysUntil);
+      deficitKcal = Math.max(-750, Math.min(500, -requiredDelta));
+    }
   }
 
   const targetCalories  = Math.round(tdee + deficitKcal + healthAdjustment);
@@ -227,18 +227,21 @@ export function calcTDEE(input: TDEEInput): TDEEResult {
     warnings.push("⚠️ חלבון נמוך — פחות מ-1.2g/kg מסה רזה");
   if (bmi < 18.5)
     warnings.push("⚠️ BMI נמוך מ-18.5 — שוחח עם תזונאי");
-  if (targetWeightKg !== undefined && targetDate) {
-    const daysUntil = Math.round((new Date(targetDate).getTime() - Date.now()) / 86_400_000);
-    const kgDelta   = Math.abs(weightKg - targetWeightKg);
-    const requiredDelta = Math.abs((kgDelta * 7700) / daysUntil);
-    if (requiredDelta > 750)
-      warnings.push("⚠️ לוח הזמנים אגרסיבי מדי — שקול להאריך את תקופת היעד");
+  if (targetWeightKg !== undefined && !isNaN(targetWeightKg) && targetDate) {
+    const ts = new Date(targetDate).getTime();
+    if (!isNaN(ts)) {
+      const daysUntil = Math.round((ts - Date.now()) / 86_400_000);
+      const kgDelta   = Math.abs(weightKg - targetWeightKg);
+      const requiredDelta = Math.abs((kgDelta * 7700) / Math.max(1, daysUntil));
+      if (requiredDelta > 750)
+        warnings.push("⚠️ לוח הזמנים אגרסיבי מדי — שקול להאריך את תקופת היעד");
+    }
   }
 
   // ── 3-scenario predictor (#20) ──
   const today = new Date();
   const scenarios: Scenario[] = [];
-  if (targetWeightKg !== undefined) {
+  if (targetWeightKg !== undefined && !isNaN(targetWeightKg)) {
     const kgDelta = Math.abs(weightKg - targetWeightKg);
     for (const s of [
       { label: "שמרני",    delta: 250 },

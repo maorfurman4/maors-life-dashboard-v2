@@ -133,7 +133,7 @@ export function NutritionPlannerTab() {
     deficitLevel,
     workStyle,
     averageSteps: steps,
-    targetWeightKg: targetWeight ? parseFloat(targetWeight) : undefined,
+    targetWeightKg: targetWeight && !isNaN(parseFloat(targetWeight)) ? parseFloat(targetWeight) : undefined,
     targetDate: targetDate || undefined,
     macroPreset,
     healthAdjustment,
