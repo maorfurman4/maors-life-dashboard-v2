@@ -163,8 +163,9 @@ function NutritionPage() {
   // ── Macro totals ──
   const foodMeals = (meals ?? []).filter((m: any) => m.meal_type !== "exercise");
   const foodCal   = foodMeals.reduce((s, m) => s + (m.calories ?? 0), 0);
-  const burnedCal = (meals ?? []).filter((m: any) => m.meal_type === "exercise").reduce((s, m) => s + (m.calories ?? 0), 0);
-  const netCal    = foodCal - burnedCal;
+  // burnedCal kept for reference but no longer subtracted from netCal
+  const _burnedCal = (meals ?? []).filter((m: any) => m.meal_type === "exercise").reduce((s, m) => s + (m.calories ?? 0), 0);
+  const netCal    = foodCal;
   const totalProt = foodMeals.reduce((s, m) => s + (Number(m.protein_g) || 0), 0);
   const totalCarb = foodMeals.reduce((s, m) => s + (Number(m.carbs_g)   || 0), 0);
   const totalFat  = foodMeals.reduce((s, m) => s + (Number(m.fat_g)     || 0), 0);
@@ -291,20 +292,12 @@ function NutritionPage() {
                   <span className="text-sm font-black text-white">{Math.round(foodCal).toLocaleString("he")}</span>
                   <span className="text-[9px] text-white/30">קל׳</span>
                 </div>
-                {/* נשרפו */}
-                {burnedCal > 0 ? (
-                  <div className="flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                    <span className="text-[10px] text-orange-400/70">נשרפו</span>
-                    <span className="text-sm font-black text-orange-400">-{Math.round(burnedCal).toLocaleString("he")}</span>
-                    <span className="text-[9px] text-orange-400/50">קל׳</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-xl bg-white/5">
-                    <span className="text-[10px] text-white/40">נשרפו</span>
-                    <span className="text-sm font-black text-white/25">—</span>
-                    <span className="text-[9px] text-white/20">קל׳</span>
-                  </div>
-                )}
+                {/* נשרפו — hidden (calories no longer subtracted) */}
+                <div className="flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-xl bg-white/5 opacity-0 pointer-events-none select-none" aria-hidden="true">
+                  <span className="text-[10px] text-white/40">נשרפו</span>
+                  <span className="text-sm font-black text-white/25">—</span>
+                  <span className="text-[9px] text-white/20">קל׳</span>
+                </div>
                 {/* נותרו */}
                 <div className={`flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-xl ${
                   remaining >= 0

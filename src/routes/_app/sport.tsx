@@ -16,9 +16,8 @@ import {
   useUserSettings, useUpdateUserSettings,
   useRunHistory, useBodyProgress, useAddBodyProgress, useDeleteBodyProgress,
   useUpdatePersonalRecord, useDeletePersonalRecord, useWeeklyVolume,
-  useAddNutrition,
 } from "@/hooks/use-sport-data";
-import { generateWorkoutPlan, generateCoachFeedback, type WorkoutPlan } from "@/lib/ai-service";
+import { generateWorkoutPlan, type WorkoutPlan } from "@/lib/ai-service";
 import {
   CARDIO_SPORTS, INTENSITY_LABELS,
   calcCardioCalories,
@@ -1635,6 +1634,8 @@ interface BuilderEx {
   isTimeBased?: boolean; // undefined = auto-detect from name
   isWarmup?: boolean;
   group?: number;        // group ID for zebra striping
+  supersetId?: string;    // superset group id
+  supersetOrder?: number; // 0 or 1
 }
 
 function SetRow({
@@ -2035,24 +2036,37 @@ function WorkoutBuilderTab({
   pendingExercises,
   onPendingExercisesConsumed,
   onWorkoutComplete,
+  onGoToLibrary,
 }: {
   externalTemplate?: any;
   onExternalTemplateConsumed?: () => void;
   pendingExercises?: LibraryExercise[];
   onPendingExercisesConsumed?: () => void;
   onWorkoutComplete?: () => void;
+  onGoToLibrary?: () => void;
 }) {
+  const STORAGE_KEY = "sport-active-workout-v1";
+  const EXPIRY_MS = 4 * 60 * 60 * 1000; // 4 hours
+
+  interface ActiveWorkoutStorage {
+    workoutName: string;
+    workoutCategory: WorkoutDbCategory;
+    exercises: BuilderEx[];
+    loadedTemplateId: string | null;
+    startedAt: number;
+  }
+
   const [subTab, setSubTab] = useState<"ai" | "custom">("custom");
   const [workoutName, setWorkoutName]         = useState("");
   const [workoutCategory, setWorkoutCategory] = useState<WorkoutDbCategory>("weights");
   const [exercises, setExercises]             = useState<BuilderEx[]>([{ name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: 0 }]);
   const [groupCounter, setGroupCounter]       = useState(0);
   const [showLibraryPicker, setShowLibraryPicker] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+  const startedAtRef = useRef<number | null>(null);
   const addTemplate    = useAddWorkoutTemplate();
   const addWorkout     = useAddWorkout();
-  const addNutrition   = useAddNutrition();
   const { data: templates } = useWorkoutTemplates();
-  const { data: userSettings } = useUserSettings();
   const deleteTemplate = useDeleteWorkoutTemplate();
   const autoPR         = useAddPersonalRecord();
   const qc             = useQueryClient();
@@ -2066,9 +2080,7 @@ function WorkoutBuilderTab({
   const pendingWorkout = useRef<{ filled: BuilderEx[]; category: string; name: string } | null>(null);
 
   // ── Workout summary (Task 4) ─────────────────────────────────────
-  const [workoutSummary, setWorkoutSummary] = useState<{ mins: number; calories: number; name: string; muscles?: string } | null>(null);
-  const [coachMsg, setCoachMsg]             = useState<string | null>(null);
-  const [aiProcessing, setAiProcessing] = useState(false);
+  const [workoutSummary, setWorkoutSummary] = useState<{ mins: number; name: string; muscles?: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Load template pushed from the dashboard
@@ -2110,6 +2122,39 @@ function WorkoutBuilderTab({
     onPendingExercisesConsumed?.();
   }, [pendingExercises]);
 
+  // ── Restore active workout from localStorage on mount ──────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved: ActiveWorkoutStorage = JSON.parse(raw);
+      if (Date.now() - saved.startedAt > EXPIRY_MS) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      setWorkoutName(saved.workoutName);
+      setWorkoutCategory(saved.workoutCategory);
+      setExercises(saved.exercises.length ? saved.exercises : [{ name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: 0 }]);
+      setLoadedTemplateId(saved.loadedTemplateId);
+      setIsActive(true);
+      startedAtRef.current = saved.startedAt;
+    } catch { /* ignore */ }
+  }, []);
+
+  // ── Auto-save to localStorage when active ──────────────────────
+  useEffect(() => {
+    if (!isActive) return;
+    if (!startedAtRef.current) return;
+    const data: ActiveWorkoutStorage = {
+      workoutName,
+      workoutCategory,
+      exercises,
+      loadedTemplateId,
+      startedAt: startedAtRef.current,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }, [isActive, workoutName, workoutCategory, exercises, loadedTemplateId]);
+
   const updateEx = (i: number, v: BuilderEx) => setExercises((prev) => prev.map((e, idx) => idx === i ? v : e));
   const removeEx = (i: number) => setExercises((prev) => prev.filter((_, idx) => idx !== i));
   const dupEx    = (i: number) => setExercises((prev) => { const c = [...prev]; c.splice(i + 1, 0, { ...prev[i] }); return c; });
@@ -2139,16 +2184,11 @@ function WorkoutBuilderTab({
     setShowDurationModal(true);
   };
 
-  // ── Step 2: duration confirmed → calorie engine → DB save → AI → summary ──
+  // ── Step 2: duration confirmed → DB save → summary ──
   const handleConfirmDuration = async (mins: number) => {
     const pw = pendingWorkout.current;
     if (!pw) return;
     setShowDurationModal(false);
-
-    // ── MET calorie calculation ──────────────────────────────────
-    const met         = MET_MAP[pw.category] ?? 6.0;
-    const bodyWeight  = (userSettings as any)?.weight_kg ?? 75;
-    const calories    = Math.round(met * bodyWeight * (mins / 60));
 
     try {
       // ── 1. Save workout row ──────────────────────────────────
@@ -2164,18 +2204,8 @@ function WorkoutBuilderTab({
         exercises:        exercisesPayload,
         notes:            pw.name,
         duration_minutes: mins,
-        calories_burned:  calories,
         template_id:      loadedTemplateId ?? undefined,
       });
-
-      // ── 2. Nutrition sync ────────────────────────────────────
-      try {
-        await addNutrition.mutateAsync({
-          name:      `פעילות גופנית — ${pw.name}`,
-          meal_type: "exercise",
-          calories:  calories,
-        });
-      } catch {/* non-critical */}
 
       // ── 3. Smart Template Auto-Update ───────────────────────
       if (loadedTemplateId) {
@@ -2229,19 +2259,15 @@ function WorkoutBuilderTab({
       setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0) }]);
       setLoadedTemplateId(null);
       pendingWorkout.current = null;
+      localStorage.removeItem(STORAGE_KEY);
+      setIsActive(false);
+      startedAtRef.current = null;
 
-      // ── 6. AI processing overlay ─────────────────────────────
-      setAiProcessing(true);
-      const coachText = await Promise.race([
-        generateCoachFeedback({ mins, calories, name: pw.name, muscles }),
-        new Promise<string>((res) => setTimeout(() => res(""), 8000)),
-      ]).catch(() => "");
-      setAiProcessing(false);
-      setCoachMsg(coachText.trim() || null);
-      setWorkoutSummary({ mins, calories, name: pw.name, muscles });
+      // ── 6. Show summary ──────────────────────────────────────
+      toast.success("האימון נשמר בהצלחה ✓");
+      setWorkoutSummary({ mins, name: pw.name, muscles });
 
     } catch (err: any) {
-      setAiProcessing(false);
       const msg = err?.message ?? err?.error_description ?? JSON.stringify(err) ?? "unknown";
       console.error("[handleConfirmDuration] save failed:", msg, err);
       toast.error(`שגיאה בשמירה: ${msg.slice(0, 80)}`);
@@ -2349,16 +2375,37 @@ function WorkoutBuilderTab({
                 if (prevGroup !== undefined && g !== prevGroup) block++;
                 prevGroup = g;
                 const accentColor = GROUP_ACCENT_COLORS[block % GROUP_ACCENT_COLORS.length];
+                const isFirstSS = ex.supersetId && ex.supersetOrder === 0;
+                const isSecondSS = ex.supersetId && ex.supersetOrder === 1;
                 return (
-                  <BuilderExerciseRow
-                    key={i}
-                    ex={ex}
-                    idx={i}
-                    accentColor={accentColor}
-                    onChange={(v) => updateEx(i, v)}
-                    onRemove={() => removeEx(i)}
-                    onDuplicate={() => dupEx(i)}
-                  />
+                  <div key={i} className="relative">
+                    {isFirstSS && (
+                      <div className="absolute -left-1 top-0 bottom-0 w-0.5 bg-purple-500/40 rounded-full" style={{ top: '50%', height: '50%' }} />
+                    )}
+                    {isSecondSS && (
+                      <div className="absolute -left-1 top-0 bottom-1/2 w-0.5 bg-purple-500/40 rounded-full" />
+                    )}
+                    {isFirstSS && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-black text-purple-400 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full">SS · סופר סט</span>
+                      </div>
+                    )}
+                    <BuilderExerciseRow
+                      ex={ex}
+                      idx={i}
+                      accentColor={accentColor}
+                      onChange={(v) => updateEx(i, v)}
+                      onRemove={() => removeEx(i)}
+                      onDuplicate={() => dupEx(i)}
+                    />
+                    {isFirstSS && (
+                      <div className="flex items-center gap-2 my-1 px-2">
+                        <div className="flex-1 h-px bg-purple-500/20" />
+                        <span className="text-[9px] text-purple-400/60 font-bold">ואז</span>
+                        <div className="flex-1 h-px bg-purple-500/20" />
+                      </div>
+                    )}
+                  </div>
                 );
               });
             })()}
@@ -2383,17 +2430,72 @@ function WorkoutBuilderTab({
             >
               <Plus className="h-3.5 w-3.5" />קבוצה
             </button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={handleSaveTemplate} disabled={addTemplate.isPending}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-white/20 bg-white/8 text-white text-sm font-bold hover:bg-white/12 active:scale-[0.98] transition-all">
-              <Star className="h-4 w-4 text-amber-400" />שמור תבנית
+            <button
+              onClick={() => {
+                const ssId = crypto.randomUUID();
+                const lastGroup = exercises.length ? (exercises[exercises.length - 1].group ?? 0) : 0;
+                const newGroup = lastGroup + 1;
+                setGroupCounter((g) => g + 1);
+                setExercises((prev) => [
+                  ...prev.filter((e) => e.name.trim()),
+                  { name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: newGroup, supersetId: ssId, supersetOrder: 0 },
+                  { name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: newGroup, supersetId: ssId, supersetOrder: 1 },
+                ]);
+              }}
+              className="flex items-center justify-center gap-1.5 px-3 py-3 rounded-2xl border border-dashed border-purple-500/30 text-purple-400/70 hover:border-purple-500/60 hover:text-purple-400 transition-all text-xs font-bold whitespace-nowrap"
+              title="הוסף סופר-סט (2 תרגילים)"
+            >
+              SS
             </button>
-            <button onClick={handleLogNow} disabled={addWorkout.isPending}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-emerald-500 text-white text-sm font-black hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-              <Play className="h-4 w-4" />רשום עכשיו
-            </button>
           </div>
+          {!isActive && (
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={handleSaveTemplate} disabled={addTemplate.isPending}
+                className="flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-white/20 bg-white/8 text-white text-sm font-bold hover:bg-white/12 active:scale-[0.98] transition-all">
+                <Star className="h-4 w-4 text-amber-400" />שמור תבנית
+              </button>
+              <button
+                onClick={() => {
+                  if (!workoutName.trim()) return toast.error("תן שם לאימון");
+                  const filled = exercises.filter((e) => e.name.trim());
+                  if (!filled.length) return toast.error("הוסף לפחות תרגיל אחד");
+                  startedAtRef.current = Date.now();
+                  setIsActive(true);
+                  toast.success("האימון התחיל! 💪");
+                }}
+                className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-emerald-500 text-white text-sm font-black hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                <Play className="h-4 w-4" />התחל אימון
+              </button>
+            </div>
+          )}
+          {isActive && (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <button onClick={handleLogNow} disabled={addWorkout.isPending}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-emerald-500 text-white text-sm font-black hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                  <Play className="h-4 w-4" />סיים אימון
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem(STORAGE_KEY);
+                    setIsActive(false);
+                    startedAtRef.current = null;
+                    setWorkoutName("");
+                    setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: 0 }]);
+                    setLoadedTemplateId(null);
+                    toast.info("האימון נמחק");
+                  }}
+                  className="px-4 py-3.5 rounded-2xl border border-red-500/30 text-red-400 text-sm font-bold hover:bg-red-500/10 active:scale-[0.98] transition-all">
+                  מחק
+                </button>
+              </div>
+              <button
+                onClick={() => onGoToLibrary?.()}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-blue-500/30 text-blue-400/70 hover:border-blue-500/60 hover:text-blue-400 transition-all text-sm font-semibold">
+                <BookOpen className="h-4 w-4" />גש לספרייה
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -2594,9 +2696,6 @@ function WorkoutBuilderTab({
       )}
     </div>
 
-    {/* ── AI Processing Overlay ───────────────────────────────────── */}
-    {aiProcessing && <AIProcessingOverlay />}
-
     {/* ── Workout Summary Modal (Task 4) ──────────────────────────── */}
     {workoutSummary && (
       <div
@@ -2639,27 +2738,14 @@ function WorkoutBuilderTab({
             <p className="text-[11px] text-white/35 line-clamp-1">{workoutSummary.name}</p>
           </div>
 
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/8 p-4 text-center space-y-1.5">
+          {/* Stats */}
+          <div className="flex justify-center">
+            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/8 p-4 text-center space-y-1.5 w-40">
               <Clock className="h-5 w-5 text-blue-400 mx-auto" />
               <p className="text-3xl font-black text-white tabular-nums">{workoutSummary.mins}</p>
               <p className="text-[10px] text-white/40 font-semibold">זמן (דקות)</p>
             </div>
-            <div className="rounded-2xl border border-orange-500/20 bg-orange-500/8 p-4 text-center space-y-1.5">
-              <Flame className="h-5 w-5 text-orange-400 mx-auto" />
-              <p className="text-3xl font-black text-white tabular-nums">{workoutSummary.calories}</p>
-              <p className="text-[10px] text-white/40 font-semibold">קלוריות שנשרפו</p>
-            </div>
           </div>
-
-          {/* Coach feedback */}
-          {coachMsg && (
-            <div className="rounded-2xl border border-purple-500/20 bg-purple-500/8 px-4 py-3 flex items-center gap-2.5">
-              <span className="text-xl flex-shrink-0">🤖</span>
-              <p className="text-[12px] text-purple-200 leading-relaxed" dir="rtl">{coachMsg}</p>
-            </div>
-          )}
 
           {/* PR badge (shown when PRs were broken in the same session) */}
           {celebPRs.length > 0 && (
@@ -2677,7 +2763,6 @@ function WorkoutBuilderTab({
           <button
             onClick={() => {
               setWorkoutSummary(null);
-              setCoachMsg(null);
               setCelebPRs([]);
               onWorkoutComplete?.();
             }}
@@ -5408,15 +5493,16 @@ function SportPage() {
             </div>
           )}
 
-          {activeTab === "builder" && (
+          <div className={activeTab === "builder" ? "" : "hidden"}>
             <WorkoutBuilderTab
               externalTemplate={loadedTemplate}
               onExternalTemplateConsumed={() => setLoadedTemplate(null)}
               pendingExercises={pendingExercises}
               onPendingExercisesConsumed={() => setPendingExercises([])}
               onWorkoutComplete={() => setActiveTab("dashboard")}
+              onGoToLibrary={() => setActiveTab("library")}
             />
-          )}
+          </div>
           {activeTab === "library" && <ExerciseLibraryTab onAddToWorkout={handleAddExercisesToWorkout} />}
           {activeTab === "running"  && <CardioTab />}
           {activeTab === "progress" && <ProgressTab />}
