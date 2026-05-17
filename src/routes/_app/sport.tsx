@@ -2144,6 +2144,9 @@ function WorkoutBuilderTab({
   // ── Workout summary (Task 4) ─────────────────────────────────────
   const [workoutSummary, setWorkoutSummary] = useState<{ mins: number; name: string; muscles?: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const [templateUndoBanner, setTemplateUndoBanner] = useState<{ id: string; name: string } | null>(null);
+  const templateDeleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [templatePendingDeleteIds, setTemplatePendingDeleteIds] = useState<Set<string>>(new Set());
 
   // Load template pushed from the dashboard
   useEffect(() => {
@@ -2397,14 +2400,28 @@ function WorkoutBuilderTab({
 
       {subTab === "custom" && (
         <div className="space-y-4">
-          {((templates ?? []).filter((t: any) => !hiddenTemplateIds.includes(t.id))).length > 0 && (
+          {((templates ?? []).filter((t: any) => !hiddenTemplateIds.includes(t.id) && !templatePendingDeleteIds.has(t.id))).length > 0 && (
             <div className="space-y-2">
               <p className="text-[11px] font-bold text-white/40">תבניות שמורות</p>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {(templates ?? []).filter((t: any) => !hiddenTemplateIds.includes(t.id)).map((t: any) => (
+                {(templates ?? []).filter((t: any) => !hiddenTemplateIds.includes(t.id) && !templatePendingDeleteIds.has(t.id)).map((t: any) => (
                   <div key={t.id} className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5">
                     <button onClick={() => handleLoadTemplate(t)} className="text-xs font-semibold text-white/80 hover:text-white whitespace-nowrap">{t.name}</button>
-                    <button onClick={() => setConfirmDelete({ id: t.id, name: t.name })} className="text-red-400/60 hover:text-red-400"><X className="h-3 w-3" /></button>
+                    <button onClick={() => {
+                      // Cancel any previous pending delete
+                      if (templateDeleteTimer.current) clearTimeout(templateDeleteTimer.current);
+                      // Optimistically hide
+                      setTemplatePendingDeleteIds((prev) => new Set([...prev, t.id]));
+                      // Show undo banner
+                      setTemplateUndoBanner({ id: t.id, name: t.name });
+                      // Fire delete after 3 seconds
+                      templateDeleteTimer.current = setTimeout(() => {
+                        deleteTemplate.mutate(t.id);
+                        setTemplatePendingDeleteIds((prev) => { const s = new Set(prev); s.delete(t.id); return s; });
+                        setTemplateUndoBanner(null);
+                        templateDeleteTimer.current = null;
+                      }, 3000);
+                    }} className="text-red-400/60 hover:text-red-400"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
               </div>
@@ -2836,41 +2853,27 @@ function WorkoutBuilderTab({
       </div>
     )}
 
-    {/* ── Duration Modal (Task 3) ─────────────────────────────────── */}
-    {confirmDelete && (
+    {/* ── Template Undo Delete Banner ──────────────────────────────── */}
+    {templateUndoBanner && (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center px-6"
-        style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(14px)" }}
-        onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null); }}
+        className="fixed bottom-28 left-4 right-4 z-[60] flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-amber-500/40 bg-[#1a1500] shadow-2xl"
+        style={{ animation: "prBounce 0.3s cubic-bezier(.17,.67,.35,1.4) both" }}
       >
-        <div
-          className="w-full max-w-sm rounded-3xl border border-white/12 bg-[#0d0d0f] p-6 space-y-5 shadow-2xl"
-          style={{ animation: "prBounce 0.35s cubic-bezier(.17,.67,.35,1.4) both" }}
+        <span className="text-xl shrink-0">🗑️</span>
+        <p className="flex-1 text-[13px] text-amber-200 font-semibold truncate" dir="rtl">
+          "{templateUndoBanner.name}" נמחקה
+        </p>
+        <button
+          onClick={() => {
+            if (templateDeleteTimer.current) clearTimeout(templateDeleteTimer.current);
+            templateDeleteTimer.current = null;
+            setTemplatePendingDeleteIds((prev) => { const s = new Set(prev); s.delete(templateUndoBanner.id); return s; });
+            setTemplateUndoBanner(null);
+          }}
+          className="shrink-0 px-4 py-2 rounded-xl bg-amber-500 text-black text-[12px] font-black active:scale-95 transition-all"
         >
-          <div className="text-center space-y-2">
-            <div className="text-3xl">🗑️</div>
-            <p className="text-base font-black text-white">מחיקת תבנית</p>
-            <p className="text-[12px] text-white/50 leading-relaxed" dir="rtl">
-              האם אתה בטוח שברצונך למחוק תבנית זו?<br/>
-              <span className="text-white/70 font-bold">"{confirmDelete.name}"</span>
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setConfirmDelete(null)}
-              className="py-3.5 rounded-2xl border border-white/15 text-white/50 text-sm font-bold active:scale-[0.97] transition-all"
-            >
-              ביטול
-            </button>
-            <button
-              onClick={() => { deleteTemplate.mutate(confirmDelete.id); setConfirmDelete(null); }}
-              disabled={deleteTemplate.isPending}
-              className="py-3.5 rounded-2xl bg-red-500 text-white text-sm font-black active:scale-[0.97] transition-all shadow-[0_0_20px_rgba(239,68,68,0.35)] disabled:opacity-50"
-            >
-              מחק
-            </button>
-          </div>
-        </div>
+          בטל
+        </button>
       </div>
     )}
     {/* ── Library Picker overlay ──────────────────────────────────── */}
