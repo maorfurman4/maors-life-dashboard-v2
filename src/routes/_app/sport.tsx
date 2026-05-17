@@ -3061,6 +3061,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
   const [activeSubFilter,   setActiveSubFilter]   = useState<string | null>(null);
   const [activeEquipFilter, setActiveEquipFilter]  = useState<EquipmentCategory | null>(null);
   const [templateSheetEx,   setTemplateSheetEx]   = useState<LibraryExercise | null>(null);
+  const [workoutSheetEx,    setWorkoutSheetEx]    = useState<LibraryExercise | null>(null);
   const [showSettings,      setShowSettings]      = useState(false);
 
   const { data: settings } = useUserSettings();
@@ -3194,8 +3195,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
   }, [searchQuery, hidden, showHidden]);
 
   const handleSelectionClick = (ex: LibraryExercise) => {
-    onAddToWorkout?.([ex]);
-    toast.success(`${ex.name} נוסף לאימון ✓`);
+    setWorkoutSheetEx(ex);
   };
 
   return (
@@ -3482,6 +3482,14 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
           onToggleHidden={() => toggleHidden(selectedEx.ex.name)}
         />
       )}
+      {/* ── Workout add bottom sheet (selectionMode) ────────────── */}
+      {workoutSheetEx && (
+        <WorkoutAddBottomSheet
+          ex={workoutSheetEx}
+          onConfirm={(ex) => { onAddToWorkout?.([ex]); toast.success(`${ex.name} נוסף לאימון ✓`); }}
+          onClose={() => setWorkoutSheetEx(null)}
+        />
+      )}
       {/* ── Template bottom sheet ────────────────────────────────── */}
       {templateSheetEx && (
         <TemplateBottomSheet ex={templateSheetEx} onClose={() => setTemplateSheetEx(null)} />
@@ -3506,6 +3514,58 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
 }
 
 // ── TemplateBottomSheet ───────────────────────────────────────────────────────
+// ── WorkoutAddBottomSheet ─────────────────────────────────────────────────────
+function WorkoutAddBottomSheet({
+  ex,
+  onConfirm,
+  onClose,
+}: {
+  ex: LibraryExercise;
+  onConfirm: (ex: LibraryExercise) => void;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#0f0f0f] border border-white/10 border-b-0 p-5 pb-10 animate-in slide-in-from-bottom duration-300">
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />
+
+        {/* Exercise info */}
+        <div className="flex items-center gap-4 mb-5">
+          <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl shrink-0">
+            💪
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-black text-white truncate">{ex.name}</p>
+            <p className="text-[11px] text-white/45 mt-0.5">{ex.muscles}</p>
+            <p className="text-[10px] text-white/30 mt-0.5">{ex.equipment}</p>
+          </div>
+        </div>
+
+        {/* Default sets/reps info */}
+        <div className="flex gap-2 mb-5">
+          <div className="flex-1 rounded-2xl border border-white/8 bg-white/4 px-3 py-2.5 text-center">
+            <p className="text-lg font-black text-white">{ex.defaultSets}</p>
+            <p className="text-[10px] text-white/35">סטים</p>
+          </div>
+          <div className="flex-1 rounded-2xl border border-white/8 bg-white/4 px-3 py-2.5 text-center">
+            <p className="text-lg font-black text-white">{ex.defaultReps}</p>
+            <p className="text-[10px] text-white/35">חזרות</p>
+          </div>
+        </div>
+
+        {/* Confirm button */}
+        <button
+          onClick={() => { onConfirm(ex); onClose(); }}
+          className="w-full py-4 rounded-2xl bg-emerald-500 text-white text-base font-black active:scale-[0.97] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)]"
+        >
+          הוסף לאימון ✓
+        </button>
+      </div>
+    </>
+  );
+}
+
 function TemplateBottomSheet({ ex, onClose }: { ex: LibraryExercise; onClose: () => void }) {
   const { data: templates } = useWorkoutTemplates();
   const updateTemplate = useUpdateWorkoutTemplate();
