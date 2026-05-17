@@ -12,6 +12,7 @@ import {
   usePersonalRecords, useAddPersonalRecord,
   useWorkoutTemplates, useAddWorkoutTemplate, useDeleteWorkoutTemplate, useUpdateWorkoutTemplate,
   useWeekWorkouts, useAddWorkout, useWorkoutStreak, useWorkoutHistory,
+  useDeleteWorkout, useUpdateWorkout,
   useWeightEntries, useAddWeight, useDeleteWeight, useUpdateWeight,
   useUserSettings, useUpdateUserSettings,
   useRunHistory, useBodyProgress, useAddBodyProgress, useDeleteBodyProgress,
@@ -1224,6 +1225,7 @@ function QuickWorkoutCard({ workout, onQuickLog }: { workout: (typeof QUICK_WORK
 function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { data: templates, isLoading } = useWorkoutTemplates();
+  const deleteTemplate = useDeleteWorkoutTemplate();
 
   // Opt-out model: hiddenIds lists templates the user has explicitly removed.
   // All templates (system + user) appear by default; hiding is per-ID.
@@ -1342,40 +1344,49 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
                   const meta      = CATEGORY_META[t.category] ?? { emoji: "💪", color: "#10b981" };
                   const isVisible = !hiddenIds.includes(t.id);
                   const exCount   = Array.isArray(t.exercises) ? t.exercises.length : 0;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => toggleHidden(t.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all active:scale-[0.98] ${
-                        isVisible
-                          ? "border-emerald-500/40 bg-emerald-500/10"
-                          : "border-white/10 bg-white/4 hover:border-white/18"
-                      }`}
-                    >
-                      <div
-                        className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-                        style={{ background: meta.color + "22" }}
-                      >
-                        {meta.emoji}
-                      </div>
-                      <div className="flex-1 min-w-0 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <p className="text-sm font-black text-white truncate">{t.name}</p>
-                          {t.is_system && (
-                            <Star className="h-3 w-3 text-amber-400/60 shrink-0" />
-                          )}
+                  if (!t.is_system) {
+                    return (
+                      <div key={t.id} className="flex items-center gap-3 px-3 py-3 rounded-2xl border border-white/10 bg-white/4">
+                        <div className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: meta.color + "22" }}>
+                          {meta.emoji}
                         </div>
-                        <p className="text-[10px] text-white/35 mt-0.5">{exCount} תרגילים</p>
+                        <div className="flex-1 min-w-0 text-right">
+                          <p className="text-sm font-black text-white truncate">{t.name}</p>
+                          <p className="text-[10px] text-white/35 mt-0.5">{exCount} תרגילים</p>
+                        </div>
+                        <button
+                          onClick={() => deleteTemplate.mutate(t.id)}
+                          className="h-8 w-8 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center hover:bg-red-500/25 active:scale-90 transition-all shrink-0"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                        </button>
                       </div>
-                      <div
-                        className={`h-5 w-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
-                          isVisible ? "border-emerald-500 bg-emerald-500" : "border-white/25 bg-transparent"
+                    );
+                  } else {
+                    return (
+                      <button key={t.id} onClick={() => toggleHidden(t.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all active:scale-[0.98] ${
+                          isVisible ? "border-emerald-500/40 bg-emerald-500/10" : "border-white/10 bg-white/4 hover:border-white/18"
                         }`}
                       >
-                        {isVisible && <Check className="h-3 w-3 text-white" />}
-                      </div>
-                    </button>
-                  );
+                        <div className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: meta.color + "22" }}>
+                          {meta.emoji}
+                        </div>
+                        <div className="flex-1 min-w-0 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <p className="text-sm font-black text-white truncate">{t.name}</p>
+                            <Star className="h-3 w-3 text-amber-400/60 shrink-0" />
+                          </div>
+                          <p className="text-[10px] text-white/35 mt-0.5">{exCount} תרגילים</p>
+                        </div>
+                        <div className={`h-5 w-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
+                          isVisible ? "border-emerald-500 bg-emerald-500" : "border-white/25 bg-transparent"
+                        }`}>
+                          {isVisible && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                      </button>
+                    );
+                  }
                 })
               )}
             </div>
@@ -2071,6 +2082,9 @@ function WorkoutBuilderTab({
   const autoPR         = useAddPersonalRecord();
   const qc             = useQueryClient();
   const [celebPRs, setCelebPRs] = useState<{ name: string; value: number }[]>([]);
+  const [hiddenTemplateIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("qw-hidden") ?? "[]"); } catch { return []; }
+  });
 
   // ── Duration modal (Task 3) ──────────────────────────────────────
   const [showDurationModal, setShowDurationModal] = useState(false);
@@ -2335,11 +2349,11 @@ function WorkoutBuilderTab({
 
       {subTab === "custom" && (
         <div className="space-y-4">
-          {(templates ?? []).length > 0 && (
+          {((templates ?? []).filter((t: any) => !hiddenTemplateIds.includes(t.id))).length > 0 && (
             <div className="space-y-2">
               <p className="text-[11px] font-bold text-white/40">תבניות שמורות</p>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {(templates ?? []).map((t: any) => (
+                {(templates ?? []).filter((t: any) => !hiddenTemplateIds.includes(t.id)).map((t: any) => (
                   <div key={t.id} className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 bg-white/5">
                     <button onClick={() => handleLoadTemplate(t)} className="text-xs font-semibold text-white/80 hover:text-white whitespace-nowrap">{t.name}</button>
                     <button onClick={() => setConfirmDelete({ id: t.id, name: t.name })} className="text-red-400/60 hover:text-red-400"><X className="h-3 w-3" /></button>
@@ -4435,6 +4449,10 @@ function WorkoutHistoryGrouped() {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [showAllWorkouts, setShowAllWorkouts] = useState(false);
   const VISIBLE_WORKOUT_COUNT = 3;
+  const deleteWorkout = useDeleteWorkout();
+  const updateWorkout = useUpdateWorkout();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [editWorkout, setEditWorkout] = useState<{ id: string; notes: string; duration_minutes: number } | null>(null);
 
   const grouped = useMemo(() => {
     const map = new Map<string, any[]>();
@@ -4451,6 +4469,7 @@ function WorkoutHistoryGrouped() {
   };
 
   return (
+    <>
     <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
       <div className="flex items-center gap-2">
         <BookOpen className="h-4 w-4 text-blue-400" />
@@ -4495,9 +4514,22 @@ function WorkoutHistoryGrouped() {
                           <p className="text-[10px] text-white/50">
                             {new Date(w.date).toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "numeric", year: "2-digit" })}
                           </p>
-                          <div className="flex items-center gap-2 text-[10px] text-white/35">
-                            <span><Clock className="h-2.5 w-2.5 inline mr-0.5" />{w.duration_minutes || "—"} דק׳</span>
-                            {w.calories_burned > 0 && <span>🔥 {w.calories_burned}</span>}
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 text-[10px] text-white/35">
+                              <span><Clock className="h-2.5 w-2.5 inline mr-0.5" />{w.duration_minutes || "—"} דק׳</span>
+                            </div>
+                            <button
+                              onClick={() => setEditWorkout({ id: w.id, notes: w.notes ?? "", duration_minutes: w.duration_minutes ?? 45 })}
+                              className="h-6 w-6 rounded-lg bg-white/6 border border-white/10 flex items-center justify-center hover:bg-blue-500/15 hover:border-blue-500/30 active:scale-90 transition-all"
+                            >
+                              <Pencil className="h-3 w-3 text-white/40" />
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(w.id)}
+                              className="h-6 w-6 rounded-lg bg-white/6 border border-white/10 flex items-center justify-center hover:bg-red-500/15 hover:border-red-500/30 active:scale-90 transition-all"
+                            >
+                              <Trash2 className="h-3 w-3 text-white/40" />
+                            </button>
                           </div>
                         </div>
                         {(w.workout_exercises ?? []).length > 0 && (
@@ -4527,6 +4559,96 @@ function WorkoutHistoryGrouped() {
         </div>
       )}
     </div>
+
+    {/* ── Confirm Delete Modal ── */}
+    {confirmDeleteId && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-6"
+        style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(14px)" }}
+        onClick={(e) => { if (e.target === e.currentTarget) setConfirmDeleteId(null); }}
+      >
+        <div className="w-full max-w-sm rounded-3xl border border-white/12 bg-[#0d0d0f] p-6 space-y-5 shadow-2xl"
+          style={{ animation: "prBounce 0.35s cubic-bezier(.17,.67,.35,1.4) both" }}>
+          <div className="text-center space-y-2">
+            <div className="text-3xl">🗑️</div>
+            <p className="text-base font-black text-white">מחיקת אימון</p>
+            <p className="text-[12px] text-white/50" dir="rtl">האימון יימחק לצמיתות. פעולה זו אינה הפיכה.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => setConfirmDeleteId(null)}
+              className="py-3.5 rounded-2xl border border-white/15 text-white/50 text-sm font-bold active:scale-[0.97] transition-all">
+              ביטול
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await deleteWorkout.mutateAsync(confirmDeleteId);
+                  toast.success("האימון נמחק");
+                  setConfirmDeleteId(null);
+                } catch { toast.error("שגיאה במחיקה"); }
+              }}
+              disabled={deleteWorkout.isPending}
+              className="py-3.5 rounded-2xl bg-red-500 text-white text-sm font-black active:scale-[0.97] transition-all disabled:opacity-50">
+              מחק
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── Edit Workout Modal ── */}
+    {editWorkout && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-6"
+        style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(14px)" }}
+        onClick={(e) => { if (e.target === e.currentTarget) setEditWorkout(null); }}
+      >
+        <div className="w-full max-w-sm rounded-3xl border border-white/12 bg-[#0d0d0f] p-6 space-y-5 shadow-2xl"
+          style={{ animation: "prBounce 0.35s cubic-bezier(.17,.67,.35,1.4) both" }}>
+          <p className="text-base font-black text-white text-center">עריכת אימון</p>
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <p className="text-[10px] text-white/40 mb-1">שם האימון</p>
+              <input
+                value={editWorkout.notes}
+                onChange={(e) => setEditWorkout((prev) => prev ? { ...prev, notes: e.target.value } : null)}
+                className="w-full bg-transparent text-sm font-bold text-white placeholder:text-white/25 outline-none text-right"
+                dir="rtl"
+                placeholder="שם האימון"
+              />
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <p className="text-[10px] text-white/40 mb-1">משך (דקות)</p>
+              <input
+                type="number"
+                value={editWorkout.duration_minutes}
+                onChange={(e) => setEditWorkout((prev) => prev ? { ...prev, duration_minutes: parseInt(e.target.value) || 0 } : null)}
+                className="w-full bg-transparent text-sm font-bold text-white outline-none text-right"
+                dir="rtl"
+                min={1}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => setEditWorkout(null)}
+              className="py-3.5 rounded-2xl border border-white/15 text-white/50 text-sm font-bold active:scale-[0.97] transition-all">
+              ביטול
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await updateWorkout.mutateAsync({ id: editWorkout.id, notes: editWorkout.notes, duration_minutes: editWorkout.duration_minutes });
+                  toast.success("האימון עודכן ✓");
+                  setEditWorkout(null);
+                } catch { toast.error("שגיאה בעדכון"); }
+              }}
+              disabled={updateWorkout.isPending}
+              className="py-3.5 rounded-2xl bg-emerald-500 text-white text-sm font-black active:scale-[0.97] transition-all disabled:opacity-50 shadow-[0_0_16px_rgba(16,185,129,0.3)]">
+              שמור
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

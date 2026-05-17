@@ -126,6 +126,24 @@ export function useDeleteWorkout() {
   });
 }
 
+export function useUpdateWorkout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, notes, duration_minutes }: { id: string; notes?: string; duration_minutes?: number }) => {
+      const { error } = await supabase
+        .from("workouts")
+        .update({ notes, duration_minutes })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["workouts"] });
+      qc.invalidateQueries({ queryKey: ["workouts-week"] });
+      qc.invalidateQueries({ queryKey: ["workout-history"] });
+    },
+  });
+}
+
 // ─── Workout Templates ───
 export function useWorkoutTemplates() {
   return useQuery({
