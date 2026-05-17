@@ -1236,6 +1236,8 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
   // Optimistic-hide while undo window is open
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
   const deleteTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Undo banner state
+  const [undoBanner, setUndoBanner] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     localStorage.setItem("qw-hidden", JSON.stringify(hiddenIds));
@@ -1248,26 +1250,30 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
     setHiddenIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
   const handleDeleteWithUndo = (id: string, name: string) => {
+    // Cancel any existing timer for this id
+    if (deleteTimers.current.has(id)) {
+      clearTimeout(deleteTimers.current.get(id));
+    }
     // Optimistically hide immediately
     setPendingDeleteIds((prev) => new Set([...prev, id]));
-    // Show undo toast for 3 seconds
+    // Show in-sheet undo banner
+    setUndoBanner({ id, name });
+    // After 3 seconds → commit the delete
     const timer = setTimeout(() => {
       deleteTemplate.mutate(id);
       setPendingDeleteIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
       deleteTimers.current.delete(id);
+      setUndoBanner((prev) => prev?.id === id ? null : prev);
     }, 3000);
     deleteTimers.current.set(id, timer);
-    toast(`"${name}" נמחקה`, {
-      duration: 3000,
-      action: {
-        label: "בטל",
-        onClick: () => {
-          clearTimeout(deleteTimers.current.get(id));
-          deleteTimers.current.delete(id);
-          setPendingDeleteIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
-        },
-      },
-    });
+  };
+
+  const handleUndoDelete = () => {
+    if (!undoBanner) return;
+    clearTimeout(deleteTimers.current.get(undoBanner.id));
+    deleteTimers.current.delete(undoBanner.id);
+    setPendingDeleteIds((prev) => { const s = new Set(prev); s.delete(undoBanner.id); return s; });
+    setUndoBanner(null);
   };
 
   const RichCard = ({ t }: { t: any }) => {
@@ -1416,6 +1422,22 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
                 })
               )}
             </div>
+
+            {/* Undo delete banner */}
+            {undoBanner && (
+              <div className="mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 animate-in slide-in-from-bottom-2 duration-200">
+                <span className="text-base">🗑️</span>
+                <p className="flex-1 text-[12px] text-amber-200 font-semibold truncate" dir="rtl">
+                  "{undoBanner.name}" נמחקה
+                </p>
+                <button
+                  onClick={handleUndoDelete}
+                  className="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-[11px] font-black active:scale-95 transition-all"
+                >
+                  בטל
+                </button>
+              </div>
+            )}
 
             {/* Done */}
             <div className="px-4 pb-5 pt-3 border-t border-white/8">
