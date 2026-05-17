@@ -1233,16 +1233,42 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
     try { return JSON.parse(localStorage.getItem("qw-hidden") ?? "[]"); } catch { return []; }
   });
   const [showEdit, setShowEdit] = useState(false);
+  // Optimistic-hide while undo window is open
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  const deleteTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
     localStorage.setItem("qw-hidden", JSON.stringify(hiddenIds));
   }, [hiddenIds]);
 
   const allTemplates  = templates ?? [];
-  const carouselItems = allTemplates.filter((t: any) => !hiddenIds.includes(t.id));
+  const carouselItems = allTemplates.filter((t: any) => !hiddenIds.includes(t.id) && !pendingDeleteIds.has(t.id));
 
   const toggleHidden = (id: string) =>
     setHiddenIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+
+  const handleDeleteWithUndo = (id: string, name: string) => {
+    // Optimistically hide immediately
+    setPendingDeleteIds((prev) => new Set([...prev, id]));
+    // Show undo toast for 3 seconds
+    const timer = setTimeout(() => {
+      deleteTemplate.mutate(id);
+      setPendingDeleteIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
+      deleteTimers.current.delete(id);
+    }, 3000);
+    deleteTimers.current.set(id, timer);
+    toast(`"${name}" נמחקה`, {
+      duration: 3000,
+      action: {
+        label: "בטל",
+        onClick: () => {
+          clearTimeout(deleteTimers.current.get(id));
+          deleteTimers.current.delete(id);
+          setPendingDeleteIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
+        },
+      },
+    });
+  };
 
   const RichCard = ({ t }: { t: any }) => {
     const meta  = CATEGORY_META[t.category]  ?? { emoji: "💪", color: "#10b981" };
@@ -1340,7 +1366,7 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
                   <p className="text-sm font-bold text-white/50 text-center">אין תבניות</p>
                 </div>
               ) : (
-                allTemplates.map((t: any) => {
+                allTemplates.filter((t: any) => !pendingDeleteIds.has(t.id)).map((t: any) => {
                   const meta      = CATEGORY_META[t.category] ?? { emoji: "💪", color: "#10b981" };
                   const isVisible = !hiddenIds.includes(t.id);
                   const exCount   = Array.isArray(t.exercises) ? t.exercises.length : 0;
@@ -1355,7 +1381,7 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
                           <p className="text-[10px] text-white/35 mt-0.5">{exCount} תרגילים</p>
                         </div>
                         <button
-                          onClick={() => deleteTemplate.mutate(t.id)}
+                          onClick={() => handleDeleteWithUndo(t.id, t.name)}
                           className="h-8 w-8 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center hover:bg-red-500/25 active:scale-90 transition-all shrink-0"
                         >
                           <Trash2 className="h-3.5 w-3.5 text-red-400" />
