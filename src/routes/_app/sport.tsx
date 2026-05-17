@@ -2094,6 +2094,8 @@ function WorkoutBuilderTab({
   onExternalTemplateConsumed,
   pendingExercises,
   onPendingExercisesConsumed,
+  pendingSSExercise,
+  onPendingSSExerciseConsumed,
   onWorkoutComplete,
   onGoToLibrary,
 }: {
@@ -2101,6 +2103,8 @@ function WorkoutBuilderTab({
   onExternalTemplateConsumed?: () => void;
   pendingExercises?: LibraryExercise[];
   onPendingExercisesConsumed?: () => void;
+  pendingSSExercise?: LibraryExercise | null;
+  onPendingSSExerciseConsumed?: () => void;
   onWorkoutComplete?: () => void;
   onGoToLibrary?: () => void;
 }) {
@@ -2186,6 +2190,26 @@ function WorkoutBuilderTab({
     setSubTab("custom");
     onPendingExercisesConsumed?.();
   }, [pendingExercises]);
+
+  // ── Append exercise as Super Set (from library selectionMode) ──
+  useEffect(() => {
+    if (!pendingSSExercise) return;
+    const parseReps = (reps: string): number => { const m = reps.match(/\d+/); return m ? parseInt(m[0]) : 10; };
+    const ssId = crypto.randomUUID();
+    setGroupCounter((prevG) => {
+      const newGroup = prevG + 1;
+      const s = pendingSSExercise.defaultSets;
+      const r = parseReps(pendingSSExercise.defaultReps);
+      setExercises((prev) => [
+        ...prev.filter((e) => e.name.trim()),
+        { name: pendingSSExercise.name, sets: s, reps: r, weight_kg: 0, setsData: toSetsData(s, r, 0), group: newGroup, supersetId: ssId, supersetOrder: 0 },
+        { name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: newGroup, supersetId: ssId, supersetOrder: 1 },
+      ]);
+      return newGroup;
+    });
+    setSubTab("custom");
+    onPendingSSExerciseConsumed?.();
+  }, [pendingSSExercise]);
 
   // ── Restore active workout from localStorage on mount ──────────
   useEffect(() => {
@@ -3050,7 +3074,7 @@ function ExerciseModal({
 
 type LibraryWorkoutType = "weights" | "calisthenics" | "stretching";
 
-function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?: (exs: LibraryExercise[]) => void; selectionMode?: boolean }) {
+function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, selectionMode }: { onAddToWorkout?: (exs: LibraryExercise[]) => void; onAddToWorkoutAsSS?: (ex: LibraryExercise) => void; selectionMode?: boolean }) {
   const [workoutType,    setWorkoutType]    = useState<LibraryWorkoutType>("weights");
   const [selectedGroup,  setSelectedGroup]  = useState<MuscleGroup | null>(null);
   const [selectedEx,     setSelectedEx]     = useState<{ ex: LibraryExercise; groupKey: string; openTemplate?: boolean } | null>(null);
@@ -3487,6 +3511,7 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
         <WorkoutAddBottomSheet
           ex={workoutSheetEx}
           onConfirm={(ex) => { onAddToWorkout?.([ex]); toast.success(`${ex.name} נוסף לאימון ✓`); }}
+          onConfirmSS={(ex) => { onAddToWorkoutAsSS?.(ex); toast.success(`${ex.name} נוסף כ-Super Set ✓`); }}
           onClose={() => setWorkoutSheetEx(null)}
         />
       )}
@@ -3518,10 +3543,12 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
 function WorkoutAddBottomSheet({
   ex,
   onConfirm,
+  onConfirmSS,
   onClose,
 }: {
   ex: LibraryExercise;
   onConfirm: (ex: LibraryExercise) => void;
+  onConfirmSS: (ex: LibraryExercise) => void;
   onClose: () => void;
 }) {
   return (
@@ -3554,13 +3581,21 @@ function WorkoutAddBottomSheet({
           </div>
         </div>
 
-        {/* Confirm button */}
-        <button
-          onClick={() => { onConfirm(ex); onClose(); }}
-          className="w-full py-4 rounded-2xl bg-emerald-500 text-white text-base font-black active:scale-[0.97] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)]"
-        >
-          הוסף לאימון ✓
-        </button>
+        {/* Action buttons */}
+        <div className="space-y-2.5">
+          <button
+            onClick={() => { onConfirm(ex); onClose(); }}
+            className="w-full py-4 rounded-2xl bg-emerald-500 text-white text-base font-black active:scale-[0.97] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)]"
+          >
+            הוסף לאימון ✓
+          </button>
+          <button
+            onClick={() => { onConfirmSS(ex); onClose(); }}
+            className="w-full py-3.5 rounded-2xl border border-purple-500/40 bg-purple-500/10 text-purple-300 text-sm font-black active:scale-[0.97] transition-all hover:bg-purple-500/15"
+          >
+            <span className="font-black">SS</span> · הוסף כ-Super Set
+          </button>
+        </div>
       </div>
     </>
   );
@@ -5632,6 +5667,7 @@ function SportPage() {
   const [loadedTemplate,      setLoadedTemplate]      = useState<any>(null);
   const [pendingExercises,    setPendingExercises]    = useState<LibraryExercise[]>([]);
   const [libraryBuilderMode,  setLibraryBuilderMode]  = useState(false);
+  const [pendingSSExercise,   setPendingSSExercise]   = useState<LibraryExercise | null>(null);
 
   const handleLoadTemplate = (t: any) => {
     setLoadedTemplate(t);
@@ -5640,6 +5676,12 @@ function SportPage() {
 
   const handleAddExercisesToWorkout = (exs: LibraryExercise[]) => {
     setPendingExercises(exs);
+    setLibraryBuilderMode(false);
+    setActiveTab("builder");
+  };
+
+  const handleAddToWorkoutAsSS = (ex: LibraryExercise) => {
+    setPendingSSExercise(ex);
     setLibraryBuilderMode(false);
     setActiveTab("builder");
   };
@@ -5691,6 +5733,8 @@ function SportPage() {
               onExternalTemplateConsumed={() => setLoadedTemplate(null)}
               pendingExercises={pendingExercises}
               onPendingExercisesConsumed={() => setPendingExercises([])}
+              pendingSSExercise={pendingSSExercise}
+              onPendingSSExerciseConsumed={() => setPendingSSExercise(null)}
               onWorkoutComplete={() => setActiveTab("dashboard")}
               onGoToLibrary={() => { setLibraryBuilderMode(true); setActiveTab("library"); }}
             />
@@ -5698,6 +5742,7 @@ function SportPage() {
           {activeTab === "library" && (
             <ExerciseLibraryTab
               onAddToWorkout={handleAddExercisesToWorkout}
+              onAddToWorkoutAsSS={handleAddToWorkoutAsSS}
               selectionMode={libraryBuilderMode}
             />
           )}
