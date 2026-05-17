@@ -2494,20 +2494,9 @@ function WorkoutBuilderTab({
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-white/20 text-white/50 hover:border-emerald-500/40 hover:text-emerald-400 transition-all text-sm font-semibold">
               <Plus className="h-4 w-4" />הוסף תרגיל
             </button>
-            <button onClick={() => setShowLibraryPicker(true)}
+            <button onClick={() => onGoToLibrary?.()}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-emerald-500/30 text-emerald-400/70 hover:border-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/8 transition-all text-sm font-semibold">
               <BookOpen className="h-4 w-4" />בחר מהספרייה
-            </button>
-            <button
-              onClick={() => setGroupCounter((g) => {
-                const ng = g + 1;
-                setExercises((prev) => [...prev, { name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: ng }]);
-                return ng;
-              })}
-              className="flex items-center justify-center gap-1.5 px-3 py-3 rounded-2xl border border-dashed border-white/15 text-white/35 hover:border-blue-500/40 hover:text-blue-400 transition-all text-xs font-semibold whitespace-nowrap"
-              title="הוסף קבוצת שרירים חדשה (צבע חדש)"
-            >
-              <Plus className="h-3.5 w-3.5" />קבוצה
             </button>
             <button
               onClick={() => {
@@ -2876,38 +2865,6 @@ function WorkoutBuilderTab({
         </button>
       </div>
     )}
-    {/* ── Library Picker overlay ──────────────────────────────────── */}
-    {showLibraryPicker && (
-      <div className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0c]">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 pt-14 pb-4 border-b border-white/8 shrink-0">
-          <button onClick={() => setShowLibraryPicker(false)}
-            className="h-9 w-9 rounded-xl bg-white/8 flex items-center justify-center text-white/60 hover:bg-white/15 transition-all shrink-0">
-            <X className="h-4 w-4" />
-          </button>
-          <p className="text-base font-black text-white flex-1 text-right">בחר תרגילים לאימון</p>
-          <span className="text-[11px] text-emerald-400 font-bold">הקש להוסיף</span>
-        </div>
-        {/* Library in selectionMode */}
-        <div className="flex-1 overflow-y-auto">
-          <ExerciseLibraryTab
-            selectionMode
-            onAddToWorkout={(exs) => {
-              setExercises((prev) => {
-                const nonEmpty = prev.filter((e) => e.name.trim() !== "");
-                const toAdd: BuilderEx[] = exs.map((e) => {
-                  const s = typeof e.defaultSets === "number" ? e.defaultSets : parseInt(String(e.defaultSets)) || 3;
-                  const r = parseInt(e.defaultReps) || 10;
-                  return { name: e.name, sets: s, reps: r, weight_kg: 0, setsData: toSetsData(s, r, 0), group: 0 };
-                });
-                return [...nonEmpty, ...toAdd];
-              });
-              toast.success(exs.length === 1 ? `${exs[0].name} נוסף לאימון ✓` : `${exs.length} תרגילים נוספו ✓`);
-            }}
-          />
-        </div>
-      </div>
-    )}
     {showDurationModal && (
       <div
         className="fixed inset-0 z-50 flex items-end justify-center pb-10 px-4"
@@ -3245,9 +3202,9 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
     <div className="px-4 pt-8 space-y-4 pb-28">
       {/* ── selectionMode banner ──────────────────────────────────── */}
       {selectionMode && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/12 border border-emerald-500/25">
-          <BookOpen className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-          <p className="text-xs font-bold text-emerald-300">הקש על תרגיל להוסיפו לתבנית</p>
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30">
+          <span className="text-base shrink-0">💪</span>
+          <p className="text-xs font-bold text-emerald-300">מצב בחירה לאימון — לחץ על ✓ ירוק להוסיף תרגיל</p>
         </div>
       )}
       {/* ── Glassmorphism search bar ──────────────────────────────── */}
@@ -3287,9 +3244,9 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
                   groupKey={groupKey}
                   isChecked={false}
                   isFavorite={favorites.includes(ex.name)}
-                  onCheck={() => setTemplateSheetEx(ex)}
+                  onCheck={() => selectionMode ? handleSelectionClick(ex) : setTemplateSheetEx(ex)}
                   onOpen={() => setSelectedEx({ ex, groupKey })}
-                  onQuickAdd={() => setTemplateSheetEx(ex)}
+                  onQuickAdd={() => selectionMode ? handleSelectionClick(ex) : setTemplateSheetEx(ex)}
                   onToggleFavorite={() => toggleFavorite(ex.name)}
                 />
               ))}
@@ -3503,9 +3460,9 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
                   groupKey={selectedGroup.key}
                   isChecked={false}
                   isFavorite={favorites.includes(ex.name)}
-                  onCheck={() => setTemplateSheetEx(ex)}
+                  onCheck={() => selectionMode ? handleSelectionClick(ex) : setTemplateSheetEx(ex)}
                   onOpen={() => setSelectedEx({ ex, groupKey: selectedGroup.key })}
-                  onQuickAdd={() => setTemplateSheetEx(ex)}
+                  onQuickAdd={() => selectionMode ? handleSelectionClick(ex) : setTemplateSheetEx(ex)}
                   onToggleFavorite={() => toggleFavorite(ex.name)}
                 />
               ))}
@@ -5611,9 +5568,10 @@ function ProgressTab() {
 // ═══════════════════════════════════════════════════════════════════════
 function SportPage() {
   const [activeTab,        setActiveTab]        = useState<Tab>("dashboard");
-  const [isTraining,       setIsTraining]       = useState(true);
-  const [loadedTemplate,   setLoadedTemplate]   = useState<any>(null);
-  const [pendingExercises, setPendingExercises] = useState<LibraryExercise[]>([]);
+  const [isTraining,          setIsTraining]          = useState(true);
+  const [loadedTemplate,      setLoadedTemplate]      = useState<any>(null);
+  const [pendingExercises,    setPendingExercises]    = useState<LibraryExercise[]>([]);
+  const [libraryBuilderMode,  setLibraryBuilderMode]  = useState(false);
 
   const handleLoadTemplate = (t: any) => {
     setLoadedTemplate(t);
@@ -5622,6 +5580,7 @@ function SportPage() {
 
   const handleAddExercisesToWorkout = (exs: LibraryExercise[]) => {
     setPendingExercises(exs);
+    setLibraryBuilderMode(false);
     setActiveTab("builder");
   };
 
@@ -5646,7 +5605,7 @@ function SportPage() {
           <div className="sticky top-0 z-10 px-4 py-2 bg-black/25 backdrop-blur-xl">
             <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
               {TABS.map((t) => (
-                <button key={t.key} onClick={() => setActiveTab(t.key)}
+                <button key={t.key} onClick={() => { setActiveTab(t.key); if (t.key !== "library") setLibraryBuilderMode(false); }}
                   className={`flex-1 py-2 px-1 rounded-xl text-[11px] font-bold transition-all duration-200 ${
                     activeTab === t.key ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30" : "text-white/40 hover:text-white/70"}`}>
                   {t.label}
@@ -5673,10 +5632,15 @@ function SportPage() {
               pendingExercises={pendingExercises}
               onPendingExercisesConsumed={() => setPendingExercises([])}
               onWorkoutComplete={() => setActiveTab("dashboard")}
-              onGoToLibrary={() => setActiveTab("library")}
+              onGoToLibrary={() => { setLibraryBuilderMode(true); setActiveTab("library"); }}
             />
           </div>
-          {activeTab === "library" && <ExerciseLibraryTab onAddToWorkout={handleAddExercisesToWorkout} />}
+          {activeTab === "library" && (
+            <ExerciseLibraryTab
+              onAddToWorkout={handleAddExercisesToWorkout}
+              selectionMode={libraryBuilderMode}
+            />
+          )}
           {activeTab === "running"  && <CardioTab />}
           {activeTab === "progress" && <ProgressTab />}
         </div>
