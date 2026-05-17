@@ -2096,6 +2096,8 @@ function WorkoutBuilderTab({
   onPendingExercisesConsumed,
   pendingSSExercise,
   onPendingSSExerciseConsumed,
+  pendingSSPair,
+  onPendingSSPairConsumed,
   onWorkoutComplete,
   onGoToLibrary,
 }: {
@@ -2105,6 +2107,8 @@ function WorkoutBuilderTab({
   onPendingExercisesConsumed?: () => void;
   pendingSSExercise?: LibraryExercise | null;
   onPendingSSExerciseConsumed?: () => void;
+  pendingSSPair?: [LibraryExercise, LibraryExercise] | null;
+  onPendingSSPairConsumed?: () => void;
   onWorkoutComplete?: () => void;
   onGoToLibrary?: () => void;
 }) {
@@ -2210,6 +2214,25 @@ function WorkoutBuilderTab({
     setSubTab("custom");
     onPendingSSExerciseConsumed?.();
   }, [pendingSSExercise]);
+
+  // ── Append SS pair picked from library ─────────────────────────
+  useEffect(() => {
+    if (!pendingSSPair) return;
+    const parseReps = (reps: string): number => { const m = reps.match(/\d+/); return m ? parseInt(m[0]) : 10; };
+    const [first, second] = pendingSSPair;
+    const ssId = crypto.randomUUID();
+    setGroupCounter((prevG) => {
+      const newGroup = prevG + 1;
+      setExercises((prev) => [
+        ...prev.filter((e) => e.name.trim()),
+        { name: first.name,  sets: first.defaultSets,  reps: parseReps(first.defaultReps),  weight_kg: 0, setsData: toSetsData(first.defaultSets,  parseReps(first.defaultReps),  0), group: newGroup, supersetId: ssId, supersetOrder: 0 },
+        { name: second.name, sets: second.defaultSets, reps: parseReps(second.defaultReps), weight_kg: 0, setsData: toSetsData(second.defaultSets, parseReps(second.defaultReps), 0), group: newGroup, supersetId: ssId, supersetOrder: 1 },
+      ]);
+      return newGroup;
+    });
+    setSubTab("custom");
+    onPendingSSPairConsumed?.();
+  }, [pendingSSPair]);
 
   // ── Restore active workout from localStorage on mount ──────────
   useEffect(() => {
@@ -3074,7 +3097,7 @@ function ExerciseModal({
 
 type LibraryWorkoutType = "weights" | "calisthenics" | "stretching";
 
-function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, selectionMode }: { onAddToWorkout?: (exs: LibraryExercise[]) => void; onAddToWorkoutAsSS?: (ex: LibraryExercise) => void; selectionMode?: boolean }) {
+function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, onAddToWorkoutSSPair, selectionMode }: { onAddToWorkout?: (exs: LibraryExercise[]) => void; onAddToWorkoutAsSS?: (ex: LibraryExercise) => void; onAddToWorkoutSSPair?: (first: LibraryExercise, second: LibraryExercise) => void; selectionMode?: boolean }) {
   const [workoutType,    setWorkoutType]    = useState<LibraryWorkoutType>("weights");
   const [selectedGroup,  setSelectedGroup]  = useState<MuscleGroup | null>(null);
   const [selectedEx,     setSelectedEx]     = useState<{ ex: LibraryExercise; groupKey: string; openTemplate?: boolean } | null>(null);
@@ -3086,6 +3109,7 @@ function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, selectionMode 
   const [activeEquipFilter, setActiveEquipFilter]  = useState<EquipmentCategory | null>(null);
   const [templateSheetEx,   setTemplateSheetEx]   = useState<LibraryExercise | null>(null);
   const [workoutSheetEx,    setWorkoutSheetEx]    = useState<LibraryExercise | null>(null);
+  const [ssFirstExercise,   setSsFirstExercise]   = useState<LibraryExercise | null>(null);
   const [showSettings,      setShowSettings]      = useState(false);
 
   const { data: settings } = useUserSettings();
@@ -3219,16 +3243,33 @@ function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, selectionMode 
   }, [searchQuery, hidden, showHidden]);
 
   const handleSelectionClick = (ex: LibraryExercise) => {
-    setWorkoutSheetEx(ex);
+    if (ssFirstExercise) {
+      // Picking the second exercise for a Super Set pair
+      onAddToWorkoutSSPair?.(ssFirstExercise, ex);
+      setSsFirstExercise(null);
+      toast.success(`Super Set: ${ssFirstExercise.name} + ${ex.name} ✓`);
+    } else {
+      setWorkoutSheetEx(ex);
+    }
   };
 
   return (
     <div className="px-4 pt-8 space-y-4 pb-28">
       {/* ── selectionMode banner ──────────────────────────────────── */}
-      {selectionMode && (
+      {selectionMode && !ssFirstExercise && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30">
           <span className="text-base shrink-0">💪</span>
           <p className="text-xs font-bold text-emerald-300">מצב בחירה לאימון — לחץ על ✓ ירוק להוסיף תרגיל</p>
+        </div>
+      )}
+      {selectionMode && ssFirstExercise && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-purple-500/15 border border-purple-500/40">
+          <span className="text-base shrink-0">🔗</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-black text-purple-300">בחר תרגיל שני ל-Super Set</p>
+            <p className="text-[10px] text-purple-300/60 truncate">התרגיל הראשון: {ssFirstExercise.name}</p>
+          </div>
+          <button onClick={() => setSsFirstExercise(null)} className="shrink-0 text-purple-400/50 hover:text-purple-300 text-[10px] font-bold">ביטול</button>
         </div>
       )}
       {/* ── Glassmorphism search bar ──────────────────────────────── */}
@@ -3512,6 +3553,7 @@ function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, selectionMode 
           ex={workoutSheetEx}
           onConfirm={(ex) => { onAddToWorkout?.([ex]); toast.success(`${ex.name} נוסף לאימון ✓`); }}
           onConfirmSS={(ex) => { onAddToWorkoutAsSS?.(ex); toast.success(`${ex.name} נוסף כ-Super Set ✓`); }}
+          onConfirmSSFromLibrary={(ex) => { setSsFirstExercise(ex); }}
           onClose={() => setWorkoutSheetEx(null)}
         />
       )}
@@ -3544,58 +3586,93 @@ function WorkoutAddBottomSheet({
   ex,
   onConfirm,
   onConfirmSS,
+  onConfirmSSFromLibrary,
   onClose,
 }: {
   ex: LibraryExercise;
   onConfirm: (ex: LibraryExercise) => void;
   onConfirmSS: (ex: LibraryExercise) => void;
+  onConfirmSSFromLibrary: (ex: LibraryExercise) => void;
   onClose: () => void;
 }) {
+  const [step, setStep] = useState<"main" | "ss_choice">("main");
+
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#0f0f0f] border border-white/10 border-b-0 p-5 pb-10 animate-in slide-in-from-bottom duration-300">
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />
 
-        {/* Exercise info */}
-        <div className="flex items-center gap-4 mb-5">
-          <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl shrink-0">
-            💪
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-base font-black text-white truncate">{ex.name}</p>
-            <p className="text-[11px] text-white/45 mt-0.5">{ex.muscles}</p>
-            <p className="text-[10px] text-white/30 mt-0.5">{ex.equipment}</p>
-          </div>
-        </div>
-
-        {/* Default sets/reps info */}
-        <div className="flex gap-2 mb-5">
-          <div className="flex-1 rounded-2xl border border-white/8 bg-white/4 px-3 py-2.5 text-center">
-            <p className="text-lg font-black text-white">{ex.defaultSets}</p>
-            <p className="text-[10px] text-white/35">סטים</p>
-          </div>
-          <div className="flex-1 rounded-2xl border border-white/8 bg-white/4 px-3 py-2.5 text-center">
-            <p className="text-lg font-black text-white">{ex.defaultReps}</p>
-            <p className="text-[10px] text-white/35">חזרות</p>
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="space-y-2.5">
-          <button
-            onClick={() => { onConfirm(ex); onClose(); }}
-            className="w-full py-4 rounded-2xl bg-emerald-500 text-white text-base font-black active:scale-[0.97] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)]"
-          >
-            הוסף לאימון ✓
-          </button>
-          <button
-            onClick={() => { onConfirmSS(ex); onClose(); }}
-            className="w-full py-3.5 rounded-2xl border border-purple-500/40 bg-purple-500/10 text-purple-300 text-sm font-black active:scale-[0.97] transition-all hover:bg-purple-500/15"
-          >
-            <span className="font-black">SS</span> · הוסף כ-Super Set
-          </button>
-        </div>
+        {step === "main" ? (
+          <>
+            {/* Exercise info */}
+            <div className="flex items-center gap-4 mb-5">
+              <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl shrink-0">
+                💪
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-base font-black text-white truncate">{ex.name}</p>
+                <p className="text-[11px] text-white/45 mt-0.5">{ex.muscles}</p>
+                <p className="text-[10px] text-white/30 mt-0.5">{ex.equipment}</p>
+              </div>
+            </div>
+            {/* Default sets/reps */}
+            <div className="flex gap-2 mb-5">
+              <div className="flex-1 rounded-2xl border border-white/8 bg-white/4 px-3 py-2.5 text-center">
+                <p className="text-lg font-black text-white">{ex.defaultSets}</p>
+                <p className="text-[10px] text-white/35">סטים</p>
+              </div>
+              <div className="flex-1 rounded-2xl border border-white/8 bg-white/4 px-3 py-2.5 text-center">
+                <p className="text-lg font-black text-white">{ex.defaultReps}</p>
+                <p className="text-[10px] text-white/35">חזרות</p>
+              </div>
+            </div>
+            {/* Action buttons */}
+            <div className="space-y-2.5">
+              <button
+                onClick={() => { onConfirm(ex); onClose(); }}
+                className="w-full py-4 rounded-2xl bg-emerald-500 text-white text-base font-black active:scale-[0.97] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)]"
+              >
+                הוסף לאימון ✓
+              </button>
+              <button
+                onClick={() => setStep("ss_choice")}
+                className="w-full py-3.5 rounded-2xl border border-purple-500/40 bg-purple-500/10 text-purple-300 text-sm font-black active:scale-[0.97] transition-all hover:bg-purple-500/15"
+              >
+                <span className="font-black">SS</span> · הוסף כ-Super Set
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* SS choice step */}
+            <div className="text-center mb-6">
+              <p className="text-base font-black text-white">Super Set עם "{ex.name}"</p>
+              <p className="text-[11px] text-white/40 mt-1">איך תרצה להוסיף את התרגיל השני?</p>
+            </div>
+            <div className="space-y-2.5">
+              <button
+                onClick={() => { onConfirmSSFromLibrary(ex); onClose(); }}
+                className="w-full py-4 rounded-2xl bg-purple-500 text-white text-sm font-black active:scale-[0.97] transition-all shadow-[0_0_20px_rgba(139,92,246,0.35)] flex items-center justify-center gap-2"
+              >
+                <BookOpen className="h-4 w-4" />
+                בחר תרגיל שני מהספרייה
+              </button>
+              <button
+                onClick={() => { onConfirmSS(ex); onClose(); }}
+                className="w-full py-3.5 rounded-2xl border border-white/15 text-white/60 text-sm font-bold active:scale-[0.97] transition-all hover:bg-white/5"
+              >
+                הוסף ידנית בבנאי
+              </button>
+            </div>
+            <button
+              onClick={() => setStep("main")}
+              className="w-full mt-3 py-2 text-[11px] text-white/30 hover:text-white/50 transition-colors"
+            >
+              ← חזור
+            </button>
+          </>
+        )}
       </div>
     </>
   );
@@ -5668,6 +5745,7 @@ function SportPage() {
   const [pendingExercises,    setPendingExercises]    = useState<LibraryExercise[]>([]);
   const [libraryBuilderMode,  setLibraryBuilderMode]  = useState(false);
   const [pendingSSExercise,   setPendingSSExercise]   = useState<LibraryExercise | null>(null);
+  const [pendingSSPair,       setPendingSSPair]       = useState<[LibraryExercise, LibraryExercise] | null>(null);
 
   const handleLoadTemplate = (t: any) => {
     setLoadedTemplate(t);
@@ -5682,6 +5760,12 @@ function SportPage() {
 
   const handleAddToWorkoutAsSS = (ex: LibraryExercise) => {
     setPendingSSExercise(ex);
+    setLibraryBuilderMode(false);
+    setActiveTab("builder");
+  };
+
+  const handleAddToWorkoutSSPair = (first: LibraryExercise, second: LibraryExercise) => {
+    setPendingSSPair([first, second]);
     setLibraryBuilderMode(false);
     setActiveTab("builder");
   };
@@ -5735,6 +5819,8 @@ function SportPage() {
               onPendingExercisesConsumed={() => setPendingExercises([])}
               pendingSSExercise={pendingSSExercise}
               onPendingSSExerciseConsumed={() => setPendingSSExercise(null)}
+              pendingSSPair={pendingSSPair}
+              onPendingSSPairConsumed={() => setPendingSSPair(null)}
               onWorkoutComplete={() => setActiveTab("dashboard")}
               onGoToLibrary={() => { setLibraryBuilderMode(true); setActiveTab("library"); }}
             />
@@ -5743,6 +5829,7 @@ function SportPage() {
             <ExerciseLibraryTab
               onAddToWorkout={handleAddExercisesToWorkout}
               onAddToWorkoutAsSS={handleAddToWorkoutAsSS}
+              onAddToWorkoutSSPair={handleAddToWorkoutSSPair}
               selectionMode={libraryBuilderMode}
             />
           )}
