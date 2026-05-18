@@ -25,6 +25,7 @@ import {
   BarChart, Bar, Cell,
 } from "recharts";
 import { useQueryClient } from "@tanstack/react-query";
+import exerciseImageUrlsJson from "@/data/exercise-image-urls.json";
 
 export const Route = createFileRoute("/_app/sport")({
   component: SportPage,
@@ -1037,6 +1038,372 @@ function getEquipCat(equipment: string): EquipmentCategory {
   return "free_weights";
 }
 
+// ─── Hebrew display names for exercises ──────────────────────────────────────
+const EXERCISE_HEBREW_NAMES: Record<string, string> = {
+  // ── Already-Hebrew named exercises (add English in parentheses) ──
+  "לחיצת חזה שכיבה":                  "לחיצת חזה (Bench Press)",
+  "פרפר (Fly)":                        "פרפר דמבלים (Dumbbell Fly)",
+  "שכיבות סמיכה":                      "שכיבות סמיכה (Push-up)",
+  "לחיצת חזה במכונה":                  "לחיצת חזה מכונה (Machine Chest Press)",
+  "קרוסאובר (כבלים)":                  "קרוסאובר כבלים (Cable Crossover)",
+  "לחיצת דמבלים משופעת":               "לחיצת דמבלים משופעת (Incline DB Press)",
+  "לחיצת מוט משופעת":                  "לחיצת מוט משופעת (Incline Barbell Press)",
+  "לחיצת דמבלים ירידה":                "לחיצת דמבלים יורדת (Decline DB Press)",
+  "פרפר משופע":                        "פרפר משופע (Incline Fly)",
+  "שכיבות ירידה":                      "שכיבות יורדות (Decline Push-up)",
+  "מקבילים לחזה":                      "מקבילים לחזה (Chest Dips)",
+  "מתח (Pull-up)":                     "מתח (Pull-up)",
+  "חתירה (Barbell Row)":               "חתירת מוט (Barbell Row)",
+  "חתירה כבלים ישיבה":                 "חתירת כבלים ישיבה (Seated Cable Row)",
+  "לט פולדאון":                        "פולדאון (Lat Pulldown)",
+  "דדליפט":                            "דדליפט (Deadlift)",
+  "לחיצת כתפיים (OHP)":               "לחיצת כתפיים (Overhead Press)",
+  "הרמות צד (Lateral Raise)":         "הרמות צד (Lateral Raise)",
+  "הרמות קדמיות (Front Raise)":       "הרמות קדמיות (Front Raise)",
+  "כפיפות מרפק (Bicep Curl)":         "כפיפות מרפק (Bicep Curl)",
+  "פשיטת מרפק (Tricep Extension)":    "פשיטת מרפק (Tricep Extension)",
+  "מקבילים (Dips)":                    "מקבילים (Dips)",
+  "סקוואט (Squat)":                   "סקוואט (Squat)",
+  "לאנג' (Lunges)":                   "לאנג' (Lunges)",
+  "לג פרס (Leg Press)":               "לג פרס (Leg Press)",
+  "כפיפות ברכיים (Hamstring Curl)":  "כפיפות ברכיים (Hamstring Curl)",
+  "הרמות עקב (Calf Raise)":           "הרמות עקב (Calf Raise)",
+  "פלנק (Plank)":                     "פלנק (Plank)",
+  "סיט אפ (Sit-up)":                  "כפיפת בטן (Sit-up)",
+  "רוסיאן טוויסט":                    "סיבוב רוסי (Russian Twist)",
+  "ברכיים לחזה (Knee Tucks)":         "ברכיים לחזה (Knee Tucks)",
+  "הרמות ברכיים תלויות":              "הרמות ברכיים תלויות (Hanging Knee Raise)",
+  // ── Chest — English → Hebrew ──
+  "Pec Deck מכונה":                   "מכונת פרפר (Pec Deck)",
+  "Cable Fly מגבוה":                  "כבל פרפר מגבוה (High Cable Fly)",
+  "Cable Fly מלמטה":                  "כבל פרפר מלמטה (Low Cable Fly)",
+  "Dumbbell Pullover":                 "פולאובר דמבל (Dumbbell Pullover)",
+  "Squeeze Press":                     "לחיצת סחיטה (Squeeze Press)",
+  "Cable Crossover רחב":              "קרוסאובר רחב (Wide Cable Crossover)",
+  "Cable Fly אמצעי":                  "כבל פרפר אמצעי (Mid Cable Fly)",
+  "Single Arm Cable Fly":             "כבל פרפר יד אחת (Single Arm Cable Fly)",
+  "Cable Chest Press עמידה":          "לחיצת חזה כבל עמידה (Standing Cable Press)",
+  "Incline Cable Fly":                "כבל פרפר משופע (Incline Cable Fly)",
+  "Low to High Cable Fly":            "כבל פרפר נמוך לגבוה (Low to High Cable Fly)",
+  "High to Low Cable Fly":            "כבל פרפר גבוה לנמוך (High to Low Cable Fly)",
+  "Cable Squeeze חזה":                "סחיטת כבל חזה (Cable Squeeze)",
+  "Machine Chest Press":              "לחיצת חזה מכונה (Machine Chest Press)",
+  "Smith Machine Bench":              "לחיצת חזה סמית' (Smith Machine Bench Press)",
+  "Iso-Lateral Chest Press":          "לחיצת חזה איזולטרלי (Iso-Lateral Chest Press)",
+  "Machine Incline Press":            "לחיצת חזה משופעת מכונה (Machine Incline Press)",
+  "Cable Upper Chest Fly":            "כבל פרפר חזה עליון (Upper Chest Cable Fly)",
+  "Cable Chest Pullover":             "פולאובר כבל חזה (Cable Chest Pullover)",
+  "Pec Deck Single Arm":              "מכונת פרפר יד אחת (Pec Deck Single Arm)",
+  "Cable Fly Neutral Grip":           "כבל פרפר ניטרלי (Neutral Grip Cable Fly)",
+  "Reverse Pec Deck":                 "מכונת פרפר הפוך (Reverse Pec Deck)",
+  "Cable Crossover Neutral":          "קרוסאובר ניטרלי (Neutral Cable Crossover)",
+  "Hammer Strength Flat Press":       "לחיצת חזה Hammer Strength (Hammer Strength Flat Press)",
+  "Hammer Strength Incline Press":    "לחיצת חזה משופעת Hammer Strength (Hammer Strength Incline)",
+  "Decline Smith Machine Press":      "לחיצת חזה יורדת סמית' (Decline Smith Machine Press)",
+  "Hammer Strength Decline":          "לחיצת חזה יורדת Hammer Strength (Hammer Strength Decline)",
+  "Incline Smith Machine Press":      "לחיצת חזה משופעת סמית' (Incline Smith Machine Press)",
+  "Smith Machine Flat Press":         "לחיצת חזה שטוח סמית' (Smith Machine Flat Press)",
+  "Pause Bench Press":                "לחיצת חזה עם עצירה (Pause Bench Press)",
+  "Flat Dumbbell Fly":                "פרפר דמבל שטוח (Flat Dumbbell Fly)",
+  "Neutral Grip DB Press":            "לחיצת דמבל אחיזה ניטרלית (Neutral Grip DB Press)",
+  "Wide Grip Bench Press":            "לחיצת חזה אחיזה רחבה (Wide Grip Bench Press)",
+  "Close Grip Bench Press":           "לחיצת חזה אחיזה צרה (Close Grip Bench Press)",
+  "Weighted Decline Push-up":         "שכיבות יורדות עם משקל (Weighted Decline Push-up)",
+  "Decline Dumbbell Fly":             "פרפר דמבל יורד (Decline Dumbbell Fly)",
+  "Reverse Grip Bench Press":         "לחיצת חזה אחיזה הפוכה (Reverse Grip Bench Press)",
+  "Cable Fly מקביל לחזה":            "כבל פרפר מקביל (Parallel Cable Fly)",
+  "High-Incline 75° DB Press":        "לחיצת דמבל 75° (High Incline DB Press)",
+  "DB Pullover (Lat-Chest)":          "פולאובר דמבל גב-חזה (DB Pullover Lat-Chest)",
+  "Squeeze Press משופע":             "לחיצת סחיטה משופעת (Incline Squeeze Press)",
+  "Landmine Press חזה":              "לחיצת מוט שיגור חזה (Landmine Chest Press)",
+  "כבל נמוך-לגבוה (Low-to-High)":   "כבל פרפר נמוך לגבוה (Low to High Cable Fly)",
+  "Chest Dips מקבילים":              "מקבילים לחזה (Chest Dips)",
+  // ── Back — English → Hebrew ──
+  "Single Arm Dumbbell Row":          "חתירת דמבל יד אחת (Single Arm Dumbbell Row)",
+  "T-Bar Row":                        "חתירת T-Bar (T-Bar Row)",
+  "Chest Supported Row":              "חתירה נשענת חזה (Chest Supported Row)",
+  "Lat Pulldown רחב":                "פולדאון אחיזה רחבה (Wide Grip Lat Pulldown)",
+  "Lat Pulldown צר":                 "פולדאון אחיזה צרה (Close Grip Lat Pulldown)",
+  "Straight Arm Pulldown":            "פולדאון ידיים ישרות (Straight Arm Pulldown)",
+  "Renegade Row":                     "חתירת רנגייד (Renegade Row)",
+  "Meadows Row":                      "חתירת מדוז (Meadows Row)",
+  "Seal Row":                         "חתירת ספסל (Seal Row)",
+  "Rack Pull":                        "הרמת מוט מגמבה (Rack Pull)",
+  "Back Extension":                   "הרחבת גב (Back Extension)",
+  "Good Morning":                     "גוד מורנינג (Good Morning)",
+  "Cable Pullover גב":                "פולאובר כבל גב (Cable Pullover Back)",
+  "Cable Pullover (גב)":              "פולאובר כבל גב (Cable Pullover Back)",
+  "Unilateral Cable Row":             "חתירת כבל חד-צדדית (Unilateral Cable Row)",
+  "High Cable Row":                   "חתירת כבל גבוהה (High Cable Row)",
+  "Rope Pulldown":                    "פולדאון חבל (Rope Pulldown)",
+  "Unilateral Lat Pulldown":          "פולדאון חד-צדדי (Unilateral Lat Pulldown)",
+  "Wide Grip Cable Row":              "חתירת כבל אחיזה רחבה (Wide Grip Cable Row)",
+  "Reverse Grip Cable Row":           "חתירת כבל אחיזה הפוכה (Reverse Grip Cable Row)",
+  "Underhand Cable Row":              "חתירת כבל אחיזה תחתונה (Underhand Cable Row)",
+  "Cable Straight Arm Row":           "חתירת כבל ידיים ישרות (Straight Arm Cable Row)",
+  "Cable Lower Back Ext":             "הרחבת גב תחתון כבל (Cable Lower Back Extension)",
+  "Machine Pullover":                 "פולאובר מכונה (Machine Pullover)",
+  "Hammer Strength Lat Pull":         "פולדאון Hammer Strength (Hammer Strength Lat Pulldown)",
+  "Machine Seated Row":               "חתירה ישיבה מכונה (Machine Seated Row)",
+  "Assisted Pull-up Machine":         "מכונת מתח מסייעת (Assisted Pull-up Machine)",
+  "Reverse Grip Lat Pulldown":        "פולדאון אחיזה הפוכה (Reverse Grip Lat Pulldown)",
+  "Machine High Row":                 "חתירה גבוהה מכונה (Machine High Row)",
+  "Pendlay Row":                      "חתירת פנדליי (Pendlay Row)",
+  "Kroc Row":                         "חתירת קרוק (Kroc Row)",
+  "Yates Row":                        "חתירת ייטס (Yates Row)",
+  "Chest Supported Cable Row":        "חתירת כבל נשענת חזה (Chest Supported Cable Row)",
+  "Neutral Grip Lat Pulldown":        "פולדאון אחיזה ניטרלית (Neutral Grip Lat Pulldown)",
+  "Single Arm Lat Pulldown":          "פולדאון יד אחת (Single Arm Lat Pulldown)",
+  "Lat Pulldown אחיזה הפוכה":        "פולדאון אחיזה הפוכה (Reverse Grip Lat Pulldown)",
+  "Hammer Strength Pulldown":         "פולדאון Hammer Strength (Hammer Strength Pulldown)",
+  "Kneeling Lat Pulldown":            "פולדאון ברכיים (Kneeling Lat Pulldown)",
+  "One Arm Machine Pulldown":         "פולדאון מכונה יד אחת (One Arm Machine Pulldown)",
+  "Incline DB Row (Lat Focus)":       "חתירת דמבל משופעת (Incline DB Row Lat Focus)",
+  "Prone Incline Cable Row":          "חתירת כבל שכיבה (Prone Incline Cable Row)",
+  "Hammer Strength Row":              "חתירת Hammer Strength (Hammer Strength Row)",
+  "Barbell Row אחיזה רחבה":          "חתירת מוט אחיזה רחבה (Wide Grip Barbell Row)",
+  "T-Bar Row רחב":                   "חתירת T-Bar רחבה (Wide T-Bar Row)",
+  "DB Row כבד (Kroc Row)":           "חתירת דמבל כבד (Kroc Row)",
+  "Seated Cable Row רחב":            "חתירת כבל ישיבה רחבה (Wide Seated Cable Row)",
+  "Chest Supported DB Row":           "חתירת דמבל נשענת חזה (Chest Supported DB Row)",
+  "Single Arm Cable Row":             "חתירת כבל יד אחת (Single Arm Cable Row)",
+  "Cross Body Cable Row":             "חתירת כבל חוצה גוף (Cross Body Cable Row)",
+  "Chest Supported Machine Row":      "חתירת מכונה נשענת חזה (Chest Supported Machine Row)",
+  "Low Seated Cable Row":             "חתירת כבל ישיבה נמוכה (Low Seated Cable Row)",
+  "Deficit Deadlift":                 "דדליפט מגמבה נמוכה (Deficit Deadlift)",
+  "Cable Pull-Through (גב)":         "משיכת כבל עבר הרגליים גב (Cable Pull-Through Back)",
+  "Hyperextension מכונה":            "היפר-אקסטנשן מכונה (Hyperextension Machine)",
+  "Back Extension עם משקל":          "הרחבת גב עם משקל (Weighted Back Extension)",
+  // ── Shoulders — English → Hebrew ──
+  "Arnold Press":                     "לחיצת ארנולד (Arnold Press)",
+  "Lateral Raise כבלים":             "הרמות צד כבל (Cable Lateral Raise)",
+  "Rear Delt Fly דמבלים":            "פרפר כתף אחורית (Rear Delt Dumbbell Fly)",
+  "Cable Rear Delt Fly":              "פרפר כתף אחורית כבל (Cable Rear Delt Fly)",
+  "Upright Row":                      "חתירה זקופה (Upright Row)",
+  "Cuban Press":                      "לחיצת קובן (Cuban Press)",
+  "Band Pull-Apart":                  "פריסת גומייה (Band Pull-Apart)",
+  "Machine Lateral Raise":            "הרמות צד מכונה (Machine Lateral Raise)",
+  "Cable W-Raise":                    "הרמת W כבל (Cable W-Raise)",
+  "Cable Rope Face Pull":             "משיכת פנים חבל (Cable Rope Face Pull)",
+  "Cable Front Raise":                "הרמות קדמיות כבל (Cable Front Raise)",
+  "Cable Upright Row":                "חתירה זקופה כבל (Cable Upright Row)",
+  "Single Arm Cable Lateral":         "הרמות צד כבל יד אחת (Single Arm Cable Lateral)",
+  "Lying Cable Lateral Raise":        "הרמות צד כבל שכיבה (Lying Cable Lateral Raise)",
+  "Rope Face Pull מתקדם":            "משיכת פנים חבל מתקדם (Advanced Rope Face Pull)",
+  "High Cable Rear Delt Fly":         "פרפר כתף אחורית כבל גבוה (High Cable Rear Delt Fly)",
+  "Low Cable Rear Delt":              "כבל כתף אחורית נמוך (Low Cable Rear Delt)",
+  "Cable External Rotation":          "סיבוב חיצוני כבל (Cable External Rotation)",
+  "Cable Internal Rotation":          "סיבוב פנימי כבל (Cable Internal Rotation)",
+  "Leaning Cable Lateral":            "הרמות צד כבל מוטה (Leaning Cable Lateral)",
+  "Cable Y-Raise":                    "הרמת Y כבל (Cable Y-Raise)",
+  "Cross Body Cable Raise":           "הרמת כבל חוצה גוף (Cross Body Cable Raise)",
+  "Machine Shoulder Press":           "לחיצת כתפיים מכונה (Machine Shoulder Press)",
+  "Smith Machine OHP":                "לחיצת כתפיים סמית' (Smith Machine OHP)",
+  "Machine Rear Delt Fly":            "פרפר כתף אחורית מכונה (Machine Rear Delt Fly)",
+  "Machine Front Raise":              "הרמות קדמיות מכונה (Machine Front Raise)",
+  "Cable Behind-Back Lateral":        "הרמות צד כבל מאחורי הגב (Behind Back Cable Lateral)",
+  "Cable Rope Upright Row":           "חתירה זקופה חבל (Cable Rope Upright Row)",
+  "Plate Front Raise":                "הרמות קדמיות צלחת (Plate Front Raise)",
+  "Cable Single Arm Front Raise":     "הרמות קדמיות כבל יד אחת (Single Arm Cable Front Raise)",
+  "Half-Kneeling Cable Press":        "לחיצת כבל חצי ברכיים (Half-Kneeling Cable Press)",
+  "Dumbbell Rear Delt Row":           "חתירת דמבל כתף אחורית (Rear Delt Dumbbell Row)",
+  "Face Pull":                        "משיכת פנים (Face Pull)",
+  "Rear Delt Fly DB":                 "פרפר כתף אחורית דמבל (Rear Delt Dumbbell Fly)",
+  "Pec Deck Reverse":                 "מכונת פרפר הפוך (Reverse Pec Deck)",
+  "Face Pull כבל":                   "משיכת פנים כבל (Cable Face Pull)",
+  "Prone Incline Rear Delt Fly":      "פרפר כתף אחורית שכיבה (Prone Rear Delt Fly)",
+  "Machine Rear Delt":                "כתף אחורית מכונה (Machine Rear Delt)",
+  "Bent Over Lateral Raise":          "הרמות צד כפוף קדימה (Bent Over Lateral Raise)",
+  "Barbell OHP (Overhead Press)":     "לחיצת כתפיים מוט (Barbell Overhead Press)",
+  "Seated DB OHP":                    "לחיצת דמבל כתפיים ישיבה (Seated DB Overhead Press)",
+  "Standing DB OHP":                  "לחיצת דמבל כתפיים עמידה (Standing DB Overhead Press)",
+  "Z-Press":                          "לחיצת Z על הרצפה (Z-Press)",
+  "Landmine Press כתפיים":           "לחיצת מוט שיגור כתפיים (Landmine Press)",
+  "Upright Row מוט":                 "חתירה זקופה מוט (Barbell Upright Row)",
+  "Upright Row כבל":                 "חתירה זקופה כבל (Cable Upright Row)",
+  "Upright Row דמבלים":              "חתירה זקופה דמבלים (Dumbbell Upright Row)",
+  "45° Incline Lateral Raise":        "הרמות צד 45° (45° Incline Lateral Raise)",
+  "One Arm Cable Lateral":            "הרמות צד כבל יד אחת (One Arm Cable Lateral)",
+  "Barbell Shrug":                    "שראג מוט (Barbell Shrug)",
+  "DB Shrug":                         "שראג דמבל (Dumbbell Shrug)",
+  "Leaning Lateral Raise":            "הרמות צד מוטה (Leaning Lateral Raise)",
+  "Shrug — כיווץ כתפיים":           "שראג — כיווץ כתפיים (Shrug)",
+  "לחיצת כתפיים בישיבה":             "לחיצת כתפיים ישיבה (Seated Shoulder Press)",
+  // ── Arms — Bicep ──
+  "Hammer Curl":                      "כפיפות הממר (Hammer Curl)",
+  "Preacher Curl":                    "כפיפות מרפק מטיף (Preacher Curl)",
+  "Incline Dumbbell Curl":            "כפיפות מרפק דמבל משופע (Incline Dumbbell Curl)",
+  "Concentration Curl":               "כפיפות מרפק ריכוז (Concentration Curl)",
+  "Spider Curl":                      "כפיפות מרפק עכביש (Spider Curl)",
+  "Cable Curl":                       "כפיפות מרפק כבל (Cable Curl)",
+  "Hammer Curl כבלים":               "כפיפות הממר כבל (Cable Hammer Curl)",
+  "Reverse Curl":                     "כפיפה הפוכה (Reverse Curl)",
+  "Cable Concentration Curl":         "כפיפות מרפק ריכוז כבל (Cable Concentration Curl)",
+  "Rope Hammer Curl":                 "כפיפות הממר חבל (Rope Hammer Curl)",
+  "High Cable Curl":                  "כפיפות מרפק כבל גבוה (High Cable Curl)",
+  "Low Cable Curl":                   "כפיפות מרפק כבל נמוך (Low Cable Curl)",
+  "Cable 21s ביצפס":                 "21s כבל (Cable 21s Bicep)",
+  "Unilateral Cable Curl":            "כפיפות מרפק כבל חד-צדדית (Unilateral Cable Curl)",
+  "Machine Preacher Curl":            "כפיפות מרפק מטיף מכונה (Machine Preacher Curl)",
+  "EZ Bar Curl":                      "כפיפות מרפק מוט EZ (EZ Bar Curl)",
+  "Barbell Preacher Curl":            "כפיפות מרפק מטיף מוט (Barbell Preacher Curl)",
+  "Reverse Cable Curl":               "כפיפה הפוכה כבל (Reverse Cable Curl)",
+  "Cable Spider Curl":                "כפיפות מרפק עכביש כבל (Cable Spider Curl)",
+  "Zottman Curl":                     "כפיפת זוטמן (Zottman Curl)",
+  "Cable Drag Curl":                  "כפיפות מרפק גרירה כבל (Cable Drag Curl)",
+  "Barbell Curl":                     "כפיפות מרפק מוט (Barbell Curl)",
+  "Incline DB Curl":                  "כפיפות מרפק דמבל משופע (Incline DB Curl)",
+  "Preacher Curl EZ":                 "כפיפות מרפק מטיף EZ (EZ Preacher Curl)",
+  "Preacher Curl Machine":            "כפיפות מרפק מטיף מכונה (Machine Preacher Curl)",
+  "Cross Body Hammer Curl":           "כפיפות הממר חוצה גוף (Cross Body Hammer Curl)",
+  "Cable Curl בר":                   "כפיפות מרפק כבל מוט (Cable Bar Curl)",
+  "Cable Curl חבל":                  "כפיפות מרפק כבל חבל (Cable Rope Curl)",
+  "Machine Curl":                     "כפיפות מרפק מכונה (Machine Curl)",
+  "21s Curl":                         "21s (21s Curl)",
+  // ── Arms — Tricep ──
+  "Skull Crusher":                    "מוחץ גולגולת (Skull Crusher)",
+  "Close Grip Bench":                 "לחיצת אחיזה צרה (Close Grip Bench Press)",
+  "Overhead Tricep Extension":        "פשיטת מרפק מעל הראש (Overhead Tricep Extension)",
+  "Tricep Pushdown V-Bar":           "לחיצת טריצפס V-Bar (Tricep Pushdown V-Bar)",
+  "Tricep Kickback":                  "בעיטות טריצפס (Tricep Kickback)",
+  "Wrist Curl":                       "כפיפת שורש יד (Wrist Curl)",
+  "Rope Pushdown":                    "לחיצת טריצפס חבל (Rope Pushdown)",
+  "Reverse Grip Pushdown":            "לחיצת טריצפס אחיזה הפוכה (Reverse Grip Pushdown)",
+  "Single Arm Pushdown":              "לחיצת טריצפס יד אחת (Single Arm Pushdown)",
+  "Overhead Cable Ext Rope":          "פשיטת מרפק כבל חבל מעל הראש (Overhead Cable Rope Extension)",
+  "Single Arm Cable Overhead":        "פשיטת מרפק כבל יד אחת מעל הראש (Single Arm Overhead Cable)",
+  "Cable Kickback":                   "בעיטות טריצפס כבל (Cable Tricep Kickback)",
+  "Rope Overhead Ext":               "פשיטת מרפק חבל מעל הראש (Rope Overhead Extension)",
+  "Cable Bar Pushdown":               "לחיצת טריצפס מוט כבל (Cable Bar Pushdown)",
+  "Machine Tricep Ext":               "פשיטת מרפק מכונה (Machine Tricep Extension)",
+  "Tricep Dip Machine":               "מקבילים טריצפס מכונה (Machine Tricep Dip)",
+  "JM Press":                         "לחיצת JM Press (JM Press)",
+  "Tate Press":                       "לחיצת טייט (Tate Press)",
+  "Board Press":                      "לחיצת לוח (Board Press)",
+  "Cable Long Head Ext":              "פשיטת ראש ארוך כבל (Cable Long Head Extension)",
+  "Skull Crusher מוט":               "מוחץ גולגולת מוט (Barbell Skull Crusher)",
+  "Skull Crusher EZ":                 "מוחץ גולגולת EZ (EZ Skull Crusher)",
+  "Tricep Pushdown חבל":             "לחיצת טריצפס חבל (Rope Tricep Pushdown)",
+  "Tricep Pushdown בר":              "לחיצת טריצפס מוט (Bar Tricep Pushdown)",
+  "Overhead Tricep Ext DB":           "פשיטת מרפק דמבל מעל הראש (Overhead DB Tricep Extension)",
+  "Overhead Tricep Ext כבל":         "פשיטת מרפק כבל מעל הראש (Overhead Cable Tricep Extension)",
+  "Lying DB Tricep Extension":        "פשיטת מרפק דמבל שכיבה (Lying DB Tricep Extension)",
+  "Weighted Dips":                    "מקבילים עם משקל (Weighted Dips)",
+  // ── Arms — Forearm ──
+  "Reverse Wrist Curl":               "כפיפת שורש יד הפוכה (Reverse Wrist Curl)",
+  "Wrist Curl מוט":                  "כפיפת שורש יד מוט (Barbell Wrist Curl)",
+  "Wrist Curl DB":                    "כפיפת שורש יד דמבל (Dumbbell Wrist Curl)",
+  "Reverse Curl מוט":                "כפיפה הפוכה מוט (Barbell Reverse Curl)",
+  "Reverse Curl EZ":                  "כפיפה הפוכה EZ (EZ Reverse Curl)",
+  "Farmer's Walk":                    "הליכת חקלאי (Farmer's Walk)",
+  "Plate Pinch":                      "אחיזת צלחת (Plate Pinch)",
+  // ── Legs ──
+  "Romanian Deadlift":                "דדליפט רומני (Romanian Deadlift)",
+  "Sumo Squat":                       "סקוואט סומו (Sumo Squat)",
+  "Hack Squat מכונה":                "האק סקוואט מכונה (Hack Squat Machine)",
+  "Leg Extension":                    "פשיטת ברכיים (Leg Extension)",
+  "Seated Calf Raise":                "הרמות עקב ישיבה (Seated Calf Raise)",
+  "Glute Bridge":                     "גשר ישבן (Glute Bridge)",
+  "Hip Thrust":                       "דחיפות ירכיים (Hip Thrust)",
+  "Goblet Squat":                     "סקוואט גביע (Goblet Squat)",
+  "Step Up לספסל":                   "עלייה לספסל (Step Up)",
+  "Nordic Hamstring Curl":            "כפיפת נורדיק (Nordic Hamstring Curl)",
+  "Hip Abduction מכונה":             "פיזור ירכיים מכונה (Hip Abduction Machine)",
+  "Hip Adduction מכונה":             "קירוב ירכיים מכונה (Hip Adduction Machine)",
+  "Donkey Kicks":                     "בעיטות חמור (Donkey Kicks)",
+  "Bulgarian Split Squat":            "סקוואט בולגרי (Bulgarian Split Squat)",
+  "Good Morning רגליים":             "גוד מורנינג (Good Morning)",
+  "Cable Pull-Through":               "משיכת כבל דרך הרגליים (Cable Pull-Through)",
+  "Smith Machine Squat":              "סקוואט סמית' (Smith Machine Squat)",
+  "Lying Leg Curl":                   "כפיפות ברכיים שכיבה (Lying Leg Curl)",
+  "Cable Romanian DL":                "דדליפט רומני כבל (Cable Romanian Deadlift)",
+  "Machine Glute Kickback":           "בעיטות ישבן מכונה (Machine Glute Kickback)",
+  "Cable Hip Flexion":                "כפיפת ירך כבל (Cable Hip Flexion)",
+  "Smith Machine Lunge":              "לאנג' סמית' (Smith Machine Lunge)",
+  "Standing Leg Curl":                "כפיפות ברכיים עמידה (Standing Leg Curl)",
+  "Cable Glute Kickback":             "בעיטות ישבן כבל (Cable Glute Kickback)",
+  "Donkey Kick Machine":              "מכונת בעיטות חמור (Donkey Kick Machine)",
+  "Hip Thrust מוט":                  "דחיפות ירכיים מוט (Barbell Hip Thrust)",
+  "Hip Thrust מכונה":                "דחיפות ירכיים מכונה (Machine Hip Thrust)",
+  "Single Leg Glute Bridge":          "גשר ישבן רגל אחת (Single Leg Glute Bridge)",
+  "Single Leg RDL":                   "דדליפט רומני רגל אחת (Single Leg RDL)",
+  "Glute Ham Raise":                  "הרמת ישבן-המסטרינג (Glute Ham Raise)",
+  "Stiff Leg Deadlift":               "דדליפט רגליים ישרות (Stiff Leg Deadlift)",
+  "Kneeling Leg Curl":                "כפיפות ברכיים ברכיים (Kneeling Leg Curl)",
+  "Good Morning מוט":                "גוד מורנינג מוט (Barbell Good Morning)",
+  "Leg Press רגלים גבוהות":         "לג פרס רגליים גבוהות (High Foot Leg Press)",
+  "Leg Press רגלים נמוכות":         "לג פרס רגליים נמוכות (Low Foot Leg Press)",
+  "Bulgarian Split Squat DB":         "סקוואט בולגרי דמבל (Dumbbell Bulgarian Split Squat)",
+  "Heel Elevated Squat":              "סקוואט עקב מורם (Heel Elevated Squat)",
+  "Box Squat":                        "סקוואט קופסה (Box Squat)",
+  "Pause Squat":                      "סקוואט עם עצירה (Pause Squat)",
+  "Sissy Squat מכונה":               "סיסי סקוואט מכונה (Sissy Squat Machine)",
+  "Romanian Deadlift DB":             "דדליפט רומני דמבל (Dumbbell Romanian Deadlift)",
+  "Seated Leg Curl":                  "כפיפות ברכיים ישיבה (Seated Leg Curl)",
+  "Leg Extension מכונה":             "פשיטת ברכיים מכונה (Machine Leg Extension)",
+  "Cable Leg Curl עמידה":           "כפיפות ברכיים כבל עמידה (Standing Cable Leg Curl)",
+  "Standing Calf Raise מכונה":       "הרמות עקב עמידה מכונה (Standing Calf Raise Machine)",
+  "Seated Calf Raise מכונה":         "הרמות עקב ישיבה מכונה (Seated Calf Raise Machine)",
+  "Leg Press Calf Raise":             "הרמות עקב לג פרס (Leg Press Calf Raise)",
+  "Single Leg Calf Raise DB":         "הרמות עקב דמבל רגל אחת (Single Leg Dumbbell Calf Raise)",
+  "Donkey Calf Raise":                "הרמות עקב חמור (Donkey Calf Raise)",
+  "Tibialis Raise":                   "הרמת שוק קדמי (Tibialis Raise)",
+  "Clamshell + לולאה":               "תרגיל צדפה עם גומייה (Clamshell with Band)",
+  // ── Core ──
+  "Dead Bug":                         "חרק מת (Dead Bug)",
+  "Cable Crunch":                     "כיפוף בטן כבל (Cable Crunch)",
+  "Dragon Flag":                      "דגל דרקון (Dragon Flag)",
+  "Ab Wheel Rollout":                 "גלגל בטן (Ab Wheel Rollout)",
+  "Hanging Leg Raise":                "הרמת רגליים תלויות (Hanging Leg Raise)",
+  "V-Up":                             "V-Up (V-Up)",
+  "Woodchop (גרזן)":                 "קציצת גרזן כבל (Cable Wood Chop)",
+  "Pallof Press":                     "לחיצת פאלוף — נגד סיבוב (Pallof Press)",
+  "Side Plank":                       "פלנק צד (Side Plank)",
+  "Landmine Rotation":                "סיבוב מוט שיגור (Landmine Rotation)",
+  "Hollow Crunch":                    "כיפוף גוף חלול (Hollow Body Crunch)",
+  "Standing Cable Lift":              "הרמת כבל אלכסונית (Standing Cable Lift)",
+  "Cable Anti-Rotation Hold":         "החזקת כבל נגד סיבוב (Cable Anti-Rotation Hold)",
+  "Kneeling Cable Oblique":           "כיפוף אלכסוני כבל ברכיים (Kneeling Cable Oblique)",
+  "Hollow Body Hold":                 "החזקת גוף חלול (Hollow Body Hold)",
+  "L-Sit (בין כסאות)":               "L-Sit בין כסאות (L-Sit Between Chairs)",
+  "L-Sit (מקבילים)":                 "L-Sit על מקבילים (L-Sit on Parallettes)",
+  "Toes to Bar":                      "רגליים למוט (Toes to Bar)",
+  "Windshield Wipers":                "מגבי שמשה (Windshield Wipers)",
+  "Human Flag (Tuck)":                "דגל אנושי קרוץ (Tuck Human Flag)",
+  "Dragon Flag (Full)":               "דגל דרקון מלא (Full Dragon Flag)",
+  "Dragon Flag Negative":             "דגל דרקון שלילי (Dragon Flag Negative)",
+  "Dragon Flag Incline":              "דגל דרקון משופע (Incline Dragon Flag)",
+  "Reverse Crunch משוקל":            "כיפוף הפוך עם משקל (Weighted Reverse Crunch)",
+  "Ab Wheel Standing":                "גלגל בטן עמידה (Standing Ab Wheel)",
+  "Barbell Rollout":                  "גלגל מוט (Barbell Rollout)",
+  "Machine Crunch":                   "כיפוף בטן מכונה (Machine Crunch)",
+  "Decline Crunch":                   "כיפוף בטן יורד (Decline Crunch)",
+  "High Cable Crunch עמידה":         "כיפוף בטן כבל עמידה (Standing Cable Crunch)",
+  "Hollow Body Rock":                 "נדנוד גוף חלול (Hollow Body Rock)",
+  "Stability Ball Crunch":            "כיפוף בטן כדור (Stability Ball Crunch)",
+  "TRX Jackknife":                    "TRX ג'קנייף (TRX Jackknife)",
+  "Decline Sit-up":                   "כפיפת בטן יורדת (Decline Sit-up)",
+  "Bicycle Crunch Premium":           "כפיפת אופניים (Bicycle Crunch)",
+  "Cable Oblique Crunch":             "כיפוף אלכסוני כבל (Cable Oblique Crunch)",
+};
+
+// ─── Default muscle group images for exercise cards ──────────────────────────
+const GROUP_EXERCISE_IMAGES: Record<string, string> = {
+  chest:     "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=120&q=75",
+  back:      "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=120&q=75",
+  shoulders: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=120&q=75",
+  arms:      "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=120&q=75",
+  legs:      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=120&q=75",
+  core:      "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=120&q=75",
+  dynamic:   "https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=120&q=75",
+  static:    "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=120&q=75",
+  mobility:  "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=120&q=75",
+  running:   "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=120&q=75",
+};
+
+// Per-exercise image URLs — generated by: bun scripts/fetch-exercise-images.ts
+const EXERCISE_IMAGE_URLS: Record<string, string> = exerciseImageUrlsJson as Record<string, string>;
+
 const EQUIP_META: Record<EquipmentCategory, { label: string; emoji: string; color: string }> = {
   free_weights: { label: "משקולות חופשיות", emoji: "🏋️", color: "#10b981" },
   machine:      { label: "מכונות",           emoji: "⚙️",  color: "#3b82f6" },
@@ -2008,6 +2375,7 @@ function WorkoutBuilderTab({
 
   // ── Workout summary (Task 4) ─────────────────────────────────────
   const [workoutSummary, setWorkoutSummary] = useState<{ mins: number; calories: number; name: string; muscles?: string } | null>(null);
+  const [isSaving, setIsSaving]             = useState(false);
   const [coachMsg, setCoachMsg]             = useState<string | null>(null);
   const [aiProcessing, setAiProcessing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
@@ -2085,6 +2453,7 @@ function WorkoutBuilderTab({
     const pw = pendingWorkout.current;
     if (!pw) return;
     setShowDurationModal(false);
+    setIsSaving(true);
 
     // ── MET calorie calculation ──────────────────────────────────
     const met         = MET_MAP[pw.category] ?? 6.0;
@@ -2172,6 +2541,7 @@ function WorkoutBuilderTab({
       pendingWorkout.current = null;
 
       // ── 6. AI processing overlay ─────────────────────────────
+      setIsSaving(false);
       setAiProcessing(true);
       const coachText = await Promise.race([
         generateCoachFeedback({ mins, calories, name: pw.name, muscles }),
@@ -2185,6 +2555,7 @@ function WorkoutBuilderTab({
       setAiProcessing(false);
       const msg = err?.message ?? err?.error_description ?? JSON.stringify(err) ?? "unknown";
       console.error("[handleConfirmDuration] save failed:", msg, err);
+      setIsSaving(false);
       toast.error(`שגיאה בשמירה: ${msg.slice(0, 80)}`);
     }
   };
@@ -2583,6 +2954,23 @@ function WorkoutBuilderTab({
               toast.success(exs.length === 1 ? `${exs[0].name} נוסף לאימון ✓` : `${exs.length} תרגילים נוספו ✓`);
             }}
           />
+        </div>
+      </div>
+    )}
+    {/* ── Saving Overlay ─────────────────────────────────────────────── */}
+    {isSaving && (
+      <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center" style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(16px)" }}>
+        <div className="flex flex-col items-center gap-5">
+          <div className="relative">
+            <div className="h-20 w-20 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Dumbbell className="h-8 w-8 text-emerald-400" />
+            </div>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-xl font-black text-white">שומר אימון...</p>
+            <p className="text-sm text-white/45">מעבד נתונים ומעדכן שיאים</p>
+          </div>
         </div>
       </div>
     )}
@@ -3003,7 +3391,8 @@ function ExerciseLibraryTab({ onAddToWorkout, selectionMode }: { onAddToWorkout?
       g.exercises.forEach((ex) => {
         if (seen.has(ex.name)) return;
         if (!showHidden && hidden.includes(ex.name)) return;
-        if (ex.name.toLowerCase().includes(q) || ex.muscles.toLowerCase().includes(q) || ex.equipment.toLowerCase().includes(q)) {
+        const displayName = (EXERCISE_HEBREW_NAMES[ex.name] ?? ex.name).toLowerCase();
+      if (ex.name.toLowerCase().includes(q) || displayName.includes(q) || ex.muscles.toLowerCase().includes(q) || ex.equipment.toLowerCase().includes(q)) {
           seen.add(ex.name);
           out.push({ ex, groupKey: g.key });
         }
@@ -3395,17 +3784,29 @@ function ExerciseRow({
         {isChecked && <Check className="h-3 w-3 text-white" />}
       </div>
 
-      {/* Body icon */}
-      {BODY_DOTS[groupKey] && (
-        <div className="shrink-0">
-          <MuscleBodyIcon muscleKey={groupKey} size={22} />
+      {/* Left: exercise image */}
+      {GROUP_EXERCISE_IMAGES[groupKey] ? (
+        <div className="w-10 h-10 shrink-0 rounded-xl overflow-hidden relative">
+          <img
+            src={EXERCISE_IMAGE_URLS[ex.name] ?? GROUP_EXERCISE_IMAGES[groupKey]}
+            alt={ex.name}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/30" />
         </div>
+      ) : (
+        BODY_DOTS[groupKey] && (
+          <div className="shrink-0">
+            <MuscleBodyIcon muscleKey={groupKey} size={22} />
+          </div>
+        )
       )}
 
       {/* Text */}
       <div className="flex-1 min-w-0 text-right">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-black text-white leading-tight flex-1 truncate">{ex.name}</p>
+          <p className="text-sm font-black text-white leading-tight flex-1 truncate">{EXERCISE_HEBREW_NAMES[ex.name] ?? ex.name}</p>
           {isFavorite && <Heart className="h-3 w-3 text-red-400 fill-red-400 shrink-0" />}
         </div>
         <p className="text-[10px] text-white/35 mt-0.5 truncate">{ex.muscles}</p>
