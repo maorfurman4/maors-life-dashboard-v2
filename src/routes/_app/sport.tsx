@@ -4231,9 +4231,9 @@ function ExerciseCard({
       onClick={onCheck}
     >
       <div className="flex items-stretch">
-        {/* Left: exercise image — 80px wide, hover shows enlarged popup */}
+        {/* Image panel — square, right side (RTL), shows full drawing */}
         <div
-          className="w-20 shrink-0 border-l border-white/6 overflow-hidden relative group"
+          className="shrink-0 aspect-square w-24 border-l border-white/8 overflow-hidden relative"
           onMouseEnter={() => imgUrl && setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
@@ -4241,37 +4241,30 @@ function ExerciseCard({
             <img
               src={imgUrl}
               alt={ex.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain bg-white"
               loading="lazy"
             />
           ) : (
             <div className="w-full h-full bg-white/5 flex flex-col items-center justify-center gap-0.5">
-              <span className="text-lg leading-none">{MUSCLE_GROUPS.find(g => g.key === groupKey)?.emoji ?? "💪"}</span>
-              <span className="text-[7px] text-white/30 text-center px-0.5 leading-tight line-clamp-1">
+              <span className="text-2xl leading-none">{MUSCLE_GROUPS.find(g => g.key === groupKey)?.emoji ?? "💪"}</span>
+              <span className="text-[7px] text-white/30 text-center px-1 leading-tight line-clamp-2">
                 {MUSCLE_GROUPS.find(g => g.key === groupKey)?.label ?? groupKey}
               </span>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/40" />
-          {/* Hover hint */}
-          {imgUrl && (
-            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-              <span className="text-white/60 text-[10px]">🔍</span>
-            </div>
-          )}
-          {/* Enlarged image popup */}
+          {/* Enlarged popup on hover */}
           {hovered && imgUrl && (
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
               <img
                 src={imgUrl}
                 alt={ex.name}
-                className="w-40 h-40 object-contain rounded-xl border border-white/20 bg-black/90 shadow-2xl p-1.5"
+                className="w-48 h-48 object-contain rounded-xl border border-white/20 bg-white shadow-2xl p-2"
               />
             </div>
           )}
         </div>
 
-        {/* Right: content */}
+        {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="p-3 pb-2">
             {/* Name + checkbox row */}
