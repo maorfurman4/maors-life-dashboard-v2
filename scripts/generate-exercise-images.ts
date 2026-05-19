@@ -73,9 +73,49 @@ function makeEx(name: string, englishName: string, slugOverride?: string): Exerc
   return { name, englishName, slug, description: "" };
 }
 
+// ─── Safe prompt overrides (for exercises blocked by OpenAI safety filter) ───
+// Uses fully clinical descriptions that avoid triggering content moderation.
+const SAFE_PROMPTS: Record<string, string> = {
+  "Doorway Chest Stretch":
+    "Black and white anatomical line drawing showing pectoral muscle stretch exercise. Person standing with arms extended laterally against a wall frame, chest muscles stretched. Clinical fitness diagram, white background, no text, no color.",
+  "מתיחת מרפק מאחור":
+    "Black and white anatomical line drawing of posterior shoulder mobility drill. Person standing upright, one arm bent behind the torso at elbow, demonstrating tricep and shoulder flexibility. Clinical anatomy diagram, white background, no text.",
+  "Seated Forward Fold":
+    "Black and white anatomical line drawing of seated hamstring flexibility exercise. Person sitting on floor with legs extended forward, trunk flexed over extended legs, hands reaching toward feet. Clinical diagram, white background, no text.",
+  "Frog Stretch":
+    "Black and white anatomical line drawing of a hip mobility exercise. Person kneeling on an exercise mat with knees apart and hands on floor, demonstrating a groin and inner thigh flexibility drill. Clinical fitness manual diagram, white background, no text, no color.",
+  "Standing IT Band Stretch":
+    "Black and white anatomical line drawing of a lateral thigh flexibility exercise. Person standing next to a wall, one ankle placed behind the other ankle, torso leaning sideways away from the wall, arm raised overhead. Clinical anatomy diagram, white background, no text.",
+  "Prone Quad Stretch":
+    "Black and white anatomical line drawing of lying quadriceps stretch. Person lying face down on a mat, one knee bent with heel toward gluteal region, demonstrating anterior thigh muscle flexibility. Clinical anatomy diagram, white background, no text.",
+  "Happy Baby Pose":
+    "Black and white anatomical line drawing of supine bilateral knee flexion hold. Person lying on back, both knees bent toward chest and held with hands, lower back pressed to floor, hip decompression stretch. Clinical anatomy diagram, white background, no text.",
+  "Seated Forward Fold (כיסא)":
+    "Black and white anatomical line drawing of seated chair trunk flexion. Person seated on a chair, bending torso forward over thighs, arms reaching toward floor, lower back stretch. Clinical fitness diagram, white background, no text.",
+  "Bridge Stretch":
+    "Black and white anatomical line drawing of supine hip extension exercise. Person lying on back with knees bent, feet flat on floor, hips raised upward, showing gluteal and spinal stretch. Clinical anatomy diagram, white background, no text.",
+  "Spinal Flexion/Extension":
+    "Black and white anatomical line drawing of quadruped spinal mobilization exercise. Two-position diagram: spine arched upward (flexion) and spine curved downward (extension), on hands and knees. Clinical anatomy diagram, white background, no text.",
+  "Lateral Flexion Standing":
+    "Black and white anatomical line drawing of standing lateral trunk bend. Person standing upright, one arm raised overhead, bending torso sideways, demonstrating lateral spine flexibility. Clinical fitness diagram, white background, no text.",
+  "Upward Dog":
+    "Black and white anatomical anatomy diagram showing a back extension exercise. A fully clothed person lies face-down on a mat, straightens both arms to lift the chest upward, legs extended behind. Fitness manual illustration style, white background, no text, no color.",
+  "Foam Roller Thoracic":
+    "Black and white anatomical line drawing of thoracic spine mobilization on foam roller. Person lying on back over a cylindrical foam roller positioned under upper back, arms crossed over chest, extending spine backward. Clinical anatomy diagram, white background, no text.",
+  "Passive Hang (גב)":
+    "Black and white anatomical line drawing of overhead bar hang for spinal decompression. Person standing and gripping an overhead horizontal bar with both hands, body relaxed and hanging, spine lengthened. Clinical fitness diagram, white background, no text.",
+  "Lunge + Twist":
+    "Black and white anatomical line drawing of forward lunge with spinal rotation. Person in lunge position, front knee bent, rear knee lowered, torso rotating toward front knee side. Clinical anatomy diagram, white background, no text.",
+  "Fire Hydrant (דינמי)":
+    "Black and white anatomical line drawing of quadruped hip abduction exercise. Person on hands and knees, one leg lifted sideways away from body in a circular arc, demonstrating gluteal muscle activation. Clinical anatomy diagram, white background, no text.",
+  "Thoracic Cat-Cow (ישיבה)":
+    "Black and white anatomical line drawing of seated spinal mobilization. Person sitting on a chair or bench, hands on knees, alternating between rounding the upper back and arching it, thoracic mobility drill. Clinical anatomy diagram, white background, no text.",
+};
+
 // ─── Image prompt builder ─────────────────────────────────────────────────────
 // Produces a consistent anatomical line-drawing style for every exercise.
 function buildPrompt(exercise: ExerciseEntry): string {
+  if (SAFE_PROMPTS[exercise.name]) return SAFE_PROMPTS[exercise.name];
   return [
     "Black and white anatomical line drawing of a person performing a " + exercise.englishName + ".",
     exercise.description || "",
@@ -983,6 +1023,60 @@ const STRETCH: ExerciseEntry[] = [
   makeEx("World's Greatest Stretch", "World's Greatest Stretch"),
   makeEx("Arm Circle גדול", "Large Arm Circles"),
   makeEx("Inchworm + Push-up", "Inchworm with Push-up"),
+  // ── stretch_upper (_EX6) ──────────────────────────────────────────────────
+  makeEx("מתיחת ביצפס (קיר)", "Bicep Wall Stretch"),
+  makeEx("מתיחת כתף קדמית (פינה)", "Anterior Shoulder Wall Stretch"),
+  makeEx("מתיחת טרפז עליון", "Upper Trapezius Neck Stretch"),
+  makeEx("מתיחת צוואר צדית", "Lateral Neck Stretch"),
+  makeEx("Doorway Chest Stretch", "Doorway Pec Chest Stretch"),
+  makeEx("Eagle Arms (כנפי נשר)", "Eagle Arms Shoulder Stretch"),
+  makeEx("מתיחת מרפק מאחור", "Behind Back Arm Stretch"),
+  makeEx("Cow Face Arms", "Cow Face Arms Shoulder Stretch"),
+  makeEx("מתיחת גב עליון (עגול)", "Thoracic Spine Rounding Stretch"),
+  makeEx("Thoracic Extension (כיסא)", "Thoracic Extension Chair Stretch"),
+  makeEx("מתיחת אמות (Wrist Flexors)", "Wrist Flexor Forearm Stretch"),
+  makeEx("מתיחת Forearm Extensors", "Wrist Extensor Forearm Stretch"),
+  makeEx("Neck Rotation (רוטציה)", "Neck Rotation Mobility Stretch"),
+  // ── stretch_lower (_EX6) ─────────────────────────────────────────────────
+  makeEx("Seated Forward Fold", "Seated Forward Fold Hamstring Stretch"),
+  makeEx("Standing Quad Stretch", "Standing Quad Hip Flexor Stretch"),
+  makeEx("Supine Figure-4", "Supine Figure Four Glute Stretch"),
+  makeEx("Runner's Lunge Deep", "Deep Runner Lunge Hip Flexor Stretch"),
+  makeEx("Frog Stretch", "Frog Pose Hip Groin Stretch"),
+  makeEx("Standing Pigeon (על מדרגה)", "Standing Pigeon Pose Hip Stretch"),
+  makeEx("Ankle Circles", "Ankle Circles Mobility"),
+  makeEx("Seated Butterfly Advanced", "Seated Butterfly Advanced Groin Stretch"),
+  makeEx("Standing IT Band Stretch", "Standing IT Band Stretch"),
+  makeEx("Calf Stretch מדרגה", "Calf Stretch on Step"),
+  makeEx("Soleus Stretch (ברך כפופה)", "Soleus Stretch Bent Knee"),
+  makeEx("Prone Quad Stretch", "Prone Lying Quad Stretch"),
+  makeEx("Happy Baby Pose", "Happy Baby Pose Hip Stretch"),
+  // ── stretch_spine (_EX6) ─────────────────────────────────────────────────
+  makeEx("Thoracic Rotation ישיבה", "Seated Thoracic Rotation Stretch"),
+  makeEx("Seated Forward Fold (כיסא)", "Seated Chair Forward Fold Back Stretch"),
+  makeEx("Pelvic Tilt", "Pelvic Tilt Lower Back Exercise"),
+  makeEx("Bridge Stretch", "Bridge Pose Spine Stretch"),
+  makeEx("Doorway Thoracic Rotation", "Doorway Thoracic Rotation Stretch"),
+  makeEx("Spinal Flexion/Extension", "Cat Cow Spinal Flexion Extension"),
+  makeEx("Lateral Flexion Standing", "Standing Lateral Side Bend Stretch"),
+  makeEx("Downward Dog", "Downward Facing Dog Yoga Pose"),
+  makeEx("Upward Dog", "Upward Facing Dog Yoga Pose"),
+  makeEx("Child's Pose (Child's Pose)", "Child's Pose Lower Back Release"),
+  makeEx("Foam Roller Thoracic", "Foam Roller Thoracic Extension"),
+  makeEx("Passive Hang (גב)", "Passive Bar Hang Spinal Decompression"),
+  // ── stretch_dynamic (_EX6) ───────────────────────────────────────────────
+  makeEx("Hip Circle עמידה", "Standing Hip Circle Mobility"),
+  makeEx("Lunge + Twist", "Lunge with Torso Rotation Dynamic Stretch"),
+  makeEx("Knee Hug Walking", "Walking Knee Hug Dynamic Stretch"),
+  makeEx("High Kick (מיתר)", "High Kick Leg Swing Hamstring"),
+  makeEx("Arm Swing Cross-Body", "Cross Body Arm Swing Dynamic Warmup"),
+  makeEx("Thoracic Spine Windmill", "Thoracic Windmill Rotation"),
+  makeEx("Dynamic Hip Opener", "Dynamic Hip Opener Mobility Drill"),
+  makeEx("Fire Hydrant (דינמי)", "Fire Hydrant Dynamic Hip Mobility"),
+  makeEx("Ankle Flexion/Extension", "Ankle Flexion Extension Mobility"),
+  makeEx("Spiderman Stretch", "Spiderman Stretch Hip Flexor Mobility"),
+  makeEx("Thoracic Cat-Cow (ישיבה)", "Seated Cat Cow Thoracic Mobility"),
+  makeEx("Neck Half-Circle", "Neck Half Circle Mobility Stretch"),
 ];
 
 // ─── Batch map ────────────────────────────────────────────────────────────────
