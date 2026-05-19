@@ -930,6 +930,50 @@ const CORE: ExerciseEntry[] = [
   makeEx("Dead Bug", "Dead Bug"),
 ];
 
+// ── STRETCH / WARMUP / COOLDOWN ───────────────────────────────────────────────
+const STRETCH: ExerciseEntry[] = [
+  // ── חימום דינמי ─────────────────────────────────────────────────────────────
+  makeEx("ג'אמפינג ג'קס", "Jumping Jacks"),
+  makeEx("High Knees", "High Knees"),
+  makeEx("מעגלי כתפיים", "Shoulder Circles"),
+  makeEx("Inchworm", "Inchworm"),
+  makeEx("לאנג' + סיבוב (Lunge Twist)", "Lunge with Rotation"),
+  // ── מתיחות סטטיות ───────────────────────────────────────────────────────────
+  makeEx("מתיחת חזה (קיר)", "Wall Chest Stretch"),
+  makeEx("מתיחת Hip Flexor", "Kneeling Hip Flexor Stretch"),
+  makeEx("מתיחת המסטרינג", "Seated Hamstring Stretch"),
+  makeEx("מתיחת שוקיים (קיר)", "Wall Calf Stretch"),
+  // ── סיום ושחרור ──────────────────────────────────────────────────────────────
+  makeEx("Child's Pose", "Child's Pose Yoga"),
+  makeEx("Savasana", "Savasana Relaxation Pose"),
+  makeEx("Spinal Twist שכוב", "Supine Spinal Twist"),
+  makeEx("Figure 4 Stretch", "Figure Four Glute Stretch"),
+  // ── פלג גוף עליון ───────────────────────────────────────────────────────────
+  makeEx("מתיחת חזה (דלת)", "Doorway Chest Stretch"),
+  makeEx("מתיחת כתפיים (Cross-Body)", "Cross Body Shoulder Stretch"),
+  makeEx("מתיחת טריצפס מעל ראש", "Overhead Tricep Stretch"),
+  makeEx("Child's Pose מורחב", "Extended Child's Pose"),
+  makeEx("Thread the Needle", "Thread the Needle Thoracic Stretch"),
+  // ── פלג גוף תחתון ───────────────────────────────────────────────────────────
+  makeEx("מתיחת Hip Flexor (לאנג׳)", "Kneeling Lunge Hip Flexor Stretch"),
+  makeEx("מתיחת המסטרינג שכיבה", "Supine Hamstring Stretch"),
+  makeEx("מתיחת Pigeon Pose", "Pigeon Pose Hip Stretch"),
+  makeEx("מתיחת שוקיים (Calf Stretch)", "Standing Calf Stretch"),
+  makeEx("Butterfly Stretch", "Butterfly Inner Thigh Stretch"),
+  // ── גב ועמוד שדרה ────────────────────────────────────────────────────────────
+  makeEx("Cat-Cow", "Cat Cow Spinal Stretch"),
+  makeEx("Spinal Twist שכיבה", "Lying Spinal Twist"),
+  makeEx("Cobra Stretch", "Cobra Yoga Pose Back Stretch"),
+  makeEx("מתיחת גב תחתון (Knee Hug)", "Knee to Chest Lower Back Stretch"),
+  makeEx("Figure-4 Stretch", "Figure Four Piriformis Stretch"),
+  // ── מתיחות דינמיות ──────────────────────────────────────────────────────────
+  makeEx("Leg Swing קדמי-אחורי", "Dynamic Leg Swing Front to Back"),
+  makeEx("Leg Swing צדי", "Lateral Leg Swing"),
+  makeEx("World's Greatest Stretch", "World's Greatest Stretch"),
+  makeEx("Arm Circle גדול", "Large Arm Circles"),
+  makeEx("Inchworm + Push-up", "Inchworm with Push-up"),
+];
+
 // ─── Batch map ────────────────────────────────────────────────────────────────
 const BATCHES: Record<string, ExerciseEntry[]> = {
   chest: CHEST,
@@ -938,6 +982,7 @@ const BATCHES: Record<string, ExerciseEntry[]> = {
   arms: ARMS,
   legs: LEGS,
   core: CORE,
+  stretch: STRETCH,
 };
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -1016,13 +1061,17 @@ async function main() {
     urlMap[ex.name] = publicUrl;
     generated++;
 
-    // Save after each exercise (so progress is never lost)
-    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(urlMap, null, 2));
+    // Save after each exercise — merge with current file to support parallel batches
+    const onDisk: Record<string, string> = fs.existsSync(OUTPUT_FILE)
+      ? JSON.parse(fs.readFileSync(OUTPUT_FILE, "utf-8"))
+      : {};
+    const merged = { ...onDisk, ...urlMap };
+    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(merged, null, 2));
 
-    // Respect rate limits: DALL-E 3 allows ~5 images/min on standard tier
-    if (generated + failed < exercises.length) {
-      process.stdout.write("   Waiting 13s (rate limit)... ");
-      await sleep(13000);
+    // Respect rate limits: gpt-image-1 allows ~5 images/min on standard tier
+    if (generated + failed + skipped < exercises.length) {
+      process.stdout.write("   Waiting 65s (rate limit)... ");
+      await sleep(65000);
       console.log("done");
     }
   }
