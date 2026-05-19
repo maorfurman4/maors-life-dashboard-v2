@@ -242,6 +242,8 @@ const CHEST: ExerciseEntry[] = [
   makeEx("Cable Upper Chest Fly", "Cable Upper Chest Fly"),
   makeEx("Cable Chest Pullover", "Cable Chest Pullover"),
   makeEx("Landmine Press חזה", "Landmine Chest Press"),
+  makeEx("Cable Fly אמצעי", "Mid Level Cable Fly Chest"),
+  makeEx("Machine Chest Press", "Machine Chest Press Seated"),
   // ── chest_mid subgroup ───────────────────────────────────────────────────────
   makeEx("Cable Chest Press עמידה", "Standing Cable Chest Press"),
   makeEx("Cable Squeeze חזה", "Cable Chest Squeeze"),
@@ -526,6 +528,7 @@ const SHOULDERS: ExerciseEntry[] = [
   // ── Names matching sport.tsx exactly ─────────────────────────────────────────
   makeEx("Shrug — כיווץ כתפיים", "Dumbbell Shrug Trapezius Exercise"),
   makeEx("Lateral Raise כבלים", "Cable Lateral Raise Side Deltoid"),
+  makeEx("Band Pull-Apart", "Band Pull Apart Rear Deltoid Exercise"),
   // ── Calisthenics shoulders ───────────────────────────────────────────────────
   makeEx("שכיבות פייק", "Pike Push-up", "pike-push-up-2"),
   makeEx("שכיבות ארצ'ר", "Archer Push-up for Shoulders", "archer-push-up-sh"),
@@ -658,6 +661,7 @@ const ARMS: ExerciseEntry[] = [
   makeEx("Lying DB Tricep Extension", "Lying Dumbbell Tricep Extension"),
   makeEx("Weighted Dips", "Weighted Parallel Bar Dips"),
   // ── Forearms ─────────────────────────────────────────────────────────────────
+  makeEx("Reverse Cable Curl", "Reverse Grip Cable Curl Forearms"),
   makeEx("Reverse Curl", "Reverse Curl"),
   makeEx("Wrist Curl", "Wrist Curl"),
   makeEx("Reverse Curl מוט", "Reverse Barbell Curl"),
@@ -775,6 +779,9 @@ const LEGS: ExerciseEntry[] = [
   makeEx("Cable Pull-Through", "Cable Pull Through"),
   makeEx("Hip Thrust מוט", "Barbell Hip Thrust", "barbell-hip-thrust-2"),
   makeEx("Hip Thrust מכונה", "Machine Hip Thrust"),
+  makeEx("Glute Bridge", "Glute Bridge Hip Extension"),
+  makeEx("Donkey Kicks", "Donkey Kick Glute Exercise"),
+  makeEx("Machine Glute Kickback", "Machine Glute Kickback"),
   makeEx("Single Leg Glute Bridge", "Single Leg Glute Bridge"),
   makeEx("Cable Glute Kickback", "Cable Glute Kickback"),
   makeEx("Donkey Kick Machine", "Donkey Kick Machine"),
