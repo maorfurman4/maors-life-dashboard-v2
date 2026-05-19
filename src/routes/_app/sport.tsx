@@ -4230,16 +4230,19 @@ function ExerciseCard({
       <div className="flex items-stretch">
         {/* Left: exercise image */}
         <div className="w-16 shrink-0 border-l border-white/6 overflow-hidden relative">
-          {(EXERCISE_IMAGE_URLS[ex.name] ?? GROUP_EXERCISE_IMAGES[groupKey]) ? (
+          {EXERCISE_IMAGE_URLS[ex.name] ? (
             <img
-              src={EXERCISE_IMAGE_URLS[ex.name] ?? GROUP_EXERCISE_IMAGES[groupKey]}
+              src={EXERCISE_IMAGE_URLS[ex.name]}
               alt={ex.name}
               className="w-full h-full object-cover"
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full bg-white/5 flex items-center justify-center">
-              <span className="text-xl">💪</span>
+            <div className="w-full h-full bg-white/5 flex flex-col items-center justify-center gap-0.5">
+              <span className="text-lg leading-none">{MUSCLE_GROUPS.find(g => g.key === groupKey)?.emoji ?? "💪"}</span>
+              <span className="text-[7px] text-white/30 text-center px-0.5 leading-tight line-clamp-1">
+                {MUSCLE_GROUPS.find(g => g.key === groupKey)?.label ?? groupKey}
+              </span>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/40" />
