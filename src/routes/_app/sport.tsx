@@ -4220,6 +4220,9 @@ function ExerciseCard({
   onQuickAdd: () => void;
   onToggleFavorite: () => void;
 }) {
+  const [hovered, setHovered] = useState(false);
+  const imgUrl = EXERCISE_IMAGE_URLS[ex.name];
+
   return (
     <div
       className={`rounded-2xl border overflow-hidden transition-all cursor-pointer ${
@@ -4228,11 +4231,15 @@ function ExerciseCard({
       onClick={onCheck}
     >
       <div className="flex items-stretch">
-        {/* Left: exercise image */}
-        <div className="w-16 shrink-0 border-l border-white/6 overflow-hidden relative">
-          {EXERCISE_IMAGE_URLS[ex.name] ? (
+        {/* Left: exercise image — 80px wide, hover shows enlarged popup */}
+        <div
+          className="w-20 shrink-0 border-l border-white/6 overflow-hidden relative group"
+          onMouseEnter={() => imgUrl && setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          {imgUrl ? (
             <img
-              src={EXERCISE_IMAGE_URLS[ex.name]}
+              src={imgUrl}
               alt={ex.name}
               className="w-full h-full object-cover"
               loading="lazy"
@@ -4246,6 +4253,22 @@ function ExerciseCard({
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/40" />
+          {/* Hover hint */}
+          {imgUrl && (
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+              <span className="text-white/60 text-[10px]">🔍</span>
+            </div>
+          )}
+          {/* Enlarged image popup */}
+          {hovered && imgUrl && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
+              <img
+                src={imgUrl}
+                alt={ex.name}
+                className="w-40 h-40 object-contain rounded-xl border border-white/20 bg-black/90 shadow-2xl p-1.5"
+              />
+            </div>
+          )}
         </div>
 
         {/* Right: content */}
