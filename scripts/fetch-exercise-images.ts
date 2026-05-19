@@ -140,6 +140,12 @@ const APP_EXERCISES: { name: string; englishHint?: string }[] = [
   { name: "Side Plank", englishHint: "Side Plank" },
 ];
 
+interface WgerRawExercise {
+  id: number;
+  images: { id: number; image: string; is_main: boolean }[];
+  translations: { name: string; language: number }[];
+}
+
 interface WgerExercise {
   id: number;
   name: string;
@@ -148,14 +154,20 @@ interface WgerExercise {
 
 async function fetchWgerExercises(): Promise<WgerExercise[]> {
   const exercises: WgerExercise[] = [];
-  let url = "https://wger.de/api/v2/exerciseinfo/?format=json&language=2&limit=100";
+  let url = "https://wger.de/api/v2/exerciseinfo/?format=json&limit=100";
   let page = 1;
   while (url) {
     console.log(`  Fetching page ${page}...`);
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Wger API error: ${res.status}`);
-    const data = await res.json() as { count: number; next: string | null; results: WgerExercise[] };
-    exercises.push(...data.results);
+    const data = await res.json() as { count: number; next: string | null; results: WgerRawExercise[] };
+    for (const raw of data.results) {
+      // language=2 is English in Wger
+      const englishTranslation = raw.translations.find(t => t.language === 2);
+      if (englishTranslation?.name && raw.images.length > 0) {
+        exercises.push({ id: raw.id, name: englishTranslation.name, images: raw.images });
+      }
+    }
     url = data.next ?? "";
     page++;
     if (!data.next) break;
@@ -165,7 +177,8 @@ async function fetchWgerExercises(): Promise<WgerExercise[]> {
   return exercises;
 }
 
-function normalize(name: string): string {
+function normalize(name: string | null | undefined): string {
+  if (!name) return "";
   return name.toLowerCase()
     .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, " ")
