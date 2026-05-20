@@ -20,7 +20,8 @@ Deno.serve(async (req) => {
       fitnessLevel,
       sessionMinutes,
       intensity,
-      restDays,
+      cardioType,
+      cardioDays,
       preferredMuscles,
       avoidedMuscles,
       favoriteExercises,
@@ -67,6 +68,11 @@ Deno.serve(async (req) => {
       ? `\nאימונים אחרונים (להתחשב בהם):\n${recentWorkouts.slice(0, 5).map((w: any) => `- ${w.name || w.category} (${w.date || "לאחרונה"})`).join("\n")}`
       : "";
 
+    const cardioDaysNum = Number(cardioDays) || 0;
+    const cardioNote = cardioDaysNum > 0 && cardioType
+      ? `\nאירובי: ${cardioDaysNum} מתוך ${days} ימי האימון יוקדשו לאירובי (${cardioType}). שלב ימי אירובי ביום שונה מאימוני הכוח. שאר ${days - cardioDaysNum} הימים — אימוני כוח.`
+      : "\nאין ימי אירובי — כל הימים אימוני כוח.";
+
     const ageNote = age && age > 50
       ? "\nחשוב: גיל מעל 50 — הוסף יותר סטי חימום, הפחת עוצמה מקסימלית, תן דגש על התאוששות."
       : "";
@@ -98,8 +104,7 @@ ${hasLibrary ? "חשוב ביותר: השתמש אך ורק בתרגילים ש�
 מגדר: ${gender || "לא צוין"}
 רמת כושר: ${fitnessLevel || "intermediate"}
 משך אימון: ${sessionMinutes || 60} דקות
-עוצמה רצויה (1-5): ${intensity || 3}
-ימי מנוחה: ${Array.isArray(restDays) ? restDays.map((d: number) => ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][d]).join(", ") : "לא צוין"}
+עוצמה רצויה (1-5): ${intensity || 3}${cardioNote}
 ${preferredNote}${avoidedNote}${blacklistNote}${favoritesNote}${recentWorkoutsNote}
 שיאים אישיים אחרונים:
 ${(recentPRs || []).map((p: any) => `- ${p.exercise_name}: ${p.value} ${p.unit}`).join("\n") || "אין נתונים"}

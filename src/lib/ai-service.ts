@@ -120,7 +120,8 @@ export interface GeneratePlanPayload {
   fitnessLevel?: "beginner" | "intermediate" | "advanced";
   sessionMinutes?: number;
   intensity?: 1 | 2 | 3 | 4 | 5;
-  restDays?: number[];
+  cardioType?: string;     // e.g. "ריצה, HIIT"
+  cardioDays?: number;     // 0 = no cardio, 1-2 = N cardio days (included in daysPerWeek)
   preferredMuscles?: string[];
   avoidedMuscles?: string[];
   favoriteExercises?: string[];
