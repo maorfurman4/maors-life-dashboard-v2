@@ -2520,6 +2520,7 @@ function WorkoutBuilderTab({
   const [workoutSummary, setWorkoutSummary] = useState<{ mins: number; name: string; muscles?: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [templateUndoBanner, setTemplateUndoBanner] = useState<{ id: string; name: string } | null>(null);
+  const [exitTemplateConfirm, setExitTemplateConfirm] = useState(false);
   const templateDeleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [templatePendingDeleteIds, setTemplatePendingDeleteIds] = useState<Set<string>>(new Set());
 
@@ -2756,6 +2757,15 @@ function WorkoutBuilderTab({
     }
   };
 
+  const handleResetToNewTemplate = () => {
+    setWorkoutName("");
+    setWorkoutCategory("weights");
+    setLoadedTemplateId(null);
+    setExercises([{ name: "", sets: 3, reps: 10, weight_kg: 0, setsData: toSetsData(3, 10, 0), group: 0 }]);
+    setExitTemplateConfirm(false);
+    localStorage.removeItem("sport-active-workout-v1");
+  };
+
   const handleLoadTemplate = (t: any) => {
     setWorkoutName(t.name);
     setWorkoutCategory(toDbCategory(t.category));
@@ -2844,11 +2854,71 @@ function WorkoutBuilderTab({
               </div>
             </div>
           )}
+          {/* ── Exit template banner ─────────────────────────────────── */}
+          {loadedTemplateId && (
+            <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+              <button
+                onClick={() => setExitTemplateConfirm(true)}
+                className="flex items-center gap-1.5 text-red-400/70 hover:text-red-400 transition-colors text-[11px] font-bold"
+              >
+                <X className="h-3.5 w-3.5" />
+                יציאה מהתבנית
+              </button>
+              <span className="text-[11px] font-bold text-emerald-400">
+                ✏️ עורך: {workoutName || "תבנית"}
+              </span>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-4 py-3">
             <input value={workoutName} onChange={(e) => setWorkoutName(e.target.value)}
               placeholder="שם האימון (למשל: כוח עליון)"
               className="w-full bg-transparent text-sm font-black text-white placeholder:text-white/25 outline-none text-right" dir="rtl" />
           </div>
+
+          {/* ── Exit template confirmation dialog ────────────────────── */}
+          {exitTemplateConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center px-6 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-[#1a1a2e] p-6 space-y-4 shadow-2xl" dir="rtl">
+                <div className="text-center space-y-1">
+                  <p className="text-base font-black text-white">יציאה מהתבנית</p>
+                  <p className="text-xs text-white/50">האם אתה בטוח שברצונך לצאת מהתבנית <span className="text-white/80 font-bold">"{workoutName}"</span>?</p>
+                </div>
+                <div className="space-y-2">
+                  <button
+                    onClick={async () => {
+                      // Save first then reset
+                      if (workoutName.trim()) {
+                        try {
+                          const filled = exercises.filter(e => e.name.trim());
+                          if (filled.length > 0 && loadedTemplateId) {
+                            await updateTemplate.mutateAsync({ id: loadedTemplateId, exercises: filled });
+                            toast.success("התבנית נשמרה ✓");
+                          }
+                        } catch { toast.error("שגיאה בשמירה"); }
+                      }
+                      handleResetToNewTemplate();
+                    }}
+                    className="w-full py-3 rounded-xl bg-emerald-500 text-white text-sm font-black hover:bg-emerald-400 transition-colors"
+                  >
+                    💾 שמור וצא
+                  </button>
+                  <button
+                    onClick={handleResetToNewTemplate}
+                    className="w-full py-3 rounded-xl bg-white/8 border border-white/10 text-white/70 text-sm font-bold hover:text-white transition-colors"
+                  >
+                    🚪 צא ללא שמירה
+                  </button>
+                  <button
+                    onClick={() => setExitTemplateConfirm(false)}
+                    className="w-full py-2 text-white/30 text-xs font-bold hover:text-white/50 transition-colors"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex gap-1.5">
             {WORKOUT_CATEGORIES.map(({ value, label }) => (
               <button key={value} onClick={() => setWorkoutCategory(value)}
