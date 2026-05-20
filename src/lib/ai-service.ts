@@ -71,32 +71,77 @@ export async function getFinanceInsights(payload: {
 
 // ─── Workout Plan ─────────────────────────────────────────────────────────────
 
-export interface WorkoutPlan {
-  summary: string;
-  workouts: {
-    day: string;
-    name: string;
-    category: string;
-    duration_minutes: number;
-    exercises: { name: string; sets: number; reps: string; weight_kg?: number; notes?: string }[];
-  }[];
-  tips: string[];
+// ── New Types ──────────────────────────────────────────────────────────────
+
+export interface AiExercise {
+  name: string;
+  sets: number;
+  reps: string;
+  weight_kg?: number;
+  notes?: string;
+  explanation?: string;   // short Hebrew sentence why this exercise was chosen
 }
 
-export async function generateWorkoutPlan(payload: {
+export interface AiDayWorkout {
+  day: string;
+  name: string;
+  category: string;
+  duration_minutes: number;
+  exercises: AiExercise[];
+}
+
+export interface AiWeek {
+  week_number: number;
+  overload_note: string;
+  workouts: AiDayWorkout[];
+}
+
+export interface WorkoutPlan {
+  summary: string;
+  split_type?: string;              // "PPL" | "Upper/Lower" | "Full Body"
+  weeks: AiWeek[];                  // 4 weeks
+  deload_week?: AiWeek;             // week 5
+  tips: string[];
+  // Legacy compat (old plans only had workouts array):
+  workouts?: AiDayWorkout[];
+}
+
+export interface GeneratePlanPayload {
+  // Existing params:
   goal: string;
   daysPerWeek: number;
   equipment: string;
   constraints: string;
-  recentPRs: { exercise_name: string; value: number; unit: string }[];
-  /** Compact library snapshot — AI will only suggest exercises from this list */
+  recentPRs?: { exercise_name: string; value: number; unit: string }[];
   exerciseList?: { name: string; muscles: string; equipment: string }[];
-}): Promise<WorkoutPlan> {
+  // New params:
+  age?: number;
+  gender?: "male" | "female" | "other";
+  fitnessLevel?: "beginner" | "intermediate" | "advanced";
+  sessionMinutes?: number;
+  intensity?: 1 | 2 | 3 | 4 | 5;
+  restDays?: number[];
+  preferredMuscles?: string[];
+  avoidedMuscles?: string[];
+  favoriteExercises?: string[];
+  blacklistedExercises?: string[];
+  recentWorkouts?: { name: string; date: string; exercises: string[] }[];
+}
+
+export async function generateWorkoutPlan(payload: GeneratePlanPayload): Promise<WorkoutPlan> {
   const { data, error } = await supabase.functions.invoke("workout-plan-ai", { body: payload });
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
   if (!data?.plan) throw new Error("לא התקבלה תוכנית");
   return data.plan as WorkoutPlan;
+}
+
+// Helper: get all exercises from week 1 (for backward compat display)
+export function getPlanWeek1Workouts(plan: WorkoutPlan): AiDayWorkout[] {
+  if (plan.weeks && plan.weeks.length > 0) {
+    return plan.weeks[0].workouts;
+  }
+  return plan.workouts ?? [];
 }
 
 // ─── Coach Feedback ───────────────────────────────────────────────────────────

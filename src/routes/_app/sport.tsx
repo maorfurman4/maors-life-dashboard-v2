@@ -19,6 +19,7 @@ import {
   useUpdatePersonalRecord, useDeletePersonalRecord, useWeeklyVolume,
 } from "@/hooks/use-sport-data";
 import { generateWorkoutPlan, type WorkoutPlan } from "@/lib/ai-service";
+import { useUserFitnessProfile, useUpdateFitnessProfile, useSaveWorkoutPlan, useWorkoutPlans, useDeleteWorkoutPlan } from "@/hooks/useAiPlanner";
 import {
   CARDIO_SPORTS, INTENSITY_LABELS,
   calcCardioCalories,
@@ -2385,6 +2386,8 @@ function ConfettiCelebration({
 const BUILDER_GOALS = ["בניית שריר", "ירידה במשקל", "כוח מקסימלי", "סיבולת"];
 const EQUIPMENT_OPTS = ["חדר כושר", "ביתי", "ללא ציוד"];
 const DAYS_OPTS = [3, 4, 5, 6];
+const MUSCLE_OPTIONS = ["חזה","גב","כתפיים","ביצפס","טריצפס","רגליים","ישבן","ליבה","שוקיים"];
+const REST_DAY_LABELS = ["א'","ב'","ג'","ד'","ה'","ו'","ש'"];
 
 type WorkoutDbCategory = "weights" | "calisthenics" | "running" | "mixed";
 const WORKOUT_CATEGORIES: { value: WorkoutDbCategory; label: string }[] = [
@@ -2468,6 +2471,10 @@ function WorkoutBuilderTab({
   const deleteTemplate = useDeleteWorkoutTemplate();
   const autoPR         = useAddPersonalRecord();
   const qc             = useQueryClient();
+  const savePlan       = useSaveWorkoutPlan();
+  const { data: savedPlans } = useWorkoutPlans();
+  const deleteSavedPlan = useDeleteWorkoutPlan();
+  const [showPlanHistory, setShowPlanHistory] = useState(false);
   const [celebPRs, setCelebPRs] = useState<{ name: string; value: number }[]>([]);
   const [hiddenTemplateIds] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("qw-hidden") ?? "[]"); } catch { return []; }
@@ -2749,7 +2756,34 @@ function WorkoutBuilderTab({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPlan, setAiPlan]       = useState<WorkoutPlan | null>(null);
   const [expandedDay, setExpandedDay] = useState<number | null>(0);
+  const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  const [aiChatMsg, setAiChatMsg] = useState("");
+  const [aiChatLoading, setAiChatLoading] = useState(false);
+  const [savedPlanBanner, setSavedPlanBanner] = useState(false);
+  const [aiAge, setAiAge] = useState<number | "">("");
+  const [aiGender, setAiGender] = useState<"male" | "female" | "other">("male");
+  const [aiLevel, setAiLevel] = useState<"beginner" | "intermediate" | "advanced">("intermediate");
+  const [aiSessionMins, setAiSessionMins] = useState<30 | 45 | 60 | 90>(60);
+  const [aiIntensity, setAiIntensity] = useState(3);
+  const [aiRestDays, setAiRestDays] = useState<number[]>([]);
+  const [aiPreferMuscles, setAiPreferMuscles] = useState<string[]>([]);
+  const [aiAvoidMuscles, setAiAvoidMuscles] = useState<string[]>([]);
+  const [aiFavorites, setAiFavorites] = useState<string[]>([]);
+  const [aiBlacklist, setAiBlacklist] = useState<string[]>([]);
   const { data: prs } = usePersonalRecords();
+  const { data: fitnessProfile } = useUserFitnessProfile();
+  const updateProfile = useUpdateFitnessProfile();
+
+  useEffect(() => {
+    if (!fitnessProfile) return;
+    if (fitnessProfile.age) setAiAge(fitnessProfile.age);
+    if (fitnessProfile.gender) setAiGender(fitnessProfile.gender);
+    if (fitnessProfile.fitness_level) setAiLevel(fitnessProfile.fitness_level);
+    if (fitnessProfile.preferred_muscles?.length) setAiPreferMuscles(fitnessProfile.preferred_muscles);
+    if (fitnessProfile.avoided_muscles?.length) setAiAvoidMuscles(fitnessProfile.avoided_muscles);
+    if (fitnessProfile.favorite_exercises?.length) setAiFavorites(fitnessProfile.favorite_exercises);
+    if (fitnessProfile.blacklisted_exercises?.length) setAiBlacklist(fitnessProfile.blacklisted_exercises);
+  }, [fitnessProfile]);
 
   const handleGeneratePlan = async () => {
     setAiLoading(true); setAiPlan(null);
@@ -2768,10 +2802,31 @@ function WorkoutBuilderTab({
         .map((ex) => ({ name: ex.name, muscles: ex.muscles, equipment: ex.equipment }));
 
       const plan = await generateWorkoutPlan({
-        goal: aiGoal, daysPerWeek: aiDays, equipment: aiEquip,
+        goal: aiGoal,
+        daysPerWeek: aiDays,
+        equipment: aiEquip,
         constraints: aiConstraints || "אין",
+        age: aiAge !== "" ? aiAge : undefined,
+        gender: aiGender,
+        fitnessLevel: aiLevel,
+        sessionMinutes: aiSessionMins,
+        intensity: aiIntensity as 1|2|3|4|5,
+        restDays: aiRestDays,
+        preferredMuscles: aiPreferMuscles,
+        avoidedMuscles: aiAvoidMuscles,
+        favoriteExercises: aiFavorites,
+        blacklistedExercises: aiBlacklist,
         recentPRs: (prs ?? []).slice(0, 5).map((p: any) => ({ exercise_name: p.exercise_name, value: p.value, unit: p.unit })),
         exerciseList,
+      });
+      updateProfile.mutate({
+        age: aiAge !== "" ? aiAge : undefined,
+        gender: aiGender,
+        fitness_level: aiLevel,
+        preferred_muscles: aiPreferMuscles,
+        avoided_muscles: aiAvoidMuscles,
+        favorite_exercises: aiFavorites,
+        blacklisted_exercises: aiBlacklist,
       });
       setAiPlan(plan); setExpandedDay(0);
     } catch { toast.error("שגיאה ביצירת תוכנית, נסה שנית"); }
@@ -3021,188 +3076,437 @@ function WorkoutBuilderTab({
 
       {subTab === "ai" && (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
-            <div className="space-y-2">
-              <p className="text-[11px] font-bold text-white/50">מטרה</p>
-              <div className="grid grid-cols-2 gap-2">
-                {BUILDER_GOALS.map((g) => (
-                  <button key={g} onClick={() => setAiGoal(g)}
-                    className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${aiGoal === g ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/50"}`}>
-                    {g}
-                  </button>
-                ))}
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4">
+            <div className="space-y-4" dir="rtl">
+              {/* Goal */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold text-white/40">🎯 מטרה</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {BUILDER_GOALS.map((g) => (
+                    <button key={g} onClick={() => setAiGoal(g)}
+                      className={`py-2 rounded-xl text-xs font-bold border transition-all ${aiGoal===g ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/50" : "text-white/40 border-white/10 hover:text-white/60"}`}>
+                      {g}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-[11px] font-bold text-white/50">ימי אימון בשבוע</p>
-              <div className="flex gap-2">
-                {DAYS_OPTS.map((d) => (
-                  <button key={d} onClick={() => setAiDays(d)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-black border transition-all ${aiDays === d ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/50"}`}>
-                    {d}
-                  </button>
-                ))}
+
+              {/* Level */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold text-white/40">🏅 רמה</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {([["beginner","מתחיל"],["intermediate","בינוני"],["advanced","מתקדם"]] as const).map(([v,l]) => (
+                    <button key={v} onClick={() => setAiLevel(v)}
+                      className={`py-2 rounded-xl text-xs font-bold border transition-all ${aiLevel===v ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/50" : "text-white/40 border-white/10"}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-[11px] font-bold text-white/50">ציוד זמין</p>
-              <div className="flex gap-2">
-                {EQUIPMENT_OPTS.map((e) => (
-                  <button key={e} onClick={() => setAiEquip(e)}
-                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all ${aiEquip === e ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : "border-white/10 bg-white/5 text-white/50"}`}>
-                    {e}
-                  </button>
-                ))}
+
+              {/* Age + Gender */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-bold text-white/40">🎂 גיל</p>
+                  <input type="number" min={10} max={99} value={aiAge} onChange={e => setAiAge(e.target.value ? Number(e.target.value) : "")}
+                    placeholder="גיל"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white text-right outline-none focus:border-emerald-500/50" />
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-bold text-white/40">⚧ מין</p>
+                  <div className="flex gap-1">
+                    {([["male","זכר"],["female","נקבה"],["other","אחר"]] as const).map(([v,l]) => (
+                      <button key={v} onClick={() => setAiGender(v)}
+                        className={`flex-1 py-2 rounded-xl text-[10px] font-bold border transition-all ${aiGender===v ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/50" : "text-white/40 border-white/10"}`}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
+
+              {/* Days per week */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold text-white/40">📅 ימי אימון בשבוע</p>
+                <div className="flex gap-1.5">
+                  {DAYS_OPTS.map((d) => (
+                    <button key={d} onClick={() => setAiDays(d)}
+                      className={`flex-1 py-2 rounded-xl text-sm font-black border transition-all ${aiDays===d ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/50" : "text-white/40 border-white/10"}`}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Session duration */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold text-white/40">⏱ זמן לאימון</p>
+                <div className="flex gap-1.5">
+                  {([30,45,60,90] as const).map((m) => (
+                    <button key={m} onClick={() => setAiSessionMins(m)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${aiSessionMins===m ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/50" : "text-white/40 border-white/10"}`}>
+                      {m}′
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Intensity */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-white/40">🔥 עצימות</span>
+                  <span className="text-[11px] text-white/50">{["","קלה","בינונית","בינונית+","גבוהה","מקסימלית"][aiIntensity]}</span>
+                </div>
+                <div className="flex gap-1.5">
+                  {[1,2,3,4,5].map((n) => (
+                    <button key={n} onClick={() => setAiIntensity(n)}
+                      className={`flex-1 h-8 rounded-xl border transition-all ${n<=aiIntensity ? "bg-emerald-500/30 border-emerald-500/50" : "bg-white/5 border-white/10"}`}>
+                      <span className={`text-sm ${n<=aiIntensity ? "opacity-100" : "opacity-20"}`}>🔥</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rest days */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold text-white/40">😴 ימי מנוחה</p>
+                <div className="flex gap-1">
+                  {REST_DAY_LABELS.map((d, i) => (
+                    <button key={i} onClick={() => setAiRestDays(prev => prev.includes(i) ? prev.filter(x=>x!==i) : [...prev, i])}
+                      className={`flex-1 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${aiRestDays.includes(i) ? "bg-slate-500/30 text-slate-300 border-slate-500/50" : "text-white/40 border-white/10"}`}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Equipment */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold text-white/40">⚙️ ציוד זמין</p>
+                <div className="flex gap-1.5">
+                  {EQUIPMENT_OPTS.map((e) => (
+                    <button key={e} onClick={() => setAiEquip(e)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${aiEquip===e ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/50" : "text-white/40 border-white/10"}`}>
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Preferred muscles */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold text-white/40">💪 שרירים מועדפים (אופציונלי)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {MUSCLE_OPTIONS.map((m) => (
+                    <button key={m} onClick={() => setAiPreferMuscles(prev => prev.includes(m) ? prev.filter(x=>x!==m) : [...prev, m])}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${aiPreferMuscles.includes(m) ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/40" : "text-white/35 border-white/10 hover:text-white/55"}`}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Avoid muscles */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold text-white/40">🚫 להימנע מ (פציעות / העדפה)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {MUSCLE_OPTIONS.map((m) => (
+                    <button key={m} onClick={() => setAiAvoidMuscles(prev => prev.includes(m) ? prev.filter(x=>x!==m) : [...prev, m])}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${aiAvoidMuscles.includes(m) ? "bg-red-500/20 text-red-300 border-red-500/40" : "text-white/35 border-white/10 hover:text-white/55"}`}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Constraints */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold text-white/40">📝 מגבלות / הערות (אופציונלי)</p>
+                <textarea value={aiConstraints} onChange={e => setAiConstraints(e.target.value)}
+                  placeholder="למשל: כאב בכתף ימין, אין רצון לרוץ..."
+                  rows={2}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/25 outline-none focus:border-emerald-500/50 resize-none text-right" />
+              </div>
+
+              {/* Generate button */}
+              <button onClick={handleGeneratePlan} disabled={aiLoading}
+                className="w-full py-4 rounded-2xl bg-emerald-500 text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-50 shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-[0.98] transition-all">
+                {aiLoading ? (
+                  <>
+                    <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    מבנה התוכנית שלך...
+                  </>
+                ) : (
+                  <>⚡ צור תוכנית 4 שבועות</>
+                )}
+              </button>
             </div>
-            <div className="space-y-2">
-              <p className="text-[11px] font-bold text-white/50">מגבלות / פציעות (אופציונלי)</p>
-              <input value={aiConstraints} onChange={(e) => setAiConstraints(e.target.value)}
-                placeholder="למשל: כאב בכתף ימין, אין ריצה..."
-                className="w-full rounded-xl border border-white/10 bg-white/8 px-3 py-2.5 text-sm text-white placeholder:text-white/25 outline-none focus:border-emerald-500/40"
-                dir="rtl" />
-            </div>
-            <button onClick={handleGeneratePlan} disabled={aiLoading}
-              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-emerald-500 text-white font-black text-sm min-h-[48px] hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)] disabled:opacity-60">
-              {aiLoading ? <><Loader2 className="h-4 w-4 animate-spin" />יוצר תוכנית...</> : <><Zap className="h-4 w-4" />צור תוכנית שבועית</>}
-            </button>
           </div>
           {aiPlan && (
-            <div className="space-y-3">
-              {/* Summary */}
-              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-3">
-                <p className="text-xs text-emerald-300 font-semibold">{aiPlan.summary}</p>
+            <div className="space-y-4" dir="rtl">
+              {/* Plan header */}
+              <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/8 px-4 py-3 space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <button onClick={async () => {
+                      try {
+                        await savePlan.mutateAsync({
+                          name: aiPlan.summary?.slice(0,40) || "תוכנית AI",
+                          goal: aiGoal,
+                          level: aiLevel,
+                          split_type: aiPlan.split_type,
+                          weeks: aiPlan.weeks ?? [],
+                          deload_week: aiPlan.deload_week,
+                          tips: aiPlan.tips,
+                        });
+                        setSavedPlanBanner(true);
+                        setTimeout(() => setSavedPlanBanner(false), 3000);
+                      } catch { toast.error("שגיאה בשמירה"); }
+                    }} className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold hover:bg-emerald-500/30 transition-all active:scale-95">
+                      💾 שמור
+                    </button>
+                    <button onClick={() => {
+                      const text = `תוכנית אימון:\n${aiPlan.summary}\n\nימי אימון: ${aiDays}/שבוע\nציוד: ${aiEquip}`;
+                      if (navigator.share) navigator.share({ title: "תוכנית אימון", text });
+                      else { navigator.clipboard.writeText(text); toast.success("הועתק ✓"); }
+                    }} className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white/50 text-[11px] font-bold hover:text-white/70 transition-all active:scale-95">
+                      🔗 שתף
+                    </button>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-black text-white">{aiPlan.split_type || "תוכנית מותאמת אישית"}</p>
+                    <p className="text-[10px] text-white/40">{aiDays} ימי אימון · {aiSessionMins || 60} דק'</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-white/60 text-right">{aiPlan.summary}</p>
+                {savedPlanBanner && <p className="text-[11px] text-emerald-400 font-bold text-right">✅ התוכנית נשמרה!</p>}
               </div>
 
-              {/* Workout days */}
-              {aiPlan.workouts.map((w, i) => {
-                const libMap = getExerciseAllMap();
-                // Map category string from AI to valid DB category
-                const dbCat: "weights" | "calisthenics" | "mixed" =
-                  w.category === "strength" || w.category === "hypertrophy" ? "weights"
-                  : w.category === "cardio" || w.category === "running" ? "mixed"
-                  : "calisthenics";
+              {/* Week selector */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                {(aiPlan.weeks ?? []).map((w: any) => (
+                  <button key={w.week_number} onClick={() => setSelectedWeek(w.week_number)}
+                    className={`flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${selectedWeek===w.week_number ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/50" : "text-white/40 border-white/10 hover:text-white/60"}`}>
+                    שבוע {w.week_number}
+                  </button>
+                ))}
+                {aiPlan.deload_week && (
+                  <button onClick={() => setSelectedWeek(5)}
+                    className={`flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${selectedWeek===5 ? "bg-blue-500/25 text-blue-300 border-blue-500/50" : "text-white/40 border-white/10 hover:text-white/60"}`}>
+                    🔄 Deload
+                  </button>
+                )}
+              </div>
 
-                const handleSaveDay = async () => {
-                  try {
-                    await addTemplate.mutateAsync({
-                      name: w.name,
-                      category: dbCat,
-                      exercises: w.exercises.map((ex) => ({
-                        name: ex.name,
-                        sets: ex.sets,
-                        reps: parseInt(ex.reps) || 10,
-                        weight_kg: ex.weight_kg ?? 0,
-                      })),
-                    });
-                    toast.success(`✅ "${w.name}" נשמר כתבנית!`);
-                  } catch { toast.error("שגיאה בשמירה"); }
-                };
-
-                const handleLoadDay = () => {
-                  setWorkoutName(w.name);
-                  setExercises(w.exercises.map((ex) => ({
-                    name: ex.name,
-                    sets: ex.sets,
-                    reps: parseInt(ex.reps) || 10,
-                    weight_kg: ex.weight_kg ?? 0,
-                    setsData: toSetsData(ex.sets, parseInt(ex.reps) || 10, ex.weight_kg ?? 0),
-                  })));
-                  setSubTab("custom");
-                  toast.success(`טוען "${w.name}" לבנאי...`);
-                };
-
+              {/* Current week's overload note + workouts */}
+              {(() => {
+                const currentWeek = selectedWeek === 5 ? aiPlan.deload_week : (aiPlan.weeks ?? []).find((w: any) => w.week_number === selectedWeek);
+                if (!currentWeek) return null;
                 return (
-                  <div key={i} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-                    {/* Day header */}
-                    <button onClick={() => setExpandedDay(expandedDay === i ? null : i)}
-                      className="w-full flex items-center justify-between px-4 py-3.5 text-right">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-xs font-black text-emerald-400">{i + 1}</div>
-                        <div>
-                          <p className="text-sm font-black text-white">{w.day}</p>
-                          <p className="text-[10px] text-white/40">{w.name} · {w.duration_minutes} דק׳ · {w.exercises.length} תרגילים</p>
-                        </div>
+                  <div className="space-y-3">
+                    {currentWeek.overload_note && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <span className="text-sm">📈</span>
+                        <p className="text-[11px] text-amber-300 font-semibold">{currentWeek.overload_note}</p>
                       </div>
-                      {expandedDay === i ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
-                    </button>
+                    )}
 
-                    {/* Expanded: exercise list + action buttons */}
-                    {expandedDay === i && (
-                      <div className="border-t border-white/8">
-                        {/* Exercise rows — library-linked */}
-                        <div className="divide-y divide-white/5">
-                          {w.exercises.map((ex, j) => {
-                            const libEx = libMap.get(ex.name);
-                            return (
-                              <div key={j} className="px-4 py-3 space-y-1">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-bold text-white/90 leading-tight">{ex.name}</p>
-                                    {libEx && (
-                                      <p className="text-[9px] text-white/35 mt-0.5 truncate">{libEx.muscles}</p>
-                                    )}
-                                    {ex.notes && <p className="text-[9px] text-white/30 mt-0.5 italic">{ex.notes}</p>}
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <span className="text-[11px] font-black text-emerald-400 font-mono">
-                                      {ex.sets}×{ex.reps}{ex.weight_kg ? ` @ ${ex.weight_kg}kg` : ""}
-                                    </span>
+                    {/* Volume summary */}
+                    {(() => {
+                      const workoutSets = (currentWeek.workouts ?? []).map((w: any) => ({
+                        name: w.name,
+                        sets: (w.exercises ?? []).reduce((s: number, e: any) => s + (e.sets ?? 3), 0),
+                      }));
+                      return (
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                          {workoutSets.map((ws: any, i: number) => (
+                            <div key={i} className="flex-shrink-0 px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-center">
+                              <p className="text-[9px] text-white/40 truncate max-w-[70px]">{ws.name}</p>
+                              <p className="text-xs font-black text-white">{ws.sets} סטים</p>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Workout days */}
+                    {(currentWeek.workouts ?? []).map((workout: any, wIdx: number) => {
+                      const isExpanded = expandedDay === wIdx;
+                      const meta = CATEGORY_META[workout.category] ?? { emoji: "💪", color: "#10b981" };
+                      return (
+                        <div key={wIdx} className="rounded-2xl border border-white/10 bg-white/4 overflow-hidden">
+                          {/* Day header */}
+                          <button
+                            onClick={() => setExpandedDay(isExpanded ? null : wIdx)}
+                            className="w-full flex items-center justify-between px-4 py-3"
+                          >
+                            <div className="flex items-center gap-2">
+                              <ChevronRight className={`h-4 w-4 text-white/40 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                              <span className="text-[11px] text-white/40">{workout.exercises?.length ?? 0} תרגילים</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-right">
+                              <div>
+                                <p className="text-sm font-black text-white">{workout.name}</p>
+                                <p className="text-[10px] text-white/40">{workout.day} · {workout.duration_minutes} דק'</p>
+                              </div>
+                              <span className="text-lg">{meta.emoji}</span>
+                            </div>
+                          </button>
+
+                          {/* Exercises */}
+                          {isExpanded && (
+                            <div className="border-t border-white/8 divide-y divide-white/6">
+                              {(workout.exercises ?? []).map((ex: any, eIdx: number) => {
+                                const imgUrl = (EXERCISE_IMAGE_URLS as Record<string,string>)[ex.name];
+                                const libEx = getExerciseAllMap().get(ex.name);
+                                return (
+                                  <div key={eIdx} className="flex items-center gap-3 px-4 py-3">
+                                    {/* Image */}
+                                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/5 shrink-0 flex items-center justify-center border border-white/8">
+                                      {imgUrl ? (
+                                        <img src={imgUrl} alt={ex.name} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="text-xl">💪</span>
+                                      )}
+                                    </div>
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0 text-right">
+                                      <p className="text-sm font-black text-white truncate">{ex.name}</p>
+                                      <p className="text-[10px] text-white/50">{ex.sets} סטים × {ex.reps}</p>
+                                      {ex.explanation && <p className="text-[10px] text-emerald-400/80 mt-0.5">{ex.explanation}</p>}
+                                      {ex.notes && <p className="text-[10px] text-white/35 mt-0.5">{ex.notes}</p>}
+                                    </div>
+                                    {/* YouTube */}
                                     {libEx?.youtubeQuery && (
-                                      <a
-                                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent(libEx.youtubeQuery)}`}
-                                        target="_blank" rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="h-6 w-6 rounded-lg bg-red-500/15 flex items-center justify-center hover:bg-red-500/25 transition-all shrink-0"
-                                        title="צפה בסרטון הדרכה"
-                                      >
-                                        <Youtube className="h-3 w-3 text-red-400" />
+                                      <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(libEx.youtubeQuery)}`}
+                                         target="_blank" rel="noopener noreferrer"
+                                         onClick={e => e.stopPropagation()}
+                                         className="shrink-0 h-8 w-8 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center hover:bg-red-500/25 transition-all active:scale-90">
+                                        <svg className="h-3.5 w-3.5 text-red-400" viewBox="0 0 24 24" fill="currentColor">
+                                          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-2.75 12.41 12.41 0 00-7.65 0 4.83 4.83 0 01-3.77 2.75 49.17 49.17 0 000 10.62 4.83 4.83 0 013.77 2.75 12.41 12.41 0 007.65 0 4.83 4.83 0 013.77-2.75 49.17 49.17 0 000-10.62zM10 15V9l5 3-5 3z"/>
+                                        </svg>
                                       </a>
                                     )}
                                   </div>
-                                </div>
-                                {libEx && (
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[8px] text-white/20 bg-white/5 rounded-md px-1.5 py-0.5">{libEx.equipment}</span>
-                                  </div>
-                                )}
-                                {!libEx && (
-                                  <span className="text-[8px] text-amber-400/50">⚠ לא נמצא בספרייה</span>
-                                )}
+                                );
+                              })}
+                              {/* Action buttons */}
+                              <div className="px-4 py-3 flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    const filled = (workout.exercises ?? []).map((e: any) => ({
+                                      name: e.name, sets: e.sets ?? 3, reps: Number(e.reps?.split("-")[0]) || 10,
+                                      weight_kg: e.weight_kg ?? 0, setsData: toSetsData(e.sets ?? 3, Number(e.reps?.split("-")[0]) || 10, e.weight_kg ?? 0), group: 0,
+                                    }));
+                                    setExercises(filled);
+                                    setWorkoutName(workout.name);
+                                    setWorkoutCategory(toDbCategory(workout.category));
+                                    setSubTab("custom");
+                                    toast.success(`נטען: ${workout.name}`);
+                                  }}
+                                  className="flex-1 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-xs font-bold hover:bg-emerald-500/25 transition-all active:scale-95"
+                                >
+                                  ▶ טען לבונה
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await addTemplate.mutateAsync({ name: workout.name, category: toDbCategory(workout.category), exercises: workout.exercises ?? [] });
+                                      toast.success(`נשמר: ${workout.name}`);
+                                    } catch { toast.error("שגיאה בשמירה"); }
+                                  }}
+                                  className="flex-1 py-2 rounded-xl bg-white/8 border border-white/10 text-white/60 text-xs font-bold hover:text-white/80 transition-all active:scale-95"
+                                >
+                                  📋 שמור כתבנית
+                                </button>
                               </div>
-                            );
-                          })}
+                            </div>
+                          )}
                         </div>
-
-                        {/* Action buttons */}
-                        <div className="flex gap-2 p-3 border-t border-white/5">
-                          <button
-                            onClick={handleSaveDay}
-                            disabled={addTemplate.isPending}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-amber-500/25 bg-amber-500/8 text-amber-400 text-xs font-bold hover:bg-amber-500/15 active:scale-[0.97] transition-all disabled:opacity-50"
-                          >
-                            <Star className="h-3.5 w-3.5" />
-                            שמור כתבנית
-                          </button>
-                          <button
-                            onClick={handleLoadDay}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-emerald-400 text-xs font-bold hover:bg-emerald-500/18 active:scale-[0.97] transition-all"
-                          >
-                            <Play className="h-3.5 w-3.5" />
-                            טען לבנאי
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
                 );
-              })}
+              })()}
 
               {/* Tips */}
               {aiPlan.tips?.length > 0 && (
-                <div className="rounded-2xl border border-white/8 bg-white/4 p-3 space-y-1.5">
-                  <p className="text-[10px] font-bold text-white/40">טיפים מה-AI</p>
-                  {aiPlan.tips.map((tip, i) => <p key={i} className="text-xs text-white/60">• {tip}</p>)}
+                <div className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 space-y-2">
+                  <p className="text-[11px] font-black text-white/50 text-right">💡 טיפים</p>
+                  {aiPlan.tips.map((tip: string, i: number) => (
+                    <p key={i} className="text-[11px] text-white/60 text-right">• {tip}</p>
+                  ))}
+                </div>
+              )}
+
+              {/* Small AI Chat */}
+              <div className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 space-y-2">
+                <p className="text-[11px] font-bold text-white/40 text-right">💬 בקש שינוי</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!aiChatMsg.trim() || aiChatLoading) return;
+                      setAiChatLoading(true);
+                      try {
+                        const updated = await generateWorkoutPlan({
+                          goal: aiGoal, daysPerWeek: aiDays, equipment: aiEquip,
+                          constraints: `${aiConstraints || ""}\n\nבקשת שינוי: ${aiChatMsg}`,
+                          fitnessLevel: aiLevel, sessionMinutes: aiSessionMins,
+                          intensity: aiIntensity as 1|2|3|4|5,
+                        });
+                        setAiPlan(updated);
+                        setSelectedWeek(1);
+                        setAiChatMsg("");
+                        toast.success("התוכנית עודכנה ✓");
+                      } catch { toast.error("שגיאה בעדכון"); }
+                      finally { setAiChatLoading(false); }
+                    }}
+                    disabled={!aiChatMsg.trim() || aiChatLoading}
+                    className="px-3 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold disabled:opacity-40 hover:bg-emerald-500/30 transition-all whitespace-nowrap"
+                  >
+                    {aiChatLoading ? "..." : "עדכן"}
+                  </button>
+                  <input
+                    value={aiChatMsg} onChange={e => setAiChatMsg(e.target.value)}
+                    placeholder="למשל: החלף את הסקוואט בלגפרס..."
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/25 outline-none focus:border-emerald-500/40 text-right"
+                    dir="rtl"
+                    onKeyDown={e => { if (e.key === "Enter" && aiChatMsg.trim() && !aiChatLoading) { e.currentTarget.blur(); } }}
+                  />
+                </div>
+              </div>
+
+              {/* Plan history */}
+              {(savedPlans ?? []).length > 0 && (
+                <div className="space-y-2">
+                  <button onClick={() => setShowPlanHistory(p => !p)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-white/10 bg-white/4">
+                    <ChevronRight className={`h-4 w-4 text-white/40 transition-transform ${showPlanHistory ? "rotate-90" : ""}`} />
+                    <p className="text-[11px] font-bold text-white/50">📚 תוכניות שמורות ({savedPlans?.length})</p>
+                  </button>
+                  {showPlanHistory && (
+                    <div className="space-y-2">
+                      {(savedPlans ?? []).map((p: any) => (
+                        <div key={p.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-white/10 bg-white/4">
+                          <button onClick={() => deleteSavedPlan.mutate(p.id)}
+                            className="h-7 w-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0 hover:bg-red-500/20 transition-all">
+                            <X className="h-3 w-3 text-red-400" />
+                          </button>
+                          <div className="flex-1 min-w-0 text-right">
+                            <p className="text-xs font-black text-white truncate">{p.name}</p>
+                            <p className="text-[10px] text-white/35">{new Date(p.created_at).toLocaleDateString("he-IL")} · {p.split_type || p.goal}</p>
+                          </div>
+                          <button onClick={() => {
+                            setAiPlan({ ...p, weeks: p.weeks ?? [], tips: p.tips ?? [] });
+                            setSelectedWeek(1);
+                            toast.info("תוכנית נטענה");
+                          }} className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-[11px] font-bold hover:bg-emerald-500/25 transition-all shrink-0">
+                            טען
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

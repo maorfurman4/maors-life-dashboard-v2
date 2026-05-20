@@ -309,7 +309,7 @@ export function SportAIPlanner() {
           </div>
 
           <div className="space-y-2">
-            {plan.workouts.map((w, i) => (
+            {(plan.workouts ?? []).map((w, i) => (
               <div key={i} className="rounded-2xl bg-white/5 border border-white/10 p-3.5 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
