@@ -1720,7 +1720,7 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/8">
               <div>
                 <p className="text-base font-black text-white">התאם אישית</p>
-                <p className="text-[11px] text-white/35 mt-0.5">בחר תבניות לקרוסלת "אימון מהיר"</p>
+                <p className="text-[11px] text-white/35 mt-0.5">לחץ על תבנית להסרה מהקרוסלה</p>
               </div>
               <button
                 onClick={() => setShowEdit(false)}
@@ -1730,80 +1730,45 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
               </button>
             </div>
 
-            {/* Template list — ALL templates (system + user) */}
+            {/* Template list — only active (non-hidden) templates */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
-              {allTemplates.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 space-y-2.5">
-                  <span className="text-4xl">📋</span>
-                  <p className="text-sm font-bold text-white/50 text-center">אין תבניות</p>
-                </div>
-              ) : (
-                allTemplates.filter((t: any) => !pendingDeleteIds.has(t.id)).map((t: any) => {
-                  const meta      = CATEGORY_META[t.category] ?? { emoji: "💪", color: "#10b981" };
-                  const isVisible = !hiddenIds.includes(t.id);
-                  const exCount   = Array.isArray(t.exercises) ? t.exercises.length : 0;
-                  if (!t.is_system) {
-                    return (
-                      <div key={t.id} className="flex items-center gap-3 px-3 py-3 rounded-2xl border border-white/10 bg-white/4">
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: meta.color + "22" }}>
-                          {meta.emoji}
-                        </div>
-                        <div className="flex-1 min-w-0 text-right">
-                          <p className="text-sm font-black text-white truncate">{t.name}</p>
-                          <p className="text-[10px] text-white/35 mt-0.5">{exCount} תרגילים</p>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteWithUndo(t.id, t.name)}
-                          className="h-8 w-8 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center hover:bg-red-500/25 active:scale-90 transition-all shrink-0"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-red-400" />
-                        </button>
+              {(() => {
+                const visibleTemplates = allTemplates.filter(
+                  (t: any) => !pendingDeleteIds.has(t.id) && !hiddenIds.includes(t.id)
+                );
+                if (visibleTemplates.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-10 space-y-2.5">
+                      <span className="text-4xl">📋</span>
+                      <p className="text-sm font-bold text-white/50 text-center">אין תבניות פעילות</p>
+                    </div>
+                  );
+                }
+                return visibleTemplates.map((t: any) => {
+                  const meta    = CATEGORY_META[t.category] ?? { emoji: "💪", color: "#10b981" };
+                  const exCount = Array.isArray(t.exercises) ? t.exercises.length : 0;
+                  return (
+                    <button key={t.id} onClick={() => toggleHidden(t.id)}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 transition-all active:scale-[0.98]"
+                    >
+                      <div className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: meta.color + "22" }}>
+                        {meta.emoji}
                       </div>
-                    );
-                  } else {
-                    return (
-                      <button key={t.id} onClick={() => toggleHidden(t.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl border transition-all active:scale-[0.98] ${
-                          isVisible ? "border-emerald-500/40 bg-emerald-500/10" : "border-white/10 bg-white/4 hover:border-white/18"
-                        }`}
-                      >
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: meta.color + "22" }}>
-                          {meta.emoji}
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <p className="text-sm font-black text-white truncate">{t.name}</p>
+                          {t.is_system && <Star className="h-3 w-3 text-amber-400/60 shrink-0" />}
                         </div>
-                        <div className="flex-1 min-w-0 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <p className="text-sm font-black text-white truncate">{t.name}</p>
-                            <Star className="h-3 w-3 text-amber-400/60 shrink-0" />
-                          </div>
-                          <p className="text-[10px] text-white/35 mt-0.5">{exCount} תרגילים</p>
-                        </div>
-                        <div className={`h-5 w-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
-                          isVisible ? "border-emerald-500 bg-emerald-500" : "border-white/25 bg-transparent"
-                        }`}>
-                          {isVisible && <Check className="h-3 w-3 text-white" />}
-                        </div>
-                      </button>
-                    );
-                  }
-                })
-              )}
+                        <p className="text-[10px] text-white/35 mt-0.5">{exCount} תרגילים</p>
+                      </div>
+                      <div className="h-5 w-5 rounded-full border-2 border-emerald-500 bg-emerald-500 shrink-0 flex items-center justify-center">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    </button>
+                  );
+                });
+              })()}
             </div>
-
-            {/* Undo delete banner */}
-            {undoBanner && (
-              <div className="mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 animate-in slide-in-from-bottom-2 duration-200">
-                <span className="text-base">🗑️</span>
-                <p className="flex-1 text-[12px] text-amber-200 font-semibold truncate" dir="rtl">
-                  "{undoBanner.name}" נמחקה
-                </p>
-                <button
-                  onClick={handleUndoDelete}
-                  className="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-[11px] font-black active:scale-95 transition-all"
-                >
-                  בטל
-                </button>
-              </div>
-            )}
 
             {/* Done */}
             <div className="px-4 pb-5 pt-3 border-t border-white/8">
