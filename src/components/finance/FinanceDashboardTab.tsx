@@ -868,6 +868,7 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
             <AlertDialogFooter>
               <AlertDialogCancel>ביטול</AlertDialogCancel>
               <AlertDialogAction
+                disabled={closeMonthMutation.isPending}
                 onClick={() =>
                   closeMonthMutation.mutate({
                     year: now.getFullYear(),

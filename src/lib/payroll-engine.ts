@@ -135,7 +135,16 @@ function getShiftHours(shift: ShiftRow): number {
 
 export function calcShiftBreakdown(shift: ShiftRow, settings: PayrollSettings): ShiftBreakdown {
   if (shift.type === "manual_hourly") {
-    return { basePay: 0, recovery: 0, excellence: 0, shabbatPay: 0, travel: 0, briefingPay: 0, totalGross: 0 };
+    const hours = getShiftHours(shift);
+    if (!hours) return { basePay: 0, recovery: 0, excellence: 0, shabbatPay: 0, travel: 0, briefingPay: 0, totalGross: 0 };
+    const rate = shift.is_shabbat_holiday ? settings.shabbat_hourly_rate : settings.base_hourly_rate;
+    const basePay = hours * rate;
+    const recovery = hours * settings.recovery_per_hour;
+    const excellence = hours * settings.excellence_per_hour;
+    const travel = settings.travel_per_shift;
+    const briefingPay = shift.has_briefing ? settings.briefing_per_shift : 0;
+    const totalGross = basePay + recovery + excellence + travel + briefingPay;
+    return { basePay, recovery, excellence, shabbatPay: 0, travel, briefingPay, totalGross };
   }
   const hours = getShiftHours(shift);
 

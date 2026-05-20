@@ -669,13 +669,16 @@ export function FinanceDebtsTab(_: { year: number; month: number }) {
                   <h4 className="text-sm font-medium" style={{ color: FT.textMuted, letterSpacing: 0 }}>💡 טיפים פיננסיים</h4>
                   {debts.map((debt) => {
                     const tips: string[] = [];
-                    if (debt.annual_interest_rate > 5) {
-                      const monthlyInterest = (debt.principal * debt.annual_interest_rate / 100 / 12);
+                    const safePrincipal = Number(debt.principal) || 0;
+                    const safeRate = Number(debt.annual_interest_rate) || 0;
+                    const safePayment = Number(debt.monthly_payment) || 0;
+                    if (safeRate > 5) {
+                      const monthlyInterest = (safePrincipal * safeRate / 100 / 12);
                       tips.push(`ב${debt.name} אתה משלם ~₪${monthlyInterest.toFixed(0)} ריבית בחודש. שקול מחזור הלוואה.`);
                     }
                     const extraPayment = 500;
-                    const currentMonths = calcMonthsToPayoff(debt.principal, debt.annual_interest_rate, debt.monthly_payment);
-                    const fasterMonths = calcMonthsToPayoff(debt.principal, debt.annual_interest_rate, debt.monthly_payment + extraPayment);
+                    const currentMonths = calcMonthsToPayoff(safePrincipal, safeRate, safePayment);
+                    const fasterMonths = calcMonthsToPayoff(safePrincipal, safeRate, safePayment + extraPayment);
                     if (isFinite(currentMonths) && isFinite(fasterMonths) && currentMonths - fasterMonths > 2) {
                       tips.push(`תשלום נוסף של ₪${extraPayment}/חודש ב${debt.name} יחסוך ${currentMonths - fasterMonths} חודשים.`);
                     }

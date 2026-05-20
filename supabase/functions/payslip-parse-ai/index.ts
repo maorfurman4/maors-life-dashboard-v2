@@ -47,7 +47,16 @@ Deno.serve(async (req) => {
 
     // Extract JSON from the response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
-    const extracted = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+    let extracted: Record<string, unknown> = {};
+    if (jsonMatch) {
+      try {
+        extracted = JSON.parse(jsonMatch[0]);
+      } catch {
+        // Model returned malformed JSON — return empty object so the caller
+        // can handle the missing data gracefully instead of getting a 500.
+        console.error("Failed to parse model JSON:", jsonMatch[0]);
+      }
+    }
 
     return new Response(JSON.stringify(extracted), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

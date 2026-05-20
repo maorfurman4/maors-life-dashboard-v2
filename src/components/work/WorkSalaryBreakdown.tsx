@@ -130,26 +130,26 @@ export function WorkSalaryBreakdown({ payslip, isLoading }: WorkSalaryBreakdownP
               </tr>
             </thead>
             <tbody>
-              <tr><td style={tdStyle}>שכר בסיס</td><td style={tdNumStyle}>{payslip?.basePay?.toFixed(2)}</td></tr>
-              <tr><td style={tdStyle}>הבראה</td><td style={tdNumStyle}>{payslip?.recovery?.toFixed(2)}</td></tr>
-              <tr><td style={tdStyle}>מצוינות</td><td style={tdNumStyle}>{payslip?.excellence?.toFixed(2)}</td></tr>
-              <tr><td style={tdStyle}>שכר שבת</td><td style={tdNumStyle}>{payslip?.shabbatPay?.toFixed(2)}</td></tr>
-              <tr><td style={tdStyle}>נסיעות</td><td style={tdNumStyle}>{payslip?.travel?.toFixed(2)}</td></tr>
-              <tr><td style={tdStyle}>תדרוכים</td><td style={tdNumStyle}>{payslip?.briefingPay?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>שכר בסיס</td><td style={tdNumStyle}>{(payslip?.basePay ?? 0).toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>הבראה</td><td style={tdNumStyle}>{(payslip?.recovery ?? 0).toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>מצוינות</td><td style={tdNumStyle}>{(payslip?.excellence ?? 0).toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>שכר שבת</td><td style={tdNumStyle}>{(payslip?.shabbatPay ?? 0).toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>נסיעות</td><td style={tdNumStyle}>{(payslip?.travel ?? 0).toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>תדרוכים</td><td style={tdNumStyle}>{(payslip?.briefingPay ?? 0).toFixed(2)}</td></tr>
               <tr style={{ fontWeight: 'bold', backgroundColor: '#e8f5e9' }}>
-                <td style={tdStyle}>ברוטו</td><td style={tdNumStyle}>{payslip?.totalGross?.toFixed(2)}</td>
+                <td style={tdStyle}>ברוטו</td><td style={tdNumStyle}>{(payslip?.totalGross ?? 0).toFixed(2)}</td>
               </tr>
-              <tr><td style={tdStyle}>ביטוח לאומי</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.nationalInsurance?.toFixed(2)}</td></tr>
-              <tr><td style={tdStyle}>ביטוח בריאות</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.healthInsurance?.toFixed(2)}</td></tr>
-              <tr><td style={tdStyle}>חיסכון הראל</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.harelSavings?.toFixed(2)}</td></tr>
-              <tr><td style={tdStyle}>לימודים הראל</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.harelStudy?.toFixed(2)}</td></tr>
-              <tr><td style={tdStyle}>נסיעות הראל</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.harelTravel?.toFixed(2)}</td></tr>
-              <tr><td style={tdStyle}>הראל נוסף</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.extraHarel?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>ביטוח לאומי</td><td style={{ ...tdNumStyle, color: 'red' }}>-{(payslip?.nationalInsurance ?? 0).toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>ביטוח בריאות</td><td style={{ ...tdNumStyle, color: 'red' }}>-{(payslip?.healthInsurance ?? 0).toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>חיסכון הראל</td><td style={{ ...tdNumStyle, color: 'red' }}>-{(payslip?.harelSavings ?? 0).toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>לימודים הראל</td><td style={{ ...tdNumStyle, color: 'red' }}>-{(payslip?.harelStudy ?? 0).toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>נסיעות הראל</td><td style={{ ...tdNumStyle, color: 'red' }}>-{(payslip?.harelTravel ?? 0).toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>הראל נוסף</td><td style={{ ...tdNumStyle, color: 'red' }}>-{(payslip?.extraHarel ?? 0).toFixed(2)}</td></tr>
               <tr style={{ fontWeight: 'bold', backgroundColor: '#fff3e0' }}>
-                <td style={tdStyle}>סה"כ ניכויים</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.totalDeductions?.toFixed(2)}</td>
+                <td style={tdStyle}>סה"כ ניכויים</td><td style={{ ...tdNumStyle, color: 'red' }}>-{(payslip?.totalDeductions ?? 0).toFixed(2)}</td>
               </tr>
               <tr style={{ fontWeight: 'bold', fontSize: '1.1em', backgroundColor: '#e3f2fd' }}>
-                <td style={tdStyle}>שכר נטו לתשלום</td><td style={tdNumStyle}>{payslip?.netPay?.toFixed(2)}</td>
+                <td style={tdStyle}>שכר נטו לתשלום</td><td style={tdNumStyle}>{(payslip?.netPay ?? 0).toFixed(2)}</td>
               </tr>
             </tbody>
           </table>

@@ -39,11 +39,18 @@ export function WorkContract() {
       if (!error && uploadData) {
         setUploadedFiles(prev => prev.map((f, idx) => idx === i ? { ...f, status: "analyzing" } : f));
 
-        const { data: { publicUrl } } = supabase.storage.from("payslips").getPublicUrl(fileName);
+        // Use a signed URL (valid 60 s) so the edge function can fetch the file
+        // regardless of whether the bucket is public or private.
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from("payslips")
+          .createSignedUrl(fileName, 60);
+        const fileUrl = signedUrlData?.signedUrl
+          ?? supabase.storage.from("payslips").getPublicUrl(fileName).data.publicUrl;
+        if (signedUrlError) console.warn("Signed URL failed, falling back to public URL", signedUrlError);
 
         try {
           const { data: fnData } = await supabase.functions.invoke("payslip-parse-ai", {
-            body: { fileUrl: publicUrl }
+            body: { fileUrl }
           });
           if (fnData?.hourlyRate) {
             setExtractedPayslipData(fnData);

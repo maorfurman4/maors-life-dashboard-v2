@@ -59,21 +59,16 @@ Deno.serve(async (req) => {
       ? `\nתרגילים מועדפים (כלול אותם כאשר קבוצת השריר מתאימה): ${favoriteExercises.join(", ")}`
       : "";
 
-    const preferredNote = Array.isArray(preferredMuscles) && preferredMuscles.length > 0
-      ? `\nקבוצות שריר מועדפות לנפח גדול יותר: ${preferredMuscles.join(", ")}`
-      : "";
-
-    const avoidedNote = Array.isArray(avoidedMuscles) && avoidedMuscles.length > 0
-      ? `\nקבוצות שריר להימנע מהן לחלוטין: ${avoidedMuscles.join(", ")}`
-      : "";
+    // preferredNote / avoidedNote removed — these are now emitted as preferredMusclesNote /
+    // avoidedMusclesNote below (after targetWeeks), to avoid duplicating them in the prompt.
 
     const recentWorkoutsNote = Array.isArray(recentWorkouts) && recentWorkouts.length > 0
       ? `\nאימונים אחרונים (להתחשב בהם):\n${recentWorkouts.slice(0, 5).map((w: any) => `- ${w.name || w.category} (${w.date || "לאחרונה"})`).join("\n")}`
       : "";
 
     const cardioDaysNum = Number(cardioDays) || 0;
-    const cardioNote = cardioDaysNum > 0 && cardioType
-      ? `\nאירובי: ${cardioDaysNum} מתוך ${days} ימי האימון יוקדשו לאירובי (${cardioType}). שלב ימי אירובי ביום שונה מאימוני הכוח. שאר ${days - cardioDaysNum} הימים — אימוני כוח.`
+    const cardioNote = cardioDaysNum > 0
+      ? `\nאירובי: ${cardioDaysNum} מתוך ${days} ימי האימון יוקדשו לאירובי${cardioType ? ` (${cardioType})` : ""}. שלב ימי אירובי ביום שונה מאימוני הכוח. שאר ${days - cardioDaysNum} הימים — אימוני כוח.`
       : "\nאין ימי אירובי — כל הימים אימוני כוח.";
 
     const ageNote = age && age > 50
@@ -133,7 +128,7 @@ WORKOUT STRUCTURE RULES (MANDATORY):
 רמת כושר: ${fitnessLevel || "intermediate"}
 משך אימון: ${sessionMinutes || 60} דקות
 עוצמה רצויה (1-5): ${intensity || 3}${cardioNote}
-${preferredNote}${avoidedNote}${blacklistNote}${favoritesNote}${recentWorkoutsNote}${equipmentItemsNote}${preferredMusclesNote}${avoidedMusclesNote}
+${blacklistNote}${favoritesNote}${recentWorkoutsNote}${equipmentItemsNote}${preferredMusclesNote}${avoidedMusclesNote}
 אורך תכנית: ${targetWeeks} שבועות. צור בדיוק ${targetWeeks} שבועות.
 שיאים אישיים אחרונים:
 ${(recentPRs || []).map((p: any) => `- ${p.exercise_name}: ${p.value} ${p.unit}`).join("\n") || "אין נתונים"}

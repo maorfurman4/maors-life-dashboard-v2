@@ -283,6 +283,7 @@ export function SportAIPlanner() {
     setStep(0);
     setAnswers({});
     setTextInput("");
+    setRangeValue({ rpe: 7 });
     setPlan(null);
     setEquipmentSelection([]);
     setPreferredMuscles([]);
@@ -487,7 +488,8 @@ export function SportAIPlanner() {
           </div>
 
           <div className="space-y-2">
-            {(plan.workouts ?? []).map((w, i) => (
+            {/* Render workouts: prefer weeks[0] (new multi-week structure), fall back to flat workouts array */}
+            {(plan.weeks && plan.weeks.length > 0 ? plan.weeks[0].workouts : (plan.workouts ?? [])).map((w, i) => (
               <div key={i} className="rounded-2xl bg-white/5 border border-white/10 p-3.5 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">

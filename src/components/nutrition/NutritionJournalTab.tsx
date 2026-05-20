@@ -128,11 +128,11 @@ export function NutritionJournalTab() {
   const deleteMut                          = useDeleteNutrition();
   const { data: userSettings }            = useUserSettings();
 
-  // macro goals from settings (with defaults)
-  const caloriesGoal = userSettings?.daily_calories_goal ?? 2000;
-  const proteinGoal  = userSettings?.daily_protein_goal  ?? 150;
-  const carbsGoal    = userSettings?.daily_carbs_goal    ?? 250;
-  const fatGoal      = userSettings?.daily_fat_goal      ?? 65;
+  // macro goals from settings (with defaults); guard against explicit 0 to avoid division-by-zero
+  const caloriesGoal = userSettings?.daily_calories_goal || 2000;
+  const proteinGoal  = userSettings?.daily_protein_goal  || 150;
+  const carbsGoal    = userSettings?.daily_carbs_goal    || 250;
+  const fatGoal      = userSettings?.daily_fat_goal      || 65;
 
   // aggregate totals
   const totals = entries.reduce(
@@ -212,9 +212,17 @@ export function NutritionJournalTab() {
       const tableRows = rows.map(([d, v]) =>
         `<tr><td>${d}</td><td>${Math.round(v.cal)}</td><td>${Math.round(v.prot)}</td><td>${Math.round(v.carb)}</td><td>${Math.round(v.fat)}</td></tr>`
       ).join("");
+      // Inject print styles into <head> so they actually override Tailwind's .hidden class
+      const styleId = "nutrition-print-style";
+      let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+      if (!styleEl) {
+        styleEl = document.createElement("style");
+        styleEl.id = styleId;
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = `@media print { body > *:not(#nutrition-print-area) { display: none !important; } #nutrition-print-area { display: block !important; direction: rtl; font-family: Arial, sans-serif; } #nutrition-print-area table { width: 100%; border-collapse: collapse; } #nutrition-print-area th, #nutrition-print-area td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; } #nutrition-print-area th { background: #f0f0f0; } #nutrition-print-area tfoot td { font-weight: bold; background: #e8f5e9; } }`;
       if (printRef.current) {
         printRef.current.innerHTML = `
-          <style>@media print { body > * { display: none !important; } #nutrition-print-area { display: block !important; direction: rtl; font-family: Arial, sans-serif; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; } th { background: #f0f0f0; } tfoot td { font-weight: bold; background: #e8f5e9; } }</style>
           <h2 style="text-align:center">דוח תזונה — ${HEBREW_MONTHS[exportMonth]} ${exportYear}</h2>
           <table>
             <thead><tr><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>פחמימות</th><th>שומן</th></tr></thead>

@@ -91,7 +91,7 @@ export function FinanceMonthlyArchive() {
 
   return (
     <>
-    <style>{`@media print { body > * { display: none !important; } #finance-print-area { display: block !important; } }`}</style>
+    <style>{`@media print { body * { visibility: hidden; } #finance-print-area, #finance-print-area * { visibility: visible; } #finance-print-area { position: fixed; top: 0; left: 0; width: 100%; } }`}</style>
     <div id="finance-print-area" className="hidden print:block p-8 direction-rtl" dir="rtl">
       <h1 className="text-2xl font-bold mb-4">דוח פיננסי היסטורי</h1>
       <table className="w-full border-collapse text-sm">
