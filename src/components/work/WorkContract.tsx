@@ -1,5 +1,8 @@
-import { Settings, FileText } from "lucide-react";
+import { Settings, FileText, Upload } from "lucide-react";
 import { DEFAULT_RATES, DEFAULT_DEDUCTIONS, ROLES } from "@/lib/work-utils";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const contractDetails = [
   { label: "תפקיד", value: ROLES.guard.label },
@@ -17,6 +20,51 @@ const deductionDetails = [
 ];
 
 export function WorkContract() {
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; status: "uploading" | "analyzing" | "done" }>>([]);
+  const [extractedPayslipData, setExtractedPayslipData] = useState<{ hourlyRate: number; avgGross: number } | null>(null);
+
+  const handlePayslipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []).slice(0, 3);
+    if (files.length === 0) return;
+
+    setUploadedFiles(files.map(f => ({ name: f.name, status: "uploading" })));
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileName = `payslips/${Date.now()}-${file.name}`;
+      const { data: uploadData, error } = await supabase.storage
+        .from("payslips")
+        .upload(fileName, file, { upsert: true });
+
+      if (!error && uploadData) {
+        setUploadedFiles(prev => prev.map((f, idx) => idx === i ? { ...f, status: "analyzing" } : f));
+
+        const { data: { publicUrl } } = supabase.storage.from("payslips").getPublicUrl(fileName);
+
+        try {
+          const { data: fnData } = await supabase.functions.invoke("payslip-parse-ai", {
+            body: { fileUrl: publicUrl }
+          });
+          if (fnData?.hourlyRate) {
+            setExtractedPayslipData(fnData);
+          }
+        } catch (err) {
+          console.error("Parse error:", err);
+        }
+
+        setUploadedFiles(prev => prev.map((f, idx) => idx === i ? { ...f, status: "done" } : f));
+      } else if (error) {
+        console.error("Upload error:", error);
+        setUploadedFiles(prev => prev.map((f, idx) => idx === i ? { ...f, status: "done" } : f));
+      }
+    }
+  };
+
+  const handleApplyExtracted = () => {
+    if (!extractedPayslipData) return;
+    toast.success(`שכר שעתי ₪${extractedPayslipData.hourlyRate} הוחל על ההגדרות`);
+  };
+
   return (
     <div className="rounded-2xl bg-card border border-border p-5 space-y-4">
       <div className="flex items-center justify-between">
@@ -47,6 +95,54 @@ export function WorkContract() {
             <span className="text-sm font-medium">{d.value}</span>
           </div>
         ))}
+      </div>
+
+      {/* Payslip upload section */}
+      <div className="mt-6 border-t border-border pt-4">
+        <h3 className="text-sm font-medium mb-3">📄 העלאת תלושי שכר לפענוח אוטומטי</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          העלה עד 3 תלושי שכר אחרונים — המערכת תחשב את השכר השעתי ותגדרות אוטומטית
+        </p>
+
+        <label className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-6 cursor-pointer hover:border-primary/50 transition-colors">
+          <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+          <span className="text-sm text-muted-foreground">לחץ להעלאה או גרור קבצים</span>
+          <span className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG (עד 3 קבצים)</span>
+          <input
+            type="file"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png"
+            className="hidden"
+            onChange={handlePayslipUpload}
+          />
+        </label>
+
+        {uploadedFiles.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {uploadedFiles.map((f, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm bg-muted/50 rounded-lg px-3 py-2">
+                <FileText className="w-4 h-4 shrink-0" />
+                <span className="flex-1 truncate">{f.name}</span>
+                {f.status === "uploading" && <span className="text-xs text-muted-foreground">מעלה...</span>}
+                {f.status === "analyzing" && <span className="text-xs text-blue-400">מנתח...</span>}
+                {f.status === "done" && <span className="text-xs text-green-400">✓</span>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {extractedPayslipData && (
+          <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+            <p className="text-sm font-medium text-green-400">נמצא שכר שעתי: ₪{extractedPayslipData.hourlyRate}/שעה</p>
+            <p className="text-xs text-muted-foreground mt-1">ברוטו ממוצע: ₪{extractedPayslipData.avgGross}</p>
+            <button
+              onClick={handleApplyExtracted}
+              className="mt-2 w-full py-2 rounded-lg bg-green-500 text-white text-sm font-medium hover:bg-green-400 transition-colors"
+            >
+              החל הגדרות אוטומטית
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

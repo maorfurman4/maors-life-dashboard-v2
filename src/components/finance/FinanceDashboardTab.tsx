@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Plus, Minus, Check, X, RotateCcw, Sparkles, CreditCard as CardIcon, TrendingUp, TrendingDown, Target, Pencil } from "lucide-react";
+import { Plus, Minus, Check, X, RotateCcw, Sparkles, CreditCard as CardIcon, TrendingUp, TrendingDown, Target, Pencil, Archive } from "lucide-react";
 import {
   useMonthlyFinance,
   useAddExpense,
@@ -8,8 +8,21 @@ import {
   useIncomeHistory,
   useFinanceSettings,
   useSaveFinanceSettings,
+  useCloseMonth,
   DEFAULT_EXPENSE_CATEGORIES,
 } from "@/hooks/use-finance-data";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
 import { FinanceTransactions } from "@/components/finance/FinanceTransactions";
@@ -827,6 +840,8 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
   const fin = useMonthlyFinance(year, month);
   const { data: settings } = useFinanceSettings();
   const savingsGoal = settings?.savings_goal_pct ?? fin.savingsGoal;
+  const closeMonthMutation = useCloseMonth();
+  const now = new Date();
 
   const score = computeHealthScore(fin.savingsPct, savingsGoal, fin.balance, fin.forecastBalance, fin.totalIncome);
   const expensePct = fin.forecastExpenses > 0 ? fin.totalExpenses / fin.forecastExpenses : 0;
@@ -834,6 +849,44 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
 
   return (
     <div className="space-y-4">
+      {/* Close Month button */}
+      <div className="flex justify-end">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Archive className="w-4 h-4" />
+              סגור חודש
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>סגירת חודש</AlertDialogTitle>
+              <AlertDialogDescription>
+                הנתונים של {now.toLocaleDateString("he-IL", { month: "long", year: "numeric" })} יישמרו בהיסטוריה. פעולה זו לא תמחק נתונים.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>ביטול</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() =>
+                  closeMonthMutation.mutate({
+                    year: now.getFullYear(),
+                    month: now.getMonth() + 1,
+                    total_income: fin.totalIncome,
+                    total_expenses: fin.totalExpenses,
+                    balance: fin.balance,
+                    savings_pct: fin.savingsPct,
+                    category_breakdown: fin.categoryBreakdown,
+                  })
+                }
+              >
+                סגור חודש
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
       {/* Gold Credit Card — balance hero */}
       <GoldCreditCard
         balance={fin.balance}

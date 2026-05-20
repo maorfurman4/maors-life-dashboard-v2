@@ -108,3 +108,27 @@ export function estimateItemPrice(name: string): { min: number; max: number; uni
   }
   return null;
 }
+
+/**
+ * Calculate monthly payment using standard amortization formula.
+ * If annualRate is 0, returns simple division (principal / months).
+ */
+export function calcMonthlyPayment(principal: number, annualRatePct: number, months: number): number {
+  if (months <= 0) return 0;
+  if (annualRatePct === 0) return principal / months;
+  const r = annualRatePct / 12 / 100;
+  return (principal * r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
+}
+
+/**
+ * Calculate months to payoff using iterative simulation.
+ * Returns Infinity if payment is too small to cover interest.
+ */
+export function calcMonthsToPayoff(principal: number, annualRatePct: number, monthlyPayment: number): number {
+  if (monthlyPayment <= 0) return Infinity;
+  if (annualRatePct === 0) return Math.ceil(principal / monthlyPayment);
+  const r = annualRatePct / 12 / 100;
+  const monthlyInterest = principal * r;
+  if (monthlyPayment <= monthlyInterest) return Infinity;
+  return Math.ceil(Math.log(monthlyPayment / (monthlyPayment - monthlyInterest)) / Math.log(1 + r));
+}

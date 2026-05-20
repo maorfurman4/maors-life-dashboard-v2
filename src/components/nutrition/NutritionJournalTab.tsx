@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Trash2, ChevronRight, ChevronLeft, UtensilsCrossed, Loader2 } from "lucide-react";
-import { useNutritionEntries, useDeleteNutrition } from "@/hooks/use-sport-data";
+import { useState, useRef } from "react";
+import { Trash2, ChevronRight, ChevronLeft, UtensilsCrossed, Loader2, Download, FileText } from "lucide-react";
+import { useNutritionEntries, useDeleteNutrition, useUserSettings } from "@/hooks/use-sport-data";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -71,6 +72,33 @@ function useWeekCalories(dates: string[]) {
   });
 }
 
+// ─── monthly nutrition hook (for exports) ────────────────────────────────────
+async function fetchMonthlyEntries(year: number, month: number) {
+  const userId = await getUserId();
+  const firstDay = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+  const lastDay  = new Date(year, month + 1, 0).toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("nutrition_entries")
+    .select("date, calories, protein, carbs, fat")
+    .eq("user_id", userId)
+    .gte("date", firstDay)
+    .lte("date", lastDay);
+  // group by date
+  const map: Record<string, { cal: number; prot: number; carb: number; fat: number; count: number }> = {};
+  for (const row of data ?? []) {
+    const d = row.date as string;
+    if (!map[d]) map[d] = { cal: 0, prot: 0, carb: 0, fat: 0, count: 0 };
+    map[d].cal  += (row.calories as number) ?? 0;
+    map[d].prot += (row.protein  as number) ?? 0;
+    map[d].carb += (row.carbs    as number) ?? 0;
+    map[d].fat  += (row.fat      as number) ?? 0;
+    map[d].count += 1;
+  }
+  return map;
+}
+
+const HEBREW_MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+
 // ─── MacroBar ────────────────────────────────────────────────────────────────
 function MacroBar({ protein, carbs, fat }: { protein: number; carbs: number; fat: number }) {
   const total = protein + carbs + fat || 1;
@@ -92,10 +120,19 @@ export function NutritionJournalTab() {
   const days    = last7Days();
   const [date, setDate]   = useState(today);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const { data: entries = [], isLoading } = useNutritionEntries(date);
   const { data: weekCals }                = useWeekCalories(days);
   const deleteMut                          = useDeleteNutrition();
+  const { data: userSettings }            = useUserSettings();
+
+  // macro goals from settings (with defaults)
+  const caloriesGoal = userSettings?.daily_calories_goal ?? 2000;
+  const proteinGoal  = userSettings?.daily_protein_goal  ?? 150;
+  const carbsGoal    = userSettings?.daily_carbs_goal    ?? 250;
+  const fatGoal      = userSettings?.daily_fat_goal      ?? 65;
 
   // aggregate totals
   const totals = entries.reduce(
@@ -132,8 +169,97 @@ export function NutritionJournalTab() {
     setDate(d.toISOString().slice(0, 10));
   };
 
+  const now = new Date();
+  const exportYear  = now.getFullYear();
+  const exportMonth = now.getMonth();
+
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const map = await fetchMonthlyEntries(exportYear, exportMonth);
+      const rows = Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+      const header = "תאריך,קלוריות,חלבון (גר'),פחמימות (גר'),שומן (גר'),מספר ארוחות\n";
+      const body = rows.map(([d, v]) =>
+        `${d},${Math.round(v.cal)},${Math.round(v.prot)},${Math.round(v.carb)},${Math.round(v.fat)},${v.count}`
+      ).join("\n");
+      const csvContent = header + body;
+      const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `תזונה-${exportYear}-${String(exportMonth + 1).padStart(2, "0")}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("קובץ CSV יוצא בהצלחה");
+    } catch {
+      toast.error("שגיאה בייצוא CSV");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const map  = await fetchMonthlyEntries(exportYear, exportMonth);
+      const rows = Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+      const totRow = rows.reduce(
+        (acc, [, v]) => ({ cal: acc.cal + v.cal, prot: acc.prot + v.prot, carb: acc.carb + v.carb, fat: acc.fat + v.fat }),
+        { cal: 0, prot: 0, carb: 0, fat: 0 }
+      );
+      const tableRows = rows.map(([d, v]) =>
+        `<tr><td>${d}</td><td>${Math.round(v.cal)}</td><td>${Math.round(v.prot)}</td><td>${Math.round(v.carb)}</td><td>${Math.round(v.fat)}</td></tr>`
+      ).join("");
+      if (printRef.current) {
+        printRef.current.innerHTML = `
+          <style>@media print { body > * { display: none !important; } #nutrition-print-area { display: block !important; direction: rtl; font-family: Arial, sans-serif; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; } th { background: #f0f0f0; } tfoot td { font-weight: bold; background: #e8f5e9; } }</style>
+          <h2 style="text-align:center">דוח תזונה — ${HEBREW_MONTHS[exportMonth]} ${exportYear}</h2>
+          <table>
+            <thead><tr><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>פחמימות</th><th>שומן</th></tr></thead>
+            <tbody>${tableRows}</tbody>
+            <tfoot><tr><td>סה"כ</td><td>${Math.round(totRow.cal)}</td><td>${Math.round(totRow.prot)}</td><td>${Math.round(totRow.carb)}</td><td>${Math.round(totRow.fat)}</td></tr></tfoot>
+          </table>
+        `;
+      }
+      window.print();
+    } catch {
+      toast.error("שגיאה בייצוא PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="px-4 pt-4 space-y-5 pb-4">
+
+      {/* ══ EXPORT BUTTONS ══════════════════════════════════════════════════ */}
+      <div className="flex gap-2 justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportCSV}
+          disabled={isExporting}
+          className="text-xs h-8 gap-1.5"
+        >
+          <Download className="h-3.5 w-3.5" />
+          ייצוא CSV
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportPDF}
+          disabled={isExporting}
+          className="text-xs h-8 gap-1.5"
+        >
+          <FileText className="h-3.5 w-3.5" />
+          ייצוא PDF
+        </Button>
+      </div>
+
+      {/* hidden print area for PDF export */}
+      <div id="nutrition-print-area" ref={printRef} className="hidden print:block" />
 
       {/* ══ WEEK STRIP ══════════════════════════════════════════════════════ */}
       <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4">
@@ -213,19 +339,39 @@ export function NutritionJournalTab() {
             <span className="text-lg font-black text-emerald-400">{totals.cal.toLocaleString()} קל׳</span>
           </div>
 
+          {/* Calories progress bar */}
+          {(() => {
+            const calPct = Math.min(100, Math.round((totals.cal / caloriesGoal) * 100));
+            return (
+              <div>
+                <div className="w-full bg-white/10 rounded-full h-1.5 mt-1">
+                  <div className="bg-orange-500 h-1.5 rounded-full transition-all" style={{ width: `${calPct}%` }} />
+                </div>
+                <span className="text-[10px] text-white/40">{calPct}% מהיעד היומי ({caloriesGoal} קל׳)</span>
+              </div>
+            );
+          })()}
+
           <MacroBar protein={totals.prot} carbs={totals.carb} fat={totals.fat} />
 
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
-              { label: "חלבון",   value: `${Math.round(totals.prot)}g`, color: "text-emerald-400" },
-              { label: "פחמימות", value: `${Math.round(totals.carb)}g`, color: "text-amber-400"   },
-              { label: "שומן",    value: `${Math.round(totals.fat)}g`,  color: "text-purple-400"  },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl bg-white/5 border border-white/8 p-2.5">
-                <p className={`text-sm font-black ${s.color}`}>{s.value}</p>
-                <p className="text-[9px] text-white/40 mt-0.5">{s.label}</p>
-              </div>
-            ))}
+              { label: "חלבון",   value: Math.round(totals.prot), goal: proteinGoal,  color: "text-emerald-400", barColor: "bg-blue-500"   },
+              { label: "פחמימות", value: Math.round(totals.carb), goal: carbsGoal,    color: "text-amber-400",   barColor: "bg-yellow-500" },
+              { label: "שומן",    value: Math.round(totals.fat),  goal: fatGoal,      color: "text-purple-400",  barColor: "bg-purple-500" },
+            ].map((s) => {
+              const pct = Math.min(100, Math.round((s.value / s.goal) * 100));
+              return (
+                <div key={s.label} className="rounded-xl bg-white/5 border border-white/8 p-2.5">
+                  <p className={`text-sm font-black ${s.color}`}>{s.value}g</p>
+                  <p className="text-[9px] text-white/40 mt-0.5">{s.label}</p>
+                  <div className="w-full bg-white/10 rounded-full h-1.5 mt-1.5">
+                    <div className={`${s.barColor} h-1.5 rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-[9px] text-white/30">{pct}% מהיעד</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

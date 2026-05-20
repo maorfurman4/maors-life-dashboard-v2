@@ -7,6 +7,7 @@ import { generateText, parseAIJson } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 type DietaryType = "בשרי" | "חלבי" | "פרווה";
+type DietStyle = "קרנבורי" | "טבעוני" | "צמחוני" | "קטו" | "ים תיכוני" | "רגיל" | "ללא גלוטן" | "ללא חלב";
 
 interface Recipe {
   name: string;
@@ -27,13 +28,15 @@ async function generateRecipeWithAI(
   calories: string,
   people: string,
   dietaryType: DietaryType,
+  dietStyle: DietStyle,
   excluded: string[]
 ): Promise<Recipe> {
   const excludedStr = excluded.length > 0 ? `מזונות אסורים (אסור להכניס): ${excluded.join(", ")}` : "אין הגבלות מיוחדות";
   const prompt = `אתה שף ישראלי מקצועי. צור מתכון ${dietaryType} בפורמט JSON בלבד.
 
 פרמטרים:
-- סוג: ${dietaryType}
+- סוג כשרות: ${dietaryType}
+- סוג תזונה (חובה לעמוד בו): ${dietStyle} — אתה חייב ליצור מתכון שמתאים בדיוק לסוג הדיאטה הזה. אסור לסטות מסוג הדיאטה הזה בשום אופן.
 - יעד חלבון למנה: ${protein}g
 - יעד קלוריות למנה: ${calories} קל׳
 - מספר מנות: ${people}
@@ -53,19 +56,21 @@ async function generateRecipeWithAI(
   "instructions": ["שלב 1", "שלב 2", "..."],
   "video_link": ""
 }
-כללים: מתכון ישראלי אמיתי ומעשי. הקפד על ${dietaryType}. ללא markdown. JSON בלבד.`;
+כללים: מתכון ישראלי אמיתי ומעשי. הקפד על ${dietaryType} ועל סוג תזונה ${dietStyle}. ללא markdown. JSON בלבד.`;
 
   const raw = await generateText(prompt);
   return parseAIJson<Recipe>(raw);
 }
 
 const DIETARY_OPTIONS: DietaryType[] = ["בשרי", "חלבי", "פרווה"];
+const DIET_STYLE_OPTIONS: DietStyle[] = ["קרנבורי", "טבעוני", "צמחוני", "קטו", "ים תיכוני", "רגיל", "ללא גלוטן", "ללא חלב"];
 
 export function NutritionRecipeGenerator() {
   const { data: profile } = useProfile();
   const addFavorite = useAddFavoriteMeal();
 
   const [dietaryType, setDietaryType] = useState<DietaryType | null>(null);
+  const [dietStyle, setDietStyle] = useState<DietStyle | null>(null);
   const [protein, setProtein] = useState("");
   const [calories, setCalories] = useState("");
   const [people, setPeople] = useState("2");
@@ -82,8 +87,8 @@ export function NutritionRecipeGenerator() {
   ];
 
   const handleGenerate = async () => {
-    if (!dietaryType) {
-      toast.error("בחר/י בשרי / חלבי / פרווה לפני יצירת מתכון");
+    if (!dietaryType || !dietStyle) {
+      toast.error("בחר סוג כשרות וסוג תזונה לפני יצירת מתכון");
       return;
     }
     if (!protein || !calories) {
@@ -93,7 +98,7 @@ export function NutritionRecipeGenerator() {
     setIsGenerating(true);
     setRecipe(null);
     try {
-      const result = await generateRecipeWithAI(protein, calories, people, dietaryType, allExcluded);
+      const result = await generateRecipeWithAI(protein, calories, people, dietaryType, dietStyle, allExcluded);
       setRecipe(result);
       setShowInstructions(false);
     } catch {
@@ -153,6 +158,31 @@ export function NutritionRecipeGenerator() {
         </div>
         {!dietaryType && (
           <p className="text-[10px] text-muted-foreground">יש לבחור לפני יצירת מתכון</p>
+        )}
+      </div>
+
+      {/* Step 2: Diet style */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold text-muted-foreground">
+          סוג תזונה <span className="text-destructive">*</span>
+        </label>
+        <div className="grid grid-cols-4 gap-2">
+          {DIET_STYLE_OPTIONS.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setDietStyle(opt)}
+              className={`py-2.5 rounded-xl text-xs font-bold border transition-colors min-h-[40px] ${
+                dietStyle === opt
+                  ? "border-nutrition/60 bg-nutrition/15 text-nutrition"
+                  : "border-border bg-secondary/30 text-muted-foreground hover:border-nutrition/30"
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+        {(!dietaryType || !dietStyle) && (
+          <p className="text-[10px] text-muted-foreground">בחר סוג כשרות וסוג תזונה</p>
         )}
       </div>
 
@@ -221,7 +251,7 @@ export function NutritionRecipeGenerator() {
       <Button
         className="w-full bg-nutrition hover:bg-nutrition/90 text-nutrition-foreground"
         onClick={handleGenerate}
-        disabled={isGenerating || !dietaryType}
+        disabled={isGenerating || !dietaryType || !dietStyle}
       >
         {isGenerating ? (
           <>

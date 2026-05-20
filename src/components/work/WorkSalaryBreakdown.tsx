@@ -1,4 +1,4 @@
-import { Banknote } from "lucide-react";
+import { Banknote, Printer } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import type { MonthlyPayslip } from "@/lib/payroll-engine";
 
@@ -27,8 +27,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const fmt = (n: number) => `₪${n.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+const tdStyle: React.CSSProperties = { border: '1px solid #ccc', padding: '8px', textAlign: 'right' };
+const tdNumStyle: React.CSSProperties = { border: '1px solid #ccc', padding: '8px', textAlign: 'left' };
+
 export function WorkSalaryBreakdown({ payslip, isLoading }: WorkSalaryBreakdownProps) {
   const hasData = payslip && payslip.totalShifts > 0;
+  const currentMonth = new Date().toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
 
   return (
     <div className="rounded-2xl bg-card border border-border p-4 md:p-5 space-y-4">
@@ -94,8 +98,66 @@ export function WorkSalaryBreakdown({ payslip, isLoading }: WorkSalaryBreakdownP
             <Row label="שכר נטו" value={fmt(payslip.netPay)} bold />
             <Row label="סכום לבנק" value={fmt(payslip.bankAmount)} bold />
           </div>
+
+          <button
+            onClick={() => window.print()}
+            className="w-full flex items-center justify-center gap-2 mt-4 px-4 py-2.5 rounded-xl border border-border bg-secondary/30 hover:bg-secondary/50 transition-colors text-sm font-medium"
+          >
+            <Printer className="h-4 w-4" />
+            הדפס תלוש שכר
+          </button>
         </div>
       )}
+
+      {/* Hidden print area */}
+      <div id="payslip-print-area" className="hidden">
+        <style>{`
+          @media print {
+            body > * { display: none !important; }
+            #payslip-print-area { display: block !important; }
+            #payslip-print-area * { color: black !important; background: white !important; }
+          }
+        `}</style>
+        <div style={{ fontFamily: 'Arial, sans-serif', direction: 'rtl', padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+          <h1 style={{ textAlign: 'center', borderBottom: '2px solid black', paddingBottom: '10px' }}>
+            תלוש שכר — {currentMonth}
+          </h1>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f0f0f0' }}>
+                <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'right' }}>רכיב</th>
+                <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left' }}>סכום (₪)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style={tdStyle}>שכר בסיס</td><td style={tdNumStyle}>{payslip?.basePay?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>הבראה</td><td style={tdNumStyle}>{payslip?.recovery?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>מצוינות</td><td style={tdNumStyle}>{payslip?.excellence?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>שכר שבת</td><td style={tdNumStyle}>{payslip?.shabbatPay?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>נסיעות</td><td style={tdNumStyle}>{payslip?.travel?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>תדרוכים</td><td style={tdNumStyle}>{payslip?.briefingPay?.toFixed(2)}</td></tr>
+              <tr style={{ fontWeight: 'bold', backgroundColor: '#e8f5e9' }}>
+                <td style={tdStyle}>ברוטו</td><td style={tdNumStyle}>{payslip?.totalGross?.toFixed(2)}</td>
+              </tr>
+              <tr><td style={tdStyle}>ביטוח לאומי</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.nationalInsurance?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>ביטוח בריאות</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.healthInsurance?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>חיסכון הראל</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.harelSavings?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>לימודים הראל</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.harelStudy?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>נסיעות הראל</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.harelTravel?.toFixed(2)}</td></tr>
+              <tr><td style={tdStyle}>הראל נוסף</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.extraHarel?.toFixed(2)}</td></tr>
+              <tr style={{ fontWeight: 'bold', backgroundColor: '#fff3e0' }}>
+                <td style={tdStyle}>סה"כ ניכויים</td><td style={{ ...tdNumStyle, color: 'red' }}>-{payslip?.totalDeductions?.toFixed(2)}</td>
+              </tr>
+              <tr style={{ fontWeight: 'bold', fontSize: '1.1em', backgroundColor: '#e3f2fd' }}>
+                <td style={tdStyle}>שכר נטו לתשלום</td><td style={tdNumStyle}>{payslip?.netPay?.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style={{ marginTop: '20px', fontSize: '0.8em', color: '#666' }}>
+            נוצר בתאריך {new Date().toLocaleDateString('he-IL')} | {payslip?.totalShifts} משמרות | {payslip?.totalHours} שעות
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

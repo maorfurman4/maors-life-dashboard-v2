@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { calcMonthlyPayslip, DEFAULT_PAYROLL_SETTINGS, type PayrollSettings, type ShiftRow } from "@/lib/payroll-engine";
 import { useMemo } from "react";
+import { toast } from "sonner";
 
 // ─── Auth helper ───
 async function getUserId() {
@@ -137,6 +138,93 @@ export function useSavePayrollSettings() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["payroll-settings"] }),
+  });
+}
+
+// ─── Batch Add Shifts ───
+export function useBatchAddShifts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (shifts: Array<{
+      date: string;
+      type: string;
+      role: string;
+      is_shabbat_holiday: boolean;
+      has_briefing: boolean;
+      hours: number;
+      notes?: string;
+    }>) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("work_shifts")
+        .insert(shifts.map(s => ({ ...s, user_id: user.id })));
+      if (error) throw error;
+    },
+    onSuccess: (_, shifts) => {
+      qc.invalidateQueries({ queryKey: ["work-shifts"] });
+      toast.success(`${shifts.length} משמרות נוספו בהצלחה ✅`);
+    },
+    onError: () => {
+      toast.error("שגיאה בהוספת המשמרות");
+    },
+  });
+}
+
+// ─── Work Month History ───
+export function useWorkMonthHistory() {
+  return useQuery({
+    queryKey: ["work-monthly-history"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("work_monthly_history")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("year", { ascending: false })
+        .order("month", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useArchiveWorkMonth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      year: number;
+      month: number;
+      shifts: ShiftRow[];
+      totalShifts: number;
+      totalHours: number;
+      totalGross: number;
+      breakdownByType: Record<string, { count: number; hours: number; gross: number }>;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("work_monthly_history")
+        .upsert({
+          user_id: user.id,
+          year: args.year,
+          month: args.month,
+          total_shifts: args.totalShifts,
+          total_hours: args.totalHours,
+          total_gross_pay: args.totalGross,
+          breakdown_by_type: args.breakdownByType,
+          shifts_snapshot: args.shifts,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["work-monthly-history"] });
+      toast.success("חודש העבודה נשמר בהיסטוריה ✅");
+    },
+    onError: () => {
+      toast.error("שגיאה בשמירת ההיסטוריה");
+    },
   });
 }
 

@@ -37,6 +37,7 @@ export const SHIFT_HOURS: Record<string, number> = {
   long_morning: 12,
   long_night: 12,
   briefing: 8,
+  manual_hourly: 0,
 };
 
 export const SHIFT_LABELS: Record<string, string> = {
@@ -46,6 +47,7 @@ export const SHIFT_LABELS: Record<string, string> = {
   long_morning: 'ארוכה בוקר',
   long_night: 'ארוכה לילה',
   briefing: 'רענון',
+  manual_hourly: 'שעות ידניות',
 };
 
 export const SHIFT_TIMES: Record<string, { start: string; end: string }> = {
@@ -55,6 +57,7 @@ export const SHIFT_TIMES: Record<string, { start: string; end: string }> = {
   long_morning: { start: '07:00', end: '19:00' },
   long_night: { start: '19:00', end: '07:00' },
   briefing: { start: '06:00', end: '19:00' },
+  manual_hourly: { start: '00:00', end: '00:00' },
 };
 
 export interface ShiftBreakdown {
@@ -131,6 +134,9 @@ function getShiftHours(shift: ShiftRow): number {
 }
 
 export function calcShiftBreakdown(shift: ShiftRow, settings: PayrollSettings): ShiftBreakdown {
+  if (shift.type === "manual_hourly") {
+    return { basePay: 0, recovery: 0, excellence: 0, shabbatPay: 0, travel: 0, briefingPay: 0, totalGross: 0 };
+  }
   const hours = getShiftHours(shift);
 
   // Shabbat rate replaces (not adds to) base rate

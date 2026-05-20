@@ -4,11 +4,13 @@ import {
   Briefcase, Play, Square, Coffee, Plus, Clock,
   TrendingUp, Target, FileText, Calendar, Download,
   HeartPulse, Shield, Save, ChevronDown, ChevronUp,
-  Wallet, BarChart2, Zap, Trash2,
+  Wallet, BarChart2, Zap, Trash2, CalendarDays,
 } from "lucide-react";
+import { BatchShiftDrawer } from "@/components/work/BatchShiftDrawer";
+import { WorkMonthHistory } from "@/components/work/WorkMonthHistory";
 import {
   useAddShift, useDeleteShift, usePayrollSettings, useWorkShifts,
-  useSavePayrollSettings,
+  useSavePayrollSettings, useArchiveWorkMonth,
 } from "@/hooks/use-work-data";
 import {
   calcShiftBreakdown, calcMonthlyPayslip, SHIFT_HOURS, SHIFT_LABELS, SHIFT_TIMES,
@@ -24,7 +26,7 @@ export const Route = createFileRoute("/_app/work")({
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type WorkTab = "dashboard" | "finance" | "reports" | "settings";
+type WorkTab = "dashboard" | "finance" | "reports" | "settings" | "history";
 
 interface LiveShiftState {
   type: string;
@@ -42,10 +44,11 @@ interface ShiftCardDef {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const TABS: { key: WorkTab; label: string }[] = [
-  { key: "dashboard", label: "בית"   },
-  { key: "finance",   label: "הבנק"  },
-  { key: "reports",   label: "דוחות" },
-  { key: "settings",  label: "חוזה"  },
+  { key: "dashboard", label: "בית"      },
+  { key: "finance",   label: "הבנק"     },
+  { key: "reports",   label: "דוחות"    },
+  { key: "settings",  label: "חוזה"     },
+  { key: "history",   label: "היסטוריה 📋" },
 ];
 
 const SHIFT_CARDS: ShiftCardDef[] = [
@@ -59,6 +62,7 @@ const SHIFT_CARDS: ShiftCardDef[] = [
   { key: "long_night_shab",   label: "ארוכה לילה שבת",  sublabel: "19:00 – 07:00 · 150%", emoji: "🌃✨", image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600&q=80", type: "long_night",   isShabbat: true,  color: "#f59e0b", bonusLabel: "150% תעריף",  bonusAmount: null, hasBriefing: false },
   { key: "briefing",          label: "רענון",             sublabel: "06:00 – 19:00", emoji: "📋", image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80",  type: "briefing",     isShabbat: false, color: "#10b981", bonusLabel: "תוספת רענון", bonusAmount: null, hasBriefing: true  },
   { key: "custom",            label: "שעות ידני",         sublabel: "הכנס מספר שעות", emoji: "⏱️", image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80",  type: "morning",      isShabbat: false, color: "#06b6d4", bonusLabel: null,           bonusAmount: null, hasBriefing: false, isCustomHours: true },
+  { key: "manual_hourly",    label: "שעות ידניות",       sublabel: "שעות ידניות",    emoji: "🕐", image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80",  type: "manual_hourly", isShabbat: false, color: "#a78bfa", bonusLabel: null,           bonusAmount: null, hasBriefing: false, isCustomHours: true },
 ];
 
 const SHIFT_TYPE_COLORS: Record<string, string> = {
@@ -599,7 +603,19 @@ function DashboardTab({ liveShift, setLiveShift, settings, shifts }: {
 
         {/* Quick-add shift cards */}
         <div className="space-y-2">
-          <p className="text-sm font-black text-white px-0.5">הוסף משמרת</p>
+          <div className="flex items-center justify-between px-0.5">
+            <p className="text-sm font-black text-white">הוסף משמרת</p>
+            <button
+              onClick={() => {
+                // We need to bubble up to WorkPage — use a custom event
+                window.dispatchEvent(new CustomEvent("open-batch-shift"));
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-white/15 bg-white/8 text-[11px] font-bold text-white/70 hover:bg-white/12 transition-all active:scale-95"
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+              מרובות
+            </button>
+          </div>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-0.5 px-0.5"
             style={{ scrollSnapType: "x mandatory" }}>
             {SHIFT_CARDS.map((card) => (
@@ -1093,12 +1109,78 @@ function SettingsTab({ settings }: { settings: PayrollSettings }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+//  TAB 5 — HISTORY
+// ═══════════════════════════════════════════════════════════════════════
+function HistoryTab({ shifts, settings, year, month, monthLabel, payslip }: {
+  shifts: ShiftRow[];
+  settings: PayrollSettings;
+  year: number;
+  month: number;
+  monthLabel: string;
+  payslip: ReturnType<typeof calcMonthlyPayslip>;
+}) {
+  const archiveMonth = useArchiveWorkMonth();
+
+  const handleArchive = () => {
+    if (shifts.length === 0) {
+      toast.error("אין משמרות לשמירה");
+      return;
+    }
+    const breakdownByType: Record<string, { count: number; hours: number; gross: number }> = {};
+    for (const shift of shifts) {
+      const key = shift.type;
+      const bd = calcShiftBreakdown(shift, settings);
+      const hours = shift.hours ?? (SHIFT_HOURS[shift.type] ?? 8);
+      if (!breakdownByType[key]) breakdownByType[key] = { count: 0, hours: 0, gross: 0 };
+      breakdownByType[key].count += 1;
+      breakdownByType[key].hours += hours;
+      breakdownByType[key].gross += bd.totalGross;
+    }
+    archiveMonth.mutate({
+      year,
+      month,
+      shifts,
+      totalShifts: payslip.totalShifts,
+      totalHours: payslip.totalHours,
+      totalGross: payslip.totalGross,
+      breakdownByType,
+    });
+  };
+
+  return (
+    <div className="px-4 pt-8 space-y-4">
+      <div className="rounded-3xl border border-sky-500/20 bg-sky-500/8 backdrop-blur-xl p-4 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-black text-white">סגור חודש</p>
+          <p className="text-[10px] text-white/40 mt-0.5">{monthLabel} · {payslip.totalShifts} משמרות</p>
+        </div>
+        <button
+          onClick={handleArchive}
+          disabled={archiveMonth.isPending || shifts.length === 0}
+          className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-black hover:bg-sky-400 transition-colors disabled:opacity-50"
+        >
+          {archiveMonth.isPending ? "שומר..." : "סגור חודש ✓"}
+        </button>
+      </div>
+      <WorkMonthHistory />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 //  MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════
 function WorkPage() {
   const [activeTab,   setActiveTab]   = useState<WorkTab>("dashboard");
   const [liveShift,   setLiveShift]   = useState<LiveShiftState | null>(null);
   const [monthlyGoal, setMonthlyGoal] = useState(() => Number(localStorage.getItem("work_monthly_goal") || "10000"));
+  const [batchOpen,   setBatchOpen]   = useState(false);
+
+  useEffect(() => {
+    const handler = () => setBatchOpen(true);
+    window.addEventListener("open-batch-shift", handler);
+    return () => window.removeEventListener("open-batch-shift", handler);
+  }, []);
 
   const updateGoal = useCallback((v: number) => {
     setMonthlyGoal(v);
@@ -1185,8 +1267,20 @@ function WorkPage() {
           {activeTab === "settings" && (
             <SettingsTab settings={resolvedSettings} />
           )}
+          {activeTab === "history" && (
+            <HistoryTab
+              shifts={resolvedShifts}
+              settings={resolvedSettings}
+              year={year}
+              month={month}
+              monthLabel={monthLabel}
+              payslip={payslip}
+            />
+          )}
         </div>
       </div>
+
+      <BatchShiftDrawer open={batchOpen} onOpenChange={setBatchOpen} />
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }

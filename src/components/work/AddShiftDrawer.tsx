@@ -5,7 +5,7 @@ import { useAddShift } from "@/hooks/use-work-data";
 import { useAddIncome } from "@/hooks/use-finance-data";
 import { toast } from "sonner";
 
-type ShiftType = 'morning' | 'afternoon' | 'night' | 'long_morning' | 'long_night' | 'briefing';
+type ShiftType = 'morning' | 'afternoon' | 'night' | 'long_morning' | 'long_night' | 'briefing' | 'manual_hourly';
 type WorkRole = 'guard' | 'shift_manager';
 
 const ROLE_LABELS: Record<WorkRole, string> = {
@@ -27,6 +27,7 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
   const [notes, setNotes] = useState("");
   const [showMealQuestion, setShowMealQuestion] = useState(false);
   const [hadMeal, setHadMeal] = useState<boolean | null>(null);
+  const [customHours, setCustomHours] = useState<number>(8);
 
   const addShift = useAddShift();
   const addIncome = useAddIncome();
@@ -47,7 +48,7 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
         role,
         is_shabbat_holiday: isShabbat,
         has_briefing: hasBriefing,
-        hours: SHIFT_HOURS[shiftType] || 8,
+        hours: shiftType === "manual_hourly" ? customHours : (SHIFT_HOURS[shiftType] || 8),
         notes: notes.trim() || null,
       },
       {
@@ -83,6 +84,7 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
     setNotes("");
     setShowMealQuestion(false);
     setHadMeal(null);
+    setCustomHours(8);
   };
 
   const handleMealAnswer = (answer: boolean) => {
@@ -92,7 +94,7 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
 
   const shiftEntries = (Object.keys(SHIFT_LABELS) as ShiftType[]).map((key) => ({
     key,
-    label: SHIFT_LABELS[key],
+    label: key === "manual_hourly" ? "שעות ידניות 📝" : SHIFT_LABELS[key],
     times: SHIFT_TIMES[key],
   }));
 
@@ -137,7 +139,7 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
                   shiftType === s.key ? "border-work bg-work/10 text-work" : "border-border bg-card hover:bg-secondary/40 text-foreground"
                 }`}>
                 <span>{s.label}</span>
-                {s.times && (
+                {s.times && s.key !== "manual_hourly" && (
                   <span className="block text-[10px] text-muted-foreground mt-0.5" dir="ltr">
                     {s.times.start}–{s.times.end}
                   </span>
@@ -146,6 +148,21 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
             ))}
           </div>
         </div>
+
+        {shiftType === "manual_hourly" && (
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">כמה שעות עבדת?</label>
+            <input
+              type="number"
+              min={0.5}
+              max={24}
+              step={0.5}
+              value={customHours}
+              onChange={(e) => setCustomHours(Number(e.target.value))}
+              className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:border-work min-h-[44px]"
+            />
+          </div>
+        )}
 
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-2 block">תפקיד</label>

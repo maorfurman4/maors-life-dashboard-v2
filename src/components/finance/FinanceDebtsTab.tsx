@@ -7,7 +7,7 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from "recharts";
-import { projectDebt, type DebtInput } from "@/lib/finance-utils";
+import { projectDebt, calcMonthlyPayment, calcMonthsToPayoff, type DebtInput } from "@/lib/finance-utils";
 import { useDebts, useAddDebt, useDeleteDebt } from "@/hooks/use-finance-data";
 import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
@@ -26,11 +26,35 @@ interface Debt extends DebtInput {
   type: DebtType;
 }
 
-// Earthy debt type palette
-const TYPE_META: Record<DebtType, { icon: typeof Building2; color: string; dimBg: string; border: string }> = {
-  "משכנתא": { icon: Building2,  color: FT.gold,    dimBg: FT.goldDim,   border: FT.goldBorder },
-  "הלוואה": { icon: Car,        color: FT.brown,   dimBg: FT.brownDim,  border: FT.brownBorder },
-  "חוב":    { icon: CreditCard, color: FT.danger,  dimBg: FT.dangerDim, border: "rgba(217,107,107,0.25)" },
+// Debt type palette with richer colors
+const TYPE_META: Record<DebtType, { icon: typeof Building2; color: string; dimBg: string; border: string; bgClass: string; borderClass: string; badgeClass: string }> = {
+  "משכנתא": {
+    icon: Building2,
+    color: "#6366f1",
+    dimBg: "rgba(99,102,241,0.15)",
+    border: "rgba(99,102,241,0.3)",
+    bgClass: "bg-gradient-to-br from-indigo-500/15 to-blue-500/10",
+    borderClass: "border-indigo-500/30",
+    badgeClass: "bg-indigo-500/20 text-indigo-300",
+  },
+  "הלוואה": {
+    icon: Car,
+    color: "#10b981",
+    dimBg: "rgba(16,185,129,0.15)",
+    border: "rgba(16,185,129,0.3)",
+    bgClass: "bg-gradient-to-br from-emerald-500/15 to-teal-500/10",
+    borderClass: "border-emerald-500/30",
+    badgeClass: "bg-emerald-500/20 text-emerald-300",
+  },
+  "חוב": {
+    icon: CreditCard,
+    color: "#f43f5e",
+    dimBg: "rgba(244,63,94,0.15)",
+    border: "rgba(244,63,94,0.3)",
+    bgClass: "bg-gradient-to-br from-rose-500/15 to-red-500/10",
+    borderClass: "border-rose-500/30",
+    badgeClass: "bg-rose-500/20 text-rose-300",
+  },
 };
 
 // ─── LocalStorage persistence ─────────────────────────────────────────────────
@@ -153,8 +177,8 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
 
   return (
     <div
-      className="rounded-3xl overflow-hidden"
-      style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}
+      className={`rounded-3xl overflow-hidden border ${meta.borderClass} ${meta.bgClass}`}
+      style={{ background: FT.card }}
       dir="rtl"
     >
       {/* Card Header */}
@@ -347,21 +371,26 @@ function AddDebtForm({ onAdd, onCancel }: { onAdd: (d: Omit<Debt, "id">) => void
   const [monthly, setMonthly] = useState("");
   const [rate, setRate] = useState("");
   const [elapsed, setElapsed] = useState("0");
+  const [calcMode, setCalcMode] = useState<"payment" | "months">("payment");
+  const [inputMonths, setInputMonths] = useState("");
+
+  const p = parseFloat(principal) || 0;
+  const r = parseFloat(rate) || 0;
+  const m = parseFloat(monthly) || 0;
+  const mo = parseInt(inputMonths) || 0;
+
+  const computedMonths = calcMode === "payment" && p > 0 && m > 0 ? calcMonthsToPayoff(p, r, m) : null;
+  const computedPayment = calcMode === "months" && p > 0 && mo > 0 ? calcMonthlyPayment(p, r, mo) : null;
 
   function handleAdd() {
-    if (!name.trim() || !principal || !monthly || !rate) { toast.error("מלא את כל השדות"); return; }
-    const p = parseFloat(principal), m = parseFloat(monthly), r = parseFloat(rate);
-    if (!p || !m || !r) { toast.error("ערכים לא תקינים"); return; }
-    if (m <= p * (r / 100 / 12)) { toast.error("התשלום החודשי נמוך מדי לכסות ריבית"); return; }
-    onAdd({ name: name.trim(), type, principal: p, monthly_payment: m, annual_interest_rate: r, months_elapsed: parseInt(elapsed) || 0 });
+    const finalMonthly = calcMode === "months" ? (computedPayment ?? 0) : m;
+    if (!name.trim() || !principal || !rate || (calcMode === "payment" ? !monthly : !inputMonths)) {
+      toast.error("מלא את כל השדות"); return;
+    }
+    if (!p || !finalMonthly || !r) { toast.error("ערכים לא תקינים"); return; }
+    if (finalMonthly <= p * (r / 100 / 12)) { toast.error("התשלום החודשי נמוך מדי לכסות ריבית"); return; }
+    onAdd({ name: name.trim(), type, principal: p, monthly_payment: finalMonthly, annual_interest_rate: r, months_elapsed: parseInt(elapsed) || 0 });
   }
-
-  const fields = [
-    { label: "קרן מקורית (₪)",      val: principal, set: setPrincipal, placeholder: "500000" },
-    { label: "תשלום חודשי (₪)",     val: monthly,   set: setMonthly,   placeholder: "3500"   },
-    { label: "ריבית שנתית (%)",      val: rate,      set: setRate,      placeholder: "4.5"    },
-    { label: "חודשים ששולמו כבר",    val: elapsed,   set: setElapsed,   placeholder: "0"      },
-  ];
 
   const subInput = { background: FT.card, border: `1px solid ${FT.goldBorder}` } as const;
 
@@ -383,7 +412,7 @@ function AddDebtForm({ onAdd, onCancel }: { onAdd: (d: Omit<Debt, "id">) => void
       {/* Type toggle */}
       <div className="flex gap-2">
         {DEBT_TYPES.map((t) => {
-          const m = TYPE_META[t];
+          const mt = TYPE_META[t];
           const active = type === t;
           return (
             <button
@@ -392,9 +421,9 @@ function AddDebtForm({ onAdd, onCancel }: { onAdd: (d: Omit<Debt, "id">) => void
               className="flex-1 py-2 rounded-xl text-xs font-bold transition-all"
               style={{
                 letterSpacing: 0,
-                background: active ? m.dimBg : FT.brownDim,
-                border: `1px solid ${active ? m.border : FT.brownBorder}`,
-                color: active ? m.color : FT.textMuted,
+                background: active ? mt.dimBg : FT.brownDim,
+                border: `1px solid ${active ? mt.border : FT.brownBorder}`,
+                color: active ? mt.color : FT.textMuted,
               }}
             >
               {t}
@@ -403,19 +432,94 @@ function AddDebtForm({ onAdd, onCancel }: { onAdd: (d: Omit<Debt, "id">) => void
         })}
       </div>
 
-      {/* Numeric fields */}
+      {/* Principal + Rate */}
       <div className="grid grid-cols-2 gap-2">
-        {fields.map(({ label, val, set, placeholder }) => (
-          <div key={label}>
-            <p className="text-[10px] mb-1" style={{ color: FT.textFaint, letterSpacing: 0 }}>{label}</p>
-            <input
-              type="number" value={val} onChange={(e) => set(e.target.value)}
-              placeholder={placeholder} inputMode="decimal"
-              className="w-full px-3 py-2 rounded-xl text-sm font-black text-white placeholder:text-white/15 focus:outline-none transition-all"
-              style={subInput} dir="ltr"
-            />
-          </div>
+        <div>
+          <p className="text-[10px] mb-1" style={{ color: FT.textFaint, letterSpacing: 0 }}>קרן מקורית (₪)</p>
+          <input
+            type="number" value={principal} onChange={(e) => setPrincipal(e.target.value)}
+            placeholder="500000" inputMode="decimal"
+            className="w-full px-3 py-2 rounded-xl text-sm font-black text-white placeholder:text-white/15 focus:outline-none transition-all"
+            style={subInput} dir="ltr"
+          />
+        </div>
+        <div>
+          <p className="text-[10px] mb-1" style={{ color: FT.textFaint, letterSpacing: 0 }}>ריבית שנתית (%)</p>
+          <input
+            type="number" value={rate} onChange={(e) => setRate(e.target.value)}
+            placeholder="4.5" inputMode="decimal"
+            className="w-full px-3 py-2 rounded-xl text-sm font-black text-white placeholder:text-white/15 focus:outline-none transition-all"
+            style={subInput} dir="ltr"
+          />
+        </div>
+      </div>
+
+      {/* Calc mode toggle */}
+      <div className="flex gap-2">
+        {(["payment", "months"] as const).map((mode) => (
+          <button
+            key={mode}
+            onClick={() => setCalcMode(mode)}
+            className="flex-1 py-1.5 rounded-xl text-[11px] font-bold transition-all"
+            style={{
+              letterSpacing: 0,
+              background: calcMode === mode ? FT.goldMid : FT.brownDim,
+              border: `1px solid ${calcMode === mode ? FT.goldBorder : FT.brownBorder}`,
+              color: calcMode === mode ? FT.gold : FT.textMuted,
+            }}
+          >
+            {mode === "payment" ? "אני יודע את התשלום החודשי" : "אני רוצה לסיים בתוך X חודשים"}
+          </button>
         ))}
+      </div>
+
+      {/* Payment or Months input with live preview */}
+      {calcMode === "payment" ? (
+        <div>
+          <p className="text-[10px] mb-1" style={{ color: FT.textFaint, letterSpacing: 0 }}>תשלום חודשי (₪)</p>
+          <input
+            type="number" value={monthly} onChange={(e) => setMonthly(e.target.value)}
+            placeholder="3500" inputMode="decimal"
+            className="w-full px-3 py-2 rounded-xl text-sm font-black text-white placeholder:text-white/15 focus:outline-none transition-all"
+            style={subInput} dir="ltr"
+          />
+          {computedMonths !== null && isFinite(computedMonths) && (
+            <p className="text-[11px] mt-1.5 font-bold" style={{ color: FT.gold, letterSpacing: 0 }}>
+              ~ {computedMonths} חודשים ({Math.floor(computedMonths / 12)} שנים {computedMonths % 12} חודשים)
+            </p>
+          )}
+          {computedMonths !== null && !isFinite(computedMonths) && (
+            <p className="text-[11px] mt-1.5" style={{ color: FT.danger, letterSpacing: 0 }}>
+              התשלום נמוך מדי לכסות ריבית
+            </p>
+          )}
+        </div>
+      ) : (
+        <div>
+          <p className="text-[10px] mb-1" style={{ color: FT.textFaint, letterSpacing: 0 }}>כמה חודשים לסיום</p>
+          <input
+            type="number" value={inputMonths} onChange={(e) => setInputMonths(e.target.value)}
+            placeholder="120" inputMode="numeric"
+            className="w-full px-3 py-2 rounded-xl text-sm font-black text-white placeholder:text-white/15 focus:outline-none transition-all"
+            style={subInput} dir="ltr"
+          />
+          {computedPayment !== null && computedPayment > 0 && (
+            <p className="text-[11px] mt-1.5 font-bold" style={{ color: FT.gold, letterSpacing: 0 }}>
+              ~ ₪{computedPayment.toFixed(0)}/חודש
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Elapsed months */}
+      <div>
+        <p className="text-[10px] mb-1" style={{ color: FT.textFaint, letterSpacing: 0 }}>חודשים ששולמו כבר</p>
+        <input
+          type="number" value={elapsed} onChange={(e) => setElapsed(e.target.value)}
+          placeholder="0" inputMode="numeric"
+          className="w-full px-3 py-2 rounded-xl text-sm font-black text-white placeholder:text-white/15 focus:outline-none transition-all"
+          style={subInput} dir="ltr"
+        />
       </div>
 
       {/* Actions */}
@@ -560,6 +664,29 @@ export function FinanceDebtsTab(_: { year: number; month: number }) {
               {debts.map((debt) => (
                 <DebtCard key={debt.id} debt={debt} onDelete={() => handleDelete(debt.id)} />
               ))}
+              {debts.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h4 className="text-sm font-medium" style={{ color: FT.textMuted, letterSpacing: 0 }}>💡 טיפים פיננסיים</h4>
+                  {debts.map((debt) => {
+                    const tips: string[] = [];
+                    if (debt.annual_interest_rate > 5) {
+                      const monthlyInterest = (debt.principal * debt.annual_interest_rate / 100 / 12);
+                      tips.push(`ב${debt.name} אתה משלם ~₪${monthlyInterest.toFixed(0)} ריבית בחודש. שקול מחזור הלוואה.`);
+                    }
+                    const extraPayment = 500;
+                    const currentMonths = calcMonthsToPayoff(debt.principal, debt.annual_interest_rate, debt.monthly_payment);
+                    const fasterMonths = calcMonthsToPayoff(debt.principal, debt.annual_interest_rate, debt.monthly_payment + extraPayment);
+                    if (isFinite(currentMonths) && isFinite(fasterMonths) && currentMonths - fasterMonths > 2) {
+                      tips.push(`תשלום נוסף של ₪${extraPayment}/חודש ב${debt.name} יחסוך ${currentMonths - fasterMonths} חודשים.`);
+                    }
+                    return tips.map((tip, i) => (
+                      <p key={`${debt.id}-${i}`} className="text-xs rounded-lg px-3 py-2" style={{ color: FT.textMuted, background: "rgba(255,255,255,0.05)", letterSpacing: 0 }}>
+                        {tip}
+                      </p>
+                    ));
+                  })}
+                </div>
+              )}
             </div>
           )}
         </>

@@ -127,10 +127,20 @@ export interface GeneratePlanPayload {
   favoriteExercises?: string[];
   blacklistedExercises?: string[];
   recentWorkouts?: { name: string; date: string; exercises: string[] }[];
+  // AI Planner v3 params:
+  planWeeks?: number;       // 1-4 weeks
+  equipmentList?: string[]; // toggled equipment chips
 }
 
 export async function generateWorkoutPlan(payload: GeneratePlanPayload): Promise<WorkoutPlan> {
-  const { data, error } = await supabase.functions.invoke("workout-plan-ai", { body: payload });
+  const body = {
+    ...payload,
+    // Normalize equipment list for Edge Function
+    ...(payload.equipmentList && payload.equipmentList.length > 0
+      ? { equipmentItems: payload.equipmentList }
+      : {}),
+  };
+  const { data, error } = await supabase.functions.invoke("workout-plan-ai", { body });
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
   if (!data?.plan) throw new Error("לא התקבלה תוכנית");

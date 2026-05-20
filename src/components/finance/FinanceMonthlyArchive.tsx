@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Archive, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Wallet, PiggyBank } from "lucide-react";
-import { useMonthlyFinance } from "@/hooks/use-finance-data";
+import { Archive, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Wallet, PiggyBank, Download, FileText } from "lucide-react";
+import { useMonthlyFinance, useMonthlySnapshots } from "@/hooks/use-finance-data";
 
 const MONTHS_HE = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
 
@@ -14,6 +14,7 @@ export function FinanceMonthlyArchive() {
   const [month, setMonth] = useState(defaultMonth);
 
   const finance = useMonthlyFinance(year, month);
+  const { data: snapshots } = useMonthlySnapshots();
 
   const goPrev = () => {
     if (month === 1) { setMonth(12); setYear((y) => y - 1); }
@@ -32,16 +33,112 @@ export function FinanceMonthlyArchive() {
 
   const fmt = (n: number) => `₪${Math.round(n).toLocaleString("he-IL")}`;
 
+  // Build months data: combine snapshots with current displayed month
+  const monthsData = (() => {
+    const snapshotRows = (snapshots ?? []).map((s: any) => ({
+      year: s.year,
+      month: s.month,
+      total_income: s.total_income ?? 0,
+      total_expenses: s.total_expenses ?? 0,
+      balance: s.balance ?? 0,
+      savings_pct: s.savings_pct ?? 0,
+    }));
+    // Also include the currently viewed month from live data
+    const liveRow = {
+      year,
+      month,
+      total_income: finance.totalIncome,
+      total_expenses: finance.totalExpenses,
+      balance: finance.balance,
+      savings_pct: finance.savingsPct,
+    };
+    const key = `${year}-${month}`;
+    const hasSnapshot = snapshotRows.some((r) => `${r.year}-${r.month}` === key);
+    return hasSnapshot ? snapshotRows : [liveRow, ...snapshotRows];
+  })();
+
+  const handleExportCSV = () => {
+    const rows = [
+      ["חודש", "הכנסות", "הוצאות", "יתרה", "חיסכון %"],
+      ...monthsData.map((m) => [
+        `${m.year}-${String(m.month).padStart(2, "0")}`,
+        m.total_income.toFixed(2),
+        m.total_expenses.toFixed(2),
+        m.balance.toFixed(2),
+        m.savings_pct.toFixed(1) + "%",
+      ]),
+    ];
+    const csv = "﻿" + rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "היסטוריה-פיננסית.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
+
   // Top categories
   const topCategories = Object.entries(finance.categoryBreakdown)
     .sort(([, a], [, b]) => (b as number) - (a as number))
     .slice(0, 5);
 
   return (
+    <>
+    <style>{`@media print { body > * { display: none !important; } #finance-print-area { display: block !important; } }`}</style>
+    <div id="finance-print-area" className="hidden print:block p-8 direction-rtl" dir="rtl">
+      <h1 className="text-2xl font-bold mb-4">דוח פיננסי היסטורי</h1>
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr>
+            {["חודש", "הכנסות", "הוצאות", "יתרה", "חיסכון %"].map((h) => (
+              <th key={h} className="border px-3 py-2 text-right font-bold">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {monthsData.map((m) => (
+            <tr key={`${m.year}-${m.month}`}>
+              <td className="border px-3 py-1.5">{`${m.year}-${String(m.month).padStart(2, "0")}`}</td>
+              <td className="border px-3 py-1.5">₪{Math.round(m.total_income).toLocaleString("he-IL")}</td>
+              <td className="border px-3 py-1.5">₪{Math.round(m.total_expenses).toLocaleString("he-IL")}</td>
+              <td className="border px-3 py-1.5">₪{Math.round(m.balance).toLocaleString("he-IL")}</td>
+              <td className="border px-3 py-1.5">{m.savings_pct.toFixed(1)}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
     <div className="rounded-2xl border border-finance/15 bg-card p-4 space-y-4">
-      <div className="flex items-center gap-2">
-        <Archive className="h-4 w-4 text-finance" />
-        <h3 className="text-sm font-bold">ארכיון חודשי</h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Archive className="h-4 w-4 text-finance" />
+          <h3 className="text-sm font-bold">ארכיון חודשי</h3>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-finance/20 bg-finance/10 text-finance hover:bg-finance/20 transition-colors"
+            title="ייצוא CSV"
+          >
+            <Download className="h-3.5 w-3.5" />
+            CSV
+          </button>
+          <button
+            onClick={handleExportPDF}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-muted/30 bg-muted/20 text-muted-foreground hover:bg-muted/40 transition-colors"
+            title="הדפסה / PDF"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            PDF
+          </button>
+        </div>
       </div>
 
       {/* Month nav */}
@@ -104,6 +201,7 @@ export function FinanceMonthlyArchive() {
         </p>
       )}
     </div>
+    </>
   );
 }
 
