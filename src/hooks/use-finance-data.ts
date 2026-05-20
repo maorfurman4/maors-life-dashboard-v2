@@ -257,7 +257,11 @@ export function useSaveFinanceSettings() {
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["finance-settings"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["finance-settings"] });
+      qc.invalidateQueries({ queryKey: ["payroll-settings"] });
+      qc.invalidateQueries({ queryKey: ["user-settings"] });
+    },
   });
 }
 

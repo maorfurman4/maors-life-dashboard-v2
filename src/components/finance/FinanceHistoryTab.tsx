@@ -78,6 +78,8 @@ function useAnomalyIds(expenses: any[], year: number, month: number) {
     });
     const catAvg: Record<string, number> = {};
     for (const [cat, amounts] of Object.entries(catAmounts)) {
+      // Skip categories with fewer than 3 transactions (not enough data)
+      if (amounts.length < 3) continue;
       catAvg[cat] = amounts.reduce((s, a) => s + a, 0) / amounts.length;
     }
     const ids = new Set<string>();

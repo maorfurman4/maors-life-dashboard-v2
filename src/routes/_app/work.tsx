@@ -63,6 +63,8 @@ const SHIFT_CARDS: ShiftCardDef[] = [
   { key: "briefing",          label: "רענון",             sublabel: "06:00 – 19:00", emoji: "📋", image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80",  type: "briefing",     isShabbat: false, color: "#10b981", bonusLabel: "תוספת רענון", bonusAmount: null, hasBriefing: true  },
   { key: "custom",            label: "שעות ידני",         sublabel: "הכנס מספר שעות", emoji: "⏱️", image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80",  type: "morning",      isShabbat: false, color: "#06b6d4", bonusLabel: null,           bonusAmount: null, hasBriefing: false, isCustomHours: true },
   { key: "manual_hourly",    label: "שעות ידניות",       sublabel: "שעות ידניות",    emoji: "🕐", image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80",  type: "manual_hourly", isShabbat: false, color: "#a78bfa", bonusLabel: null,           bonusAmount: null, hasBriefing: false, isCustomHours: true },
+  { key: "vacation_day",     label: "יום חופשה",          sublabel: "חופשה שנתית",    emoji: "🏖️", image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80",  type: "vacation_day", isShabbat: false, color: "#34d399", bonusLabel: null,           bonusAmount: null, hasBriefing: false },
+  { key: "sick_day",         label: "יום מחלה",           sublabel: "היעדרות מחלה",   emoji: "🤒", image: "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=600&q=80",  type: "sick_day",     isShabbat: false, color: "#f87171", bonusLabel: null,           bonusAmount: null, hasBriefing: false },
 ];
 
 const SHIFT_TYPE_COLORS: Record<string, string> = {
@@ -605,16 +607,24 @@ function DashboardTab({ liveShift, setLiveShift, settings, shifts }: {
         <div className="space-y-2">
           <div className="flex items-center justify-between px-0.5">
             <p className="text-sm font-black text-white">הוסף משמרת</p>
-            <button
-              onClick={() => {
-                // We need to bubble up to WorkPage — use a custom event
-                window.dispatchEvent(new CustomEvent("open-batch-shift"));
-              }}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-white/15 bg-white/8 text-[11px] font-bold text-white/70 hover:bg-white/12 transition-all active:scale-95"
-            >
-              <CalendarDays className="h-3.5 w-3.5" />
-              מרובות
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleLog(SHIFT_CARDS[0], today())}
+                disabled={addShift.isPending}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-emerald-400/30 bg-emerald-400/10 text-[11px] font-bold text-emerald-300 hover:bg-emerald-400/20 transition-all active:scale-95 disabled:opacity-50"
+              >
+                ⚡ היום
+              </button>
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("open-batch-shift"));
+                }}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-white/15 bg-white/8 text-[11px] font-bold text-white/70 hover:bg-white/12 transition-all active:scale-95"
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
+                מרובות
+              </button>
+            </div>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-0.5 px-0.5"
             style={{ scrollSnapType: "x mandatory" }}>

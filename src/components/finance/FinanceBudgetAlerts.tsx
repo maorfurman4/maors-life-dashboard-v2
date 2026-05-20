@@ -36,7 +36,7 @@ export function FinanceBudgetAlerts() {
   for (const [cat, spent] of Object.entries(fin.categoryBreakdown)) {
     const budget = budgetMap[cat];
     if (budget && budget > 0) {
-      const pct = (spent / budget) * 100;
+      const pct = Math.round((spent / budget) * 100);
       if (pct >= 70) {
         alerts.push({ category: cat, spent, budget, pct });
       }

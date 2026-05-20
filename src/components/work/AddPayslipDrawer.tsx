@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AddPayslipDrawerProps {
   open: boolean;
@@ -7,20 +10,64 @@ interface AddPayslipDrawerProps {
 }
 
 export function AddPayslipDrawer({ open, onClose }: AddPayslipDrawerProps) {
+  const queryClient = useQueryClient();
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [grossActual, setGrossActual] = useState("");
   const [netActual, setNetActual] = useState("");
   const [unionActual, setUnionActual] = useState("");
   const [pensionActual, setPensionActual] = useState("");
   const [eduActual, setEduActual] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    onClose();
+  const reset = () => {
     setGrossActual("");
     setNetActual("");
     setUnionActual("");
     setPensionActual("");
     setEduActual("");
+  };
+
+  const handleSave = async () => {
+    if (!grossActual && !netActual) {
+      toast.error("הזן לפחות ברוטו או נטו");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const extractedData = {
+        gross_pay: grossActual ? Number(grossActual) : null,
+        net_pay: netActual ? Number(netActual) : null,
+        deductions: {
+          union: unionActual ? Number(unionActual) : null,
+          pension: pensionActual ? Number(pensionActual) : null,
+          education_fund: eduActual ? Number(eduActual) : null,
+        },
+      };
+
+      const { error } = await (supabase as any)
+        .from("payslip_uploads")
+        .insert({
+          user_id: user.id,
+          upload_month: month,
+          extracted_data: extractedData,
+          file_url: "",
+          file_name: `תלוש-${month}`,
+        });
+
+      if (error) throw error;
+
+      toast.success("תלוש נשמר");
+      await queryClient.invalidateQueries({ queryKey: ["payslip-uploads"] });
+      reset();
+      onClose();
+    } catch (e: any) {
+      toast.error("שגיאה בשמירת התלוש: " + e.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -66,8 +113,9 @@ export function AddPayslipDrawer({ open, onClose }: AddPayslipDrawerProps) {
           </div>
         </div>
 
-        <button onClick={handleSave} className="w-full py-3 rounded-xl bg-work text-work-foreground font-bold text-sm hover:opacity-90 transition-opacity">
-          שמור תלוש
+        <button onClick={handleSave} disabled={isSaving}
+          className="w-full py-3 rounded-xl bg-work text-work-foreground font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
+          {isSaving ? "שומר..." : "שמור תלוש"}
         </button>
       </div>
     </AddItemDrawer>

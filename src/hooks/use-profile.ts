@@ -53,7 +53,7 @@ export function useProfile() {
       return (data ?? null) as UserProfile | null
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 30,
   })
 }
 

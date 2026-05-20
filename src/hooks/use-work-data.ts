@@ -137,7 +137,11 @@ export function useSavePayrollSettings() {
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["payroll-settings"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payroll-settings"] });
+      qc.invalidateQueries({ queryKey: ["finance-settings"] });
+      qc.invalidateQueries({ queryKey: ["user-settings"] });
+    },
   });
 }
 
@@ -178,7 +182,7 @@ export function useWorkMonthHistory() {
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("work_monthly_history")
         .select("*")
         .eq("user_id", user.id)
@@ -204,7 +208,7 @@ export function useArchiveWorkMonth() {
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("work_monthly_history")
         .upsert({
           user_id: user.id,

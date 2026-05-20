@@ -428,9 +428,14 @@ export function useDeleteBodyProgress() {
   });
 }
 
+// ─── Local date helper (avoids UTC offset bugs for Israeli users UTC+2/+3) ───
+function toLocalDateStr(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 // ─── Nutrition Entries ───
 export function useNutritionEntries(date?: string) {
-  const targetDate = date || new Date().toISOString().slice(0, 10);
+  const targetDate = date || toLocalDateStr();
   return useQuery({
     queryKey: ["nutrition-entries", targetDate],
     queryFn: async () => {
@@ -468,7 +473,7 @@ export function useAddNutrition() {
         carbs_g: entry.carbs_g || null,
         fat_g: entry.fat_g || null,
         notes: entry.notes || null,
-        date: entry.date || new Date().toISOString().slice(0, 10),
+        date: entry.date || toLocalDateStr(),
       });
       if (error) throw error;
     },
@@ -489,7 +494,7 @@ export function useDeleteNutrition() {
 
 // ─── Water Entries ───
 export function useWaterEntry(date?: string) {
-  const targetDate = date || new Date().toISOString().slice(0, 10);
+  const targetDate = date || toLocalDateStr();
   return useQuery({
     queryKey: ["water-entry", targetDate],
     queryFn: async () => {
@@ -509,7 +514,7 @@ export function useUpsertWater() {
   return useMutation({
     mutationFn: async ({ glasses, date }: { glasses: number; date?: string }) => {
       const userId = await getUserId();
-      const targetDate = date || new Date().toISOString().slice(0, 10);
+      const targetDate = date || toLocalDateStr();
       const { data: existing } = await supabase
         .from("water_entries")
         .select("id")
@@ -541,7 +546,7 @@ export function useAddWaterMl() {
   return useMutation({
     mutationFn: async ({ addMl, currentMl, date }: { addMl: number; currentMl: number; date?: string }) => {
       const userId = await getUserId();
-      const targetDate = date || new Date().toISOString().slice(0, 10);
+      const targetDate = date || toLocalDateStr();
       const newMl = Math.max(0, currentMl + addMl);
 
       const { data: existing } = await supabase

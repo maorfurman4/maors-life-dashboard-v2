@@ -22,6 +22,22 @@ export function FinanceTransactions() {
     ...fin.incomes.map((i: any) => ({ ...i, _type: "income" as const })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  // Weekly totals: ISO week number helper
+  const getWeekNum = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const day = d.getDay() === 0 ? 7 : d.getDay();
+    d.setDate(d.getDate() + 4 - day);
+    const year = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil((((d.getTime() - year.getTime()) / 86400000) + 1) / 7);
+  };
+  const weeklyExpenses: Record<number, number> = {};
+  fin.expenses.forEach((e: any) => {
+    const w = getWeekNum(e.date);
+    weeklyExpenses[w] = (weeklyExpenses[w] || 0) + Number(e.amount);
+  });
+  const currentWeek = getWeekNum(new Date().toISOString().slice(0, 10));
+  const thisWeekTotal = weeklyExpenses[currentWeek] || 0;
+
   const displayed = showAll ? transactions : transactions.slice(0, 2);
 
   const handleDelete = (item: any) => {
@@ -50,6 +66,16 @@ export function FinanceTransactions() {
           </button>
         </div>
       </div>
+
+      {thisWeekTotal > 0 && (
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl"
+          style={{ background: FT.cardLight, border: `1px solid ${FT.brownBorder}` }}>
+          <span className="text-[10px] font-bold" style={{ color: FT.textSub }}>סה"כ השבוע</span>
+          <span className="text-xs font-black" dir="ltr" style={{ color: FT.danger }}>
+            -₪{fmt(thisWeekTotal)}
+          </span>
+        </div>
+      )}
 
       {transactions.length === 0 ? (
         <button onClick={() => setExpenseOpen(true)}

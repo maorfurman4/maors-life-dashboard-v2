@@ -55,8 +55,16 @@ export function WorkSalaryForecast({ year, month }: Props) {
     };
   }, [payslip, shifts, year, month]);
 
-  if (isLoading || !forecast) {
+  if (isLoading) {
     return <div className="rounded-2xl border border-work/15 bg-card p-4 h-32 animate-pulse" />;
+  }
+
+  if (!forecast) {
+    return (
+      <div className="rounded-2xl border border-work/15 bg-card p-4 text-center text-xs text-muted-foreground py-6">
+        אין נתוני משמרות לחישוב תחזית
+      </div>
+    );
   }
 
   if (!forecast.isCurrentMonth) {

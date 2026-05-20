@@ -53,14 +53,14 @@ export function FinanceMonthlyArchive() {
       savings_pct: finance.savingsPct,
     };
     const key = `${year}-${month}`;
-    const hasSnapshot = snapshotRows.some((r) => `${r.year}-${r.month}` === key);
+    const hasSnapshot = snapshotRows.some((r: typeof snapshotRows[0]) => `${r.year}-${r.month}` === key);
     return hasSnapshot ? snapshotRows : [liveRow, ...snapshotRows];
   })();
 
   const handleExportCSV = () => {
     const rows = [
       ["חודש", "הכנסות", "הוצאות", "יתרה", "חיסכון %"],
-      ...monthsData.map((m) => [
+      ...monthsData.map((m: typeof monthsData[0]) => [
         `${m.year}-${String(m.month).padStart(2, "0")}`,
         m.total_income.toFixed(2),
         m.total_expenses.toFixed(2),
@@ -103,7 +103,7 @@ export function FinanceMonthlyArchive() {
           </tr>
         </thead>
         <tbody>
-          {monthsData.map((m) => (
+          {monthsData.map((m: typeof monthsData[0]) => (
             <tr key={`${m.year}-${m.month}`}>
               <td className="border px-3 py-1.5">{`${m.year}-${String(m.month).padStart(2, "0")}`}</td>
               <td className="border px-3 py-1.5">₪{Math.round(m.total_income).toLocaleString("he-IL")}</td>

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { Trash2, ChevronRight, ChevronLeft, UtensilsCrossed, Loader2, Download, FileText } from "lucide-react";
+import { Trash2, ChevronRight, ChevronLeft, UtensilsCrossed, Loader2, Download, FileText, Copy } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNutritionEntries, useDeleteNutrition, useUserSettings } from "@/hooks/use-sport-data";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,21 +78,21 @@ async function fetchMonthlyEntries(year: number, month: number) {
   const userId = await getUserId();
   const firstDay = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const lastDay  = new Date(year, month + 1, 0).toISOString().slice(0, 10);
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from("nutrition_entries")
-    .select("date, calories, protein, carbs, fat")
+    .select("date, calories, protein, protein_g, carbs, carbs_g, fat, fat_g")
     .eq("user_id", userId)
     .gte("date", firstDay)
     .lte("date", lastDay);
   // group by date
   const map: Record<string, { cal: number; prot: number; carb: number; fat: number; count: number }> = {};
-  for (const row of data ?? []) {
+  for (const row of (data ?? []) as any[]) {
     const d = row.date as string;
     if (!map[d]) map[d] = { cal: 0, prot: 0, carb: 0, fat: 0, count: 0 };
-    map[d].cal  += (row.calories as number) ?? 0;
-    map[d].prot += (row.protein  as number) ?? 0;
-    map[d].carb += (row.carbs    as number) ?? 0;
-    map[d].fat  += (row.fat      as number) ?? 0;
+    map[d].cal  += (row.calories ?? 0);
+    map[d].prot += (row.protein_g ?? row.protein ?? 0);
+    map[d].carb += (row.carbs_g  ?? row.carbs   ?? 0);
+    map[d].fat  += (row.fat_g    ?? row.fat     ?? 0);
     map[d].count += 1;
   }
   return map;
@@ -123,6 +124,8 @@ export function NutritionJournalTab() {
   const [isExporting, setIsExporting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
+  const queryClient                        = useQueryClient();
+  const [isCopyingYesterday, setIsCopyingYesterday] = useState(false);
   const { data: entries = [], isLoading } = useNutritionEntries(date);
   const { data: weekCals }                = useWeekCalories(days);
   const deleteMut                          = useDeleteNutrition();
@@ -134,15 +137,53 @@ export function NutritionJournalTab() {
   const carbsGoal    = userSettings?.daily_carbs_goal    || 250;
   const fatGoal      = userSettings?.daily_fat_goal      || 65;
 
+  const handleCopyYesterday = async () => {
+    setIsCopyingYesterday(true);
+    try {
+      const userId = await getUserId();
+      const yest = new Date(Date.now() - 86400000);
+      const yesterdayStr = `${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,"0")}-${String(yest.getDate()).padStart(2,"0")}`;
+      const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}-${String(new Date().getDate()).padStart(2,"0")}`;
+
+      const { data: yesterdayEntries, error: fetchError } = await supabase
+        .from("nutrition_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("date", yesterdayStr);
+
+      if (fetchError) throw fetchError;
+      if (!yesterdayEntries || yesterdayEntries.length === 0) {
+        toast.info("לא נמצאו ארוחות אתמול");
+        return;
+      }
+
+      const newEntries = yesterdayEntries.map(({ id, created_at, ...rest }: any) => ({
+        ...rest,
+        date: todayStr,
+      }));
+
+      const { error: insertError } = await supabase.from("nutrition_entries").insert(newEntries);
+      if (insertError) throw insertError;
+
+      await queryClient.invalidateQueries({ queryKey: ["nutrition-entries"] });
+      toast.success("✅ ארוחות אתמול הועתקו ליום היום");
+    } catch {
+      toast.error("שגיאה בהעתקת ארוחות");
+    } finally {
+      setIsCopyingYesterday(false);
+    }
+  };
+
   // aggregate totals
   const totals = entries.reduce(
     (acc, e: any) => ({
-      cal:  acc.cal  + (e.calories ?? 0),
-      prot: acc.prot + (e.protein  ?? 0),
-      carb: acc.carb + (e.carbs    ?? 0),
-      fat:  acc.fat  + (e.fat      ?? 0),
+      cal:   acc.cal   + (e.calories  ?? 0),
+      prot:  acc.prot  + (e.protein   ?? 0),
+      carb:  acc.carb  + (e.carbs_g   ?? e.carbs ?? 0),
+      fat:   acc.fat   + (e.fat_g     ?? e.fat   ?? 0),
+      fiber: acc.fiber + (e.fiber_g   ?? 0),
     }),
-    { cal: 0, prot: 0, carb: 0, fat: 0 }
+    { cal: 0, prot: 0, carb: 0, fat: 0, fiber: 0 }
   );
 
   // group by meal_type
@@ -243,7 +284,17 @@ export function NutritionJournalTab() {
     <div className="px-4 pt-4 space-y-5 pb-4">
 
       {/* ══ EXPORT BUTTONS ══════════════════════════════════════════════════ */}
-      <div className="flex gap-2 justify-end">
+      <div className="flex gap-2 justify-end flex-wrap">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCopyYesterday}
+          disabled={isCopyingYesterday}
+          className="text-xs h-8 gap-1.5"
+        >
+          {isCopyingYesterday ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />}
+          העתק מאתמול
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -364,14 +415,15 @@ export function NutritionJournalTab() {
 
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
-              { label: "חלבון",   value: Math.round(totals.prot), goal: proteinGoal,  color: "text-emerald-400", barColor: "bg-blue-500"   },
-              { label: "פחמימות", value: Math.round(totals.carb), goal: carbsGoal,    color: "text-amber-400",   barColor: "bg-yellow-500" },
-              { label: "שומן",    value: Math.round(totals.fat),  goal: fatGoal,      color: "text-purple-400",  barColor: "bg-purple-500" },
+              { label: "חלבון",   value: Math.round(totals.prot), goal: proteinGoal,  color: "text-emerald-400", barColor: "bg-blue-500",   sub: null },
+              { label: "פחמימות", value: Math.round(totals.carb), goal: carbsGoal,    color: "text-amber-400",   barColor: "bg-yellow-500", sub: totals.fiber > 0 ? `נטו: ${Math.max(0, Math.round(totals.carb - totals.fiber))}ג` : null },
+              { label: "שומן",    value: Math.round(totals.fat),  goal: fatGoal,      color: "text-purple-400",  barColor: "bg-purple-500", sub: null },
             ].map((s) => {
-              const pct = Math.min(100, Math.round((s.value / s.goal) * 100));
+              const pct = s.goal > 0 ? Math.min(100, Math.round((s.value / s.goal) * 100)) : 0;
               return (
                 <div key={s.label} className="rounded-xl bg-white/5 border border-white/8 p-2.5">
                   <p className={`text-sm font-black ${s.color}`}>{s.value}g</p>
+                  {s.sub && <p className="text-[8px] text-white/30">{s.sub}</p>}
                   <p className="text-[9px] text-white/40 mt-0.5">{s.label}</p>
                   <div className="w-full bg-white/10 rounded-full h-1.5 mt-1.5">
                     <div className={`${s.barColor} h-1.5 rounded-full transition-all`} style={{ width: `${pct}%` }} />
@@ -394,12 +446,10 @@ export function NutritionJournalTab() {
 
       {/* ══ EMPTY STATE ═════════════════════════════════════════════════════ */}
       {!isLoading && entries.length === 0 && (
-        <div className="flex flex-col items-center gap-4 py-14 text-center">
-          <div className="h-16 w-16 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl flex items-center justify-center">
-            <UtensilsCrossed className="h-7 w-7 text-white/20" />
-          </div>
-          <p className="text-white/40 text-sm font-medium">אין רשומות לתאריך זה</p>
-          <p className="text-white/20 text-xs">הוסף ארוחה מ-Tab 1 ← כפתור +</p>
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <span className="text-5xl">🥗</span>
+          <p className="text-white/60 text-sm font-medium">אין מנות היום</p>
+          <p className="text-white/30 text-xs">הוסף את הארוחה הראשונה שלך!</p>
         </div>
       )}
 

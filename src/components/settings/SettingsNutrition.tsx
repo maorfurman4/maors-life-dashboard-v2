@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Apple, Save } from "lucide-react";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
+import { useUserSettings, useUpdateUserSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
 
 const DIET_TYPES = [
@@ -36,6 +37,8 @@ function toggle(arr: string[], val: string) {
 export function SettingsNutrition() {
   const { data: profile } = useProfile();
   const { mutate: updateProfile, isPending } = useUpdateProfile();
+  const { data: userSettings } = useUserSettings();
+  const { mutate: updateSettings, isPending: isSavingGoals } = useUpdateUserSettings();
 
   const [draft, setDraft] = useState({
     diet_type: "",
@@ -63,6 +66,21 @@ export function SettingsNutrition() {
     });
   }, [profile]);
 
+  useEffect(() => {
+    if (!userSettings) return;
+    const s = userSettings as any;
+    setGoals({
+      calories:         s.daily_calories_goal    != null ? String(s.daily_calories_goal)    : "",
+      trainingCalories: s.training_day_calories  != null ? String(s.training_day_calories)  : "",
+      protein:          s.daily_protein_goal     != null ? String(s.daily_protein_goal)     : "",
+      trainingProtein:  s.training_day_protein   != null ? String(s.training_day_protein)   : "",
+      carbs:            s.daily_carbs_goal       != null ? String(s.daily_carbs_goal)       : "",
+      fat:              s.daily_fat_goal         != null ? String(s.daily_fat_goal)         : "",
+      waterMl:          s.daily_water_ml         != null ? String(s.daily_water_ml)         : "",
+      waterGlasses:     s.daily_water_glasses_goal != null ? String(s.daily_water_glasses_goal) : "",
+    });
+  }, [userSettings]);
+
   const handleSave = () => {
     updateProfile(
       {
@@ -75,6 +93,25 @@ export function SettingsNutrition() {
       {
         onSuccess: () => toast.success("הגדרות תזונה נשמרו"),
         onError: (e) => toast.error("שגיאה: " + e.message),
+      }
+    );
+  };
+
+  const handleSaveGoals = () => {
+    updateSettings(
+      {
+        daily_calories_goal:      goals.calories         ? Number(goals.calories)         : null,
+        training_day_calories:    goals.trainingCalories ? Number(goals.trainingCalories) : null,
+        daily_protein_goal:       goals.protein          ? Number(goals.protein)          : null,
+        training_day_protein:     goals.trainingProtein  ? Number(goals.trainingProtein)  : null,
+        daily_carbs_goal:         goals.carbs            ? Number(goals.carbs)            : null,
+        daily_fat_goal:           goals.fat              ? Number(goals.fat)              : null,
+        daily_water_ml:           goals.waterMl          ? Number(goals.waterMl)          : null,
+        daily_water_glasses_goal: goals.waterGlasses     ? Number(goals.waterGlasses)     : null,
+      },
+      {
+        onSuccess: () => toast.success("יעדים תזונתיים נשמרו ✅"),
+        onError: (e: any) => toast.error("שגיאה: " + e.message),
       }
     );
   };
@@ -171,6 +208,11 @@ export function SettingsNutrition() {
               </div>
             </div>
           ))}
+          <button onClick={handleSaveGoals} disabled={isSavingGoals}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-none bg-white/10 border border-white/20 text-white text-sm font-bold hover:bg-white/20 transition-colors disabled:opacity-50 min-h-[44px]">
+            <Save className="h-4 w-4" />
+            {isSavingGoals ? "שומר..." : "שמור יעדים"}
+          </button>
         </div>
       </div>
     </div>
