@@ -23,20 +23,53 @@ interface Recipe {
   video_link?: string;
 }
 
-async function generateRecipeWithAI(
+const DIET_RULES: Record<DietStyle, string> = {
+  "קרנבורי": "חייב: בשר/עוף/דג/ביצים/שומן בעלי חיים. אסור: לחם, קטניות, ירקות כעיקר, אורז, פסטה",
+  "טבעוני": "אסור: כל מוצר מן החי (בשר, עוף, דג, ביצים, חלב, גבינה)",
+  "צמחוני": "אסור: בשר, עוף, דג. מותר: ביצים, מוצרי חלב",
+  "קטו": "חייב: שומן גבוה, חלבון בינוני. אסור: סוכר, עמילן, קמח, אורז, תפו\"א, פירות (מלבד אוכמניות)",
+  "ים תיכוני": "חייב: שמן זית, ירקות, קטניות, דגים, דגנים מלאים",
+  "ללא גלוטן": "אסור לחלוטין: חיטה, שעורה, שיבולת שועל, כוסמין, גלוטן",
+  "ללא חלב": "אסור: חלב, גבינה, שמנת, יוגורט, חמאה",
+  "רגיל": "ללא הגבלות מיוחדות",
+};
+
+const CARNIVORE_KEYWORDS = ["בשר", "עוף", "דג", "סטייק", "שניצל", "המבורגר", "ביצ", "סלמון", "טונה", "כבד"];
+
+function validateDietCompliance(recipe: Recipe, dietStyle: DietStyle): void {
+  if (dietStyle === "קרנבורי") {
+    const ingredientsText = recipe.ingredients.join(" ").toLowerCase();
+    const hasAnimalProtein = CARNIVORE_KEYWORDS.some((kw) => ingredientsText.includes(kw));
+    if (!hasAnimalProtein) {
+      throw new Error(`המתכון לא תואם לסוג הדיאטה ${dietStyle}`);
+    }
+  }
+}
+
+function buildPrompt(
   protein: string,
   calories: string,
   people: string,
   dietaryType: DietaryType,
   dietStyle: DietStyle,
-  excluded: string[]
-): Promise<Recipe> {
+  excluded: string[],
+  retryPrefix?: string
+): string {
   const excludedStr = excluded.length > 0 ? `מזונות אסורים (אסור להכניס): ${excluded.join(", ")}` : "אין הגבלות מיוחדות";
-  const prompt = `אתה שף ישראלי מקצועי. צור מתכון ${dietaryType} בפורמט JSON בלבד.
+  const dietRule = DIET_RULES[dietStyle];
+  const strictPrefix = retryPrefix
+    ? `${retryPrefix}\n\n`
+    : "";
+
+  return `${strictPrefix}⚠️ חוק מוחלט ראשון: סוג תזונה = ${dietStyle}. אם ${dietStyle} === "קרנבורי" — המתכון חייב להכיל בשר/עוף/דג/ביצים בלבד. אסור בהחלט ירקות כעיקר, קטניות, או כל מרכיב צמחוני.
+
+כללי תזונה ספציפיים עבור ${dietStyle}: ${dietRule}
+
+אתה שף ישראלי מקצועי. צור מתכון ${dietaryType} בפורמט JSON בלבד.
 
 פרמטרים:
 - סוג כשרות: ${dietaryType}
-- סוג תזונה (חובה לעמוד בו): ${dietStyle} — אתה חייב ליצור מתכון שמתאים בדיוק לסוג הדיאטה הזה. אסור לסטות מסוג הדיאטה הזה בשום אופן.
+- סוג תזונה: ${dietStyle}
 - יעד חלבון למנה: ${protein}g
 - יעד קלוריות למנה: ${calories} קל׳
 - מספר מנות: ${people}
@@ -57,9 +90,34 @@ async function generateRecipeWithAI(
   "video_link": ""
 }
 כללים: מתכון ישראלי אמיתי ומעשי. הקפד על ${dietaryType} ועל סוג תזונה ${dietStyle}. ללא markdown. JSON בלבד.`;
+}
 
+async function generateRecipeWithAI(
+  protein: string,
+  calories: string,
+  people: string,
+  dietaryType: DietaryType,
+  dietStyle: DietStyle,
+  excluded: string[]
+): Promise<Recipe> {
+  // First attempt
+  const prompt = buildPrompt(protein, calories, people, dietaryType, dietStyle, excluded);
   const raw = await generateText(prompt);
-  return parseAIJson<Recipe>(raw);
+  const recipe = parseAIJson<Recipe>(raw);
+
+  try {
+    validateDietCompliance(recipe, dietStyle);
+    return recipe;
+  } catch {
+    // Retry once with an even stricter prefix
+    toast.warning("המתכון לא תאם לדיאטה, מנסה שוב...");
+    const retryPrefix = `⚠️⚠️⚠️ STRICT: ${dietStyle} ONLY. Previous attempt failed validation. This recipe MUST use ONLY ingredients appropriate for ${dietStyle}.`;
+    const retryPrompt = buildPrompt(protein, calories, people, dietaryType, dietStyle, excluded, retryPrefix);
+    const retryRaw = await generateText(retryPrompt);
+    const retryRecipe = parseAIJson<Recipe>(retryRaw);
+    validateDietCompliance(retryRecipe, dietStyle);
+    return retryRecipe;
+  }
 }
 
 const DIETARY_OPTIONS: DietaryType[] = ["בשרי", "חלבי", "פרווה"];

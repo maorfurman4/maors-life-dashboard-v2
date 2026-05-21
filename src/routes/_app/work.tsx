@@ -623,7 +623,7 @@ function DashboardTab({ liveShift, setLiveShift, settings, shifts }: {
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-white/15 bg-white/8 text-[11px] font-bold text-white/70 hover:bg-white/12 transition-all active:scale-95"
               >
                 <CalendarDays className="h-3.5 w-3.5" />
-                מרובות
+                הוסף משמרות מרובות
               </button>
             </div>
           </div>

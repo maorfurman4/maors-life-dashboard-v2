@@ -2405,14 +2405,15 @@ const DAY_EQUIPMENT_OPTIONS = [
 ];
 
 const CARDIO_METRICS: Record<string, { primary: string; primaryUnit: string; alternatives: Array<{label: string; unit: string; toMinutes: (val: number) => number}> }> = {
-  "ריצה":       { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
-  "אופניים":    { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
-  "שחייה":      { primary: "אורכים (25מ')", primaryUnit: "lengths", alternatives: [{ label: "בריכות (50מ')", unit: "pools", toMinutes: (v) => v * 1.5 }, { label: "ק\"מ", unit: "km", toMinutes: (v) => v * 20 }] },
-  "חבל קפיצה": { primary: "דקות", primaryUnit: "min",    alternatives: [{ label: "סבבים", unit: "rounds", toMinutes: (v) => v * 3 }] },
-  "רוינג":      { primary: "מטרים", primaryUnit: "m",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
-  "HIIT":       { primary: "סבבים", primaryUnit: "rounds",alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
-  "הליכה":      { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
-  "אליפטי":     { primary: "דקות", primaryUnit: "min",    alternatives: [] },
+  "ריצה":        { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "אופניים":     { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "שחייה":       { primary: "אורכי בריכה (25מ׳)", primaryUnit: "lengths", alternatives: [{ label: "בריכות (50מ׳)", unit: "pools", toMinutes: (v) => v * 3 }, { label: "ק\"מ", unit: "km", toMinutes: (v) => v * 30 }, { label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "חבל קפיצה":  { primary: "דקות", primaryUnit: "min",    alternatives: [{ label: "סיבובים", unit: "rounds", toMinutes: (v) => v * 3 }] },
+  "חתירה":       { primary: "מטרים", primaryUnit: "m",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "HIIT":        { primary: "סיבובים", primaryUnit: "rounds", alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "הליכה":       { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "טיול הרים":   { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "אליפטי":      { primary: "דקות", primaryUnit: "min",    alternatives: [] },
 };
 
 type WorkoutDbCategory = "weights" | "calisthenics" | "running" | "mixed";
@@ -6002,6 +6003,8 @@ function ShareRunModal({ run, onClose }: { run: RunForShare; onClose: () => void
 function RunningLogSection() {
   const addWorkout = useAddWorkout();
   const { data: runs } = useRunHistory();
+  const { data: settings } = useUserSettings();
+  const bodyWeight = (settings as any)?.weight_kg ?? 75;
 
   const [distRaw,  setDistRaw]  = useState("");
   const [minsRaw,  setMinsRaw]  = useState("");
@@ -6013,6 +6016,13 @@ function RunningLogSection() {
   const distKm    = parseFloat(distRaw)  || 0;
   const totalMins = (parseInt(minsRaw)   || 0) + (parseInt(secsRaw) || 0) / 60;
   const paceDec   = computePaceDecimal(distKm, totalMins);
+
+  // Estimated duration: use entered time if available, else 6 min/km default
+  const estimatedMins = totalMins > 0 ? totalMins : distKm * 6;
+  // Estimated calories (medium intensity running)
+  const estimatedCalories = distKm > 0 || totalMins > 0
+    ? calcCardioCalories("running", "medium", Math.max(1, Math.round(estimatedMins)), bodyWeight)
+    : 0;
 
   const handleSave = async () => {
     if (!distKm && !totalMins) return toast.error("הכנס לפחות מרחק או זמן");
@@ -6114,6 +6124,25 @@ function RunningLogSection() {
           <div className="flex items-center justify-center gap-2 rounded-2xl border border-orange-500/25 bg-orange-500/10 px-4 py-3 transition-all">
             <span className="text-2xl font-black text-white tracking-tight">{formatPace(paceDec)}</span>
             <span className="text-sm font-bold text-orange-400">/ק״מ</span>
+          </div>
+        )}
+
+        {/* Estimated minutes + calorie hint (when km entered without time) */}
+        {distKm > 0 && totalMins === 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-bold text-white/40">≈ {Math.round(estimatedMins)} דקות</span>
+            {estimatedCalories > 0 && (
+              <span className="text-orange-400 text-[11px] font-bold">~{estimatedCalories} קל׳ 🔥</span>
+            )}
+          </div>
+        )}
+
+        {/* Calorie preview when time is entered */}
+        {totalMins > 0 && estimatedCalories > 0 && (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-orange-500/20 bg-orange-500/8 py-2.5 transition-all">
+            <Flame className="h-4 w-4 text-orange-400" />
+            <span className="text-lg font-black text-white">{estimatedCalories.toLocaleString()}</span>
+            <span className="text-xs font-bold text-orange-400">קלוריות</span>
           </div>
         )}
 
@@ -6480,16 +6509,16 @@ function OtherCardioLogSection({ sport }: { sport: typeof CARDIO_SPORTS[number] 
   const minutes: number = (() => {
     if (!metricConfig) return primaryVal;
     if (activeUnit === metricConfig.primaryUnit) {
-      // Convert primary unit to minutes
+      // Convert primary unit to minutes using standard paces
       if (metricConfig.primaryUnit === "km") {
-        // Running: 1 km ≈ 6 min; Cycling: 1 km ≈ 3 min; Walking: 1 km ≈ 12 min
+        // Running: 1 km ≈ 6 min; Cycling: 1 km ≈ 3 min; Walking/Hiking: 1 km ≈ 12 min
         if (sport.key === "cycling") return primaryVal * 3;
-        if (sport.key === "walking" || sport.labelHe === "הליכה") return primaryVal * 12;
+        if (sport.key === "hiking" || sport.labelHe === "הליכה" || sport.labelHe === "טיול הרים") return primaryVal * 12;
         return primaryVal * 6; // running default
       }
-      if (metricConfig.primaryUnit === "lengths") return primaryVal * 1; // 25m lengths ~1 min each
-      if (metricConfig.primaryUnit === "m") return primaryVal / 200; // rowing
-      if (metricConfig.primaryUnit === "rounds") return primaryVal * 4; // HIIT rounds ~4 min each
+      if (metricConfig.primaryUnit === "lengths") return primaryVal * 1.5; // 25m length ≈ 1.5 min
+      if (metricConfig.primaryUnit === "m") return primaryVal / 500 * 2; // rowing: 500m ≈ 2 min
+      if (metricConfig.primaryUnit === "rounds") return primaryVal * 4;   // HIIT/jump-rope rounds ~4 min each
       return primaryVal; // already minutes
     }
     // Alternative unit
@@ -6580,9 +6609,18 @@ function OtherCardioLogSection({ sport }: { sport: typeof CARDIO_SPORTS[number] 
           </div>
         )}
 
-        {/* Calorie estimate */}
-        {estimatedCalories > 0 && (
-          <span className="text-orange-400 text-sm">~{estimatedCalories} קל' 🔥</span>
+        {/* Converted minutes + calorie inline hint */}
+        {primaryVal > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {activeUnit !== "min" && minutes > 0 && (
+              <span className="text-[11px] font-bold text-white/40">
+                ≈ {Math.round(minutes)} דקות
+              </span>
+            )}
+            {estimatedCalories > 0 && (
+              <span className="text-orange-400 text-[11px] font-bold">~{estimatedCalories} קל׳ 🔥</span>
+            )}
+          </div>
         )}
       </div>
 

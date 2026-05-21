@@ -27,33 +27,36 @@ interface Debt extends DebtInput {
 }
 
 // Debt type palette with richer colors
-const TYPE_META: Record<DebtType, { icon: typeof Building2; color: string; dimBg: string; border: string; bgClass: string; borderClass: string; badgeClass: string }> = {
+const TYPE_META: Record<DebtType, { icon: typeof Building2; color: string; dimBg: string; border: string; bgClass: string; borderClass: string; badgeClass: string; barColor: string }> = {
   "משכנתא": {
     icon: Building2,
-    color: "#6366f1",
-    dimBg: "rgba(99,102,241,0.15)",
-    border: "rgba(99,102,241,0.3)",
-    bgClass: "bg-gradient-to-br from-indigo-500/15 to-blue-500/10",
-    borderClass: "border-indigo-500/30",
-    badgeClass: "bg-indigo-500/20 text-indigo-300",
+    color: "#3b82f6",
+    dimBg: "rgba(59,130,246,0.15)",
+    border: "rgba(59,130,246,0.4)",
+    bgClass: "bg-gradient-to-br from-blue-500/10 to-indigo-500/10",
+    borderClass: "border-blue-500/40",
+    badgeClass: "border border-blue-500/40 bg-blue-500/10 text-blue-300",
+    barColor: "#3b82f6",
   },
   "הלוואה": {
     icon: Car,
     color: "#10b981",
     dimBg: "rgba(16,185,129,0.15)",
-    border: "rgba(16,185,129,0.3)",
-    bgClass: "bg-gradient-to-br from-emerald-500/15 to-teal-500/10",
-    borderClass: "border-emerald-500/30",
-    badgeClass: "bg-emerald-500/20 text-emerald-300",
+    border: "rgba(16,185,129,0.4)",
+    bgClass: "bg-gradient-to-br from-emerald-500/10 to-teal-500/10",
+    borderClass: "border-emerald-500/40",
+    badgeClass: "border border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+    barColor: "#10b981",
   },
   "חוב": {
     icon: CreditCard,
     color: "#f43f5e",
     dimBg: "rgba(244,63,94,0.15)",
-    border: "rgba(244,63,94,0.3)",
-    bgClass: "bg-gradient-to-br from-rose-500/15 to-red-500/10",
-    borderClass: "border-rose-500/30",
-    badgeClass: "bg-rose-500/20 text-rose-300",
+    border: "rgba(244,63,94,0.4)",
+    bgClass: "bg-gradient-to-br from-rose-500/10 to-red-500/10",
+    borderClass: "border-rose-500/40",
+    badgeClass: "border border-rose-500/40 bg-rose-500/10 text-rose-300",
+    barColor: "#f43f5e",
   },
 };
 
@@ -175,7 +178,7 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
   const yearsLeft = Math.floor(proj.monthsLeft / 12);
   const monthsRem = proj.monthsLeft % 12;
 
-  const barColor = paidPct >= 75 ? FT.gold : paidPct >= 40 ? FT.brown : FT.danger;
+  const barColor = meta.barColor;
 
   return (
     <div
@@ -203,13 +206,8 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
               {debt.name}
             </p>
             <span
-              className="text-[9px] px-1.5 py-0.5 rounded-full font-bold shrink-0"
-              style={{
-                background: meta.dimBg,
-                border: `1px solid ${meta.border}`,
-                color: meta.color,
-                letterSpacing: 0,
-              }}
+              className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold shrink-0 ${meta.badgeClass}`}
+              style={{ letterSpacing: 0 }}
             >
               {debt.type}
             </span>
@@ -487,7 +485,7 @@ function AddDebtForm({ onAdd, onCancel }: { onAdd: (d: Omit<Debt, "id">) => void
           />
           {computedMonths !== null && isFinite(computedMonths) && (
             <p className="text-[11px] mt-1.5 font-bold" style={{ color: FT.gold, letterSpacing: 0 }}>
-              ~ {computedMonths} חודשים ({Math.floor(computedMonths / 12)} שנים {computedMonths % 12} חודשים)
+              משך ההחזר: {computedMonths} חודשים ({Math.floor(computedMonths / 12)} שנים{computedMonths % 12 > 0 ? ` ו-${computedMonths % 12} חודשים` : ""})
             </p>
           )}
           {computedMonths !== null && !isFinite(computedMonths) && (
@@ -507,7 +505,7 @@ function AddDebtForm({ onAdd, onCancel }: { onAdd: (d: Omit<Debt, "id">) => void
           />
           {computedPayment !== null && computedPayment > 0 && (
             <p className="text-[11px] mt-1.5 font-bold" style={{ color: FT.gold, letterSpacing: 0 }}>
-              ~ ₪{computedPayment.toFixed(0)}/חודש
+              תשלום חודשי: ₪{fmt(Math.round(computedPayment))}
             </p>
           )}
         </div>
@@ -669,27 +667,48 @@ export function FinanceDebtsTab(_: { year: number; month: number }) {
               {debts.length > 0 && (
                 <div className="mt-4 space-y-2">
                   <h4 className="text-sm font-medium" style={{ color: FT.textMuted, letterSpacing: 0 }}>💡 טיפים פיננסיים</h4>
-                  {debts.map((debt) => {
-                    const tips: string[] = [];
+                  {debts.flatMap((debt) => {
+                    const meta = TYPE_META[debt.type];
                     const safeRate = Number(debt.annual_interest_rate) || 0;
                     const safePayment = Number(debt.monthly_payment) || 0;
-                    // Use current remaining balance (not original principal) for accurate projections
                     const currentProj = projectDebt(debt);
                     const currentBalance = currentProj.remainingBalance;
+                    const tips: { emoji: string; text: string; isWarning: boolean }[] = [];
+
                     if (safeRate > 5) {
-                      const monthlyInterest = (currentBalance * safeRate / 100 / 12);
-                      tips.push(`ב${debt.name} אתה משלם ~₪${monthlyInterest.toFixed(0)} ריבית בחודש. שקול מחזור הלוואה.`);
+                      const monthlyInterest = currentBalance * safeRate / 100 / 12;
+                      const annualInterest = monthlyInterest * 12;
+                      tips.push({
+                        emoji: "⚠️",
+                        text: `ב${debt.name} אתה משלם ~₪${fmt(Math.round(monthlyInterest))} ריבית בחודש (₪${fmt(Math.round(annualInterest))} בשנה). שקול מחזור הלוואה.`,
+                        isWarning: true,
+                      });
                     }
+
                     const extraPayment = 500;
-                    const currentMonths = calcMonthsToPayoff(currentBalance, safeRate, safePayment);
-                    const fasterMonths = calcMonthsToPayoff(currentBalance, safeRate, safePayment + extraPayment);
-                    if (isFinite(currentMonths) && isFinite(fasterMonths) && currentMonths - fasterMonths > 2) {
-                      tips.push(`תשלום נוסף של ₪${extraPayment}/חודש ב${debt.name} יחסוך ${currentMonths - fasterMonths} חודשים.`);
+                    const baseProj = projectDebt(debt);
+                    const boostedProj = projectDebt({ ...debt, monthly_payment: safePayment + extraPayment });
+                    const monthsSaved = Math.max(0, baseProj.monthsLeft - boostedProj.monthsLeft);
+                    const interestSaved = Math.max(0, baseProj.totalInterestRemaining - boostedProj.totalInterestRemaining);
+                    if (isFinite(baseProj.monthsLeft) && isFinite(boostedProj.monthsLeft) && monthsSaved > 2) {
+                      tips.push({
+                        emoji: "💡",
+                        text: `תשלום נוסף של ₪${extraPayment}/חודש ב${debt.name} יחסוך ${monthsSaved} חודשים ו-₪${fmt(Math.round(interestSaved))} ריבית.`,
+                        isWarning: false,
+                      });
                     }
+
                     return tips.map((tip, i) => (
-                      <p key={`${debt.id}-${i}`} className="text-xs rounded-lg px-3 py-2" style={{ color: FT.textMuted, background: "rgba(255,255,255,0.05)", letterSpacing: 0 }}>
-                        {tip}
-                      </p>
+                      <div
+                        key={`${debt.id}-${i}`}
+                        className={`rounded-xl px-3 py-2.5 border ${meta.borderClass} ${meta.bgClass}`}
+                        style={{ letterSpacing: 0 }}
+                      >
+                        <p className="text-xs leading-relaxed" style={{ color: tip.isWarning ? meta.color : FT.textMuted }}>
+                          <span className="me-1">{tip.emoji}</span>
+                          {tip.text}
+                        </p>
+                      </div>
                     ));
                   })}
                 </div>

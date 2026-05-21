@@ -72,6 +72,14 @@ export function WorkSalaryForecast({ year, month }: Props) {
     return null; // Only show forecast for current month
   }
 
+  if (forecast.currentNet === 0 && forecast.completedCount === 0) {
+    return (
+      <div className="rounded-2xl border border-work/15 bg-card p-4 text-center text-xs text-muted-foreground py-6">
+        אין נתוני משמרות לחישוב תחזית
+      </div>
+    );
+  }
+
   const fmt = (n: number) => `₪${n.toLocaleString("he-IL", { maximumFractionDigits: 0 })}`;
 
   return (

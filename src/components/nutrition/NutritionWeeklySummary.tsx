@@ -66,6 +66,12 @@ export function NutritionWeeklySummary() {
         <div className="flex items-center justify-center py-4">
           <Loader2 className="h-5 w-5 text-emerald-400 animate-spin" />
         </div>
+      ) : !data || (data.avgCal === 0 && data.avgProt === 0 && data.daysOnTarget === 0) ? (
+        <div className="flex flex-col items-center gap-2 py-4 text-center">
+          <span className="text-3xl">📊</span>
+          <p className="text-xs text-white/40">אין נתוני תזונה לשבוע זה</p>
+          <p className="text-[10px] text-white/25">הוסף ארוחות כדי לראות סיכום שבועי</p>
+        </div>
       ) : (
         <div className="space-y-2">
           <div className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
-import { SHIFT_LABELS, SHIFT_TIMES, SHIFT_HOURS } from "@/lib/payroll-engine";
-import { useAddShift } from "@/hooks/use-work-data";
+import { SHIFT_LABELS, SHIFT_TIMES, SHIFT_HOURS, calcShiftBreakdown, DEFAULT_PAYROLL_SETTINGS } from "@/lib/payroll-engine";
+import { useAddShift, usePayrollSettings } from "@/hooks/use-work-data";
 import { useAddIncome } from "@/hooks/use-finance-data";
 import { todayLocalStr } from "@/utils/date";
 import { toast } from "sonner";
@@ -32,6 +32,15 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
 
   const addShift = useAddShift();
   const addIncome = useAddIncome();
+  const { data: payrollSettings } = usePayrollSettings();
+
+  const settings = payrollSettings ?? DEFAULT_PAYROLL_SETTINGS;
+  const previewBreakdown = shiftType !== "manual_hourly"
+    ? calcShiftBreakdown(
+        { id: "", date, type: shiftType, role, is_shabbat_holiday: isShabbat, has_briefing: hasBriefing, hours: SHIFT_HOURS[shiftType] || 8, notes: null },
+        settings
+      )
+    : null;
 
   const isMorningShift = shiftType === "long_morning" || shiftType === "morning";
 
@@ -201,6 +210,44 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
             placeholder="הערות נוספות..."
             className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:border-work resize-none h-16" />
         </div>
+
+        {shiftType !== "manual_hourly" && previewBreakdown && (
+          <div className="rounded-xl border border-work/30 bg-work/5 px-4 py-3 space-y-1.5">
+            <p className="text-xs font-semibold text-work mb-1">שכר צפוי</p>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>שכר בסיס</span>
+              <span>₪{previewBreakdown.basePay.toFixed(0)}</span>
+            </div>
+            {previewBreakdown.recovery > 0 && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>שי</span>
+                <span>₪{previewBreakdown.recovery.toFixed(0)}</span>
+              </div>
+            )}
+            {previewBreakdown.excellence > 0 && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>מצוינות</span>
+                <span>₪{previewBreakdown.excellence.toFixed(0)}</span>
+              </div>
+            )}
+            {previewBreakdown.travel > 0 && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>נסיעות</span>
+                <span>₪{previewBreakdown.travel.toFixed(0)}</span>
+              </div>
+            )}
+            {previewBreakdown.briefingPay > 0 && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>תדרוך</span>
+                <span>₪{previewBreakdown.briefingPay.toFixed(0)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm font-bold text-foreground border-t border-border pt-1.5 mt-1">
+              <span>סה"כ ברוטו</span>
+              <span className="text-work">₪{previewBreakdown.totalGross.toFixed(0)}</span>
+            </div>
+          </div>
+        )}
 
         <button onClick={handleSave} disabled={addShift.isPending}
           className="w-full py-3 rounded-xl bg-work text-work-foreground font-bold text-sm hover:opacity-90 transition-opacity min-h-[44px] disabled:opacity-50">

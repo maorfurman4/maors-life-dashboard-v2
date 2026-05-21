@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNutritionEntries, useDeleteNutrition, useUserSettings } from "@/hooks/use-sport-data";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/use-profile";
 import { Button } from "@/components/ui/button";
 import { localDateStr, todayLocalStr, yesterdayLocalStr, lastDayOfMonth } from "@/utils/date";
 import { toast } from "sonner";
@@ -76,18 +77,42 @@ function useWeekCalories(dates: string[]) {
 }
 
 // ─── monthly nutrition hook (for exports) ────────────────────────────────────
-async function fetchMonthlyEntries(year: number, month: number) {
+interface MealEntry {
+  date: string;
+  name: string;
+  meal_type: string;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  notes: string;
+}
+
+interface DailyTotals {
+  cal: number;
+  prot: number;
+  carb: number;
+  fat: number;
+  count: number;
+}
+
+async function fetchMonthlyEntries(year: number, month: number): Promise<{
+  map: Record<string, DailyTotals>;
+  entries: MealEntry[];
+}> {
   const userId = await getUserId();
   const firstDay = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const lastDay  = lastDayOfMonth(year, month + 1);
   const { data } = await (supabase as any)
     .from("nutrition_entries")
-    .select("date, calories, protein_g, carbs_g, fat_g")
+    .select("date, name, meal_type, calories, protein_g, carbs_g, fat_g, notes")
     .eq("user_id", userId)
     .gte("date", firstDay)
-    .lte("date", lastDay);
+    .lte("date", lastDay)
+    .order("date", { ascending: true });
   // group by date
-  const map: Record<string, { cal: number; prot: number; carb: number; fat: number; count: number }> = {};
+  const map: Record<string, DailyTotals> = {};
+  const entries: MealEntry[] = [];
   for (const row of (data ?? []) as any[]) {
     const d = row.date as string;
     if (!map[d]) map[d] = { cal: 0, prot: 0, carb: 0, fat: 0, count: 0 };
@@ -96,8 +121,18 @@ async function fetchMonthlyEntries(year: number, month: number) {
     map[d].carb += (row.carbs_g   ?? 0);
     map[d].fat  += (row.fat_g     ?? 0);
     map[d].count += 1;
+    entries.push({
+      date:      row.date ?? "",
+      name:      row.name ?? "",
+      meal_type: row.meal_type ?? "lunch",
+      calories:  row.calories  ?? 0,
+      protein_g: row.protein_g ?? 0,
+      carbs_g:   row.carbs_g   ?? 0,
+      fat_g:     row.fat_g     ?? 0,
+      notes:     row.notes     ?? "",
+    });
   }
-  return map;
+  return { map, entries };
 }
 
 const HEBREW_MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
@@ -132,6 +167,7 @@ export function NutritionJournalTab() {
   const { data: weekCals }                = useWeekCalories(days);
   const deleteMut                          = useDeleteNutrition();
   const { data: userSettings }            = useUserSettings();
+  const { data: profile }                 = useProfile();
 
   // macro goals from settings (with defaults); guard against explicit 0 to avoid division-by-zero
   const caloriesGoal = userSettings?.daily_calories_goal || 2000;
@@ -218,16 +254,29 @@ export function NutritionJournalTab() {
   const exportYear  = now.getFullYear();
   const exportMonth = now.getMonth();
 
+  const MEAL_LABELS_HE: Record<string, string> = {
+    breakfast: "ארוחת בוקר",
+    lunch:     "ארוחת צהריים",
+    dinner:    "ארוחת ערב",
+    snack:     "חטיף",
+  };
+
   const handleExportCSV = async () => {
     setIsExporting(true);
     try {
-      const map = await fetchMonthlyEntries(exportYear, exportMonth);
-      const rows = Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
-      const header = "תאריך,קלוריות,חלבון (גר'),פחמימות (גר'),שומן (גר'),מספר ארוחות\n";
-      const body = rows.map(([d, v]) =>
-        `${d},${Math.round(v.cal)},${Math.round(v.prot)},${Math.round(v.carb)},${Math.round(v.fat)},${v.count}`
-      ).join("\n");
-      const csvContent = header + body;
+      const { entries: mealEntries } = await fetchMonthlyEntries(exportYear, exportMonth);
+      const header = ["תאריך", "ארוחה", "שם", "קלוריות", "חלבון(g)", "פחמימות(g)", "שומן(g)", "הערות"];
+      const rows = mealEntries.map((e) => [
+        e.date,
+        MEAL_LABELS_HE[e.meal_type] ?? e.meal_type,
+        `"${e.name.replace(/"/g, '""')}"`,
+        String(Math.round(e.calories)),
+        String(Math.round(e.protein_g)),
+        String(Math.round(e.carbs_g)),
+        String(Math.round(e.fat_g)),
+        `"${e.notes.replace(/"/g, '""')}"`,
+      ]);
+      const csvContent = [header, ...rows].map((r) => r.join(",")).join("\n");
       const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
@@ -248,16 +297,62 @@ export function NutritionJournalTab() {
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      const map  = await fetchMonthlyEntries(exportYear, exportMonth);
-      const rows = Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
-      const totRow = rows.reduce(
-        (acc, [, v]) => ({ cal: acc.cal + v.cal, prot: acc.prot + v.prot, carb: acc.carb + v.carb, fat: acc.fat + v.fat }),
+      const { map, entries: mealEntries } = await fetchMonthlyEntries(exportYear, exportMonth);
+      const sortedDates = Object.keys(map).sort();
+      const totRow = sortedDates.reduce(
+        (acc, d) => ({ cal: acc.cal + map[d].cal, prot: acc.prot + map[d].prot, carb: acc.carb + map[d].carb, fat: acc.fat + map[d].fat }),
         { cal: 0, prot: 0, carb: 0, fat: 0 }
       );
-      const tableRows = rows.map(([d, v]) =>
-        `<tr><td>${d}</td><td>${Math.round(v.cal)}</td><td>${Math.round(v.prot)}</td><td>${Math.round(v.carb)}</td><td>${Math.round(v.fat)}</td></tr>`
-      ).join("");
-      // Inject print styles into <head> so they actually override Tailwind's .hidden class
+      const userName = profile?.full_name ?? "";
+      const todayDisplay = new Date().toLocaleDateString("he-IL", { day: "numeric", month: "long", year: "numeric" });
+
+      // Build HTML for each day with its meals
+      const dayBlocks = sortedDates.map((d) => {
+        const dayMeals = mealEntries.filter((e) => e.date === d);
+        const dayTotals = map[d];
+        const dateFormatted = new Date(d).toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
+        const mealRows = dayMeals.map((e) => `
+          <tr class="meal-row">
+            <td class="meal-name">${e.name || "—"}</td>
+            <td class="meal-type">${MEAL_LABELS_HE[e.meal_type] ?? e.meal_type}</td>
+            <td class="cal-cell">${Math.round(e.calories)}</td>
+            <td class="prot-cell">${Math.round(e.protein_g)}g</td>
+            <td class="carb-cell">${Math.round(e.carbs_g)}g</td>
+            <td class="fat-cell">${Math.round(e.fat_g)}g</td>
+            <td class="notes-cell">${e.notes || ""}</td>
+          </tr>
+        `).join("");
+        return `
+          <div class="day-section">
+            <div class="day-header">${dateFormatted}</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>שם</th><th>ארוחה</th>
+                  <th class="cal-cell">קלוריות</th>
+                  <th class="prot-cell">חלבון</th>
+                  <th class="carb-cell">פחמימות</th>
+                  <th class="fat-cell">שומן</th>
+                  <th class="notes-cell">הערות</th>
+                </tr>
+              </thead>
+              <tbody>${mealRows}</tbody>
+              <tfoot>
+                <tr class="day-total-row">
+                  <td colspan="2">סה&quot;כ יומי</td>
+                  <td class="cal-cell">${Math.round(dayTotals.cal)}</td>
+                  <td class="prot-cell">${Math.round(dayTotals.prot)}g</td>
+                  <td class="carb-cell">${Math.round(dayTotals.carb)}g</td>
+                  <td class="fat-cell">${Math.round(dayTotals.fat)}g</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        `;
+      }).join("");
+
+      // Inject print styles into <head>
       const styleId = "nutrition-print-style";
       let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
       if (!styleEl) {
@@ -265,15 +360,77 @@ export function NutritionJournalTab() {
         styleEl.id = styleId;
         document.head.appendChild(styleEl);
       }
-      styleEl.textContent = `@media print { body > *:not(#nutrition-print-area) { display: none !important; } #nutrition-print-area { display: block !important; direction: rtl; font-family: Arial, sans-serif; } #nutrition-print-area table { width: 100%; border-collapse: collapse; } #nutrition-print-area th, #nutrition-print-area td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; } #nutrition-print-area th { background: #f0f0f0; } #nutrition-print-area tfoot td { font-weight: bold; background: #e8f5e9; } }`;
+      styleEl.textContent = `
+        @media print {
+          body > *:not(#nutrition-print-area) { display: none !important; }
+          #nutrition-print-area {
+            display: block !important; direction: rtl;
+            font-family: Arial, sans-serif; padding: 24px; color: #111;
+          }
+          #nutrition-print-area .print-header {
+            text-align: center; margin-bottom: 20px;
+            border-bottom: 3px solid #10b981; padding-bottom: 10px;
+          }
+          #nutrition-print-area .print-title {
+            font-size: 22px; font-weight: bold; color: #065f46; margin: 0 0 4px;
+          }
+          #nutrition-print-area .print-subtitle {
+            font-size: 12px; color: #6b7280;
+          }
+          #nutrition-print-area .day-section {
+            margin-bottom: 20px; page-break-inside: avoid;
+          }
+          #nutrition-print-area .day-header {
+            background: #ecfdf5; color: #065f46; font-weight: bold;
+            font-size: 13px; padding: 6px 10px; border-right: 4px solid #10b981;
+            margin-bottom: 4px;
+          }
+          #nutrition-print-area table {
+            width: 100%; border-collapse: collapse; font-size: 11px;
+          }
+          #nutrition-print-area th {
+            background: #f9fafb; color: #374151; padding: 5px 8px;
+            text-align: right; border-bottom: 2px solid #e5e7eb; font-weight: bold;
+          }
+          #nutrition-print-area .meal-row td {
+            padding: 4px 8px; border-bottom: 1px solid #f3f4f6; text-align: right;
+          }
+          #nutrition-print-area .cal-cell  { color: #059669; font-weight: bold; }
+          #nutrition-print-area .prot-cell { color: #2563eb; }
+          #nutrition-print-area .carb-cell { color: #d97706; }
+          #nutrition-print-area .fat-cell  { color: #7c3aed; }
+          #nutrition-print-area .notes-cell { color: #9ca3af; font-style: italic; }
+          #nutrition-print-area .day-total-row td {
+            font-weight: bold; background: #f0fdf4;
+            padding: 4px 8px; border-top: 1px solid #d1fae5; text-align: right;
+          }
+          #nutrition-print-area .grand-total {
+            margin-top: 16px; background: #ecfdf5; border: 2px solid #10b981;
+            padding: 10px 14px; display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
+          }
+          #nutrition-print-area .grand-total span { font-size: 12px; font-weight: bold; }
+          #nutrition-print-area .print-footer {
+            margin-top: 20px; border-top: 1px solid #e5e7eb;
+            padding-top: 8px; font-size: 10px; color: #9ca3af; text-align: center;
+          }
+        }
+      `;
+
       if (printRef.current) {
         printRef.current.innerHTML = `
-          <h2 style="text-align:center">דוח תזונה — ${HEBREW_MONTHS[exportMonth]} ${exportYear}</h2>
-          <table>
-            <thead><tr><th>תאריך</th><th>קלוריות</th><th>חלבון</th><th>פחמימות</th><th>שומן</th></tr></thead>
-            <tbody>${tableRows}</tbody>
-            <tfoot><tr><td>סה"כ</td><td>${Math.round(totRow.cal)}</td><td>${Math.round(totRow.prot)}</td><td>${Math.round(totRow.carb)}</td><td>${Math.round(totRow.fat)}</td></tr></tfoot>
-          </table>
+          <div class="print-header">
+            <div class="print-title">יומן תזונה — ${HEBREW_MONTHS[exportMonth]} ${exportYear}</div>
+            <div class="print-subtitle">${userName ? `${userName} | ` : ""}${HEBREW_MONTHS[exportMonth]} ${exportYear}</div>
+          </div>
+          ${dayBlocks}
+          <div class="grand-total">
+            <span>סה&quot;כ חודשי:</span>
+            <span class="cal-cell">קלוריות: ${Math.round(totRow.cal).toLocaleString("he-IL")}</span>
+            <span class="prot-cell">חלבון: ${Math.round(totRow.prot)}g</span>
+            <span class="carb-cell">פחמימות: ${Math.round(totRow.carb)}g</span>
+            <span class="fat-cell">שומן: ${Math.round(totRow.fat)}g</span>
+          </div>
+          <div class="print-footer">הופק על ידי Life Dashboard | ${todayDisplay}</div>
         `;
       }
       window.print();
