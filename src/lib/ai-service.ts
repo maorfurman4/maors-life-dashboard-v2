@@ -204,5 +204,9 @@ export function parseAIJson<T>(raw: string): T {
   const jsonEnd     = Math.max(lastBrace, lastBracket);
   if (jsonEnd !== -1 && jsonEnd < clean.length - 1) clean = clean.slice(0, jsonEnd + 1);
 
-  return JSON.parse(clean) as T;
+  try {
+    return JSON.parse(clean) as T;
+  } catch {
+    throw new Error(`AI returned invalid JSON. Raw response: ${raw.slice(0, 200)}`);
+  }
 }
