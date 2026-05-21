@@ -218,6 +218,24 @@ export function useArchiveWorkMonth() {
   });
 }
 
+export function useDeleteWorkMonthHistory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("work_monthly_history")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["work-monthly-history"] });
+      toast.success("הרשומה נמחקה");
+    },
+    onError: () => toast.error("שגיאה במחיקה"),
+  });
+}
+
 // ─── Monthly Payslip (computed) ───
 export function useMonthlyPayslip(year: number, month: number) {
   const { data: shifts, isLoading: shiftsLoading } = useWorkShifts(year, month);

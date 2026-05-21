@@ -123,7 +123,16 @@ WORKOUT STRUCTURE RULES (MANDATORY):
    - Week 3: Add 1 additional set (4 sets × 12 reps)
    - Week 4 (if included): Deload — reduce to 2 sets × 12 reps at 60% of Week 1 weight
 4. VARIETY RULE: No exercise name may appear in more than 2 out of 4 weeks. Each week must have at least 50% different exercises from the previous week.
-5. Tips array structure: tips[0]=Week 1 advice, tips[1]=Week 2 advice, tips[2]=Week 3 advice, tips[3]=Week 4 advice (if applicable), tips[4+]=general tips. Each weekly tip MUST include: specific weight increase target, muscle group focus for that week, and a technique cue.`;
+5. Tips array structure: tips[0]=Week 1 advice, tips[1]=Week 2 advice, tips[2]=Week 3 advice, tips[3]=Week 4 advice (if applicable), tips[4+]=general tips. Each weekly tip MUST include: specific weight increase target, muscle group focus for that week, and a technique cue.
+
+מבנה ימי אימון (חובה):
+6. כל אימון חייב לכלול שדה "day" עם שם יום ברור: "יום א׳", "יום ב׳", "יום ג׳" וכו׳ בהתאמה מדויקת למספר הימים שסופק.
+7. כמות תרגילים לפי סוג אימון:
+   - אימון עם שריר יחיד (למשל: חזה בלבד): 5–6 תרגילים
+   - אימון עם שני שרירים (למשל: חזה + טריצפס): 3–4 תרגילים לכל שריר (6–8 בסך הכל)
+   - אימון גוף מלא (Full Body): 8–10 תרגילים
+   - אסור להחזיר פחות מ-5 תרגילים לאימון אחד
+8. שמות ימים חייבים להיות עקביים בין השבועות — אותו אימון תמיד ביום א׳ בכל השבועות.`;
 
     const targetWeeks = planWeeks ?? 4;
 
@@ -156,7 +165,9 @@ ${blacklistNote}${favoritesNote}${recentWorkoutsNote}${equipmentItemsNote}${pref
 ${(recentPRs || []).map((p: any) => `- ${p.exercise_name}: ${p.value} ${p.unit}`).join("\n") || "אין נתונים"}
 ${libraryBlock ? `\nספריית התרגילים הזמינה (שם | שרירים | ציוד) — בחר רק מרשימה זו:\n${libraryBlock}` : ""}
 
-בנה תוכנית אימונים מחזורית ל-${targetWeeks} שבועות. כל אימון: 5-8 תרגילים עם סטים, חזרות, משקל מומלץ (בק"ג), הערות ו-explanation.
+בנה תוכנית אימונים מחזורית ל-${targetWeeks} שבועות עם בדיוק ${days} אימונים בכל שבוע.
+כל אימון חייב: שם יום ברור (יום א׳/ב׳/ג׳...), 5–8 תרגילים לפחות עם סטים, חזרות, משקל מומלץ (בק"ג), הערות ו-explanation בעברית.
+פיצול שרירים: הפרד שרירים בצורה הגיונית — למשל חזה+טריצפס יחד, גב+ביצפס יחד, רגליים יום נפרד.
 החזר תוצאה דרך הפונקציה report_plan.
 `;
 
