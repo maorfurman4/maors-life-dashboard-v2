@@ -31,8 +31,9 @@ export function SportPRTracking() {
         ) : (
           <div className="divide-y divide-border/50">
             {prs.map((pr: any) => {
-              const d = new Date(pr.date);
-              const dateStr = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+              // Parse date parts directly to avoid UTC→local timezone shift (off-by-1 day for IL users)
+              const [prYear, prMonth, prDay] = (pr.date as string).split("-").map(Number);
+              const dateStr = `${String(prDay).padStart(2,"0")}/${String(prMonth).padStart(2,"0")}/${prYear}`;
               return (
                 <div key={pr.id} className="flex items-center justify-between px-4 py-3">
                   <div>

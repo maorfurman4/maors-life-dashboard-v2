@@ -30,14 +30,23 @@ export interface DebtProjection {
 
 export function projectDebt(input: DebtInput): DebtProjection {
   const { principal, monthly_payment, annual_interest_rate, months_elapsed } = input;
-  const monthlyRate = annual_interest_rate / 100 / 12;
+
+  // Guard: any NaN/Infinity input returns a safe zero projection
+  const safePrincipal = isFinite(principal) && principal > 0 ? principal : 0;
+  const safePayment   = isFinite(monthly_payment) && monthly_payment > 0 ? monthly_payment : 0;
+  const safeRate      = isFinite(annual_interest_rate) && annual_interest_rate >= 0 ? annual_interest_rate : 0;
+  if (safePrincipal === 0 || safePayment === 0) {
+    return { remainingBalance: safePrincipal, monthsLeft: 0, endDate: new Date().toISOString().slice(0, 10), totalInterestPaid: 0, totalInterestRemaining: 0, totalCost: safePrincipal, payoffRoadmap: [] };
+  }
+
+  const monthlyRate = safeRate / 100 / 12;
 
   // Reconstruct current balance after months_elapsed payments
-  let balance = principal;
+  let balance = safePrincipal;
   let totalInterestPaid = 0;
   for (let i = 0; i < months_elapsed; i++) {
     const interest = balance * monthlyRate;
-    const principalPaid = Math.min(monthly_payment - interest, balance);
+    const principalPaid = Math.min(safePayment - interest, balance);
     totalInterestPaid += interest;
     balance = Math.max(0, balance - principalPaid);
     if (balance === 0) break;
@@ -51,7 +60,7 @@ export function projectDebt(input: DebtInput): DebtProjection {
 
   while (remaining > 0.01 && months < 600) {
     const interest = remaining * monthlyRate;
-    const principalPaid = Math.min(monthly_payment - interest, remaining);
+    const principalPaid = Math.min(safePayment - interest, remaining);
     if (principalPaid <= 0) break; // payment too low to cover interest
     totalInterestRemaining += interest;
     remaining = Math.max(0, remaining - principalPaid);
@@ -70,7 +79,7 @@ export function projectDebt(input: DebtInput): DebtProjection {
     endDate: endDate.toISOString().slice(0, 10),
     totalInterestPaid: Math.round(totalInterestPaid),
     totalInterestRemaining: Math.round(totalInterestRemaining),
-    totalCost: Math.round(principal + totalInterestPaid + totalInterestRemaining),
+    totalCost: Math.round(safePrincipal + totalInterestPaid + totalInterestRemaining),
     payoffRoadmap: roadmap,
   };
 }

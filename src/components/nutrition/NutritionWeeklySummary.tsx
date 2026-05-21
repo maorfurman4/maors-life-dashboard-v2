@@ -24,7 +24,7 @@ function useWeeklyStats(dailyGoal: number) {
 
       const { data, error } = await (supabase as any)
         .from("nutrition_entries")
-        .select("date, calories, protein, protein_g")
+        .select("date, calories, protein_g")
         .eq("user_id", userId)
         .gte("date", start)
         .lte("date", end);
@@ -36,14 +36,15 @@ function useWeeklyStats(dailyGoal: number) {
         const d = row.date as string;
         if (!byDay[d]) byDay[d] = { cal: 0, prot: 0 };
         byDay[d].cal  += (row.calories ?? 0);
-        byDay[d].prot += (row.protein_g ?? row.protein ?? 0);
+        byDay[d].prot += (row.protein_g ?? 0);
       }
 
       const days = Object.values(byDay);
       if (days.length === 0) return { avgCal: 0, avgProt: 0, daysOnTarget: 0 };
 
-      const avgCal    = Math.round(days.reduce((s, d) => s + d.cal,  0) / days.length);
-      const avgProt   = Math.round(days.reduce((s, d) => s + d.prot, 0) / days.length);
+      // Divide by 7 (full week), not just logged days — gives true weekly average
+      const avgCal    = Math.round(days.reduce((s, d) => s + d.cal,  0) / 7);
+      const avgProt   = Math.round(days.reduce((s, d) => s + d.prot, 0) / 7);
       const daysOnTarget = days.filter((d) => Math.abs(d.cal - dailyGoal) <= 200).length;
 
       return { avgCal, avgProt, daysOnTarget };

@@ -118,24 +118,10 @@ export function useSavePayrollSettings() {
   return useMutation({
     mutationFn: async (settings: Partial<PayrollSettings>) => {
       const userId = await getUserId();
-      const { data: existing } = await supabase
+      const { error } = await supabase
         .from("user_settings")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from("user_settings")
-          .update(settings)
-          .eq("user_id", userId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("user_settings")
-          .insert({ user_id: userId, ...settings });
-        if (error) throw error;
-      }
+        .upsert({ user_id: userId, ...settings }, { onConflict: "user_id" });
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payroll-settings"] });

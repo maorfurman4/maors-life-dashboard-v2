@@ -234,7 +234,7 @@ export function SportAIPlanner() {
       const result = await generateWorkoutPlan({
         goal:            `${answers.location ?? "חדר כושר"} — RPE ${answers.rpe ?? "7"}`,
         daysPerWeek:     parseInt(answers.frequency ?? "3"),
-        equipment:       answers.location ?? "חדר כושר מלא",
+        equipment:       equipmentSelection.length > 0 ? equipmentSelection.join(", ") : (answers.location ?? "חדר כושר מלא"),
         constraints:     answers.limitations ?? "אין",
         sessionMinutes,
         cardioDays:      cardioDaysNum,
@@ -270,7 +270,12 @@ export function SportAIPlanner() {
         name:                       w.name,
         category:                   w.category,
         estimated_duration_minutes: w.duration_minutes,
-        exercises:                  w.exercises as any,
+        // Normalize reps: AI may return "8-10" strings → parse to integer (use lower bound)
+        exercises: w.exercises.map((ex) => ({
+          ...ex,
+          reps: typeof ex.reps === "string" ? (parseInt(ex.reps as string) || 10) : (ex.reps ?? 10),
+          sets: typeof ex.sets === "string" ? (parseInt(ex.sets as string) || 3) : (ex.sets ?? 3),
+        })) as any,
       },
       {
         onSuccess: () => toast.success(`"${w.name}" נשמר כתבנית`),

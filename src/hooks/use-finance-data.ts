@@ -239,23 +239,10 @@ export function useSaveFinanceSettings() {
   return useMutation({
     mutationFn: async (updates: { savings_goal_pct?: number; income_sync_mode?: "net" | "bank"; savings_goal_amount?: number | null }) => {
       const userId = await getUserId();
-      const { data: existing } = await db
+      const { error } = await db
         .from("user_settings")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (existing) {
-        const { error } = await db
-          .from("user_settings")
-          .update(updates)
-          .eq("user_id", userId);
-        if (error) throw error;
-      } else {
-        const { error } = await db
-          .from("user_settings")
-          .insert({ user_id: userId, ...updates });
-        if (error) throw error;
-      }
+        .upsert({ user_id: userId, ...updates }, { onConflict: "user_id" });
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["finance-settings"] });
@@ -397,8 +384,11 @@ export function useMonthlyFinance(year: number, month: number) {
     }, {} as Record<string, number>);
 
     const daysInMonth = new Date(year, month, 0).getDate();
-    const avgDailyExpense = totalExpenses / Math.max(currentDay, 1);
-    const avgDailyIncome = totalIncome / Math.max(currentDay, 1);
+    // For current month use elapsed days; for past months use full month length
+    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1;
+    const daysElapsed = isCurrentMonth ? Math.max(currentDay, 1) : daysInMonth;
+    const avgDailyExpense = totalExpenses / daysElapsed;
+    const avgDailyIncome = totalIncome / daysElapsed;
 
     return {
       workIncome,

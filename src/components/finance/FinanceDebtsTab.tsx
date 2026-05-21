@@ -167,7 +167,9 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
   const simNum = parseFloat(simExtra) || 0;
 
   const proj = useMemo(() => projectDebt(debt), [debt]);
-  const paidPct = Math.round((1 - proj.remainingBalance / debt.principal) * 100);
+  const paidPct = debt.principal > 0
+    ? Math.max(0, Math.min(100, Math.round((1 - proj.remainingBalance / debt.principal) * 100)))
+    : 0;
   const meta = TYPE_META[debt.type];
   const Icon = meta.icon;
   const yearsLeft = Math.floor(proj.monthsLeft / 12);
@@ -669,16 +671,18 @@ export function FinanceDebtsTab(_: { year: number; month: number }) {
                   <h4 className="text-sm font-medium" style={{ color: FT.textMuted, letterSpacing: 0 }}>💡 טיפים פיננסיים</h4>
                   {debts.map((debt) => {
                     const tips: string[] = [];
-                    const safePrincipal = Number(debt.principal) || 0;
                     const safeRate = Number(debt.annual_interest_rate) || 0;
                     const safePayment = Number(debt.monthly_payment) || 0;
+                    // Use current remaining balance (not original principal) for accurate projections
+                    const currentProj = projectDebt(debt);
+                    const currentBalance = currentProj.remainingBalance;
                     if (safeRate > 5) {
-                      const monthlyInterest = (safePrincipal * safeRate / 100 / 12);
+                      const monthlyInterest = (currentBalance * safeRate / 100 / 12);
                       tips.push(`ב${debt.name} אתה משלם ~₪${monthlyInterest.toFixed(0)} ריבית בחודש. שקול מחזור הלוואה.`);
                     }
                     const extraPayment = 500;
-                    const currentMonths = calcMonthsToPayoff(safePrincipal, safeRate, safePayment);
-                    const fasterMonths = calcMonthsToPayoff(safePrincipal, safeRate, safePayment + extraPayment);
+                    const currentMonths = calcMonthsToPayoff(currentBalance, safeRate, safePayment);
+                    const fasterMonths = calcMonthsToPayoff(currentBalance, safeRate, safePayment + extraPayment);
                     if (isFinite(currentMonths) && isFinite(fasterMonths) && currentMonths - fasterMonths > 2) {
                       tips.push(`תשלום נוסף של ₪${extraPayment}/חודש ב${debt.name} יחסוך ${currentMonths - fasterMonths} חודשים.`);
                     }

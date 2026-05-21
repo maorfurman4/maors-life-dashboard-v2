@@ -82,7 +82,7 @@ async function fetchMonthlyEntries(year: number, month: number) {
   const lastDay  = lastDayOfMonth(year, month + 1);
   const { data } = await (supabase as any)
     .from("nutrition_entries")
-    .select("date, calories, protein, protein_g, carbs, carbs_g, fat, fat_g")
+    .select("date, calories, protein_g, carbs_g, fat_g")
     .eq("user_id", userId)
     .gte("date", firstDay)
     .lte("date", lastDay);
@@ -91,10 +91,10 @@ async function fetchMonthlyEntries(year: number, month: number) {
   for (const row of (data ?? []) as any[]) {
     const d = row.date as string;
     if (!map[d]) map[d] = { cal: 0, prot: 0, carb: 0, fat: 0, count: 0 };
-    map[d].cal  += (row.calories ?? 0);
-    map[d].prot += (row.protein_g ?? row.protein ?? 0);
-    map[d].carb += (row.carbs_g  ?? row.carbs   ?? 0);
-    map[d].fat  += (row.fat_g    ?? row.fat     ?? 0);
+    map[d].cal  += (row.calories  ?? 0);
+    map[d].prot += (row.protein_g ?? 0);
+    map[d].carb += (row.carbs_g   ?? 0);
+    map[d].fat  += (row.fat_g     ?? 0);
     map[d].count += 1;
   }
   return map;
@@ -167,6 +167,8 @@ export function NutritionJournalTab() {
       if (insertError) throw insertError;
 
       await queryClient.invalidateQueries({ queryKey: ["nutrition-entries"] });
+      await queryClient.invalidateQueries({ queryKey: ["nutrition-week"] });
+      await queryClient.invalidateQueries({ queryKey: ["nutrition-weekly-summary"] });
       toast.success("✅ ארוחות אתמול הועתקו ליום היום");
     } catch {
       toast.error("שגיאה בהעתקת ארוחות");
@@ -179,9 +181,9 @@ export function NutritionJournalTab() {
   const totals = entries.reduce(
     (acc, e: any) => ({
       cal:   acc.cal   + (e.calories  ?? 0),
-      prot:  acc.prot  + (e.protein   ?? 0),
-      carb:  acc.carb  + (e.carbs_g   ?? e.carbs ?? 0),
-      fat:   acc.fat   + (e.fat_g     ?? e.fat   ?? 0),
+      prot:  acc.prot  + (e.protein_g ?? 0),
+      carb:  acc.carb  + (e.carbs_g  ?? 0),
+      fat:   acc.fat   + (e.fat_g    ?? 0),
       fiber: acc.fiber + (e.fiber_g   ?? 0),
     }),
     { cal: 0, prot: 0, carb: 0, fat: 0, fiber: 0 }
@@ -488,14 +490,14 @@ export function NutritionJournalTab() {
                           {e.calories && (
                             <span className="text-[10px] text-emerald-400 font-bold">{e.calories} קל׳</span>
                           )}
-                          {e.protein && (
-                            <span className="text-[10px] text-white/30">חלבון {e.protein}g</span>
+                          {e.protein_g != null && e.protein_g > 0 && (
+                            <span className="text-[10px] text-white/30">חלבון {e.protein_g}g</span>
                           )}
-                          {e.carbs && (
-                            <span className="text-[10px] text-white/30">פחמימות {e.carbs}g</span>
+                          {e.carbs_g != null && e.carbs_g > 0 && (
+                            <span className="text-[10px] text-white/30">פחמימות {e.carbs_g}g</span>
                           )}
-                          {e.fat && (
-                            <span className="text-[10px] text-white/30">שומן {e.fat}g</span>
+                          {e.fat_g != null && e.fat_g > 0 && (
+                            <span className="text-[10px] text-white/30">שומן {e.fat_g}g</span>
                           )}
                         </div>
                         {e.notes && (

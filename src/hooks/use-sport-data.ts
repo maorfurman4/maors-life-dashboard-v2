@@ -29,7 +29,8 @@ export function useWeekWorkouts() {
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
-  const startDate = startOfWeek.toISOString().slice(0, 10);
+  // Use local date formatting to avoid UTC offset shifting the week start for Israeli users
+  const startDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, "0")}-${String(startOfWeek.getDate()).padStart(2, "0")}`;
 
   return useQuery({
     queryKey: ["workouts-week", startDate],
@@ -820,24 +821,10 @@ export function useUpdateUserSettings() {
   return useMutation({
     mutationFn: async (settings: Record<string, unknown>) => {
       const userId = await getUserId();
-      const { data: existing } = await (supabase as any)
+      const { error } = await (supabase as any)
         .from("user_settings")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await (supabase as any)
-          .from("user_settings")
-          .update(settings)
-          .eq("user_id", userId);
-        if (error) throw error;
-      } else {
-        const { error } = await (supabase as any)
-          .from("user_settings")
-          .insert({ user_id: userId, ...settings });
-        if (error) throw error;
-      }
+        .upsert({ user_id: userId, ...settings }, { onConflict: "user_id" });
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["user-settings"] });
@@ -872,24 +859,10 @@ export function useSaveUserSettings() {
       income_sync_mode: string | null;
     }>) => {
       const userId = await getUserId();
-      const { data: existing } = await supabase
+      const { error } = await supabase
         .from("user_settings")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from("user_settings")
-          .update(settings)
-          .eq("user_id", userId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("user_settings")
-          .insert({ user_id: userId, ...settings });
-        if (error) throw error;
-      }
+        .upsert({ user_id: userId, ...settings }, { onConflict: "user_id" });
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["user-settings"] });

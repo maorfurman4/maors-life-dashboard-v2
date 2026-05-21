@@ -135,7 +135,7 @@ export const DEFAULT_PAYROLL_SETTINGS: PayrollSettings = {
 };
 
 function getShiftHours(shift: ShiftRow): number {
-  if (shift.hours && shift.hours > 0) return shift.hours;
+  if (shift.hours !== null && shift.hours !== undefined && shift.hours > 0) return shift.hours;
   return SHIFT_HOURS[shift.type] || 8;
 }
 
@@ -200,8 +200,11 @@ export function calcMonthlyPayslip(shifts: ShiftRow[], settings: PayrollSettings
     shabbatPay += bd.shabbatPay;
     travel += bd.travel;
     briefingPay += bd.briefingPay;
-    totalHours += hours;
-    if (shift.is_shabbat_holiday) shabbatHours += hours;
+    // Only count hours/shabbat for paid shifts — vacations/sick days tracked separately
+    if (!NON_PAID_TYPES.has(shift.type)) {
+      totalHours += hours;
+      if (shift.is_shabbat_holiday) shabbatHours += hours;
+    }
     if (shift.has_briefing) briefingCount++;
   }
 
@@ -252,7 +255,7 @@ export function calcMonthlyPayslip(shifts: ShiftRow[], settings: PayrollSettings
     totalDeductions: r2(totalDeductions),
     netPay: r2(netPay),
     bankAmount: r2(bankAmount),
-    totalShifts: shifts.length,
+    totalShifts: shifts.filter(s => !NON_PAID_TYPES.has(s.type)).length,
     totalHours: r2(totalHours),
     shabbatHours: r2(shabbatHours),
     briefingCount,

@@ -871,8 +871,8 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
                 disabled={closeMonthMutation.isPending}
                 onClick={() =>
                   closeMonthMutation.mutate({
-                    year: now.getFullYear(),
-                    month: now.getMonth() + 1,
+                    year,
+                    month,
                     total_income: fin.totalIncome,
                     total_expenses: fin.totalExpenses,
                     balance: fin.balance,
