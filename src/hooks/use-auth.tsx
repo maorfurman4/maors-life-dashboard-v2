@@ -31,6 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
+    }).catch(() => {
+      // Network/session error — still resolve loading so the app doesn't freeze
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

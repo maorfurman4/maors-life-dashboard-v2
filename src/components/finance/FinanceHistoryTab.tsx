@@ -78,6 +78,8 @@ function useAnomalyIds(expenses: any[], year: number, month: number) {
     });
     const catAvg: Record<string, number> = {};
     for (const [cat, amounts] of Object.entries(catAmounts)) {
+      // Skip categories with fewer than 3 transactions (not enough data)
+      if (amounts.length < 3) continue;
       catAvg[cat] = amounts.reduce((s, a) => s + a, 0) / amounts.length;
     }
     const ids = new Set<string>();
@@ -341,12 +343,17 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
   const allTransactions = useMemo(() => [
     ...(fin.expenses || []).map((e: any) => ({ ...e, _type: "expense" as const })),
     ...(fin.incomes  || []).map((i: any) => ({ ...i, _type: "income"  as const })),
-    ...(fin.fixedExpenses || []).map((f: any) => ({
-      ...f,
-      _type: "fixed" as const,
-      date: `${year}-${String(month).padStart(2, "0")}-${String(f.charge_day).padStart(2, "0")}`,
-      description: f.notes || f.name,
-    })),
+    ...(fin.fixedExpenses || []).map((f: any) => {
+      // Clamp charge_day to actual month length (e.g. day 31 in February → day 28/29)
+      const maxDay = new Date(year, month, 0).getDate();
+      const clampedDay = Math.min(Number(f.charge_day) || 1, maxDay);
+      return {
+        ...f,
+        _type: "fixed" as const,
+        date: `${year}-${String(month).padStart(2, "0")}-${String(clampedDay).padStart(2, "0")}`,
+        description: f.notes || f.name,
+      };
+    }),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   [fin.expenses, fin.incomes, fin.fixedExpenses, year, month]);
 

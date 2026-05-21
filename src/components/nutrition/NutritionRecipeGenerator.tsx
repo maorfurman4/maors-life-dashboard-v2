@@ -7,6 +7,7 @@ import { generateText, parseAIJson } from "@/lib/ai-service";
 import { toast } from "sonner";
 
 type DietaryType = "בשרי" | "חלבי" | "פרווה";
+type DietStyle = "קרנבורי" | "טבעוני" | "צמחוני" | "קטו" | "ים תיכוני" | "רגיל" | "ללא גלוטן" | "ללא חלב";
 
 interface Recipe {
   name: string;
@@ -22,18 +23,53 @@ interface Recipe {
   video_link?: string;
 }
 
-async function generateRecipeWithAI(
+const DIET_RULES: Record<DietStyle, string> = {
+  "קרנבורי": "חייב: בשר/עוף/דג/ביצים/שומן בעלי חיים. אסור: לחם, קטניות, ירקות כעיקר, אורז, פסטה",
+  "טבעוני": "אסור: כל מוצר מן החי (בשר, עוף, דג, ביצים, חלב, גבינה)",
+  "צמחוני": "אסור: בשר, עוף, דג. מותר: ביצים, מוצרי חלב",
+  "קטו": "חייב: שומן גבוה, חלבון בינוני. אסור: סוכר, עמילן, קמח, אורז, תפו\"א, פירות (מלבד אוכמניות)",
+  "ים תיכוני": "חייב: שמן זית, ירקות, קטניות, דגים, דגנים מלאים",
+  "ללא גלוטן": "אסור לחלוטין: חיטה, שעורה, שיבולת שועל, כוסמין, גלוטן",
+  "ללא חלב": "אסור: חלב, גבינה, שמנת, יוגורט, חמאה",
+  "רגיל": "ללא הגבלות מיוחדות",
+};
+
+const CARNIVORE_KEYWORDS = ["בשר", "עוף", "דג", "סטייק", "שניצל", "המבורגר", "ביצ", "סלמון", "טונה", "כבד"];
+
+function validateDietCompliance(recipe: Recipe, dietStyle: DietStyle): void {
+  if (dietStyle === "קרנבורי") {
+    const ingredientsText = recipe.ingredients.join(" ").toLowerCase();
+    const hasAnimalProtein = CARNIVORE_KEYWORDS.some((kw) => ingredientsText.includes(kw));
+    if (!hasAnimalProtein) {
+      throw new Error(`המתכון לא תואם לסוג הדיאטה ${dietStyle}`);
+    }
+  }
+}
+
+function buildPrompt(
   protein: string,
   calories: string,
   people: string,
   dietaryType: DietaryType,
-  excluded: string[]
-): Promise<Recipe> {
+  dietStyle: DietStyle,
+  excluded: string[],
+  retryPrefix?: string
+): string {
   const excludedStr = excluded.length > 0 ? `מזונות אסורים (אסור להכניס): ${excluded.join(", ")}` : "אין הגבלות מיוחדות";
-  const prompt = `אתה שף ישראלי מקצועי. צור מתכון ${dietaryType} בפורמט JSON בלבד.
+  const dietRule = DIET_RULES[dietStyle];
+  const strictPrefix = retryPrefix
+    ? `${retryPrefix}\n\n`
+    : "";
+
+  return `${strictPrefix}⚠️ חוק מוחלט ראשון: סוג תזונה = ${dietStyle}. אם ${dietStyle} === "קרנבורי" — המתכון חייב להכיל בשר/עוף/דג/ביצים בלבד. אסור בהחלט ירקות כעיקר, קטניות, או כל מרכיב צמחוני.
+
+כללי תזונה ספציפיים עבור ${dietStyle}: ${dietRule}
+
+אתה שף ישראלי מקצועי. צור מתכון ${dietaryType} בפורמט JSON בלבד.
 
 פרמטרים:
-- סוג: ${dietaryType}
+- סוג כשרות: ${dietaryType}
+- סוג תזונה: ${dietStyle}
 - יעד חלבון למנה: ${protein}g
 - יעד קלוריות למנה: ${calories} קל׳
 - מספר מנות: ${people}
@@ -53,19 +89,46 @@ async function generateRecipeWithAI(
   "instructions": ["שלב 1", "שלב 2", "..."],
   "video_link": ""
 }
-כללים: מתכון ישראלי אמיתי ומעשי. הקפד על ${dietaryType}. ללא markdown. JSON בלבד.`;
+כללים: מתכון ישראלי אמיתי ומעשי. הקפד על ${dietaryType} ועל סוג תזונה ${dietStyle}. ללא markdown. JSON בלבד.`;
+}
 
+async function generateRecipeWithAI(
+  protein: string,
+  calories: string,
+  people: string,
+  dietaryType: DietaryType,
+  dietStyle: DietStyle,
+  excluded: string[]
+): Promise<Recipe> {
+  // First attempt
+  const prompt = buildPrompt(protein, calories, people, dietaryType, dietStyle, excluded);
   const raw = await generateText(prompt);
-  return parseAIJson<Recipe>(raw);
+  const recipe = parseAIJson<Recipe>(raw);
+
+  try {
+    validateDietCompliance(recipe, dietStyle);
+    return recipe;
+  } catch {
+    // Retry once with an even stricter prefix
+    toast.warning("המתכון לא תאם לדיאטה, מנסה שוב...");
+    const retryPrefix = `⚠️⚠️⚠️ STRICT: ${dietStyle} ONLY. Previous attempt failed validation. This recipe MUST use ONLY ingredients appropriate for ${dietStyle}.`;
+    const retryPrompt = buildPrompt(protein, calories, people, dietaryType, dietStyle, excluded, retryPrefix);
+    const retryRaw = await generateText(retryPrompt);
+    const retryRecipe = parseAIJson<Recipe>(retryRaw);
+    validateDietCompliance(retryRecipe, dietStyle);
+    return retryRecipe;
+  }
 }
 
 const DIETARY_OPTIONS: DietaryType[] = ["בשרי", "חלבי", "פרווה"];
+const DIET_STYLE_OPTIONS: DietStyle[] = ["קרנבורי", "טבעוני", "צמחוני", "קטו", "ים תיכוני", "רגיל", "ללא גלוטן", "ללא חלב"];
 
 export function NutritionRecipeGenerator() {
   const { data: profile } = useProfile();
   const addFavorite = useAddFavoriteMeal();
 
   const [dietaryType, setDietaryType] = useState<DietaryType | null>(null);
+  const [dietStyle, setDietStyle] = useState<DietStyle | null>(null);
   const [protein, setProtein] = useState("");
   const [calories, setCalories] = useState("");
   const [people, setPeople] = useState("2");
@@ -82,8 +145,8 @@ export function NutritionRecipeGenerator() {
   ];
 
   const handleGenerate = async () => {
-    if (!dietaryType) {
-      toast.error("בחר/י בשרי / חלבי / פרווה לפני יצירת מתכון");
+    if (!dietaryType || !dietStyle) {
+      toast.error("בחר סוג כשרות וסוג תזונה לפני יצירת מתכון");
       return;
     }
     if (!protein || !calories) {
@@ -93,7 +156,7 @@ export function NutritionRecipeGenerator() {
     setIsGenerating(true);
     setRecipe(null);
     try {
-      const result = await generateRecipeWithAI(protein, calories, people, dietaryType, allExcluded);
+      const result = await generateRecipeWithAI(protein, calories, people, dietaryType, dietStyle, allExcluded);
       setRecipe(result);
       setShowInstructions(false);
     } catch {
@@ -153,6 +216,31 @@ export function NutritionRecipeGenerator() {
         </div>
         {!dietaryType && (
           <p className="text-[10px] text-muted-foreground">יש לבחור לפני יצירת מתכון</p>
+        )}
+      </div>
+
+      {/* Step 2: Diet style */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-bold text-muted-foreground">
+          סוג תזונה <span className="text-destructive">*</span>
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {DIET_STYLE_OPTIONS.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setDietStyle(opt)}
+              className={`py-2.5 rounded-xl text-xs font-bold border transition-colors min-h-[40px] ${
+                dietStyle === opt
+                  ? "border-nutrition/60 bg-nutrition/15 text-nutrition"
+                  : "border-border bg-secondary/30 text-muted-foreground hover:border-nutrition/30"
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+        {(!dietaryType || !dietStyle) && (
+          <p className="text-[10px] text-muted-foreground">בחר סוג כשרות וסוג תזונה</p>
         )}
       </div>
 
@@ -221,7 +309,7 @@ export function NutritionRecipeGenerator() {
       <Button
         className="w-full bg-nutrition hover:bg-nutrition/90 text-nutrition-foreground"
         onClick={handleGenerate}
-        disabled={isGenerating || !dietaryType}
+        disabled={isGenerating || !dietaryType || !dietStyle}
       >
         {isGenerating ? (
           <>

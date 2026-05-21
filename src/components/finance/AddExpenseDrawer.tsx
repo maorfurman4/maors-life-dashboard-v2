@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { useAddExpense, DEFAULT_EXPENSE_CATEGORIES, useActiveExpenseCategories } from "@/hooks/use-finance-data";
 import { AmountScrollPicker } from "./AmountScrollPicker";
+import { todayLocalStr } from "@/utils/date";
 import { toast } from "sonner";
 
 interface AddExpenseDrawerProps {
@@ -14,7 +15,7 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
   const [customCategory, setCustomCategory] = useState("");
   const [amount, setAmount] = useState<number | null>(null);
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(todayLocalStr);
   const [isRecurring, setIsRecurring] = useState(false);
   const activeCategories = useActiveExpenseCategories();
   const addExpense = useAddExpense();
@@ -77,6 +78,16 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
 
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-2 block">סכום (₪)</label>
+          {/* Direct text input for fast entry */}
+          <input
+            type="number"
+            inputMode="decimal"
+            value={amount ?? ""}
+            onChange={(e) => setAmount(e.target.value ? Number(e.target.value) : null)}
+            placeholder="הקלד סכום..."
+            className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-finance mb-2"
+            dir="ltr"
+          />
           <AmountScrollPicker value={amount} onChange={setAmount} color="expense" />
         </div>
 

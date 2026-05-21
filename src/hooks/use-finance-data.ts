@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMonthlyPayslip } from "@/hooks/use-work-data";
 import { useMemo } from "react";
+import { toast } from "sonner";
 
 // ─── Auth helper ───
 async function getUserId() {
@@ -9,6 +10,9 @@ async function getUserId() {
   if (!user) throw new Error("Not authenticated");
   return user.id;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
 
 // ─── Default expense categories ───
 export const DEFAULT_EXPENSE_CATEGORIES = [
@@ -235,25 +239,16 @@ export function useSaveFinanceSettings() {
   return useMutation({
     mutationFn: async (updates: { savings_goal_pct?: number; income_sync_mode?: "net" | "bank"; savings_goal_amount?: number | null }) => {
       const userId = await getUserId();
-      const { data: existing } = await db
+      const { error } = await db
         .from("user_settings")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (existing) {
-        const { error } = await db
-          .from("user_settings")
-          .update(updates)
-          .eq("user_id", userId);
-        if (error) throw error;
-      } else {
-        const { error } = await db
-          .from("user_settings")
-          .insert({ user_id: userId, ...updates });
-        if (error) throw error;
-      }
+        .upsert({ user_id: userId, ...updates }, { onConflict: "user_id" });
+      if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["finance-settings"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["finance-settings"] });
+      qc.invalidateQueries({ queryKey: ["payroll-settings"] });
+      qc.invalidateQueries({ queryKey: ["user-settings"] });
+    },
   });
 }
 
@@ -389,8 +384,11 @@ export function useMonthlyFinance(year: number, month: number) {
     }, {} as Record<string, number>);
 
     const daysInMonth = new Date(year, month, 0).getDate();
-    const avgDailyExpense = totalExpenses / Math.max(currentDay, 1);
-    const avgDailyIncome = totalIncome / Math.max(currentDay, 1);
+    // For current month use elapsed days; for past months use full month length
+    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1;
+    const daysElapsed = isCurrentMonth ? Math.max(currentDay, 1) : daysInMonth;
+    const avgDailyExpense = totalExpenses / daysElapsed;
+    const avgDailyIncome = totalIncome / daysElapsed;
 
     return {
       workIncome,
@@ -466,8 +464,6 @@ export function useIncomeHistory(months: number = 6) {
 }
 
 // ─── Fixed Income ───
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = supabase as any;
 
 export function useFixedIncome() {
   return useQuery({
@@ -577,3 +573,54 @@ export const INCOME_CATEGORIES_FIXED = [
   { name: "קצבה",    icon: "📋" },
   { name: "אחר",     icon: "💰" },
 ];
+
+export function useMonthlySnapshots() {
+  return useQuery({
+    queryKey: ["monthly-snapshots"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data, error } = await (supabase as any)
+        .from("monthly_snapshots")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("year", { ascending: false })
+        .order("month", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useCloseMonth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (snapshotData: {
+      year: number;
+      month: number;
+      total_income: number;
+      total_expenses: number;
+      balance: number;
+      savings_pct: number;
+      category_breakdown?: Record<string, number>;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await (supabase as any)
+        .from("monthly_snapshots")
+        .upsert({
+          user_id: user.id,
+          ...snapshotData,
+          snapshot_data: snapshotData,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["monthly-snapshots"] });
+      toast.success("החודש נסגר ונשמר בהיסטוריה ✅");
+    },
+    onError: () => {
+      toast.error("שגיאה בסגירת החודש");
+    },
+  });
+}

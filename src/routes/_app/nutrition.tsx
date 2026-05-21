@@ -12,6 +12,7 @@ import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
 import { NutritionPlannerTab } from "@/components/nutrition/NutritionPlannerTab";
 import { NutritionJournalTab } from "@/components/nutrition/NutritionJournalTab";
 import { NutritionCulinaryTab } from "@/components/nutrition/NutritionCulinaryTab";
+import { NutritionWeeklySummary } from "@/components/nutrition/NutritionWeeklySummary";
 import { recognizeMeal, type MealRecognitionResult } from "@/lib/ai-service";
 import { compressImageToBase64 } from "@/lib/image-utils";
 import { AIConfirmationCard } from "@/components/nutrition/AIConfirmationCard";
@@ -479,7 +480,10 @@ function NutritionPage() {
             TAB 3 — JOURNAL  (Phase 3)
         ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "journal" && (
-          <NutritionJournalTab />
+          <div className="space-y-4">
+            <NutritionWeeklySummary />
+            <NutritionJournalTab />
+          </div>
         )}
 
         {/* ══════════════════════════════════════════════════════════════════

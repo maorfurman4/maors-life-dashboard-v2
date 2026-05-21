@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Dumbbell, Save } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Dumbbell, Save, AlertCircle } from "lucide-react";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { toast } from "sonner";
 
@@ -39,23 +39,31 @@ function toggle(arr: string[], val: string) {
   return arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
 }
 
+const EMPTY_SPORT_DRAFT = {
+  sport_types: [] as string[],
+  custom_sport: "",
+  sport_goals: [] as string[],
+  muscle_focus: [] as string[],
+  sport_frequency: "",
+  sport_location: "",
+  sport_level: "",
+};
+
 export function SettingsSport() {
   const { data: profile } = useProfile();
   const { mutate: updateProfile, isPending } = useUpdateProfile();
 
-  const [draft, setDraft] = useState({
-    sport_types: [] as string[],
-    custom_sport: "",
-    sport_goals: [] as string[],
-    muscle_focus: [] as string[],
-    sport_frequency: "",
-    sport_location: "",
-    sport_level: "",
-  });
+  const [draft, setDraft] = useState(EMPTY_SPORT_DRAFT);
+  const [savedDraft, setSavedDraft] = useState(EMPTY_SPORT_DRAFT);
+
+  const isDirty = useMemo(
+    () => JSON.stringify(draft) !== JSON.stringify(savedDraft),
+    [draft, savedDraft]
+  );
 
   useEffect(() => {
     if (!profile) return;
-    setDraft({
+    const loaded = {
       sport_types: profile.sport_types ?? [],
       custom_sport: profile.custom_sport ?? "",
       sport_goals: profile.sport_goals ?? [],
@@ -63,7 +71,9 @@ export function SettingsSport() {
       sport_frequency: profile.sport_frequency ?? "",
       sport_location: profile.sport_location ?? "",
       sport_level: profile.sport_level ?? "",
-    });
+    };
+    setDraft(loaded);
+    setSavedDraft(loaded);
   }, [profile]);
 
   const handleSave = () => {
@@ -78,7 +88,10 @@ export function SettingsSport() {
         sport_level: draft.sport_level || null,
       },
       {
-        onSuccess: () => toast.success("הגדרות ספורט נשמרו"),
+        onSuccess: () => {
+          toast.success("הגדרות ספורט נשמרו ✅");
+          setSavedDraft(draft);
+        },
         onError: (e) => toast.error("שגיאה: " + e.message),
       }
     );
@@ -166,8 +179,17 @@ export function SettingsSport() {
         </div>
       </div>
 
-      <button onClick={handleSave} disabled={isPending}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-none bg-white text-black text-sm font-bold hover:bg-white/90 transition-colors disabled:opacity-50 min-h-[44px]">
+      {isDirty && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-none border border-amber-400/30 bg-amber-400/10 text-amber-300 text-xs">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          יש שינויים שלא נשמרו
+        </div>
+      )}
+
+      <button onClick={handleSave} disabled={isPending || !isDirty}
+        className={`flex items-center gap-2 px-4 py-2.5 rounded-none text-sm font-bold transition-colors min-h-[44px] ${
+          isDirty ? "bg-white text-black hover:bg-white/90" : "bg-white/10 text-white/40 cursor-default"
+        } disabled:opacity-50`}>
         <Save className="h-4 w-4" />
         {isPending ? "שומר..." : "שמור ספורט"}
       </button>

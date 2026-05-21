@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { useAddIncome, INCOME_CATEGORIES } from "@/hooks/use-finance-data";
+import { todayLocalStr } from "@/utils/date";
 import { toast } from "sonner";
 
 interface AddIncomeDrawerProps {
@@ -12,7 +13,7 @@ export function AddIncomeDrawer({ open, onClose }: AddIncomeDrawerProps) {
   const [category, setCategory] = useState("other");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(todayLocalStr);
   const addIncome = useAddIncome();
 
   const handleSave = () => {

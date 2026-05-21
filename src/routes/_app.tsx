@@ -30,7 +30,8 @@ function ProtectedAppLayout() {
 
   if (!user) return null;
 
-  if (profile && !profile.onboarding_completed) {
+  // Show onboarding when: profile row doesn't exist yet (new user) OR onboarding not completed
+  if (!profile || !profile.onboarding_completed) {
     return (
       <OnboardingFlow
         onComplete={() => {

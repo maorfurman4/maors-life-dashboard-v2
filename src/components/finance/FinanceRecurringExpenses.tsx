@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Plus, Trash2, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
+import { CalendarDays, CreditCard, Plus, Trash2, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
 import { useFixedExpenses, useAddFixedExpense, useDeleteFixedExpense, useUpdateFixedExpense, DEFAULT_EXPENSE_CATEGORIES } from "@/hooks/use-finance-data";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { toast } from "sonner";
@@ -7,21 +7,45 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const fmtNum = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
 
-export function FinanceSubscriptions() {
+interface Props {
+  mode?: "all" | "subscriptions";
+}
+
+export function FinanceRecurringExpenses({ mode = "all" }: Props) {
   const queryClient = useQueryClient();
   const { data: fixedExpenses } = useFixedExpenses();
   const addFixed = useAddFixedExpense();
   const deleteFixed = useDeleteFixedExpense();
   const updateFixed = useUpdateFixedExpense();
+
+  const isSubscriptions = mode === "subscriptions";
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("מנויים");
+  const [category, setCategory] = useState(isSubscriptions ? "מנויים" : "אחר");
   const [chargeDay, setChargeDay] = useState("1");
 
-  const subscriptions = (fixedExpenses || []).filter((f: any) => f.is_recurring);
-  const totalActive = subscriptions.filter((f: any) => f.is_active).reduce((s: number, f: any) => s + Number(f.amount), 0);
+  const items = isSubscriptions
+    ? (fixedExpenses || []).filter((f: any) => f.is_recurring)
+    : (fixedExpenses || []);
+
+  const totalActive = items.filter((f: any) => f.is_active).reduce((s: number, f: any) => s + Number(f.amount), 0);
+
+  const title = isSubscriptions ? "מנויים חודשיים" : "הוצאות קבועות";
+  const Icon  = isSubscriptions ? CreditCard : CalendarDays;
+  const emptyText = isSubscriptions
+    ? "אין מנויים — הוסף נטפליקס, ג׳ים ועוד"
+    : "אין הוצאות קבועות — הוסף שכירות, מנויים ועוד";
+
+  const resetForm = () => {
+    setEditId(null);
+    setName("");
+    setAmount("");
+    setCategory(isSubscriptions ? "מנויים" : "אחר");
+    setChargeDay("1");
+  };
 
   const openEdit = (f: any) => {
     setEditId(f.id);
@@ -30,14 +54,6 @@ export function FinanceSubscriptions() {
     setCategory(f.category);
     setChargeDay(String(f.charge_day));
     setDrawerOpen(true);
-  };
-
-  const resetForm = () => {
-    setEditId(null);
-    setName("");
-    setAmount("");
-    setCategory("מנויים");
-    setChargeDay("1");
   };
 
   const handleSave = () => {
@@ -55,9 +71,9 @@ export function FinanceSubscriptions() {
       );
     } else {
       addFixed.mutate(
-        { name, amount: Number(amount), category, charge_day: Number(chargeDay), is_recurring: true },
+        { name, amount: Number(amount), category, charge_day: Number(chargeDay), ...(isSubscriptions ? { is_recurring: true } : {}) },
         {
-          onSuccess: () => { toast.success("מנוי נוסף"); setDrawerOpen(false); resetForm(); },
+          onSuccess: () => { toast.success(isSubscriptions ? "מנוי נוסף" : "הוצאה נשמרה"); setDrawerOpen(false); resetForm(); },
           onError: () => toast.error("שגיאה"),
         }
       );
@@ -68,8 +84,8 @@ export function FinanceSubscriptions() {
     <div className="rounded-2xl bg-card border border-border p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CreditCard className="h-4 w-4 text-finance" />
-          <h3 className="text-sm font-semibold text-muted-foreground">מנויים חודשיים</h3>
+          <Icon className="h-4 w-4 text-finance" />
+          <h3 className="text-sm font-semibold text-muted-foreground">{title}</h3>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-muted-foreground">סה״כ: ₪{fmtNum(totalActive)}/חודש</span>
@@ -80,11 +96,11 @@ export function FinanceSubscriptions() {
         </div>
       </div>
 
-      {subscriptions.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-4">אין מנויים — הוסף נטפליקס, ג׳ים ועוד</p>
+      {items.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-4">{emptyText}</p>
       ) : (
         <div className="space-y-2">
-          {subscriptions.map((f: any) => (
+          {items.map((f: any) => (
             <div key={f.id} className={`flex items-center justify-between p-3 rounded-xl group transition-colors ${f.is_active ? "bg-secondary/20" : "bg-secondary/10 opacity-50"}`}>
               <div className="min-w-0">
                 <p className="text-xs font-medium truncate">{f.name}</p>
@@ -110,11 +126,12 @@ export function FinanceSubscriptions() {
         </div>
       )}
 
-      <AddItemDrawer open={drawerOpen} onClose={() => { setDrawerOpen(false); resetForm(); }} title={editId ? "ערוך מנוי" : "הוסף מנוי"}>
+      <AddItemDrawer open={drawerOpen} onClose={() => { setDrawerOpen(false); resetForm(); }} title={editId ? (isSubscriptions ? "ערוך מנוי" : "ערוך הוצאה") : (isSubscriptions ? "הוסף מנוי" : "הוסף הוצאה קבועה")}>
         <div className="space-y-4">
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">שם</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="נטפליקס, ג׳ים..."
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+              placeholder={isSubscriptions ? "נטפליקס, ג׳ים..." : "שכירות, ביטוח..."}
               className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-finance" />
           </div>
           <div>
@@ -150,3 +167,5 @@ export function FinanceSubscriptions() {
     </div>
   );
 }
+
+export default FinanceRecurringExpenses;

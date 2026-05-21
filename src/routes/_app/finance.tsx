@@ -46,6 +46,10 @@ function FinancePage() {
     currentMonth.year === now.getFullYear() &&
     currentMonth.month === now.getMonth() + 1;
 
+  const isMaxFuture =
+    (currentMonth.year > now.getFullYear()) ||
+    (currentMonth.year === now.getFullYear() && currentMonth.month > now.getMonth() + 1);
+
   return (
     <div
       dir="rtl"
@@ -78,6 +82,7 @@ function FinancePage() {
           year={currentMonth.year}
           month={currentMonth.month}
           isCurrentMonth={isCurrentMonth}
+          isMaxFuture={isMaxFuture}
           onPrev={prevMonth}
           onNext={nextMonth}
         />
@@ -144,9 +149,9 @@ function FinancePage() {
 // ─── Month Navigator ──────────────────────────────────────────────────────────
 
 function MonthNav({
-  year, month, isCurrentMonth, onPrev, onNext,
+  year, month, isCurrentMonth, isMaxFuture, onPrev, onNext,
 }: {
-  year: number; month: number; isCurrentMonth: boolean;
+  year: number; month: number; isCurrentMonth: boolean; isMaxFuture: boolean;
   onPrev: () => void; onNext: () => void;
 }) {
   return (
@@ -176,7 +181,7 @@ function MonthNav({
 
       <button
         onClick={onNext}
-        disabled={isCurrentMonth}
+        disabled={isCurrentMonth || isMaxFuture}
         aria-label="חודש הבא"
         className="h-8 w-8 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
         style={{ background: FT.goldDim, color: "rgba(255,255,255,0.6)" }}

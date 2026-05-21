@@ -127,10 +127,20 @@ export interface GeneratePlanPayload {
   favoriteExercises?: string[];
   blacklistedExercises?: string[];
   recentWorkouts?: { name: string; date: string; exercises: string[] }[];
+  // AI Planner v3 params:
+  planWeeks?: number;       // 1-4 weeks
+  equipmentList?: string[]; // toggled equipment chips
 }
 
 export async function generateWorkoutPlan(payload: GeneratePlanPayload): Promise<WorkoutPlan> {
-  const { data, error } = await supabase.functions.invoke("workout-plan-ai", { body: payload });
+  const body = {
+    ...payload,
+    // Normalize equipment list for Edge Function
+    ...(payload.equipmentList && payload.equipmentList.length > 0
+      ? { equipmentItems: payload.equipmentList }
+      : {}),
+  };
+  const { data, error } = await supabase.functions.invoke("workout-plan-ai", { body });
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
   if (!data?.plan) throw new Error("לא התקבלה תוכנית");
@@ -194,5 +204,9 @@ export function parseAIJson<T>(raw: string): T {
   const jsonEnd     = Math.max(lastBrace, lastBracket);
   if (jsonEnd !== -1 && jsonEnd < clean.length - 1) clean = clean.slice(0, jsonEnd + 1);
 
-  return JSON.parse(clean) as T;
+  try {
+    return JSON.parse(clean) as T;
+  } catch {
+    throw new Error(`AI returned invalid JSON. Raw response: ${raw.slice(0, 200)}`);
+  }
 }

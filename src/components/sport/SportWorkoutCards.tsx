@@ -57,11 +57,9 @@ export function SportWorkoutCards() {
               </div>
 
               <div className="flex items-center gap-3 text-[11px] text-white/50">
-                {w.duration_minutes && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />{w.duration_minutes} דק׳
-                  </span>
-                )}
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />{w.duration_minutes ? `${w.duration_minutes} דק׳` : "—"}
+                </span>
                 {w.calories_burned && (
                   <span className="flex items-center gap-1">
                     <Flame className="h-3 w-3" />{w.calories_burned} קל׳

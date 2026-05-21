@@ -24,18 +24,43 @@ type AIWorkoutPlan = WorkoutPlan;
 
 // ─── Conversational steps ─────────────────────────────────────────────────────
 
-type StepKey = "frequency" | "location" | "duration" | "rpe" | "limitations";
+type StepKey =
+  | "frequency"
+  | "cardioDays"
+  | "location"
+  | "equipment"
+  | "duration"
+  | "durationCustom"
+  | "preferredMuscles"
+  | "avoidedMuscles"
+  | "rpe"
+  | "limitations";
 
 interface Step {
   key:          StepKey;
   question:     string;
   options?:     string[];
-  inputType:    "options" | "range" | "text";
+  inputType:    "options" | "range" | "text" | "multiselect";
   rangeMin?:    number;
   rangeMax?:    number;
   rangeUnit?:   string;
   placeholder?: string;
+  optional?:    boolean;
+  multiselectItems?: string[];
 }
+
+const EQUIPMENT_LIST = [
+  "ספסל לחיצה 🏋️", "סקוואט רק 🔩", "כבלים 🔗", "דמבלים 💪",
+  "מוט + משקולות 🏋️", "לג פרס 🦵", "מוט מתח 🤸", "הליכון 🏃",
+  "מכונת חתירה 🚣", "אליפטי 🌀", "מקבילים 🤸", "TRX",
+  "כדור רפואי ⚽", "קטלבל 🔔", "מכונת פרפר 🦋", "סמית' מכונה 🏗️",
+  "GHD 🔄", "ללא ציוד 🤲",
+];
+
+const MUSCLE_LIST = [
+  "חזה 💪", "גב 🔙", "כתפיים 🔝", "ביצפס 💪", "טריצפס 💪",
+  "בטן/ליבה 🎯", "רגליים 🦵", "ישבן 🍑", "שוקיים 👣", "אמות 🦾",
+];
 
 const STEPS: Step[] = [
   {
@@ -45,18 +70,47 @@ const STEPS: Step[] = [
     inputType: "options",
   },
   {
+    key: "cardioDays",
+    question: "כמה ימי אירובי תרצה/י?",
+    options: ["0 ימים", "1 יום", "2 ימים", "3 ימים"],
+    inputType: "options",
+  },
+  {
     key: "location",
     question: "איפה מתאמנים?",
     options: ["חדר כושר", "בבית", "בחוץ", "משולב"],
     inputType: "options",
   },
   {
+    key: "equipment",
+    question: "איזה ציוד זמין לך?",
+    inputType: "multiselect",
+    multiselectItems: EQUIPMENT_LIST,
+  },
+  {
     key: "duration",
-    question: "כמה דקות לאימון?",
-    inputType: "range",
-    rangeMin: 20,
-    rangeMax: 120,
-    rangeUnit: "דק'",
+    question: "מה אורך התוכנית?",
+    options: ["שבוע אחד", "שבועיים", "3 שבועות", "חודש אחד"],
+    inputType: "options",
+  },
+  {
+    key: "durationCustom",
+    question: "רוצה זמן ספציפי? (אופציונלי)",
+    inputType: "text",
+    placeholder: "דקות לאימון (למשל: 50)",
+    optional: true,
+  },
+  {
+    key: "preferredMuscles",
+    question: "אילו שרירים לשים דגש עליהם?",
+    inputType: "multiselect",
+    multiselectItems: MUSCLE_LIST,
+  },
+  {
+    key: "avoidedMuscles",
+    question: "אילו שרירים לתת עדיפות נמוכה?",
+    inputType: "multiselect",
+    multiselectItems: MUSCLE_LIST,
   },
   {
     key: "rpe",
@@ -76,18 +130,30 @@ const STEPS: Step[] = [
 
 type Answers = Partial<Record<StepKey, string>>;
 
+function parsePlanWeeks(durationAnswer: string | undefined): number {
+  if (!durationAnswer) return 4;
+  if (durationAnswer.includes("שבוע אחד")) return 1;
+  if (durationAnswer.includes("שבועיים")) return 2;
+  if (durationAnswer.includes("3 שבועות")) return 3;
+  return 4;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function SportAIPlanner() {
   const { data: prs } = usePersonalRecords();
   const addTemplate   = useAddWorkoutTemplate();
 
-  const [step,       setStep]       = useState(0);
-  const [answers,    setAnswers]    = useState<Answers>({});
-  const [textInput,  setTextInput]  = useState("");
-  const [rangeValue, setRangeValue] = useState<Record<string, number>>({ duration: 60, rpe: 7 });
-  const [loading,    setLoading]    = useState(false);
-  const [plan,       setPlan]       = useState<AIWorkoutPlan | null>(null);
+  const [step,               setStep]               = useState(0);
+  const [answers,            setAnswers]            = useState<Answers>({});
+  const [textInput,          setTextInput]          = useState("");
+  const [rangeValue,         setRangeValue]         = useState<Record<string, number>>({ rpe: 7 });
+  const [loading,            setLoading]            = useState(false);
+  const [plan,               setPlan]               = useState<AIWorkoutPlan | null>(null);
+  const [equipmentSelection, setEquipmentSelection] = useState<string[]>([]);
+  const [preferredMuscles,   setPreferredMuscles]   = useState<string[]>([]);
+  const [avoidedMuscles,     setAvoidedMuscles]     = useState<string[]>([]);
+  const [pendingOption,      setPendingOption]      = useState<string | null>(null);
 
   const currentStep = STEPS[step];
   const allAnswered = step >= STEPS.length;
@@ -98,6 +164,16 @@ export function SportAIPlanner() {
   };
 
   const handleOptionSelect = (option: string) => {
+    // For cardioDays: block selection if it exceeds training frequency
+    if (currentStep.key === "cardioDays") {
+      const freqNum = parseInt(answers.frequency ?? "0") || 0;
+      const cardioNum = parseInt(option) || 0;
+      if (freqNum > 0 && cardioNum >= freqNum) {
+        setPendingOption(option);
+        return; // show warning, don't advance
+      }
+    }
+    setPendingOption(null);
     recordAnswer(option);
     setStep((s) => s + 1);
   };
@@ -109,28 +185,74 @@ export function SportAIPlanner() {
   };
 
   const handleTextNext = () => {
-    if (!textInput.trim()) { toast.error("נא למלא תשובה"); return; }
+    if (!currentStep.optional && !textInput.trim()) {
+      toast.error("נא למלא תשובה");
+      return;
+    }
     recordAnswer(textInput.trim());
     setStep((s) => s + 1);
+  };
+
+  const handleMultiselectNext = () => {
+    // multiselect always allows proceeding (0 selections = no preference)
+    setStep((s) => s + 1);
+  };
+
+  const toggleMultiselect = (item: string, key: StepKey) => {
+    if (key === "equipment") {
+      setEquipmentSelection((prev) =>
+        prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
+      );
+    } else if (key === "preferredMuscles") {
+      setPreferredMuscles((prev) =>
+        prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
+      );
+    } else if (key === "avoidedMuscles") {
+      setAvoidedMuscles((prev) =>
+        prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
+      );
+    }
+  };
+
+  const getMultiselectState = (key: StepKey): string[] => {
+    if (key === "equipment") return equipmentSelection;
+    if (key === "preferredMuscles") return preferredMuscles;
+    if (key === "avoidedMuscles") return avoidedMuscles;
+    return [];
   };
 
   const generate = async () => {
     setLoading(true);
     setPlan(null);
     try {
+      const planWeeks = parsePlanWeeks(answers.duration);
+      const sessionMinutes = answers.durationCustom
+        ? parseInt(answers.durationCustom) || 60
+        : 60;
+      const cardioDaysNum = parseInt(answers.cardioDays ?? "0") || 0;
+
       const result = await generateWorkoutPlan({
-        goal:        `${answers.location ?? "חדר כושר"} — RPE ${answers.rpe ?? "7"}`,
-        daysPerWeek: parseInt(answers.frequency ?? "3"),
-        equipment:   answers.location ?? "חדר כושר מלא",
-        constraints: answers.limitations ?? "אין",
-        recentPRs:   (prs || []).slice(0, 6).map((p: any) => ({
+        goal:            `${answers.location ?? "חדר כושר"} — RPE ${answers.rpe ?? "7"}`,
+        daysPerWeek:     parseInt(answers.frequency ?? "3"),
+        equipment:       equipmentSelection.length > 0 ? equipmentSelection.join(", ") : (answers.location ?? "חדר כושר מלא"),
+        constraints:     answers.limitations ?? "אין",
+        sessionMinutes,
+        cardioDays:      cardioDaysNum,
+        preferredMuscles: preferredMuscles.length > 0 ? preferredMuscles : undefined,
+        avoidedMuscles:   avoidedMuscles.length > 0 ? avoidedMuscles : undefined,
+        recentPRs:       (prs || []).slice(0, 6).map((p: any) => ({
           exercise_name: p.exercise_name,
           value:         p.value,
           unit:          p.unit ?? "",
         })),
-      });
+        // New fields
+        planWeeks,
+        equipmentList: equipmentSelection.length > 0 ? equipmentSelection : undefined,
+      } as any);
 
-      if (!result.workouts || !Array.isArray(result.workouts)) throw new Error("מבנה לא תקין");
+      if (!result.workouts && (!result.weeks || !Array.isArray(result.weeks))) {
+        throw new Error("מבנה לא תקין");
+      }
 
       setPlan(result);
       toast.success("התוכנית מוכנה! 💪");
@@ -148,7 +270,12 @@ export function SportAIPlanner() {
         name:                       w.name,
         category:                   w.category,
         estimated_duration_minutes: w.duration_minutes,
-        exercises:                  w.exercises as any,
+        // Normalize reps: AI may return "8-10" strings → parse to integer (use lower bound)
+        exercises: w.exercises.map((ex) => ({
+          ...ex,
+          reps: typeof ex.reps === "string" ? (parseInt(ex.reps as string) || 10) : (ex.reps ?? 10),
+          sets: typeof ex.sets === "string" ? (parseInt(ex.sets as string) || 3) : (ex.sets ?? 3),
+        })) as any,
       },
       {
         onSuccess: () => toast.success(`"${w.name}" נשמר כתבנית`),
@@ -161,8 +288,16 @@ export function SportAIPlanner() {
     setStep(0);
     setAnswers({});
     setTextInput("");
+    setRangeValue({ rpe: 7 });
     setPlan(null);
+    setEquipmentSelection([]);
+    setPreferredMuscles([]);
+    setAvoidedMuscles([]);
+    setPendingOption(null);
   };
+
+  // Cardio warning helpers
+  const frequencyNum = parseInt(answers.frequency ?? "0") || 0;
 
   return (
     <div
@@ -204,16 +339,53 @@ export function SportAIPlanner() {
           <p className="text-sm font-bold text-white">{currentStep.question}</p>
 
           {currentStep.inputType === "options" && (
-            <div className="grid grid-cols-2 gap-2">
-              {currentStep.options!.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => handleOptionSelect(opt)}
-                  className="py-3 rounded-2xl text-xs font-semibold border border-white/10 bg-white/5 text-white/70 hover:border-sport/40 hover:bg-sport/10 hover:text-sport transition-all min-h-[44px]"
-                >
-                  {opt}
-                </button>
-              ))}
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                {currentStep.options!.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => handleOptionSelect(opt)}
+                    className="py-3 rounded-2xl text-xs font-semibold border border-white/10 bg-white/5 text-white/70 hover:border-sport/40 hover:bg-sport/10 hover:text-sport transition-all min-h-[44px]"
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+              {/* Cardio warning */}
+              {currentStep.key === "cardioDays" && pendingOption !== null && frequencyNum > 0 && (parseInt(pendingOption) || 0) >= frequencyNum && (
+                <p className="text-amber-400 text-sm mt-2">
+                  ⚠️ ימי האירובי לא יכולים לעלות על ימי האימון הכוללים ({frequencyNum}) — בחר/י {frequencyNum - 1} ימים לכל היותר
+                </p>
+              )}
+            </>
+          )}
+
+          {currentStep.inputType === "multiselect" && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2 max-h-60 overflow-y-auto">
+                {currentStep.multiselectItems!.map((item) => {
+                  const selected = getMultiselectState(currentStep.key).includes(item);
+                  return (
+                    <button
+                      key={item}
+                      onClick={() => toggleMultiselect(item, currentStep.key)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                        selected
+                          ? "border-sport bg-sport/20 text-sport"
+                          : "border-white/10 bg-white/5 text-white/60 hover:border-sport/30 hover:text-white/80"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={handleMultiselectNext}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-sport/15 border border-sport/20 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[44px]"
+              >
+                המשך <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
             </div>
           )}
 
@@ -256,7 +428,7 @@ export function SportAIPlanner() {
                 onClick={handleTextNext}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-sport/15 border border-sport/20 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[44px]"
               >
-                המשך <ChevronLeft className="h-3.5 w-3.5" />
+                {currentStep.optional ? "דלג / המשך" : "המשך"} <ChevronLeft className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
@@ -277,12 +449,24 @@ export function SportAIPlanner() {
         <div className="space-y-3">
           <div className="rounded-2xl bg-white/5 border border-white/10 p-3.5 space-y-1.5">
             <p className="text-[11px] font-bold text-sport uppercase tracking-widest mb-2">סיכום הבחירות שלך</p>
-            {STEPS.map((s) => (
+            {STEPS.filter((s) => s.inputType !== "multiselect").map((s) => (
               <div key={s.key} className="flex items-center justify-between text-[11px]">
                 <span className="text-white/40">{s.question.replace("?", "")}</span>
-                <span className="font-semibold text-white">{answers[s.key]}</span>
+                <span className="font-semibold text-white">{answers[s.key] || "—"}</span>
               </div>
             ))}
+            {equipmentSelection.length > 0 && (
+              <div className="flex items-start justify-between text-[11px]">
+                <span className="text-white/40">ציוד</span>
+                <span className="font-semibold text-white text-left max-w-[60%]">{equipmentSelection.join(", ")}</span>
+              </div>
+            )}
+            {preferredMuscles.length > 0 && (
+              <div className="flex items-start justify-between text-[11px]">
+                <span className="text-white/40">דגש</span>
+                <span className="font-semibold text-white text-left max-w-[60%]">{preferredMuscles.join(", ")}</span>
+              </div>
+            )}
           </div>
 
           <button
@@ -309,7 +493,8 @@ export function SportAIPlanner() {
           </div>
 
           <div className="space-y-2">
-            {(plan.workouts ?? []).map((w, i) => (
+            {/* Render workouts: prefer weeks[0] (new multi-week structure), fall back to flat workouts array */}
+            {(plan.weeks && plan.weeks.length > 0 ? plan.weeks[0].workouts : (plan.workouts ?? [])).map((w, i) => (
               <div key={i} className="rounded-2xl bg-white/5 border border-white/10 p-3.5 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">

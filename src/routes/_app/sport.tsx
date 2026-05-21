@@ -2404,6 +2404,18 @@ const DAY_EQUIPMENT_OPTIONS = [
   { label: "בית",         icon: "🏠", value: "home" },
 ];
 
+const CARDIO_METRICS: Record<string, { primary: string; primaryUnit: string; alternatives: Array<{label: string; unit: string; toMinutes: (val: number) => number}> }> = {
+  "ריצה":        { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "אופניים":     { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "שחייה":       { primary: "אורכי בריכה (25מ׳)", primaryUnit: "lengths", alternatives: [{ label: "בריכות (50מ׳)", unit: "pools", toMinutes: (v) => v * 3 }, { label: "ק\"מ", unit: "km", toMinutes: (v) => v * 30 }, { label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "חבל קפיצה":  { primary: "דקות", primaryUnit: "min",    alternatives: [{ label: "סיבובים", unit: "rounds", toMinutes: (v) => v * 3 }] },
+  "חתירה":       { primary: "מטרים", primaryUnit: "m",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "HIIT":        { primary: "סיבובים", primaryUnit: "rounds", alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "הליכה":       { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "טיול הרים":   { primary: "ק\"מ", primaryUnit: "km",     alternatives: [{ label: "דקות", unit: "min", toMinutes: (v) => v }] },
+  "אליפטי":      { primary: "דקות", primaryUnit: "min",    alternatives: [] },
+};
+
 type WorkoutDbCategory = "weights" | "calisthenics" | "running" | "mixed";
 const WORKOUT_CATEGORIES: { value: WorkoutDbCategory; label: string }[] = [
   { value: "weights",      label: "🏋️ כוח"      },
@@ -5991,6 +6003,8 @@ function ShareRunModal({ run, onClose }: { run: RunForShare; onClose: () => void
 function RunningLogSection() {
   const addWorkout = useAddWorkout();
   const { data: runs } = useRunHistory();
+  const { data: settings } = useUserSettings();
+  const bodyWeight = (settings as any)?.weight_kg ?? 75;
 
   const [distRaw,  setDistRaw]  = useState("");
   const [minsRaw,  setMinsRaw]  = useState("");
@@ -6002,6 +6016,13 @@ function RunningLogSection() {
   const distKm    = parseFloat(distRaw)  || 0;
   const totalMins = (parseInt(minsRaw)   || 0) + (parseInt(secsRaw) || 0) / 60;
   const paceDec   = computePaceDecimal(distKm, totalMins);
+
+  // Estimated duration: use entered time if available, else 6 min/km default
+  const estimatedMins = totalMins > 0 ? totalMins : distKm * 6;
+  // Estimated calories (medium intensity running)
+  const estimatedCalories = distKm > 0 || totalMins > 0
+    ? calcCardioCalories("running", "medium", Math.max(1, Math.round(estimatedMins)), bodyWeight)
+    : 0;
 
   const handleSave = async () => {
     if (!distKm && !totalMins) return toast.error("הכנס לפחות מרחק או זמן");
@@ -6103,6 +6124,25 @@ function RunningLogSection() {
           <div className="flex items-center justify-center gap-2 rounded-2xl border border-orange-500/25 bg-orange-500/10 px-4 py-3 transition-all">
             <span className="text-2xl font-black text-white tracking-tight">{formatPace(paceDec)}</span>
             <span className="text-sm font-bold text-orange-400">/ק״מ</span>
+          </div>
+        )}
+
+        {/* Estimated minutes + calorie hint (when km entered without time) */}
+        {distKm > 0 && totalMins === 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-bold text-white/40">≈ {Math.round(estimatedMins)} דקות</span>
+            {estimatedCalories > 0 && (
+              <span className="text-orange-400 text-[11px] font-bold">~{estimatedCalories} קל׳ 🔥</span>
+            )}
+          </div>
+        )}
+
+        {/* Calorie preview when time is entered */}
+        {totalMins > 0 && estimatedCalories > 0 && (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-orange-500/20 bg-orange-500/8 py-2.5 transition-all">
+            <Flame className="h-4 w-4 text-orange-400" />
+            <span className="text-lg font-black text-white">{estimatedCalories.toLocaleString()}</span>
+            <span className="text-xs font-bold text-orange-400">קלוריות</span>
           </div>
         )}
 
@@ -6457,28 +6497,58 @@ function OtherCardioLogSection({ sport }: { sport: typeof CARDIO_SPORTS[number] 
   const { data: settings } = useUserSettings();
   const bodyWeight = (settings as any)?.weight_kg ?? 75;
 
-  const [minsRaw,   setMinsRaw]   = useState("30");
-  const [intensity, setIntensity] = useState<Intensity>("medium");
-  const [notes,     setNotes]     = useState("");
+  const metricConfig = CARDIO_METRICS[sport.labelHe];
 
-  const minutes  = parseInt(minsRaw) || 0;
-  const calories = calcCardioCalories(sport.key, intensity, minutes, bodyWeight);
+  const [primaryRaw,  setPrimaryRaw]  = useState("30");
+  const [activeUnit,  setActiveUnit]  = useState<string>(metricConfig?.primaryUnit ?? "min");
+  const [intensity,   setIntensity]   = useState<Intensity>("medium");
+  const [notes,       setNotes]       = useState("");
+
+  // Convert primary value to minutes for calorie calc
+  const primaryVal = parseFloat(primaryRaw) || 0;
+  const minutes: number = (() => {
+    if (!metricConfig) return primaryVal;
+    if (activeUnit === metricConfig.primaryUnit) {
+      // Convert primary unit to minutes using standard paces
+      if (metricConfig.primaryUnit === "km") {
+        // Running: 1 km ≈ 6 min; Cycling: 1 km ≈ 3 min; Walking/Hiking: 1 km ≈ 12 min
+        if (sport.key === "cycling") return primaryVal * 3;
+        if (sport.key === "hiking" || sport.labelHe === "הליכה" || sport.labelHe === "טיול הרים") return primaryVal * 12;
+        return primaryVal * 6; // running default
+      }
+      if (metricConfig.primaryUnit === "lengths") return primaryVal * 1.5; // 25m length ≈ 1.5 min
+      if (metricConfig.primaryUnit === "m") return primaryVal / 500 * 2; // rowing: 500m ≈ 2 min
+      if (metricConfig.primaryUnit === "rounds") return primaryVal * 4;   // HIIT/jump-rope rounds ~4 min each
+      return primaryVal; // already minutes
+    }
+    // Alternative unit
+    const alt = metricConfig.alternatives.find((a) => a.unit === activeUnit);
+    return alt ? alt.toMinutes(primaryVal) : primaryVal;
+  })();
+
+  const calories = calcCardioCalories(sport.key, intensity, Math.round(minutes), bodyWeight);
+
+  // Estimated calorie display using MET
+  const estimatedCalories = calories;
 
   const handleSave = async () => {
-    if (minutes <= 0) return toast.error("הזן זמן אימון");
+    if (primaryVal <= 0) return toast.error("הזן ערך תקין");
+    const durationMins = Math.max(1, Math.round(minutes));
     try {
       await addWorkout.mutateAsync({
         category:         sport.dbCategory,
-        duration_minutes: minutes,
-        calories_burned:  calories || undefined,
+        duration_minutes: durationMins,
+        calories_burned:  estimatedCalories || undefined,
         notes:            notes || sport.labelHe,
       });
-      toast.success(`${sport.emoji} ${sport.labelHe} נרשם! ${calories ? calories + " קלוריות" : ""}`);
-      setMinsRaw("30"); setNotes("");
+      toast.success(`${sport.emoji} ${sport.labelHe} נרשם! ${estimatedCalories ? estimatedCalories + " קלוריות" : ""}`);
+      setPrimaryRaw("30"); setNotes("");
     } catch {
       toast.error("שגיאה בשמירה");
     }
   };
+
+  const primaryLabel = metricConfig?.primary ?? "דקות";
 
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-4">
@@ -6488,21 +6558,70 @@ function OtherCardioLogSection({ sport }: { sport: typeof CARDIO_SPORTS[number] 
         <p className="text-sm font-black text-white">{sport.labelHe}</p>
       </div>
 
-      {/* Duration */}
-      <div className="flex items-center gap-2.5">
-        <Timer className="h-4 w-4 shrink-0" style={{ color: sport.color }} />
-        <div className="flex-1 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5">
-          <input
-            type="text" inputMode="numeric" pattern="[0-9]*"
-            value={minsRaw}
-            onChange={(e) => setMinsRaw(e.target.value.replace(/\D/g, ""))}
-            onFocus={(e) => e.target.select()}
-            placeholder="30"
-            className="flex-1 bg-transparent text-sm font-bold text-white placeholder:text-white/20 outline-none text-left"
-            dir="ltr"
-          />
-          <span className="text-xs font-bold shrink-0" style={{ color: sport.color + "bb" }}>דקות</span>
+      {/* Primary metric input */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2.5">
+          <Timer className="h-4 w-4 shrink-0" style={{ color: sport.color }} />
+          <div className="flex-1 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5">
+            <input
+              type="text" inputMode="decimal" pattern="[0-9.]*"
+              value={primaryRaw}
+              onChange={(e) => setPrimaryRaw(e.target.value.replace(/[^\d.]/g, ""))}
+              onFocus={(e) => e.target.select()}
+              placeholder="0"
+              className="flex-1 bg-transparent text-sm font-bold text-white placeholder:text-white/20 outline-none text-left"
+              dir="ltr"
+            />
+            <span className="text-xs font-bold shrink-0" style={{ color: sport.color + "bb" }}>
+              {activeUnit === metricConfig?.primaryUnit ? primaryLabel : (metricConfig?.alternatives.find((a) => a.unit === activeUnit)?.label ?? primaryLabel)}
+            </span>
+          </div>
         </div>
+
+        {/* Alternative unit toggles */}
+        {metricConfig && metricConfig.alternatives.length > 0 && (
+          <div className="flex gap-1.5 flex-wrap">
+            <button
+              onClick={() => setActiveUnit(metricConfig.primaryUnit)}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
+                activeUnit === metricConfig.primaryUnit
+                  ? "text-white"
+                  : "bg-white/5 text-white/35 hover:text-white/55"
+              }`}
+              style={activeUnit === metricConfig.primaryUnit ? { background: sport.color + "33", border: `1px solid ${sport.color}55` } : {}}
+            >
+              {primaryLabel}
+            </button>
+            {metricConfig.alternatives.map((alt) => (
+              <button
+                key={alt.unit}
+                onClick={() => setActiveUnit(alt.unit)}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
+                  activeUnit === alt.unit
+                    ? "text-white"
+                    : "bg-white/5 text-white/35 hover:text-white/55"
+                }`}
+                style={activeUnit === alt.unit ? { background: sport.color + "33", border: `1px solid ${sport.color}55` } : {}}
+              >
+                {alt.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Converted minutes + calorie inline hint */}
+        {primaryVal > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {activeUnit !== "min" && minutes > 0 && (
+              <span className="text-[11px] font-bold text-white/40">
+                ≈ {Math.round(minutes)} דקות
+              </span>
+            )}
+            {estimatedCalories > 0 && (
+              <span className="text-orange-400 text-[11px] font-bold">~{estimatedCalories} קל׳ 🔥</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Intensity picker */}
@@ -6525,11 +6644,11 @@ function OtherCardioLogSection({ sport }: { sport: typeof CARDIO_SPORTS[number] 
       </div>
 
       {/* Live calorie preview */}
-      {calories > 0 && (
+      {estimatedCalories > 0 && (
         <div className="flex items-center justify-center gap-2 rounded-2xl border py-3 transition-all"
           style={{ borderColor: sport.color + "33", background: sport.color + "11" }}>
           <Flame className="h-4 w-4" style={{ color: sport.color }} />
-          <span className="text-2xl font-black text-white">{calories.toLocaleString()}</span>
+          <span className="text-2xl font-black text-white">{estimatedCalories.toLocaleString()}</span>
           <span className="text-sm font-bold" style={{ color: sport.color }}>קלוריות</span>
         </div>
       )}
@@ -6546,7 +6665,7 @@ function OtherCardioLogSection({ sport }: { sport: typeof CARDIO_SPORTS[number] 
       {/* Save */}
       <button
         onClick={handleSave}
-        disabled={addWorkout.isPending || minutes <= 0}
+        disabled={addWorkout.isPending || primaryVal <= 0}
         className="w-full py-3.5 rounded-2xl text-white font-black text-sm disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg min-h-[44px]"
         style={{ background: sport.color, boxShadow: `0 8px 24px ${sport.color}33` }}
       >
@@ -6649,7 +6768,6 @@ function ProgressTab() {
 // ═══════════════════════════════════════════════════════════════════════
 function SportPage() {
   const [activeTab,        setActiveTab]        = useState<Tab>("dashboard");
-  const [isTraining,          setIsTraining]          = useState(true);
   const [loadedTemplate,      setLoadedTemplate]      = useState<any>(null);
   const [pendingExercises,    setPendingExercises]    = useState<LibraryExercise[]>([]);
   const [libraryBuilderMode,  setLibraryBuilderMode]  = useState(false);
@@ -6711,7 +6829,6 @@ function SportPage() {
 
           {activeTab === "dashboard" && (
             <div className="px-4 pt-8 pb-6 space-y-6">
-              <DayStatusBanner isTraining={isTraining} onToggle={() => setIsTraining((v) => !v)} />
               <div className="space-y-4">
                 <QuickAddRow onLoadTemplate={handleLoadTemplate} />
               </div>

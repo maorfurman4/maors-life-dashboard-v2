@@ -1,4 +1,4 @@
-import { Brain, TrendingDown, TrendingUp, AlertTriangle, Award } from "lucide-react";
+import { BarChart2, TrendingDown, TrendingUp, AlertTriangle, Award } from "lucide-react";
 import { useMonthlyFinance, useExpenseHistory, useIncomeHistory } from "@/hooks/use-finance-data";
 import { useMemo } from "react";
 
@@ -85,8 +85,8 @@ export function FinanceSmartInsights() {
     <div className="rounded-2xl bg-card border border-border p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-finance" />
-          <h3 className="text-sm font-semibold text-muted-foreground">Smart Insights</h3>
+          <BarChart2 className="h-4 w-4 text-finance" />
+          <h3 className="text-sm font-semibold text-muted-foreground">ציון פיננסי</h3>
         </div>
       </div>
 
