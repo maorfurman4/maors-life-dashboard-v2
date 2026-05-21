@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus, Minus, Check, Bookmark } from "lucide-react";
+import { todayLocalStr } from "@/utils/date";
 import {
   useAddExpense,
   useAddIncome,
@@ -27,7 +28,7 @@ export function FinanceFastAdd() {
   const upsertCategory = useUpsertCategory();
   const { data: dbCategories } = useExpenseCategories();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalStr();
 
   const handleSave = async () => {
     const num = amount && amount > 0 ? amount : null;

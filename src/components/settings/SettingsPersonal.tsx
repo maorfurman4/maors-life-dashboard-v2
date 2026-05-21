@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { User, Save, ChevronLeft } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { User, Save, ChevronLeft, AlertCircle } from "lucide-react";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { toast } from "sonner";
 
@@ -213,27 +213,35 @@ const NUMERIC_FIELDS: Record<string, DrawerConfig> = {
   target_weight_kg: { field: "target_weight_kg", label: "משקל יעד", unit: "ק״ג",  min: 30,  max: 200, step: 0.5 },
 };
 
+const EMPTY_DRAFT = {
+  full_name: "",
+  age: "",
+  city: "",
+  gender: "",
+  height_cm: "",
+  weight_kg: "",
+  target_weight_kg: "",
+  physical_limitations: [] as string[],
+  custom_limitation: "",
+};
+
 export function SettingsPersonal() {
   const { data: profile } = useProfile();
   const { mutate: updateProfile, isPending } = useUpdateProfile();
 
-  const [draft, setDraft] = useState({
-    full_name: "",
-    age: "",
-    city: "",
-    gender: "",
-    height_cm: "",
-    weight_kg: "",
-    target_weight_kg: "",
-    physical_limitations: [] as string[],
-    custom_limitation: "",
-  });
-
+  const [draft, setDraft] = useState(EMPTY_DRAFT);
+  // Track the last-saved version for dirty detection
+  const [savedDraft, setSavedDraft] = useState(EMPTY_DRAFT);
   const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
+
+  const isDirty = useMemo(
+    () => JSON.stringify(draft) !== JSON.stringify(savedDraft),
+    [draft, savedDraft]
+  );
 
   useEffect(() => {
     if (!profile) return;
-    setDraft({
+    const loaded = {
       full_name: profile.full_name ?? "",
       age: profile.age != null ? String(profile.age) : "",
       city: profile.city ?? "",
@@ -243,7 +251,9 @@ export function SettingsPersonal() {
       target_weight_kg: profile.target_weight_kg != null ? String(profile.target_weight_kg) : "",
       physical_limitations: profile.physical_limitations ?? [],
       custom_limitation: profile.custom_limitation ?? "",
-    });
+    };
+    setDraft(loaded);
+    setSavedDraft(loaded);
   }, [profile]);
 
   const toggleLimitation = (l: string) => {
@@ -268,7 +278,10 @@ export function SettingsPersonal() {
         custom_limitation: draft.custom_limitation || null,
       },
       {
-        onSuccess: () => toast.success("פרטים אישיים נשמרו"),
+        onSuccess: () => {
+          toast.success("פרטים אישיים נשמרו ✅");
+          setSavedDraft(draft);
+        },
         onError: (e) => toast.error("שגיאה: " + e.message),
       }
     );
@@ -350,8 +363,19 @@ export function SettingsPersonal() {
           </div>
         </div>
 
-        <button onClick={handleSave} disabled={isPending}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-none bg-white text-black text-sm font-bold hover:bg-white/90 transition-colors disabled:opacity-50 min-h-[44px]">
+        {isDirty && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-none border border-amber-400/30 bg-amber-400/10 text-amber-300 text-xs">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            יש שינויים שלא נשמרו
+          </div>
+        )}
+
+        <button onClick={handleSave} disabled={isPending || !isDirty}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-none text-sm font-bold transition-colors min-h-[44px] ${
+            isDirty
+              ? "bg-white text-black hover:bg-white/90"
+              : "bg-white/10 text-white/40 cursor-default"
+          } disabled:opacity-50`}>
           <Save className="h-4 w-4" />
           {isPending ? "שומר..." : "שמור פרטים"}
         </button>

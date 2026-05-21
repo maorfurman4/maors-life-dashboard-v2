@@ -3,6 +3,7 @@ import { Bot, Send, Loader2, Sparkles, RotateCcw } from "lucide-react";
 import { generateText } from "@/lib/ai-service";
 import { useProfile } from "@/hooks/use-profile";
 import { useNutritionEntries } from "@/hooks/use-sport-data";
+import { todayLocalStr } from "@/utils/date";
 import { toast } from "sonner";
 
 interface Message {
@@ -21,7 +22,7 @@ const QUICK_QUESTIONS = [
 
 export function NutritionAIZone() {
   const { data: profile } = useProfile();
-  const { data: entries = [] } = useNutritionEntries(new Date().toISOString().slice(0, 10));
+  const { data: entries = [] } = useNutritionEntries(todayLocalStr());
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");

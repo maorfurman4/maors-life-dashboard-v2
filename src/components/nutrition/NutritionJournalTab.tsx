@@ -5,6 +5,7 @@ import { useNutritionEntries, useDeleteNutrition, useUserSettings } from "@/hook
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { localDateStr, todayLocalStr, yesterdayLocalStr, lastDayOfMonth } from "@/utils/date";
 import { toast } from "sonner";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -14,8 +15,8 @@ function fmtDate(iso: string) {
 }
 
 function dateLabel(iso: string) {
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const today     = todayLocalStr();
+  const yesterday = yesterdayLocalStr();
   if (iso === today)     return "היום";
   if (iso === yesterday) return "אתמול";
   return fmtDate(iso);
@@ -23,8 +24,9 @@ function dateLabel(iso: string) {
 
 function last7Days(): string[] {
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - i * 86400000);
-    return d.toISOString().slice(0, 10);
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    return localDateStr(d);
   }).reverse();
 }
 
@@ -77,7 +79,7 @@ function useWeekCalories(dates: string[]) {
 async function fetchMonthlyEntries(year: number, month: number) {
   const userId = await getUserId();
   const firstDay = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-  const lastDay  = new Date(year, month + 1, 0).toISOString().slice(0, 10);
+  const lastDay  = lastDayOfMonth(year, month + 1);
   const { data } = await (supabase as any)
     .from("nutrition_entries")
     .select("date, calories, protein, protein_g, carbs, carbs_g, fat, fat_g")
@@ -117,7 +119,7 @@ function MacroBar({ protein, carbs, fat }: { protein: number; carbs: number; fat
 
 // ─── main ────────────────────────────────────────────────────────────────────
 export function NutritionJournalTab() {
-  const today   = new Date().toISOString().slice(0, 10);
+  const today   = todayLocalStr();
   const days    = last7Days();
   const [date, setDate]   = useState(today);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -141,9 +143,8 @@ export function NutritionJournalTab() {
     setIsCopyingYesterday(true);
     try {
       const userId = await getUserId();
-      const yest = new Date(Date.now() - 86400000);
-      const yesterdayStr = `${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,"0")}-${String(yest.getDate()).padStart(2,"0")}`;
-      const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}-${String(new Date().getDate()).padStart(2,"0")}`;
+      const yesterdayStr = yesterdayLocalStr();
+      const todayStr     = todayLocalStr();
 
       const { data: yesterdayEntries, error: fetchError } = await supabase
         .from("nutrition_entries")
@@ -205,9 +206,10 @@ export function NutritionJournalTab() {
   };
 
   const shiftDate = (dir: -1 | 1) => {
-    const d = new Date(date);
-    d.setDate(d.getDate() + dir);
-    setDate(d.toISOString().slice(0, 10));
+    // Parse YYYY-MM-DD without timezone shift: add local noon to avoid DST edge cases
+    const [y, m, day] = date.split("-").map(Number);
+    const d = new Date(y, m - 1, day + dir);
+    setDate(localDateStr(d));
   };
 
   const now = new Date();

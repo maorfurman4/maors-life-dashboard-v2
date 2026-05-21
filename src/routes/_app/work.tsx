@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { BatchShiftDrawer } from "@/components/work/BatchShiftDrawer";
 import { WorkMonthHistory } from "@/components/work/WorkMonthHistory";
+import { WorkAnnualSummary } from "@/components/work/WorkAnnualSummary";
 import {
   useAddShift, useDeleteShift, usePayrollSettings, useWorkShifts,
   useSavePayrollSettings, useArchiveWorkMonth,
@@ -1173,6 +1174,10 @@ function HistoryTab({ shifts, settings, year, month, monthLabel, payslip }: {
         </button>
       </div>
       <WorkMonthHistory />
+      <div className="mt-4">
+        <p className="text-xs font-black text-white/40 uppercase tracking-widest mb-3">סיכום שנתי</p>
+        <WorkAnnualSummary />
+      </div>
     </div>
   );
 }

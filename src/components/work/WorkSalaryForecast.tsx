@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { TrendingUp, Target, CalendarClock } from "lucide-react";
 import { useMonthlyPayslip } from "@/hooks/use-work-data";
+import { localDateStr } from "@/utils/date";
 
 interface Props {
   year: number;
@@ -26,7 +27,7 @@ export function WorkSalaryForecast({ year, month }: Props) {
     const daysRemaining = Math.max(0, daysInMonth - daysPassed);
 
     // Already-paid shifts (date <= today)
-    const todayStr = isCurrentMonth ? now.toISOString().slice(0, 10) : `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
+    const todayStr = isCurrentMonth ? localDateStr(now) : `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
     const completedShifts = shifts.filter((s) => s.date <= todayStr);
     const futureShifts = shifts.filter((s) => s.date > todayStr);
 

@@ -3,6 +3,7 @@ import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { SHIFT_LABELS, SHIFT_TIMES, SHIFT_HOURS } from "@/lib/payroll-engine";
 import { useAddShift } from "@/hooks/use-work-data";
 import { useAddIncome } from "@/hooks/use-finance-data";
+import { todayLocalStr } from "@/utils/date";
 import { toast } from "sonner";
 
 type ShiftType = 'morning' | 'afternoon' | 'night' | 'long_morning' | 'long_night' | 'briefing' | 'manual_hourly';
@@ -21,7 +22,7 @@ interface AddShiftDrawerProps {
 export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
   const [shiftType, setShiftType] = useState<ShiftType>("morning");
   const [role, setRole] = useState<WorkRole>("guard");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(todayLocalStr);
   const [isShabbat, setIsShabbat] = useState(false);
   const [hasBriefing, setHasBriefing] = useState(false);
   const [notes, setNotes] = useState("");
