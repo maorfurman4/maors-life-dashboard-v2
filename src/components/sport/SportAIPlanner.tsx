@@ -29,6 +29,7 @@ type StepKey =
   | "cardioDays"
   | "location"
   | "equipment"
+  | "machinePreferences"
   | "duration"
   | "durationCustom"
   | "preferredMuscles"
@@ -62,6 +63,23 @@ const MUSCLE_LIST = [
   "בטן/ליבה 🎯", "רגליים 🦵", "ישבן 🍑", "שוקיים 👣", "אמות 🦾",
 ];
 
+const MACHINE_PREFERENCES_LIST = [
+  "לחיצת חזה (Chest Press Machine) 🏋️",
+  "סטנד כתפיים (Shoulder Press Machine) 💪",
+  "רחב-גב (Lat Pulldown) 🔙",
+  "חתירה בישיבה (Seated Cable Row) 🚣",
+  "לג פרס (Leg Press) 🦵",
+  "Hack Squat מכונה 📦",
+  "כפיפות רגל (Leg Curl) 🦵",
+  "פשיטות רגל (Leg Extension) 🦵",
+  "פרפר מכונה (Pec Deck) 🦋",
+  "כבלים גבוה/נמוך (Cables Hi/Lo) 🔗",
+  "כתפיים אחורי (Rear Delt Fly Machine) 🔝",
+  "סמית' מכונה (Smith Machine) 🏗️",
+  "GHD מכונה 🔄",
+  "מכונת כבל ריצה (Cable Crossover) ✖️",
+];
+
 const STEPS: Step[] = [
   {
     key: "frequency",
@@ -72,8 +90,10 @@ const STEPS: Step[] = [
   {
     key: "cardioDays",
     question: "כמה ימי אירובי תרצה/י?",
-    options: ["0 ימים", "1 יום", "2 ימים", "3 ימים"],
-    inputType: "options",
+    inputType: "range",
+    rangeMin: 0,
+    rangeMax: 7,
+    rangeUnit: "ימים",
   },
   {
     key: "location",
@@ -86,6 +106,13 @@ const STEPS: Step[] = [
     question: "איזה ציוד זמין לך?",
     inputType: "multiselect",
     multiselectItems: EQUIPMENT_LIST,
+  },
+  {
+    key: "machinePreferences",
+    question: "אילו מכונות/ציוד אתה מעדיף בחדר הכושר?",
+    inputType: "multiselect",
+    multiselectItems: MACHINE_PREFERENCES_LIST,
+    optional: true,
   },
   {
     key: "duration",
@@ -144,16 +171,17 @@ export function SportAIPlanner() {
   const { data: prs } = usePersonalRecords();
   const addTemplate   = useAddWorkoutTemplate();
 
-  const [step,               setStep]               = useState(0);
-  const [answers,            setAnswers]            = useState<Answers>({});
-  const [textInput,          setTextInput]          = useState("");
-  const [rangeValue,         setRangeValue]         = useState<Record<string, number>>({ rpe: 7 });
-  const [loading,            setLoading]            = useState(false);
-  const [plan,               setPlan]               = useState<AIWorkoutPlan | null>(null);
-  const [equipmentSelection, setEquipmentSelection] = useState<string[]>([]);
-  const [preferredMuscles,   setPreferredMuscles]   = useState<string[]>([]);
-  const [avoidedMuscles,     setAvoidedMuscles]     = useState<string[]>([]);
-  const [pendingOption,      setPendingOption]      = useState<string | null>(null);
+  const [step,                setStep]               = useState(0);
+  const [answers,             setAnswers]            = useState<Answers>({});
+  const [textInput,           setTextInput]          = useState("");
+  const [rangeValue,          setRangeValue]         = useState<Record<string, number>>({ rpe: 7, cardioDays: 0 });
+  const [loading,             setLoading]            = useState(false);
+  const [plan,                setPlan]               = useState<AIWorkoutPlan | null>(null);
+  const [equipmentSelection,  setEquipmentSelection] = useState<string[]>([]);
+  const [machinePreferences,  setMachinePreferences] = useState<string[]>([]);
+  const [preferredMuscles,    setPreferredMuscles]   = useState<string[]>([]);
+  const [avoidedMuscles,      setAvoidedMuscles]     = useState<string[]>([]);
+  const [pendingOption,       setPendingOption]      = useState<string | null>(null);
 
   const currentStep = STEPS[step];
   const allAnswered = step >= STEPS.length;
@@ -164,15 +192,6 @@ export function SportAIPlanner() {
   };
 
   const handleOptionSelect = (option: string) => {
-    // For cardioDays: block selection if it exceeds training frequency
-    if (currentStep.key === "cardioDays") {
-      const freqNum = parseInt(answers.frequency ?? "0") || 0;
-      const cardioNum = parseInt(option) || 0;
-      if (freqNum > 0 && cardioNum >= freqNum) {
-        setPendingOption(option);
-        return; // show warning, don't advance
-      }
-    }
     setPendingOption(null);
     recordAnswer(option);
     setStep((s) => s + 1);
@@ -180,7 +199,13 @@ export function SportAIPlanner() {
 
   const handleRangeNext = () => {
     const val = rangeValue[currentStep.key] ?? currentStep.rangeMin ?? 0;
-    recordAnswer(`${val} ${currentStep.rangeUnit}`);
+    if (currentStep.key === "cardioDays") {
+      const freqNum = parseInt(answers.frequency ?? "0") || 0;
+      if (freqNum > 0 && val >= freqNum) {
+        toast.warning(`⚠️ מספר ימי האירובי קרוב לסך הימים שלך — וודא שנשאר לפחות יום כוח אחד`);
+      }
+    }
+    recordAnswer(`${val} ${currentStep.rangeUnit ?? ""}`);
     setStep((s) => s + 1);
   };
 
@@ -203,6 +228,10 @@ export function SportAIPlanner() {
       setEquipmentSelection((prev) =>
         prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
       );
+    } else if (key === "machinePreferences") {
+      setMachinePreferences((prev) =>
+        prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
+      );
     } else if (key === "preferredMuscles") {
       setPreferredMuscles((prev) =>
         prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
@@ -216,6 +245,7 @@ export function SportAIPlanner() {
 
   const getMultiselectState = (key: StepKey): string[] => {
     if (key === "equipment") return equipmentSelection;
+    if (key === "machinePreferences") return machinePreferences;
     if (key === "preferredMuscles") return preferredMuscles;
     if (key === "avoidedMuscles") return avoidedMuscles;
     return [];
@@ -229,12 +259,17 @@ export function SportAIPlanner() {
       const sessionMinutes = answers.durationCustom
         ? parseInt(answers.durationCustom) || 60
         : 60;
-      const cardioDaysNum = parseInt(answers.cardioDays ?? "0") || 0;
+      const cardioDaysNum = parseInt(answers.cardioDays ?? "0") || rangeValue.cardioDays || 0;
+
+      const combinedEquipment = [
+        ...equipmentSelection,
+        ...machinePreferences,
+      ];
 
       const result = await generateWorkoutPlan({
         goal:            `${answers.location ?? "חדר כושר"} — RPE ${answers.rpe ?? "7"}`,
         daysPerWeek:     parseInt(answers.frequency ?? "3"),
-        equipment:       equipmentSelection.length > 0 ? equipmentSelection.join(", ") : (answers.location ?? "חדר כושר מלא"),
+        equipment:       combinedEquipment.length > 0 ? combinedEquipment.join(", ") : (answers.location ?? "חדר כושר מלא"),
         constraints:     answers.limitations ?? "אין",
         sessionMinutes,
         cardioDays:      cardioDaysNum,
@@ -245,9 +280,8 @@ export function SportAIPlanner() {
           value:         p.value,
           unit:          p.unit ?? "",
         })),
-        // New fields
         planWeeks,
-        equipmentList: equipmentSelection.length > 0 ? equipmentSelection : undefined,
+        equipmentList: combinedEquipment.length > 0 ? combinedEquipment : undefined,
       } as any);
 
       if (!result.workouts && (!result.weeks || !Array.isArray(result.weeks))) {
@@ -288,9 +322,10 @@ export function SportAIPlanner() {
     setStep(0);
     setAnswers({});
     setTextInput("");
-    setRangeValue({ rpe: 7 });
+    setRangeValue({ rpe: 7, cardioDays: 0 });
     setPlan(null);
     setEquipmentSelection([]);
+    setMachinePreferences([]);
     setPreferredMuscles([]);
     setAvoidedMuscles([]);
     setPendingOption(null);
@@ -351,12 +386,6 @@ export function SportAIPlanner() {
                   </button>
                 ))}
               </div>
-              {/* Cardio warning */}
-              {currentStep.key === "cardioDays" && pendingOption !== null && frequencyNum > 0 && (parseInt(pendingOption) || 0) >= frequencyNum && (
-                <p className="text-amber-400 text-sm mt-2">
-                  ⚠️ ימי האירובי לא יכולים לעלות על ימי האימון הכוללים ({frequencyNum}) — בחר/י {frequencyNum - 1} ימים לכל היותר
-                </p>
-              )}
             </>
           )}
 

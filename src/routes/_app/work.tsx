@@ -11,7 +11,7 @@ import { WorkMonthHistory } from "@/components/work/WorkMonthHistory";
 import { WorkAnnualSummary } from "@/components/work/WorkAnnualSummary";
 import {
   useAddShift, useDeleteShift, usePayrollSettings, useWorkShifts,
-  useSavePayrollSettings, useArchiveWorkMonth,
+  useSavePayrollSettings, useArchiveWorkMonth, useWorkMonthHistory,
 } from "@/hooks/use-work-data";
 import {
   calcShiftBreakdown, calcMonthlyPayslip, SHIFT_HOURS, SHIFT_LABELS, SHIFT_TIMES,
@@ -173,10 +173,19 @@ function exportPayslipReport(
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
   th { text-align: right; padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.1); color: #64748b; font-size: 11px; }
   td { padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } }
+  .nav-bar { display: flex; gap: 12px; margin-bottom: 24px; }
+  .btn-back { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #94a3b8; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; transition: background 0.15s; }
+  .btn-back:hover { background: rgba(255,255,255,0.15); color: #e2e8f0; }
+  .btn-save { background: #0ea5e9; border: none; color: white; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+  .btn-save:hover { background: #38bdf8; }
 </style>
 </head>
 <body>
+  <div class="nav-bar no-print">
+    <button class="btn-back" onclick="window.close()">← חזור לאפלקציה</button>
+    <button class="btn-save" onclick="window.print()">💾 שמור כ-PDF</button>
+  </div>
   <h1>💼 תלוש שכר</h1>
   <div class="sub">${monthLabel} · ${payslip.totalShifts} משמרות · ${payslip.totalHours}ש׳ סה"כ</div>
 
@@ -222,7 +231,6 @@ function exportPayslipReport(
       <tbody>${rows}</tbody>
     </table>
   </div>
-  <script>setTimeout(() => window.print(), 300);</script>
 </body>
 </html>`;
 
@@ -512,6 +520,7 @@ function DashboardTab({ liveShift, setLiveShift, settings, shifts }: {
   const [pickerHours, setPickerHours] = useState(4);
   const [pickerMinutes, setPickerMinutes] = useState(0);
   const [showHoursStep, setShowHoursStep] = useState(false);
+  const [showTodayPicker, setShowTodayPicker] = useState(false);
 
   const HOUR_VALUES = Array.from({ length: 24 }, (_, i) => String(i));
   const MIN_VALUES  = ["00","05","10","15","20","25","30","35","40","45","50","55"];
@@ -610,7 +619,7 @@ function DashboardTab({ liveShift, setLiveShift, settings, shifts }: {
             <p className="text-sm font-black text-white">הוסף משמרת</p>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handleLog(SHIFT_CARDS[0], today())}
+                onClick={() => setShowTodayPicker(true)}
                 disabled={addShift.isPending}
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-emerald-400/30 bg-emerald-400/10 text-[11px] font-bold text-emerald-300 hover:bg-emerald-400/20 transition-all active:scale-95 disabled:opacity-50"
               >
@@ -670,6 +679,34 @@ function DashboardTab({ liveShift, setLiveShift, settings, shifts }: {
           )}
         </div>
       </div>
+
+      {/* Today shift-type picker */}
+      {showTodayPicker && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowTodayPicker(false)}>
+          <div className="w-full max-w-md rounded-t-3xl bg-[#0f1117] border-t border-white/10 p-6 space-y-4"
+            onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto" />
+            <p className="text-sm font-black text-white text-center">⚡ איזו משמרת היום?</p>
+            <div className="grid grid-cols-2 gap-2">
+              {SHIFT_CARDS.map((card) => (
+                <button
+                  key={card.key}
+                  disabled={addShift.isPending}
+                  onClick={() => { setShowTodayPicker(false); handleLog(card, today()); }}
+                  className="flex items-center gap-2 px-3 py-3 rounded-2xl border border-white/10 bg-white/5 hover:border-emerald-400/40 hover:bg-emerald-400/8 transition-all active:scale-95 text-right"
+                >
+                  <span className="text-xl">{card.emoji}</span>
+                  <div>
+                    <p className="text-xs font-bold text-white">{card.label}</p>
+                    <p className="text-[10px] text-white/35">{card.times} · {card.hours}ש׳</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Date / Hours picker modal */}
       {pendingCard && (
@@ -1131,12 +1168,21 @@ function HistoryTab({ shifts, settings, year, month, monthLabel, payslip }: {
   payslip: ReturnType<typeof calcMonthlyPayslip>;
 }) {
   const archiveMonth = useArchiveWorkMonth();
+  const { data: history = [] } = useWorkMonthHistory();
 
-  const handleArchive = () => {
-    if (shifts.length === 0) {
-      toast.error("אין משמרות לשמירה");
-      return;
-    }
+  // Auto-archive previous month when a new month starts
+  useEffect(() => {
+    const now = new Date();
+    const todayYear = now.getFullYear();
+    const todayMonth = now.getMonth() + 1;
+    const isCurrentMonth = todayYear === year && todayMonth === month;
+    if (isCurrentMonth) return; // don't auto-archive the current month
+    if (shifts.length === 0) return;
+    const alreadyArchived = (history as any[]).some(
+      (r) => r.year === year && r.month === month
+    );
+    if (alreadyArchived) return;
+
     const breakdownByType: Record<string, { count: number; hours: number; gross: number }> = {};
     for (const shift of shifts) {
       const key = shift.type;
@@ -1147,32 +1193,12 @@ function HistoryTab({ shifts, settings, year, month, monthLabel, payslip }: {
       breakdownByType[key].hours += hours;
       breakdownByType[key].gross += bd.totalGross;
     }
-    archiveMonth.mutate({
-      year,
-      month,
-      shifts,
-      totalShifts: payslip.totalShifts,
-      totalHours: payslip.totalHours,
-      totalGross: payslip.totalGross,
-      breakdownByType,
-    });
-  };
+    archiveMonth.mutate({ year, month, shifts, totalShifts: payslip.totalShifts, totalHours: payslip.totalHours, totalGross: payslip.totalGross, breakdownByType });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, month, shifts.length, history.length]);
 
   return (
     <div className="px-4 pt-8 space-y-4">
-      <div className="rounded-3xl border border-sky-500/20 bg-sky-500/8 backdrop-blur-xl p-4 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-black text-white">סגור חודש</p>
-          <p className="text-[10px] text-white/40 mt-0.5">{monthLabel} · {payslip.totalShifts} משמרות</p>
-        </div>
-        <button
-          onClick={handleArchive}
-          disabled={archiveMonth.isPending || shifts.length === 0}
-          className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-black hover:bg-sky-400 transition-colors disabled:opacity-50"
-        >
-          {archiveMonth.isPending ? "שומר..." : "סגור חודש ✓"}
-        </button>
-      </div>
       <WorkMonthHistory />
       <div className="mt-4">
         <p className="text-xs font-black text-white/40 uppercase tracking-widest mb-3">סיכום שנתי</p>

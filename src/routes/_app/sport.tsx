@@ -92,7 +92,6 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
       { key: "chest_upper", label: "חזה עליון",  emoji: "⬆️", exerciseNames: ["לחיצת דמבלים משופעת","לחיצת מוט משופעת","פרפר משופע","Cable Fly מלמטה","Dumbbell Pullover","Incline Cable Fly","Landmine Press חזה","Low to High Cable Fly","לחיצת מוט משופעת (Incline Barbell)","פרפר דמבלים משופע","כבל נמוך-לגבוה (Low-to-High)","Incline Smith Machine Press","Squeeze Press משופע","Hammer Strength Incline Press","כבל חד-צדדי משופע","DB Pullover (Lat-Chest)","High-Incline 75° DB Press","Reverse Grip Bench Press","Cable Upper Chest Fly","Cable Chest Pullover","Machine Incline Press"] },
       { key: "chest_mid",   label: "חזה אמצעי",  emoji: "🎯", exerciseNames: ["לחיצת חזה שכיבה","שכיבות סמיכה","פרפר (Fly)","לחיצת חזה במכונה","קרוסאובר (כבלים)","Pec Deck מכונה","Squeeze Press","Cable Crossover רחב","High to Low Cable Fly","Cable Fly אמצעי","Single Arm Cable Fly","Cable Chest Press עמידה","Cable Squeeze חזה","Cable Fly Neutral Grip","Cable Crossover Neutral","Pause Bench Press","Flat Dumbbell Fly","Cable Crossover אמצע","Neutral Grip DB Press","Squeeze Press שטוח","Wide Grip Bench Press","Close Grip Bench Press","Cable Fly מקביל לחזה"] },
       { key: "chest_lower", label: "חזה תחתון",  emoji: "⬇️", exerciseNames: ["לחיצת דמבלים ירידה","מקבילים לחזה","שכיבות ירידה","Cable Fly מגבוה","High to Low Cable Fly","High-to-Low Cable Fly","לחיצת מוט שיפוע שלילי","לחיצת דמבלים שיפוע שלילי","Decline Dumbbell Fly","Chest Dips מקבילים","Decline Smith Machine Press","Hammer Strength Decline","Cable Crossover תחתון","Weighted Decline Push-up"] },
-      { key: "chest_machine", label: "מכונות חזה", emoji: "🤖", exerciseNames: ["לחיצת חזה במכונה","Machine Chest Press","Smith Machine Bench","Iso-Lateral Chest Press","Machine Incline Press","Pec Deck Single Arm","Reverse Pec Deck","Pec Deck מכונה","Smith Machine Flat Press","Hammer Strength Flat Press","Hammer Strength Incline Press","Incline Smith Machine Press","Decline Smith Machine Press","Hammer Strength Decline","Chest Dips מקבילים"] },
     ],
     exercises: [
       { name: "לחיצת חזה שכיבה", muscles: "חזה, כתפיים קדמיות, טריצפס", tips: ["שמור על גב שטוח", "הורד לאיטיות — 3 שניות", "נשוף בלחיצה"], defaultSets: 4, defaultReps: "8-10", equipment: "מוט", youtubeQuery: "bench+press+form+tutorial" },
@@ -3561,7 +3560,7 @@ function WorkoutBuilderTab({
                                   }}
                                   className="flex-1 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-xs font-bold hover:bg-emerald-500/25 transition-all active:scale-95"
                                 >
-                                  ▶ טען לבונה
+                                  🏗️ פתח בבונה
                                 </button>
                                 <button
                                   onClick={async () => {
@@ -4796,20 +4795,6 @@ function ExerciseCard({
               >
                 <Heart className={`h-3.5 w-3.5 transition-all ${isFavorite ? "text-red-400 fill-red-400" : "text-white/25"}`} />
               </button>
-              {/* Add to template */}
-              <button
-                onClick={(e) => { e.stopPropagation(); onQuickAdd(); }}
-                className="h-6 px-2 rounded-lg bg-white/8 border border-white/10 text-[9px] text-white/40 hover:bg-amber-500/15 hover:text-amber-400 hover:border-amber-500/25 transition-all flex items-center gap-1"
-              >
-                <BookOpen className="h-3 w-3" /> תבנית
-              </button>
-              {/* Info */}
-              <button
-                onClick={(e) => { e.stopPropagation(); onOpen(); }}
-                className="h-6 w-6 rounded-lg bg-white/6 flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/12 transition-all"
-              >
-                <Info className="h-3 w-3" />
-              </button>
             </div>
           </div>
 
@@ -4897,6 +4882,39 @@ function ExerciseRow({
 //  TAB 4 — PROGRESS & BODY
 // ═══════════════════════════════════════════════════════════════════════
 
+function useWeightReminder(latestEntryDate?: string) {
+  const [reminderDays, setReminderDays] = useState(() => {
+    const saved = localStorage.getItem("weight_reminder_days");
+    return saved ? parseInt(saved) : 7;
+  });
+  const [dismissed, setDismissed] = useState(() => {
+    const at = localStorage.getItem("weight_reminder_dismissed_at");
+    if (!at) return false;
+    const days = parseInt(localStorage.getItem("weight_reminder_days") ?? "7");
+    return Date.now() - parseInt(at) < days * 86400000;
+  });
+
+  const updateDays = (d: number) => {
+    const clamped = Math.min(30, Math.max(1, d));
+    setReminderDays(clamped);
+    localStorage.setItem("weight_reminder_days", String(clamped));
+  };
+
+  const dismiss = () => {
+    localStorage.setItem("weight_reminder_dismissed_at", String(Date.now()));
+    setDismissed(true);
+  };
+
+  const shouldShow = (() => {
+    if (dismissed) return false;
+    if (!latestEntryDate) return false;
+    const daysSince = (Date.now() - new Date(latestEntryDate).getTime()) / 86400000;
+    return daysSince >= reminderDays;
+  })();
+
+  return { shouldShow, reminderDays, updateDays, dismiss };
+}
+
 function WeightChart() {
   const { data: entries } = useWeightEntries(30);
   const addWeight    = useAddWeight();
@@ -4908,14 +4926,16 @@ function WeightChart() {
   const [editingId, setEditingId]   = useState<string | null>(null);
   const [editValue, setEditValue]   = useState("");
 
+  const latest = (entries ?? [])[0] as any;
+  const { shouldShow, reminderDays, updateDays, dismiss } = useWeightReminder(latest?.date);
+
   const chartData = [...(entries ?? [])].reverse().slice(-14).map((e: any) => ({
     date: new Date(e.date).toLocaleDateString("he-IL", { day: "numeric", month: "numeric" }),
     kg: e.weight_kg,
   }));
 
-  const latest = (entries ?? [])[0] as any;
-  const prev   = (entries ?? [])[1] as any;
-  const delta  = latest && prev ? (latest.weight_kg - prev.weight_kg).toFixed(1) : null;
+  const prev  = (entries ?? [])[1] as any;
+  const delta = latest && prev ? (latest.weight_kg - prev.weight_kg).toFixed(1) : null;
 
   const handleAdd = async () => {
     try {
@@ -4954,6 +4974,25 @@ function WeightChart() {
             className="h-7 w-7 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-400 hover:bg-blue-500/25">
             <Plus className="h-3.5 w-3.5" />
           </button>
+        </div>
+      </div>
+
+      {/* Weight reminder banner */}
+      {shouldShow && (
+        <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
+          <p className="text-xs font-bold text-amber-300">📸 הגיע הזמן! צלם תמונת התקדמות ועדכן את המשקל שלך</p>
+          <button onClick={dismiss} className="shrink-0 text-amber-400/60 hover:text-amber-300 text-[11px] font-bold transition-colors">× סגור</button>
+        </div>
+      )}
+
+      {/* Reminder settings */}
+      <div className="flex items-center justify-between text-[11px] text-white/35">
+        <span>📅 תזכורת כל</span>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => updateDays(reminderDays - 1)} className="h-5 w-5 rounded-md bg-white/8 flex items-center justify-center hover:bg-white/15 text-white/50 font-bold">−</button>
+          <span className="text-white/60 font-bold w-4 text-center">{reminderDays}</span>
+          <button onClick={() => updateDays(reminderDays + 1)} className="h-5 w-5 rounded-md bg-white/8 flex items-center justify-center hover:bg-white/15 text-white/50 font-bold">+</button>
+          <span>ימים</span>
         </div>
       </div>
 
