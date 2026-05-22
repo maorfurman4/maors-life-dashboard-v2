@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { Search, Library, ShieldCheck, Timer, Youtube, Heart, Plus, Check } from "lucide-react";
+import { Search, Library, ShieldCheck, Timer, Youtube, Heart } from "lucide-react";
 import { EXERCISE_LIBRARY, MUSCLE_LABELS, searchExercises, type MuscleGroup, type LibraryExercise } from "@/lib/exercise-library";
 import { RestTimer } from "@/components/sport/RestTimer";
-import { useAddWorkoutTemplate } from "@/hooks/use-sport-data";
-import { toast } from "sonner";
+import { ExerciseAddSheet } from "@/components/sport/ExerciseAddSheet";
 import exerciseImageUrlsJson from "@/data/exercise-image-urls.json";
 
 const EXERCISE_IMAGE_URLS: Record<string, string> = exerciseImageUrlsJson as Record<string, string>;
@@ -26,7 +25,6 @@ const WORKOUT_TYPES: { key: WorkoutType; label: string }[] = [
 ];
 
 export function ExerciseLibrary() {
-  const addTemplate = useAddWorkoutTemplate();
   const [workoutType, setWorkoutType] = useState<WorkoutType>("weights");
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState<MuscleGroup | "all">("all");
@@ -34,8 +32,6 @@ export function ExerciseLibrary() {
   const [selected, setSelected] = useState<LibraryExercise | null>(null);
   const [timerOpen, setTimerOpen] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(60);
-  const [editSets, setEditSets] = useState(3);
-  const [editReps, setEditReps] = useState(12);
   const [favorites, setFavorites] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem(FAV_KEY) ?? "[]"); } catch { return []; }
   });
@@ -53,34 +49,12 @@ export function ExerciseLibrary() {
     setTimerOpen(true);
   };
 
-  const openExercise = (ex: LibraryExercise) => {
-    setSelected(ex);
-    setEditSets(ex.defaultSets);
-    setEditReps(typeof ex.defaultReps === "string" ? (parseInt(ex.defaultReps) || 12) : ex.defaultReps);
-  };
-
   const toggleFavorite = (name: string) => {
     setFavorites((prev) => {
       const next = prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name];
       localStorage.setItem(FAV_KEY, JSON.stringify(next));
       return next;
     });
-  };
-
-  const handleAddToLibrary = () => {
-    if (!selected) return;
-    addTemplate.mutate(
-      {
-        name: selected.name,
-        category: "weights",
-        exercises: [{ name: selected.name, sets: editSets, reps: editReps, weight_kg: 0 }] as any,
-        estimated_duration_minutes: Math.round((editSets * editReps * 3) / 60),
-      },
-      {
-        onSuccess: () => { toast.success(`"${selected.name}" נוסף לספרייה שלך ✅`); setSelected(null); },
-        onError: (e: any) => toast.error("שגיאה: " + e.message),
-      }
-    );
   };
 
   return (
@@ -160,7 +134,7 @@ export function ExerciseLibrary() {
           results.map((ex) => (
             <button
               key={ex.id}
-              onClick={() => openExercise(ex)}
+              onClick={() => setSelected(ex)}
               className="w-full text-right rounded-xl border border-border bg-card p-3 hover:border-sport/40 transition-colors"
             >
               <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -198,97 +172,14 @@ export function ExerciseLibrary() {
         )}
       </div>
 
-      {/* Detail modal */}
+      {/* Detail modal — unified ExerciseAddSheet */}
       {selected && (
-        <div className="fixed inset-0 z-40 flex items-end md:items-center justify-center bg-background/80 backdrop-blur-sm" onClick={() => setSelected(null)}>
-          <div className="w-full max-w-md rounded-t-3xl md:rounded-3xl bg-card border border-border p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
-            {/* Header row: title + image */}
-            <div className="flex items-start gap-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold leading-tight">{selected.name}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">{selected.nameEn}</p>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {selected.muscleGroups.map((m) => (
-                    <span key={m} className="px-2 py-0.5 rounded bg-sport/10 text-[10px] text-sport font-medium">{MUSCLE_LABELS[m]}</span>
-                  ))}
-                  {selected.equipment.map((e) => (
-                    <span key={e} className="px-2 py-0.5 rounded bg-secondary/40 text-[10px] text-muted-foreground">{e}</span>
-                  ))}
-                </div>
-              </div>
-              {EXERCISE_IMAGE_URLS[selected.name] ? (
-                <img
-                  src={EXERCISE_IMAGE_URLS[selected.name]}
-                  alt={selected.name}
-                  className="w-24 h-24 object-contain rounded-xl border border-border bg-secondary/20 p-1 shrink-0"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-xl border border-border bg-secondary/20 flex items-center justify-center shrink-0 text-3xl">💪</div>
-              )}
-            </div>
-
-            {/* Editable sets / reps */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-secondary/30 p-3 text-center space-y-1">
-                <p className="text-[10px] text-muted-foreground">סטים</p>
-                <input
-                  type="number"
-                  min={1} max={10}
-                  value={editSets}
-                  onChange={(e) => setEditSets(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-16 text-center text-lg font-bold text-sport bg-transparent border-b border-sport/30 focus:outline-none focus:border-sport"
-                  dir="ltr"
-                />
-              </div>
-              <div className="rounded-xl bg-secondary/30 p-3 text-center space-y-1">
-                <p className="text-[10px] text-muted-foreground">חזרות</p>
-                <input
-                  type="number"
-                  min={1} max={100}
-                  value={editReps}
-                  onChange={(e) => setEditReps(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-16 text-center text-lg font-bold text-sport bg-transparent border-b border-sport/30 focus:outline-none focus:border-sport"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
-            {selected.description && <p className="text-xs text-muted-foreground">{selected.description}</p>}
-
-            {/* Action buttons row */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => toggleFavorite(selected.name)}
-                className={`h-10 w-10 shrink-0 rounded-xl border flex items-center justify-center transition-all ${
-                  favorites.includes(selected.name)
-                    ? "border-red-400/40 bg-red-400/10"
-                    : "border-border bg-secondary/20 hover:border-red-400/30"
-                }`}
-              >
-                <Heart className={`h-4 w-4 ${favorites.includes(selected.name) ? "text-red-400 fill-red-400" : "text-muted-foreground"}`} />
-              </button>
-              <button
-                onClick={handleAddToLibrary}
-                disabled={addTemplate.isPending}
-                className="flex-1 py-2.5 rounded-xl bg-sport text-sport-foreground font-bold text-sm flex items-center justify-center gap-2 min-h-[44px] hover:opacity-90 active:scale-95 transition-all disabled:opacity-60"
-              >
-                {addTemplate.isPending ? "שומר..." : <><Plus className="h-4 w-4" /> הוסף לאימון שלי</>}
-              </button>
-            </div>
-
-            {/* YouTube link */}
-            {selected.youtube_link && (
-              <a
-                href={selected.youtube_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-2.5 rounded-xl bg-red-500/15 text-red-400 font-bold text-sm flex items-center justify-center gap-2 min-h-[44px] hover:bg-red-500/25 transition-all"
-              >
-                <Youtube className="h-4 w-4" /> צפה בסרטון הדרכה
-              </a>
-            )}
-          </div>
-        </div>
+        <ExerciseAddSheet
+          ex={selected}
+          onClose={() => setSelected(null)}
+          isFavorite={favorites.includes(selected.name)}
+          onToggleFavorite={toggleFavorite}
+        />
       )}
 
       <RestTimer open={timerOpen} onClose={() => setTimerOpen(false)} defaultSeconds={timerSeconds} />

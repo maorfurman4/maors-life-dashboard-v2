@@ -699,7 +699,7 @@ function DashboardTab({ liveShift, setLiveShift, settings, shifts }: {
                   <span className="text-xl">{card.emoji}</span>
                   <div>
                     <p className="text-xs font-bold text-white">{card.label}</p>
-                    <p className="text-[10px] text-white/35">{card.times} · {card.hours}ש׳</p>
+                    <p className="text-[10px] text-white/35">{card.sublabel}</p>
                   </div>
                 </button>
               ))}

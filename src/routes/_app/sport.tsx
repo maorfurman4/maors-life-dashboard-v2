@@ -32,6 +32,7 @@ import {
 } from "recharts";
 import { useQueryClient } from "@tanstack/react-query";
 import exerciseImageUrlsJson from "@/data/exercise-image-urls.json";
+import { ExerciseAddSheet } from "@/components/sport/ExerciseAddSheet";
 
 export const Route = createFileRoute("/_app/sport")({
   component: SportPage,
@@ -4441,17 +4442,24 @@ function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, onAddToWorkout
       )}
       {/* ── Workout add bottom sheet (selectionMode) ────────────── */}
       {workoutSheetEx && (
-        <WorkoutAddBottomSheet
+        <ExerciseAddSheet
           ex={workoutSheetEx}
-          onConfirm={(ex) => { onAddToWorkout?.([ex]); toast.success(`${ex.name} נוסף לאימון ✓`); }}
-          onConfirmSS={(ex) => { onAddToWorkoutAsSS?.(ex); toast.success(`${ex.name} נוסף כ-Super Set ✓`); }}
-          onConfirmSSFromLibrary={(ex) => { setSsFirstExercise(ex); }}
+          onConfirmWorkout={(ex) => { onAddToWorkout?.([ex as any]); }}
+          onConfirmSS={(ex) => { onAddToWorkoutAsSS?.(ex as any); toast.success(`${ex.name} נוסף כ-Super Set ✓`); }}
+          onConfirmSSFromLibrary={(ex) => { setSsFirstExercise(ex as any); }}
+          isFavorite={favorites.includes(workoutSheetEx.name)}
+          onToggleFavorite={(name) => toggleFavorite(name)}
           onClose={() => setWorkoutSheetEx(null)}
         />
       )}
       {/* ── Template bottom sheet ────────────────────────────────── */}
       {templateSheetEx && (
-        <TemplateBottomSheet ex={templateSheetEx} onClose={() => setTemplateSheetEx(null)} />
+        <ExerciseAddSheet
+          ex={templateSheetEx}
+          isFavorite={favorites.includes(templateSheetEx.name)}
+          onToggleFavorite={(name) => toggleFavorite(name)}
+          onClose={() => setTemplateSheetEx(null)}
+        />
       )}
 
       {/* ── Settings sheet ───────────────────────────────────────── */}
@@ -4469,158 +4477,6 @@ function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, onAddToWorkout
 
       {/* ── Floating add bar removed — template sheet handles per-exercise adds ── */}
     </div>
-  );
-}
-
-// ── TemplateBottomSheet ───────────────────────────────────────────────────────
-// ── WorkoutAddBottomSheet ─────────────────────────────────────────────────────
-function WorkoutAddBottomSheet({
-  ex,
-  onConfirm,
-  onConfirmSS,
-  onConfirmSSFromLibrary,
-  onClose,
-}: {
-  ex: LibraryExercise;
-  onConfirm: (ex: LibraryExercise) => void;
-  onConfirmSS: (ex: LibraryExercise) => void;
-  onConfirmSSFromLibrary: (ex: LibraryExercise) => void;
-  onClose: () => void;
-}) {
-  const [step, setStep] = useState<"main" | "ss_choice">("main");
-
-  return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#0f0f0f] border border-white/10 border-b-0 p-5 pb-10 animate-in slide-in-from-bottom duration-300">
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />
-
-        {step === "main" ? (
-          <>
-            {/* Exercise info */}
-            <div className="flex items-center gap-4 mb-5">
-              <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl shrink-0">
-                💪
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-base font-black text-white truncate">{ex.name}</p>
-                <p className="text-[11px] text-white/45 mt-0.5">{ex.muscles}</p>
-                <p className="text-[10px] text-white/30 mt-0.5">{ex.equipment}</p>
-              </div>
-            </div>
-            {/* Default sets/reps */}
-            <div className="flex gap-2 mb-5">
-              <div className="flex-1 rounded-2xl border border-white/8 bg-white/4 px-3 py-2.5 text-center">
-                <p className="text-lg font-black text-white">{ex.defaultSets}</p>
-                <p className="text-[10px] text-white/35">סטים</p>
-              </div>
-              <div className="flex-1 rounded-2xl border border-white/8 bg-white/4 px-3 py-2.5 text-center">
-                <p className="text-lg font-black text-white">{ex.defaultReps}</p>
-                <p className="text-[10px] text-white/35">חזרות</p>
-              </div>
-            </div>
-            {/* Action buttons */}
-            <div className="space-y-2.5">
-              <button
-                onClick={() => { onConfirm(ex); onClose(); }}
-                className="w-full py-4 rounded-2xl bg-emerald-500 text-white text-base font-black active:scale-[0.97] transition-all shadow-[0_0_24px_rgba(16,185,129,0.35)]"
-              >
-                הוסף לאימון ✓
-              </button>
-              <button
-                onClick={() => setStep("ss_choice")}
-                className="w-full py-3.5 rounded-2xl border border-purple-500/40 bg-purple-500/10 text-purple-300 text-sm font-black active:scale-[0.97] transition-all hover:bg-purple-500/15"
-              >
-                <span className="font-black">SS</span> · הוסף כ-Super Set
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* SS choice step */}
-            <div className="text-center mb-6">
-              <p className="text-base font-black text-white">Super Set עם "{ex.name}"</p>
-              <p className="text-[11px] text-white/40 mt-1">איך תרצה להוסיף את התרגיל השני?</p>
-            </div>
-            <div className="space-y-2.5">
-              <button
-                onClick={() => { onConfirmSSFromLibrary(ex); onClose(); }}
-                className="w-full py-4 rounded-2xl bg-purple-500 text-white text-sm font-black active:scale-[0.97] transition-all shadow-[0_0_20px_rgba(139,92,246,0.35)] flex items-center justify-center gap-2"
-              >
-                <BookOpen className="h-4 w-4" />
-                בחר תרגיל שני מהספרייה
-              </button>
-              <button
-                onClick={() => { onConfirmSS(ex); onClose(); }}
-                className="w-full py-3.5 rounded-2xl border border-white/15 text-white/60 text-sm font-bold active:scale-[0.97] transition-all hover:bg-white/5"
-              >
-                הוסף ידנית בבנאי
-              </button>
-            </div>
-            <button
-              onClick={() => setStep("main")}
-              className="w-full mt-3 py-2 text-[11px] text-white/30 hover:text-white/50 transition-colors"
-            >
-              ← חזור
-            </button>
-          </>
-        )}
-      </div>
-    </>
-  );
-}
-
-function TemplateBottomSheet({ ex, onClose }: { ex: LibraryExercise; onClose: () => void }) {
-  const { data: templates } = useWorkoutTemplates();
-  const updateTemplate = useUpdateWorkoutTemplate();
-  const addTemplate = useAddWorkoutTemplate();
-  const userTemplates = ((templates ?? []) as any[]).filter((t: any) => !t.is_system);
-
-  const parseSets = (s: string | number) => { const n = parseInt(String(s)); return isNaN(n) ? 3 : n; };
-  const parseReps = (r: string | number) => { const n = parseInt(String(r)); return isNaN(n) ? 10 : n; };
-
-  const handleAdd = (t: any) => {
-    const already = (t.exercises ?? []).some((e: any) => e.name === ex.name);
-    if (already) { toast.info(`${ex.name} כבר קיים בתבנית`); onClose(); return; }
-    updateTemplate.mutate({ id: t.id, exercises: [...(t.exercises ?? []), { name: ex.name, sets: parseSets(ex.defaultSets), reps: parseReps(ex.defaultReps), weight_kg: 0 }] });
-    toast.success(`נוסף ל-${t.name} ✓`);
-    onClose();
-  };
-
-  const handleCreate = () => {
-    addTemplate.mutate({ name: ex.name, category: "weights", exercises: [{ name: ex.name, sets: parseSets(ex.defaultSets), reps: parseReps(ex.defaultReps), weight_kg: 0 }] });
-    toast.success("תבנית חדשה נוצרה ✓");
-    onClose();
-  };
-
-  return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl bg-[#0f0f0f] border border-white/10 border-b-0 p-5 pb-10 animate-in slide-in-from-bottom duration-300 max-h-[70vh] flex flex-col">
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5 shrink-0" />
-        <p className="text-sm font-black text-white text-center mb-1 shrink-0">הוסף לתבנית</p>
-        <p className="text-[11px] text-white/40 text-center mb-4 shrink-0 truncate px-4">{ex.name}</p>
-        <div className="space-y-2 overflow-y-auto flex-1 mb-3">
-          {userTemplates.length === 0 && (
-            <p className="text-xs text-white/25 text-center py-6">אין תבניות עדיין</p>
-          )}
-          {userTemplates.map((t: any) => (
-            <button key={t.id} onClick={() => handleAdd(t)}
-              className="w-full text-right p-3.5 rounded-2xl bg-white/6 border border-white/8 hover:bg-white/10 active:scale-[0.98] transition-all flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-white truncate">{t.name}</p>
-                <p className="text-[10px] text-white/35 mt-0.5">{(t.exercises ?? []).length} תרגילים</p>
-              </div>
-              <Plus className="h-4 w-4 text-white/40 shrink-0" />
-            </button>
-          ))}
-        </div>
-        <button onClick={handleCreate}
-          className="w-full p-3.5 rounded-2xl border border-dashed border-white/15 text-xs text-white/40 hover:border-white/30 hover:text-white/60 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shrink-0">
-          <Plus className="h-3.5 w-3.5" /> צור תבנית חדשה
-        </button>
-      </div>
-    </>
   );
 }
 
