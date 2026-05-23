@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Sparkles, Loader2, Calendar, Save, ChevronRight, ChevronLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Sparkles, Calendar, Save, ChevronRight, ChevronLeft } from "lucide-react";
 import { generateWorkoutPlan, WorkoutPlan } from "@/lib/ai-service";
 import { usePersonalRecords, useAddWorkoutTemplate } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
@@ -22,32 +22,38 @@ interface PlannedWorkout {
 
 type AIWorkoutPlan = WorkoutPlan;
 
-// ─── Conversational steps ─────────────────────────────────────────────────────
+// ─── Steps ────────────────────────────────────────────────────────────────────
 
 type StepKey =
   | "frequency"
   | "cardioDays"
+  | "cardioFitnessLevel"
+  | "lastRunKm"
+  | "lastRunPace"
   | "location"
   | "equipment"
   | "machinePreferences"
+  | "splitType"
   | "duration"
   | "durationCustom"
+  | "restBetweenSets"
   | "preferredMuscles"
   | "avoidedMuscles"
   | "rpe"
   | "limitations";
 
 interface Step {
-  key:          StepKey;
-  question:     string;
-  options?:     string[];
-  inputType:    "options" | "range" | "text" | "multiselect";
-  rangeMin?:    number;
-  rangeMax?:    number;
-  rangeUnit?:   string;
-  placeholder?: string;
-  optional?:    boolean;
+  key:               StepKey;
+  question:          string;
+  options?:          string[];
+  inputType:         "options" | "range" | "text" | "multiselect";
+  rangeMin?:         number;
+  rangeMax?:         number;
+  rangeUnit?:        string;
+  placeholder?:      string;
+  optional?:         boolean;
   multiselectItems?: string[];
+  wideOptions?:      boolean;
 }
 
 const EQUIPMENT_LIST = [
@@ -57,6 +63,9 @@ const EQUIPMENT_LIST = [
   "כדור רפואי ⚽", "קטלבל 🔔", "מכונת פרפר 🦋", "סמית' מכונה 🏗️",
   "GHD 🔄", "ללא ציוד 🤲",
 ];
+
+const HOME_EQUIPMENT_PRESET  = ["דמבלים 💪", "מוט מתח 🤸", "מקבילים 🤸", "TRX", "קטלבל 🔔", "ללא ציוד 🤲"];
+const OUTDOOR_EQUIPMENT_PRESET = ["מוט מתח 🤸", "מקבילים 🤸", "ללא ציוד 🤲"];
 
 const MUSCLE_LIST = [
   "חזה 💪", "גב 🔙", "כתפיים 🔝", "ביצפס 💪", "טריצפס 💪",
@@ -92,9 +101,31 @@ const STEPS: Step[] = [
     question: "כמה ימי אירובי תרצה/י?",
     inputType: "range",
     rangeMin: 0,
-    rangeMax: 7,
+    rangeMax: 6,
     rangeUnit: "ימים",
   },
+  // ── Cardio profile (conditional — shown only if cardioDays > 0) ──
+  {
+    key: "cardioFitnessLevel",
+    question: "מה רמת הכושר האירובי שלך?",
+    options: ["מתחיל", "בינוני", "מתקדם", "חוזר לאחר הפסקה"],
+    inputType: "options",
+  },
+  {
+    key: "lastRunKm",
+    question: "מה הייתה הריצה האחרונה שלך? (ק\"מ)",
+    inputType: "text",
+    placeholder: "למשל: 5.5 (אפשר לדלג)",
+    optional: true,
+  },
+  {
+    key: "lastRunPace",
+    question: "מה היה הקצב? (דקות לק\"מ)",
+    inputType: "text",
+    placeholder: "למשל: 6 (אפשר לדלג)",
+    optional: true,
+  },
+  // ── Location & equipment ──
   {
     key: "location",
     question: "איפה מתאמנים?",
@@ -109,24 +140,39 @@ const STEPS: Step[] = [
   },
   {
     key: "machinePreferences",
-    question: "אילו מכונות/ציוד אתה מעדיף בחדר הכושר?",
+    question: "אילו מכונות/ציוד אתה מעדיף?",
     inputType: "multiselect",
     multiselectItems: MACHINE_PREFERENCES_LIST,
     optional: true,
   },
+  // ── Training structure ──
+  {
+    key: "splitType",
+    question: "איזה סוג חלוקת אימון אתה מעדיף?",
+    options: ["Full Body", "Upper / Lower", "A-B (שני סוגי ימים)", "A-B-C (שלושה סוגי ימים)", "Push / Pull / Legs"],
+    inputType: "options",
+    wideOptions: true,
+  },
   {
     key: "duration",
-    question: "מה אורך התוכנית?",
-    options: ["שבוע אחד", "שבועיים", "3 שבועות", "חודש אחד"],
+    question: "כמה שבועות תרצה/י את התוכנית?",
+    options: ["שבוע אחד", "שבועיים", "3 שבועות", "חודש אחד (4 שבועות)"],
     inputType: "options",
   },
   {
     key: "durationCustom",
-    question: "רוצה זמן ספציפי? (אופציונלי)",
+    question: "כמה דקות כל אימון? (אופציונלי)",
     inputType: "text",
     placeholder: "דקות לאימון (למשל: 50)",
     optional: true,
   },
+  {
+    key: "restBetweenSets",
+    question: "כמה זמן מנוחה בין סטים?",
+    options: ["30 שניות — מהיר / HIIT", "60 שניות — בינוני", "90 שניות — כוח", "120 שניות — כוח מקסימלי"],
+    inputType: "options",
+  },
+  // ── Muscle preferences ──
   {
     key: "preferredMuscles",
     question: "אילו שרירים לשים דגש עליהם?",
@@ -157,13 +203,42 @@ const STEPS: Step[] = [
 
 type Answers = Partial<Record<StepKey, string>>;
 
-function parsePlanWeeks(durationAnswer: string | undefined): number {
-  if (!durationAnswer) return 4;
-  if (durationAnswer.includes("שבוע אחד")) return 1;
-  if (durationAnswer.includes("שבועיים")) return 2;
-  if (durationAnswer.includes("3 שבועות")) return 3;
+const CARDIO_CONDITIONAL_KEYS: StepKey[] = ["cardioFitnessLevel", "lastRunKm", "lastRunPace"];
+
+function shouldSkipStep(key: StepKey, answers: Answers): boolean {
+  if (CARDIO_CONDITIONAL_KEYS.includes(key)) {
+    return (parseInt(answers.cardioDays ?? "0") || 0) === 0;
+  }
+  return false;
+}
+
+function nextStepIdx(current: number, answers: Answers): number {
+  let next = current + 1;
+  while (next < STEPS.length && shouldSkipStep(STEPS[next].key, answers)) next++;
+  return next;
+}
+
+function prevStepIdx(current: number, answers: Answers): number {
+  let prev = current - 1;
+  while (prev >= 0 && shouldSkipStep(STEPS[prev].key, answers)) prev--;
+  return Math.max(0, prev);
+}
+
+function parsePlanWeeks(ans: string | undefined): number {
+  if (!ans) return 4;
+  if (ans.includes("שבוע אחד")) return 1;
+  if (ans.includes("שבועיים")) return 2;
+  if (ans.includes("3 שבועות")) return 3;
   return 4;
 }
+
+const PROGRESS_STAGES = [
+  { threshold: 20,  label: "מנתח פרופיל..." },
+  { threshold: 50,  label: "בונה מבנה שבועי..." },
+  { threshold: 80,  label: "מתאים תרגילים..." },
+  { threshold: 99,  label: "מסיים ובודק..." },
+  { threshold: 101, label: "✓ התוכנית מוכנה!" },
+];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -171,42 +246,80 @@ export function SportAIPlanner() {
   const { data: prs } = usePersonalRecords();
   const addTemplate   = useAddWorkoutTemplate();
 
-  const [step,                setStep]               = useState(0);
-  const [answers,             setAnswers]            = useState<Answers>({});
-  const [textInput,           setTextInput]          = useState("");
-  const [rangeValue,          setRangeValue]         = useState<Record<string, number>>({ rpe: 7, cardioDays: 0 });
-  const [loading,             setLoading]            = useState(false);
-  const [plan,                setPlan]               = useState<AIWorkoutPlan | null>(null);
-  const [equipmentSelection,  setEquipmentSelection] = useState<string[]>([]);
-  const [machinePreferences,  setMachinePreferences] = useState<string[]>([]);
-  const [preferredMuscles,    setPreferredMuscles]   = useState<string[]>([]);
-  const [avoidedMuscles,      setAvoidedMuscles]     = useState<string[]>([]);
-  const [pendingOption,       setPendingOption]      = useState<string | null>(null);
+  const [step,               setStep]              = useState(0);
+  const [answers,            setAnswers]           = useState<Answers>({});
+  const [textInput,          setTextInput]         = useState("");
+  const [rangeValue,         setRangeValue]        = useState<Record<string, number>>({ rpe: 7, cardioDays: 0 });
+  const [loading,            setLoading]           = useState(false);
+  const [plan,               setPlan]              = useState<AIWorkoutPlan | null>(null);
+  const [equipmentSelection, setEquipmentSelection] = useState<string[]>([]);
+  const [machinePreferences, setMachinePreferences] = useState<string[]>([]);
+  const [preferredMuscles,   setPreferredMuscles]  = useState<string[]>([]);
+  const [avoidedMuscles,     setAvoidedMuscles]    = useState<string[]>([]);
+  const [progress,           setProgress]          = useState(0);
+  const [progressLabel,      setProgressLabel]     = useState("מנתח פרופיל...");
 
-  const currentStep = STEPS[step];
-  const allAnswered = step >= STEPS.length;
+  const currentStep  = STEPS[step];
+  const allAnswered  = step >= STEPS.length;
+  const frequencyNum = parseInt(answers.frequency ?? "3") || 3;
 
-  const recordAnswer = (value: string) => {
-    setAnswers((prev) => ({ ...prev, [currentStep.key]: value }));
+  // Animated progress bar
+  useEffect(() => {
+    if (!loading) return;
+    const startTime = Date.now();
+    const fakeDuration = 15000;
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(99, Math.floor((elapsed / fakeDuration) * 100));
+      setProgress(pct);
+      const stage = PROGRESS_STAGES.find((s) => pct < s.threshold) ?? PROGRESS_STAGES[PROGRESS_STAGES.length - 1];
+      setProgressLabel(stage.label);
+    }, 200);
+    return () => clearInterval(timer);
+  }, [loading]);
+
+  const advance = (newAnswers: Answers) => {
+    setAnswers(newAnswers);
     setTextInput("");
+    setStep((s) => nextStepIdx(s, newAnswers));
   };
 
   const handleOptionSelect = (option: string) => {
-    setPendingOption(null);
-    recordAnswer(option);
-    setStep((s) => s + 1);
+    const newAnswers = { ...answers, [currentStep.key]: option };
+
+    // Location → auto-preset equipment
+    if (currentStep.key === "location") {
+      if (option === "בבית") setEquipmentSelection(HOME_EQUIPMENT_PRESET);
+      else if (option === "בחוץ") setEquipmentSelection(OUTDOOR_EQUIPMENT_PRESET);
+      else if (option === "חדר כושר") setEquipmentSelection([]);
+    }
+
+    // Rest time → warn if estimated workout time exceeds session length
+    if (currentStep.key === "restBetweenSets") {
+      const restSec = parseInt(option) || 60;
+      const sessionMins = parseInt(answers.durationCustom ?? "60") || 60;
+      const estimatedSets = 18;
+      const totalRestMins = (restSec * estimatedSets) / 60;
+      const activeTimeMins = estimatedSets * 0.75;
+      const estimatedTotal = Math.round(totalRestMins + activeTimeMins);
+      if (estimatedTotal > sessionMins * 1.2) {
+        toast.warning(`⚠️ שים לב: עם זמן מנוחה זה האימון יקח כ-${estimatedTotal} דקות (בחרת ${sessionMins} דקות)`);
+      }
+    }
+
+    advance(newAnswers);
   };
 
   const handleRangeNext = () => {
-    const val = rangeValue[currentStep.key] ?? currentStep.rangeMin ?? 0;
+    let val = rangeValue[currentStep.key] ?? currentStep.rangeMin ?? 0;
     if (currentStep.key === "cardioDays") {
-      const freqNum = parseInt(answers.frequency ?? "0") || 0;
-      if (freqNum > 0 && val >= freqNum) {
-        toast.warning(`⚠️ מספר ימי האירובי קרוב לסך הימים שלך — וודא שנשאר לפחות יום כוח אחד`);
+      val = Math.min(val, frequencyNum);
+      if (val > 0 && val >= frequencyNum) {
+        toast.warning(`⚠️ בחרת ${val} ימי אירובי מתוך ${frequencyNum} ימי אימון — לא נשאר יום כוח`);
       }
     }
-    recordAnswer(`${val} ${currentStep.rangeUnit ?? ""}`);
-    setStep((s) => s + 1);
+    const newAnswers = { ...answers, [currentStep.key]: `${val} ${currentStep.rangeUnit ?? ""}`.trim() };
+    advance(newAnswers);
   };
 
   const handleTextNext = () => {
@@ -214,32 +327,22 @@ export function SportAIPlanner() {
       toast.error("נא למלא תשובה");
       return;
     }
-    recordAnswer(textInput.trim());
-    setStep((s) => s + 1);
+    advance({ ...answers, [currentStep.key]: textInput.trim() });
   };
 
   const handleMultiselectNext = () => {
-    // multiselect always allows proceeding (0 selections = no preference)
-    setStep((s) => s + 1);
+    advance({ ...answers });
   };
 
   const toggleMultiselect = (item: string, key: StepKey) => {
     if (key === "equipment") {
-      setEquipmentSelection((prev) =>
-        prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
-      );
+      setEquipmentSelection((prev) => prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]);
     } else if (key === "machinePreferences") {
-      setMachinePreferences((prev) =>
-        prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
-      );
+      setMachinePreferences((prev) => prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]);
     } else if (key === "preferredMuscles") {
-      setPreferredMuscles((prev) =>
-        prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
-      );
+      setPreferredMuscles((prev) => prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]);
     } else if (key === "avoidedMuscles") {
-      setAvoidedMuscles((prev) =>
-        prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
-      );
+      setAvoidedMuscles((prev) => prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]);
     }
   };
 
@@ -253,41 +356,46 @@ export function SportAIPlanner() {
 
   const generate = async () => {
     setLoading(true);
+    setProgress(0);
+    setProgressLabel("מנתח פרופיל...");
     setPlan(null);
     try {
-      const planWeeks = parsePlanWeeks(answers.duration);
-      const sessionMinutes = answers.durationCustom
-        ? parseInt(answers.durationCustom) || 60
-        : 60;
-      const cardioDaysNum = parseInt(answers.cardioDays ?? "0") || rangeValue.cardioDays || 0;
-
-      const combinedEquipment = [
-        ...equipmentSelection,
-        ...machinePreferences,
-      ];
+      const planWeeks      = parsePlanWeeks(answers.duration);
+      const sessionMinutes = parseInt(answers.durationCustom ?? "") || 60;
+      const cardioDaysNum  = parseInt(answers.cardioDays ?? "0") || rangeValue.cardioDays || 0;
+      const combinedEquipment = [...equipmentSelection, ...machinePreferences];
+      const restBetweenSetsNum = parseInt(answers.restBetweenSets ?? "60") || 60;
+      const lastRunKm  = parseFloat(answers.lastRunKm ?? "") || undefined;
+      const lastRunPace = parseFloat(answers.lastRunPace ?? "") || undefined;
 
       const result = await generateWorkoutPlan({
-        goal:            `${answers.location ?? "חדר כושר"} — RPE ${answers.rpe ?? "7"}`,
-        daysPerWeek:     parseInt(answers.frequency ?? "3"),
-        equipment:       combinedEquipment.length > 0 ? combinedEquipment.join(", ") : (answers.location ?? "חדר כושר מלא"),
-        constraints:     answers.limitations ?? "אין",
+        goal:             `${answers.location ?? "חדר כושר"} — RPE ${answers.rpe ?? "7"}`,
+        daysPerWeek:      parseInt(answers.frequency ?? "3"),
+        equipment:        combinedEquipment.length > 0 ? combinedEquipment.join(", ") : (answers.location ?? "חדר כושר מלא"),
+        constraints:      answers.limitations ?? "אין",
         sessionMinutes,
-        cardioDays:      cardioDaysNum,
+        cardioDays:       cardioDaysNum,
         preferredMuscles: preferredMuscles.length > 0 ? preferredMuscles : undefined,
         avoidedMuscles:   avoidedMuscles.length > 0 ? avoidedMuscles : undefined,
-        recentPRs:       (prs || []).slice(0, 6).map((p: any) => ({
+        recentPRs:        (prs || []).slice(0, 6).map((p: any) => ({
           exercise_name: p.exercise_name,
           value:         p.value,
           unit:          p.unit ?? "",
         })),
         planWeeks,
-        equipmentList: combinedEquipment.length > 0 ? combinedEquipment : undefined,
+        equipmentList:       combinedEquipment.length > 0 ? combinedEquipment : undefined,
+        splitType:           answers.splitType,
+        restBetweenSets:     restBetweenSetsNum,
+        cardioFitnessLevel:  answers.cardioFitnessLevel,
+        lastRunData:         lastRunKm ? { distanceKm: lastRunKm, paceMinPerKm: lastRunPace } : undefined,
       } as any);
 
       if (!result.workouts && (!result.weeks || !Array.isArray(result.weeks))) {
         throw new Error("מבנה לא תקין");
       }
 
+      setProgress(100);
+      setProgressLabel("✓ התוכנית מוכנה!");
       setPlan(result);
       toast.success("התוכנית מוכנה! 💪");
     } catch (e: any) {
@@ -304,7 +412,6 @@ export function SportAIPlanner() {
         name:                       w.name,
         category:                   w.category,
         estimated_duration_minutes: w.duration_minutes,
-        // Normalize reps: AI may return "8-10" strings → parse to integer (use lower bound)
         exercises: w.exercises.map((ex) => ({
           ...ex,
           reps: typeof ex.reps === "string" ? (parseInt(ex.reps as string) || 10) : (ex.reps ?? 10),
@@ -328,11 +435,13 @@ export function SportAIPlanner() {
     setMachinePreferences([]);
     setPreferredMuscles([]);
     setAvoidedMuscles([]);
-    setPendingOption(null);
+    setProgress(0);
+    setProgressLabel("מנתח פרופיל...");
   };
 
-  // Cardio warning helpers
-  const frequencyNum = parseInt(answers.frequency ?? "0") || 0;
+  // Active steps for progress dots
+  const activeSteps      = STEPS.filter((s) => !shouldSkipStep(s.key, answers));
+  const activeStepIndex  = STEPS.slice(0, step).filter((s) => !shouldSkipStep(s.key, answers)).length;
 
   return (
     <div
@@ -350,16 +459,16 @@ export function SportAIPlanner() {
         </div>
       </div>
 
-      {/* Step progress bar */}
-      {!plan && (
+      {/* Step progress dots */}
+      {!plan && !loading && (
         <div className="flex gap-1">
-          {STEPS.map((s, i) => (
+          {activeSteps.map((_, i) => (
             <div
-              key={s.key}
+              key={i}
               className={`h-1 flex-1 rounded-full transition-all ${
-                i < step
+                i < activeStepIndex
                   ? "bg-sport shadow-[0_0_6px_rgba(0,255,135,0.5)]"
-                  : i === step
+                  : i === activeStepIndex
                   ? "bg-sport/40"
                   : "bg-white/10"
               }`}
@@ -369,28 +478,38 @@ export function SportAIPlanner() {
       )}
 
       {/* Question steps */}
-      {!allAnswered && !plan && (
+      {!allAnswered && !plan && !loading && (
         <div className="space-y-3">
           <p className="text-sm font-bold text-white">{currentStep.question}</p>
 
+          {/* Options */}
           {currentStep.inputType === "options" && (
-            <>
-              <div className="grid grid-cols-2 gap-2">
-                {currentStep.options!.map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => handleOptionSelect(opt)}
-                    className="py-3 rounded-2xl text-xs font-semibold border border-white/10 bg-white/5 text-white/70 hover:border-sport/40 hover:bg-sport/10 hover:text-sport transition-all min-h-[44px]"
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </>
+            <div className={`grid gap-2 ${currentStep.wideOptions ? "grid-cols-1" : "grid-cols-2"}`}>
+              {currentStep.options!.map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => handleOptionSelect(opt)}
+                  className="py-3 px-3 rounded-2xl text-xs font-semibold border border-white/10 bg-white/5 text-white/70 hover:border-sport/40 hover:bg-sport/10 hover:text-sport transition-all min-h-[44px] text-right"
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
           )}
 
+          {/* Multiselect */}
           {currentStep.inputType === "multiselect" && (
             <div className="space-y-3">
+              {currentStep.key === "equipment" && answers.location === "בבית" && (
+                <p className="text-[11px] text-sport/80 bg-sport/10 border border-sport/20 rounded-xl px-3 py-2">
+                  💡 הגדרנו ציוד ברירת מחדל לאימון בבית — תוכל לשנות
+                </p>
+              )}
+              {currentStep.key === "equipment" && answers.location === "בחוץ" && (
+                <p className="text-[11px] text-sport/80 bg-sport/10 border border-sport/20 rounded-xl px-3 py-2">
+                  💡 הגדרנו ציוד לאימון בחוץ — תוכל לשנות
+                </p>
+              )}
               <div className="flex flex-wrap gap-2 max-h-60 overflow-y-auto">
                 {currentStep.multiselectItems!.map((item) => {
                   const selected = getMultiselectState(currentStep.key).includes(item);
@@ -418,32 +537,43 @@ export function SportAIPlanner() {
             </div>
           )}
 
-          {currentStep.inputType === "range" && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-white/30">{currentStep.rangeMin} {currentStep.rangeUnit}</span>
-                <span className="text-2xl font-black text-sport">
-                  {rangeValue[currentStep.key] ?? currentStep.rangeMin} {currentStep.rangeUnit}
-                </span>
-                <span className="text-xs text-white/30">{currentStep.rangeMax} {currentStep.rangeUnit}</span>
+          {/* Range */}
+          {currentStep.inputType === "range" && (() => {
+            const effectiveMax = currentStep.key === "cardioDays" ? frequencyNum : currentStep.rangeMax!;
+            const effectiveVal = Math.min(rangeValue[currentStep.key] ?? currentStep.rangeMin ?? 0, effectiveMax);
+            return (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/30">{currentStep.rangeMin} {currentStep.rangeUnit}</span>
+                  <span className="text-2xl font-black text-sport">
+                    {effectiveVal} {currentStep.rangeUnit}
+                  </span>
+                  <span className="text-xs text-white/30">{effectiveMax} {currentStep.rangeUnit}</span>
+                </div>
+                <input
+                  type="range"
+                  min={currentStep.rangeMin}
+                  max={effectiveMax}
+                  value={effectiveVal}
+                  onChange={(e) => setRangeValue((prev) => ({ ...prev, [currentStep.key]: parseInt(e.target.value) }))}
+                  className="w-full accent-sport"
+                />
+                {currentStep.key === "cardioDays" && (
+                  <p className="text-[11px] text-white/40 text-center">
+                    מתוך {frequencyNum} ימי אימון בשבוע
+                  </p>
+                )}
+                <button
+                  onClick={handleRangeNext}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-sport/15 border border-sport/20 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[44px]"
+                >
+                  המשך <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <input
-                type="range"
-                min={currentStep.rangeMin}
-                max={currentStep.rangeMax}
-                value={rangeValue[currentStep.key] ?? currentStep.rangeMin}
-                onChange={(e) => setRangeValue((prev) => ({ ...prev, [currentStep.key]: parseInt(e.target.value) }))}
-                className="w-full accent-sport"
-              />
-              <button
-                onClick={handleRangeNext}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-sport/15 border border-sport/20 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[44px]"
-              >
-                המשך <ChevronLeft className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
+            );
+          })()}
 
+          {/* Text */}
           {currentStep.inputType === "text" && (
             <div className="space-y-2">
               <textarea
@@ -464,7 +594,7 @@ export function SportAIPlanner() {
 
           {step > 0 && (
             <button
-              onClick={() => setStep((s) => s - 1)}
+              onClick={() => setStep((s) => prevStepIdx(s, answers))}
               className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/60 transition-colors"
             >
               <ChevronRight className="h-3 w-3" /> חזור
@@ -474,25 +604,25 @@ export function SportAIPlanner() {
       )}
 
       {/* Summary + Generate */}
-      {allAnswered && !plan && (
+      {allAnswered && !plan && !loading && (
         <div className="space-y-3">
           <div className="rounded-2xl bg-white/5 border border-white/10 p-3.5 space-y-1.5">
             <p className="text-[11px] font-bold text-sport uppercase tracking-widest mb-2">סיכום הבחירות שלך</p>
-            {STEPS.filter((s) => s.inputType !== "multiselect").map((s) => (
+            {STEPS.filter((s) => s.inputType !== "multiselect" && !shouldSkipStep(s.key, answers)).map((s) => (
               <div key={s.key} className="flex items-center justify-between text-[11px]">
-                <span className="text-white/40">{s.question.replace("?", "")}</span>
+                <span className="text-white/40">{s.question.replace("?", "").replace(/"/g, "'")}</span>
                 <span className="font-semibold text-white">{answers[s.key] || "—"}</span>
               </div>
             ))}
             {equipmentSelection.length > 0 && (
               <div className="flex items-start justify-between text-[11px]">
-                <span className="text-white/40">ציוד</span>
+                <span className="text-white/40 shrink-0">ציוד</span>
                 <span className="font-semibold text-white text-left max-w-[60%]">{equipmentSelection.join(", ")}</span>
               </div>
             )}
             {preferredMuscles.length > 0 && (
               <div className="flex items-start justify-between text-[11px]">
-                <span className="text-white/40">דגש</span>
+                <span className="text-white/40 shrink-0">דגש</span>
                 <span className="font-semibold text-white text-left max-w-[60%]">{preferredMuscles.join(", ")}</span>
               </div>
             )}
@@ -500,12 +630,9 @@ export function SportAIPlanner() {
 
           <button
             onClick={generate}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-sport text-sport-foreground font-bold text-sm min-h-[50px] disabled:opacity-50 shadow-[0_0_20px_rgba(0,255,135,0.3)] active:scale-[0.98] transition-transform"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-sport text-sport-foreground font-bold text-sm min-h-[50px] shadow-[0_0_20px_rgba(0,255,135,0.3)] active:scale-[0.98] transition-transform"
           >
-            {loading
-              ? <><Loader2 className="h-4 w-4 animate-spin" /> בונה תוכנית...</>
-              : <><Sparkles className="h-4 w-4" /> צור תוכנית</>}
+            <Sparkles className="h-4 w-4" /> צור תוכנית
           </button>
 
           <button onClick={reset} className="w-full text-[11px] text-white/30 hover:text-white/60 transition-colors">
@@ -514,7 +641,21 @@ export function SportAIPlanner() {
         </div>
       )}
 
-      {/* Generated plan — timeline layout */}
+      {/* Animated progress bar */}
+      {loading && (
+        <div className="space-y-4 py-6">
+          <p className="text-center text-sm font-bold text-white">{progressLabel}</p>
+          <div className="relative h-3 rounded-full bg-white/10 overflow-hidden" dir="ltr">
+            <div
+              className="absolute top-0 left-0 h-full rounded-full bg-sport shadow-[0_0_12px_rgba(0,255,135,0.6)] transition-all duration-300 ease-linear"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-center text-xs text-white/40">{Math.floor(progress)}%</p>
+        </div>
+      )}
+
+      {/* Generated plan */}
       {plan && (
         <div className="space-y-3">
           <div className="rounded-2xl bg-sport/10 border border-sport/20 p-3">
@@ -522,7 +663,6 @@ export function SportAIPlanner() {
           </div>
 
           <div className="space-y-2">
-            {/* Render workouts: prefer weeks[0] (new multi-week structure), fall back to flat workouts array */}
             {(plan.weeks && plan.weeks.length > 0 ? plan.weeks[0].workouts : (plan.workouts ?? [])).map((w, i) => (
               <div key={i} className="rounded-2xl bg-white/5 border border-white/10 p-3.5 space-y-2">
                 <div className="flex items-center justify-between gap-2">

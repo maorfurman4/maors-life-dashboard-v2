@@ -30,6 +30,12 @@ Deno.serve(async (req) => {
       // AI Planner v3 params
       planWeeks,
       equipmentItems,
+      // AI Planner v4 params
+      splitType,
+      restBetweenSets,
+      cardioFitnessLevel,
+      lastRunData,
+      availableExercises,
     } = await req.json();
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
@@ -140,6 +146,22 @@ WORKOUT STRUCTURE RULES (MANDATORY):
       ? `\nציוד זמין: ${equipmentItems.join(', ')}. השתמש אך ורק בציוד הזה. אסור לכלול תרגיל שדורש ציוד שאינו ברשימה.`
       : "";
 
+    const splitTypeNote = splitType
+      ? `\nסוג פיצול נדרש: ${splitType}. בנה את כל האימונים לפי פיצול זה בדיוק.`
+      : "";
+
+    const restNote = restBetweenSets
+      ? `\nזמן מנוחה בין סטים: ${restBetweenSets} שניות. מבנה האימון חייב להתאים לזמן זה.`
+      : "";
+
+    const cardioFitnessNote = cardioFitnessLevel
+      ? `\nרמת כושר אירובי: ${cardioFitnessLevel}.${lastRunData?.distanceKm ? ` ריצה אחרונה: ${lastRunData.distanceKm} ק"מ בקצב ${lastRunData.paceMinPerKm} דקות/ק"מ.` : ""} כייל את רמת הקושי ואורך המסלולים בהתאמה.`
+      : "";
+
+    const availableExercisesNote = Array.isArray(availableExercises) && availableExercises.length > 0
+      ? `\nחשוב ביותר — השתמש אך ורק בתרגילים מהרשימה הבאה (שמות מדויקים):\n${availableExercises.slice(0, 60).map((e: { name: string }) => e.name).join(", ")}\nאסור להמציא שמות תרגילים שאינם ברשימה.`
+      : "";
+
     const preferredMusclesNote = Array.isArray(preferredMuscles) && preferredMuscles.length > 0
       ? `\nשרירים מועדפים (יותר עבודה): ${preferredMuscles.join(', ')}`
       : "";
@@ -160,7 +182,7 @@ WORKOUT STRUCTURE RULES (MANDATORY):
 משך אימון: ${sessionMinutes || 60} דקות
 עוצמה רצויה (1-5): ${intensity || 3}${cardioNote}
 ${blacklistNote}${favoritesNote}${recentWorkoutsNote}${equipmentItemsNote}${preferredMusclesNote}${avoidedMusclesNote}
-אורך תכנית: ${targetWeeks} שבועות. צור בדיוק ${targetWeeks} שבועות.
+אורך תכנית: ${targetWeeks} שבועות. צור בדיוק ${targetWeeks} שבועות.${splitTypeNote}${restNote}${cardioFitnessNote}${availableExercisesNote}
 שיאים אישיים אחרונים:
 ${(recentPRs || []).map((p: any) => `- ${p.exercise_name}: ${p.value} ${p.unit}`).join("\n") || "אין נתונים"}
 ${libraryBlock ? `\nספריית התרגילים הזמינה (שם | שרירים | ציוד) — בחר רק מרשימה זו:\n${libraryBlock}` : ""}
