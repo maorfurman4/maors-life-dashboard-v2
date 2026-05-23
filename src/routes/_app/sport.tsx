@@ -2,11 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Dumbbell, Play, CheckCircle2, Trophy, Flame, Clock,
-  Target, Zap, ChevronRight, Plus, RotateCcw, Minus,
+  Target, Zap, ChevronRight, ChevronLeft, Plus, RotateCcw, Minus,
   ChevronDown, ChevronUp, Loader2, Star, X, BookOpen,
   TrendingUp, Scale, Medal, BarChart3, Camera,
   Pencil, Check, Trash2, Heart, EyeOff, Eye,
-  Share2, MapPin, Timer, Download, Settings2, Youtube, Search, Layers, Info,
+  Share2, MapPin, Timer, Download, Settings2, Youtube, Search, Layers, Info, BrainCircuit,
 } from "lucide-react";
 import {
   usePersonalRecords, useAddPersonalRecord,
@@ -32,6 +32,9 @@ import {
 } from "recharts";
 import { useQueryClient } from "@tanstack/react-query";
 import exerciseImageUrlsJson from "@/data/exercise-image-urls.json";
+import GymMachineIdentifier from "@/components/sport/GymMachineIdentifier";
+import SportWelcomeVideo from "@/components/sport/SportWelcomeVideo";
+import { SportAIConsultant } from "@/components/sport/SportAIConsultant";
 
 export const Route = createFileRoute("/_app/sport")({
   component: SportPage,
@@ -50,7 +53,6 @@ const TABS: { key: Tab; label: string }[] = [
 
 // ─── Quick-Add workout definitions ───────────────────────────────────────────
 const QUICK_WORKOUTS = [
-  { key: "cardio",    label: "ריצה / קרדיו",  dbCategory: "running"      as const, emoji: "🏃", color: "#f97316", image: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&q=80", durations: [20, 30, 45] },
   { key: "strength",  label: "כוח",            dbCategory: "weights"      as const, emoji: "🏋️", color: "#10b981", image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&q=80", durations: [45, 60, 75] },
   { key: "hiit",      label: "HIIT",           dbCategory: "mixed"        as const, emoji: "⚡", color: "#eab308", image: "https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?w=400&q=80", durations: [15, 20, 30] },
   { key: "chest",     label: "חזה / כתפיים",  dbCategory: "weights"      as const, emoji: "💪", color: "#3b82f6", image: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80", durations: [45, 60, 75] },
@@ -2419,7 +2421,6 @@ type WorkoutDbCategory = "weights" | "calisthenics" | "running" | "mixed";
 const WORKOUT_CATEGORIES: { value: WorkoutDbCategory; label: string }[] = [
   { value: "weights",      label: "🏋️ כוח"      },
   { value: "calisthenics", label: "🤸 קלסטניקס"  },
-  { value: "running",      label: "🏃 ריצה"      },
   { value: "mixed",        label: "⚡ HIIT"       },
 ];
 /** Coerce any legacy/unknown category string to a valid DB value */
@@ -3045,7 +3046,7 @@ function WorkoutBuilderTab({
             </button>
             <button onClick={() => onGoToLibrary?.()}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-emerald-500/30 text-emerald-400/70 hover:border-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/8 transition-all text-sm font-semibold">
-              <BookOpen className="h-4 w-4" />בחר מהספרייה
+              <BookOpen className="h-4 w-4" />בחר מספריית התרגילים
             </button>
             <button
               onClick={() => {
@@ -4002,6 +4003,7 @@ function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, onAddToWorkout
   const [workoutSheetEx,    setWorkoutSheetEx]    = useState<LibraryExercise | null>(null);
   const [ssFirstExercise,   setSsFirstExercise]   = useState<LibraryExercise | null>(null);
   const [showSettings,      setShowSettings]      = useState(false);
+  const [showMachineIdentifier, setShowMachineIdentifier] = useState(false);
 
   const { data: settings } = useUserSettings();
   const updateSettings = useUpdateUserSettings();
@@ -4147,6 +4149,15 @@ function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, onAddToWorkout
 
   return (
     <div className="px-4 pt-8 space-y-4 pb-28">
+      {/* ── Gym machine identifier ────────────────────────────────── */}
+      <button
+        onClick={() => setShowMachineIdentifier(true)}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm font-bold transition-all hover:bg-emerald-500/15 active:scale-95"
+      >
+        <Camera className="h-4 w-4" />
+        זהה מכונה בצילום
+      </button>
+      <GymMachineIdentifier open={showMachineIdentifier} onClose={() => setShowMachineIdentifier(false)} />
       {/* ── selectionMode banner ──────────────────────────────────── */}
       {selectionMode && !ssFirstExercise && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30">
@@ -4548,7 +4559,7 @@ function WorkoutAddBottomSheet({
                 className="w-full py-4 rounded-2xl bg-purple-500 text-white text-sm font-black active:scale-[0.97] transition-all shadow-[0_0_20px_rgba(139,92,246,0.35)] flex items-center justify-center gap-2"
               >
                 <BookOpen className="h-4 w-4" />
-                בחר תרגיל שני מהספרייה
+                בחר תרגיל שני מספריית התרגילים
               </button>
               <button
                 onClick={() => { onConfirmSS(ex); onClose(); }}
@@ -6274,6 +6285,7 @@ const BODY_ANGLES: { key: BodyAngle; label: string; emoji: string }[] = [
 
 function BodyProgressGallery() {
   const [angle,      setAngle]      = useState<BodyAngle>("front");
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [newFile,    setNewFile]    = useState<File | null>(null);
   const [newPreview, setNewPreview] = useState<string | null>(null);
   const [notes,      setNotes]      = useState("");
@@ -6498,8 +6510,12 @@ function BodyProgressGallery() {
             היסטוריה — {BODY_ANGLES.find((a) => a.key === angle)?.label}
           </p>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-            {anglePhotos.map((p: any) => (
-              <div key={p.id} className="shrink-0 w-20 h-20 rounded-xl overflow-hidden relative group">
+            {anglePhotos.map((p: any, idx: number) => (
+              <div
+                key={p.id}
+                className="shrink-0 w-20 h-20 rounded-xl overflow-hidden relative group cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setLightboxIdx(idx)}
+              >
                 {p.signedUrl ? (
                   <img src={p.signedUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -6522,6 +6538,51 @@ function BodyProgressGallery() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxIdx !== null && anglePhotos.length > 0 && (
+        <div
+          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center"
+          onClick={() => setLightboxIdx(null)}
+        >
+          <button
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+            onClick={(e) => { e.stopPropagation(); setLightboxIdx((prev) => prev !== null ? (prev - 1 + anglePhotos.length) % anglePhotos.length : null); }}
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+          <div className="flex flex-col items-center gap-3 max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={anglePhotos[lightboxIdx].signedUrl}
+              alt="progress"
+              className="max-h-[80vh] max-w-[85vw] object-contain rounded-lg"
+            />
+            <div className="text-white/80 text-sm text-center flex gap-3">
+              {anglePhotos[lightboxIdx].angle && (
+                <span>{BODY_ANGLES.find((a) => a.key === anglePhotos[lightboxIdx].angle)?.label ?? anglePhotos[lightboxIdx].angle}</span>
+              )}
+              {anglePhotos[lightboxIdx].date && (
+                <span>{new Date(anglePhotos[lightboxIdx].date).toLocaleDateString("he-IL")}</span>
+              )}
+            </div>
+          </div>
+          <button
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+            onClick={(e) => { e.stopPropagation(); setLightboxIdx((prev) => prev !== null ? (prev + 1) % anglePhotos.length : null); }}
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            onClick={() => setLightboxIdx(null)}
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">
+            {lightboxIdx + 1} / {anglePhotos.length}
           </div>
         </div>
       )}
@@ -6807,6 +6868,7 @@ function ProgressTab() {
 // ═══════════════════════════════════════════════════════════════════════
 function SportPage() {
   const [activeTab,        setActiveTab]        = useState<Tab>("dashboard");
+  const [showAIConsultant, setShowAIConsultant] = useState(false);
   const [loadedTemplate,      setLoadedTemplate]      = useState<any>(null);
   const [pendingExercises,    setPendingExercises]    = useState<LibraryExercise[]>([]);
   const [libraryBuilderMode,  setLibraryBuilderMode]  = useState(false);
@@ -6853,6 +6915,7 @@ function SportPage() {
         </div>
 
         <div className="relative z-10 pb-32 pt-2">
+          <SportWelcomeVideo />
           {/* Sticky Tab Bar */}
           <div className="sticky top-0 z-10 px-4 py-2 bg-black/25 backdrop-blur-xl">
             <div className="flex gap-1 p-1 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
@@ -6873,6 +6936,30 @@ function SportPage() {
               </div>
               <StatsStrip />
               <WeekStrip />
+              {/* AI Consultant expandable panel */}
+              {showAIConsultant && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowAIConsultant(false)}
+                    className="absolute top-3 left-3 z-10 h-7 w-7 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
+                    dir="rtl"
+                  >
+                    <X className="h-3.5 w-3.5 text-white" />
+                  </button>
+                  <SportAIConsultant />
+                </div>
+              )}
+              {/* Floating AI chat button */}
+              {!showAIConsultant && (
+                <button
+                  onClick={() => setShowAIConsultant(true)}
+                  className="fixed bottom-24 left-4 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-sport text-sport-foreground font-bold text-sm shadow-[0_0_24px_rgba(0,255,135,0.4)] hover:opacity-90 transition-opacity"
+                  dir="rtl"
+                >
+                  <BrainCircuit className="h-4 w-4" />
+                  שאל מאמן AI
+                </button>
+              )}
             </div>
           )}
 

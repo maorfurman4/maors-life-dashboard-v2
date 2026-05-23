@@ -162,23 +162,51 @@ function ageCorrection(ageYears?: number): number {
 }
 
 /**
+ * Pace-based energy coefficient for running.
+ * Source: Margaria et al. — net caloric cost of running ≈ 1 kcal/kg/km,
+ * adjusted for pace efficiency (Harvard Medical School cross-validated).
+ */
+function runningPaceCoefficient(paceMinPerKm: number): number {
+  if (paceMinPerKm > 7) return 0.80;   // fast walk / very slow jog
+  if (paceMinPerKm > 6) return 0.92;   // easy jog
+  if (paceMinPerKm > 5) return 1.036;  // moderate run
+  if (paceMinPerKm > 4) return 1.10;   // fast run
+  return 1.20;                          // sprint
+}
+
+/**
  * Cardio calorie estimate.
- * Formula: Calories = MET × weight_kg × (minutes / 60) × ageCorrection × (1 + EPOC)
+ * Running (when distanceKm provided): Calories = weight_kg × distance_km × C × ageCorrection × (1 + EPOC)
+ *   where C is a pace-based coefficient (Margaria/Harvard distance model).
+ * Other sports: Calories = MET × weight_kg × (minutes / 60) × ageCorrection × (1 + EPOC)
  *
- * @param sportKey   - key from CARDIO_SPORTS
- * @param intensity  - "low" | "medium" | "high"
- * @param minutes    - duration in minutes
- * @param weightKg   - user body weight in kg (default 75)
- * @param ageYears   - optional age for VO2max correction
+ * @param sportKey    - key from CARDIO_SPORTS
+ * @param intensity   - "low" | "medium" | "high"
+ * @param minutes     - duration in minutes
+ * @param weightKg    - user body weight in kg (default 75)
+ * @param ageYears    - optional age for VO2max correction
+ * @param distanceKm  - optional distance for running (enables distance-based formula)
  */
 export function calcCardioCalories(
   sportKey: string,
   intensity: Intensity,
   minutes: number,
   weightKg = 75,
-  ageYears?: number
+  ageYears?: number,
+  distanceKm?: number
 ): number {
   if (minutes <= 0 || weightKg <= 0) return 0;
+
+  // Distance-based formula for running (more accurate than time-only)
+  if (sportKey === "running" && distanceKm && distanceKm > 0 && minutes > 0) {
+    const pace = minutes / distanceKm; // min/km
+    const C = runningPaceCoefficient(pace);
+    const netCalories = weightKg * distanceKm * C;
+    const epocBonus = 1.08; // 8% EPOC for running (Laforgia et al.)
+    return Math.round(netCalories * epocBonus * ageCorrection(ageYears));
+  }
+
+  // Standard MET formula (fallback for running without distance, and all other sports)
   const sport = CARDIO_SPORTS.find((s) => s.key === sportKey);
   const met = sport?.met[intensity] ?? 8.0;
   const base = met * weightKg * (minutes / 60);

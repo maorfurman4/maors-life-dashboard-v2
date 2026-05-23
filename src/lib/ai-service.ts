@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { EXERCISE_LIBRARY } from "@/lib/exercise-library";
 
 export interface MealRecognitionResult {
   name: string;
@@ -128,17 +129,45 @@ export interface GeneratePlanPayload {
   blacklistedExercises?: string[];
   recentWorkouts?: { name: string; date: string; exercises: string[] }[];
   // AI Planner v3 params:
-  planWeeks?: number;       // 1-4 weeks
-  equipmentList?: string[]; // toggled equipment chips
+  planWeeks?: number;           // 1-4 weeks
+  equipmentList?: string[];     // toggled equipment chips
+  // AI Planner v4 params:
+  splitType?: string;           // "Full Body" | "Upper-Lower" | "A-B" | "A-B-C" | "Push-Pull-Legs"
+  restBetweenSets?: number;     // seconds: 30, 60, 90, 120
+  cardioFitnessLevel?: string;  // "מתחיל" | "בינוני" | "מתקדם" | "חוזר אחרי הפסקה"
+  lastRunData?: { distanceKm?: number; paceMinPerKm?: number };
+  availableExercises?: Array<{ name: string; equipment: string[]; muscleGroups: string[]; primaryMuscle: string }>;
 }
 
 export async function generateWorkoutPlan(payload: GeneratePlanPayload): Promise<WorkoutPlan> {
+  // Build filtered exercise list based on selected equipment
+  const equipmentArr = payload.equipmentList ?? [];
+  const availableExercises = EXERCISE_LIBRARY
+    .filter((ex) => {
+      if (equipmentArr.length === 0) return true;
+      if (ex.equipment.length === 0) return true; // bodyweight always available
+      return ex.equipment.some((eq) =>
+        equipmentArr.some((ue) => {
+          const uClean = ue.replace(/\s*[🏋️💪🤸🚣🌀⚽🔔🤲🔩🔗🦵🏃🦋🏗️🔄]/g, "").trim();
+          return eq.includes(uClean) || uClean.includes(eq);
+        })
+      );
+    })
+    .slice(0, 70)
+    .map((ex) => ({
+      name: ex.name,
+      equipment: ex.equipment,
+      muscleGroups: ex.muscleGroups as string[],
+      primaryMuscle: ex.primaryMuscle as string,
+    }));
+
   const body = {
     ...payload,
     // Normalize equipment list for Edge Function
     ...(payload.equipmentList && payload.equipmentList.length > 0
       ? { equipmentItems: payload.equipmentList }
       : {}),
+    availableExercises,
   };
   const { data, error } = await supabase.functions.invoke("workout-plan-ai", { body });
   if (error) throw new Error(error.message);
