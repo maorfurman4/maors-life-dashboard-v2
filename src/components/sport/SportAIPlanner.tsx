@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Sparkles, Calendar, Save, ChevronRight, ChevronLeft } from "lucide-react";
+import { Sparkles, Calendar, Save, ChevronRight, ChevronLeft, BookmarkCheck } from "lucide-react";
 import { generateWorkoutPlan, WorkoutPlan } from "@/lib/ai-service";
 import { usePersonalRecords, useAddWorkoutTemplate } from "@/hooks/use-sport-data";
+import { useSaveWorkoutPlan } from "@/hooks/useAiPlanner";
 import { toast } from "sonner";
 
 interface PlannedExercise {
@@ -209,6 +210,8 @@ function shouldSkipStep(key: StepKey, answers: Answers): boolean {
   if (CARDIO_CONDITIONAL_KEYS.includes(key)) {
     return (parseInt(answers.cardioDays ?? "0") || 0) === 0;
   }
+  // Improvement #16: skip machine preferences for home/outdoor workouts
+  if (key === "machinePreferences" && (answers.location === "בבית" || answers.location === "בחוץ")) return true;
   return false;
 }
 
@@ -245,6 +248,7 @@ const PROGRESS_STAGES = [
 export function SportAIPlanner() {
   const { data: prs } = usePersonalRecords();
   const addTemplate   = useAddWorkoutTemplate();
+  const savePlan      = useSaveWorkoutPlan();
 
   const [step,               setStep]              = useState(0);
   const [answers,            setAnswers]           = useState<Answers>({});
@@ -388,7 +392,7 @@ export function SportAIPlanner() {
         restBetweenSets:     restBetweenSetsNum,
         cardioFitnessLevel:  answers.cardioFitnessLevel,
         lastRunData:         lastRunKm ? { distanceKm: lastRunKm, paceMinPerKm: lastRunPace } : undefined,
-      } as any);
+      }); // Bug fix #8: removed erroneous `as any` cast — all fields exist in GeneratePlanPayload
 
       if (!result.workouts && (!result.weeks || !Array.isArray(result.weeks))) {
         throw new Error("מבנה לא תקין");
@@ -400,6 +404,9 @@ export function SportAIPlanner() {
       toast.success("התוכנית מוכנה! 💪");
     } catch (e: any) {
       console.error("Workout plan error:", e);
+      // Bug fix #9: reset progress bar on error so it doesn't show stale state
+      setProgress(0);
+      setProgressLabel("מנתח פרופיל...");
       toast.error("שגיאה ביצירת התוכנית — נסה שוב");
     } finally {
       setLoading(false);
@@ -421,6 +428,25 @@ export function SportAIPlanner() {
       {
         onSuccess: () => toast.success(`"${w.name}" נשמר כתבנית`),
         onError:   (e: any) => toast.error("שגיאה: " + e.message),
+      }
+    );
+  };
+
+  const saveFullPlan = () => {
+    if (!plan) return;
+    savePlan.mutate(
+      {
+        name:       `תוכנית ${new Date().toLocaleDateString("he-IL")}`,
+        goal:       answers.location ?? undefined,
+        split_type: answers.splitType ?? undefined,
+        weeks:      plan.weeks && plan.weeks.length > 0
+                      ? plan.weeks
+                      : [{ week: 1, workouts: plan.workouts ?? [] }],
+        tips:       plan.tips,
+      },
+      {
+        onSuccess: () => toast.success("התוכנית נשמרה! 📋"),
+        onError:   (e: any) => toast.error("שגיאה בשמירה: " + e.message),
       }
     );
   };
@@ -576,13 +602,27 @@ export function SportAIPlanner() {
           {/* Text */}
           {currentStep.inputType === "text" && (
             <div className="space-y-2">
-              <textarea
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                placeholder={currentStep.placeholder}
-                rows={3}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sport/40 resize-none"
-              />
+              {/* Improvement #12: number inputs for run distance / pace */}
+              {(currentStep.key === "lastRunKm" || currentStep.key === "lastRunPace") ? (
+                <input
+                  type="number"
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder={currentStep.placeholder}
+                  min="0"
+                  step="0.1"
+                  inputMode="decimal"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sport/40"
+                />
+              ) : (
+                <textarea
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder={currentStep.placeholder}
+                  rows={3}
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-sport/40 resize-none"
+                />
+              )}
               <button
                 onClick={handleTextNext}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-sport/15 border border-sport/20 text-sport text-xs font-bold hover:bg-sport/25 transition-colors min-h-[44px]"
@@ -702,6 +742,15 @@ export function SportAIPlanner() {
               ))}
             </div>
           )}
+
+          {/* Improvement #11: save full AI plan to workout_plans table */}
+          <button
+            onClick={saveFullPlan}
+            disabled={savePlan.isPending}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-sport/15 border border-sport/20 text-sport text-xs font-bold hover:bg-sport/25 transition-colors disabled:opacity-50"
+          >
+            <BookmarkCheck className="h-3.5 w-3.5" /> שמור תוכנית שלמה
+          </button>
 
           <button
             onClick={reset}

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 const STORAGE_KEY = "sport_welcome_seen";
 // TODO: Replace SPORT_VIDEO_PLACEHOLDER with actual YouTube video ID
 const YOUTUBE_VIDEO_ID = "SPORT_VIDEO_PLACEHOLDER";
+// Bug fix #4: don't render broken iframe when ID is still the placeholder
+const VIDEO_READY = YOUTUBE_VIDEO_ID !== "SPORT_VIDEO_PLACEHOLDER";
 
 export default function SportWelcomeVideo() {
   const [open, setOpen] = useState(false);
@@ -35,16 +37,27 @@ export default function SportWelcomeVideo() {
         </DialogHeader>
 
         <div className="aspect-video w-full mt-2">
-          <iframe
-            width="100%"
-            height="100%"
-            src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}`}
-            title="סרטון הדגמה - מודול ספורט"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="rounded-lg"
-          />
+          {VIDEO_READY ? (
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}`}
+              title="סרטון הדגמה - מודול ספורט"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="rounded-lg"
+            />
+          ) : (
+            /* Bug fix #4: placeholder — show friendly message instead of broken iframe */
+            <div className="w-full h-full rounded-lg bg-white/5 border border-white/10 flex flex-col items-center justify-center gap-3">
+              <span className="text-5xl">🏋️</span>
+              <p className="text-white/60 text-sm text-center px-4">
+                סרטון הדגמה יתווסף בקרוב!<br />
+                <span className="text-white/30 text-xs">בינתיים — חקור את המודול וגלה את כל הפיצ'רים</span>
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col items-center gap-3 mt-2">
