@@ -36,6 +36,10 @@ Deno.serve(async (req) => {
       cardioFitnessLevel,
       lastRunData,
       availableExercises,
+      // AI Planner v5 params
+      goalType,
+      strengthLevel,
+      preferredCardioType,
     } = await req.json();
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
@@ -162,6 +166,19 @@ WORKOUT STRUCTURE RULES (MANDATORY):
       ? `\nחשוב ביותר — השתמש אך ורק בתרגילים מהרשימה הבאה (שמות מדויקים):\n${availableExercises.slice(0, 60).map((e: { name: string }) => e.name).join(", ")}\nאסור להמציא שמות תרגילים שאינם ברשימה.`
       : "";
 
+    // v5 notes
+    const goalTypeNote = goalType
+      ? `\nמטרת אימון ראשית: ${goalType}. כל התוכנית חייבת לשרת מטרה זו.`
+      : "";
+
+    const strengthLevelNote = strengthLevel
+      ? `\nרמת ניסיון בכוח: ${strengthLevel}. התאם עומסים, מספר סטים ומורכבות תרגילים בהתאמה.`
+      : "";
+
+    const preferredCardioNote = preferredCardioType
+      ? `\nסוג אירובי מועדף: ${preferredCardioType}. כלול אימוני אירובי מסוג זה בימי האירובי.`
+      : "";
+
     const preferredMusclesNote = Array.isArray(preferredMuscles) && preferredMuscles.length > 0
       ? `\nשרירים מועדפים (יותר עבודה): ${preferredMuscles.join(', ')}`
       : "";
@@ -182,7 +199,7 @@ WORKOUT STRUCTURE RULES (MANDATORY):
 משך אימון: ${sessionMinutes || 60} דקות
 עוצמה רצויה (1-5): ${intensity || 3}${cardioNote}
 ${blacklistNote}${favoritesNote}${recentWorkoutsNote}${equipmentItemsNote}${preferredMusclesNote}${avoidedMusclesNote}
-אורך תכנית: ${targetWeeks} שבועות. צור בדיוק ${targetWeeks} שבועות.${splitTypeNote}${restNote}${cardioFitnessNote}${availableExercisesNote}
+אורך תכנית: ${targetWeeks} שבועות. צור בדיוק ${targetWeeks} שבועות.${goalTypeNote}${strengthLevelNote}${preferredCardioNote}${splitTypeNote}${restNote}${cardioFitnessNote}${availableExercisesNote}
 שיאים אישיים אחרונים:
 ${(recentPRs || []).map((p: any) => `- ${p.exercise_name}: ${p.value} ${p.unit}`).join("\n") || "אין נתונים"}
 ${libraryBlock ? `\nספריית התרגילים הזמינה (שם | שרירים | ציוד) — בחר רק מרשימה זו:\n${libraryBlock}` : ""}

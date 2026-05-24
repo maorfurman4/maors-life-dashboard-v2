@@ -137,6 +137,10 @@ export interface GeneratePlanPayload {
   cardioFitnessLevel?: string;  // "מתחיל" | "בינוני" | "מתקדם" | "חוזר אחרי הפסקה"
   lastRunData?: { distanceKm?: number; paceMinPerKm?: number };
   availableExercises?: Array<{ name: string; equipment: string[]; muscleGroups: string[]; primaryMuscle: string }>;
+  // AI Planner v5 params:
+  goalType?: string;            // e.g. "עלייה במסת שריר 💪"
+  strengthLevel?: string;       // "מתחיל — פחות משנה" | "בינוני — 1–3 שנים" | "מתקדם — 3+ שנים"
+  preferredCardioType?: string; // "ריצה 🏃" | "אופניים 🚴" | "חתירה 🚣" | "HIIT 🔥" etc.
 }
 
 export async function generateWorkoutPlan(payload: GeneratePlanPayload): Promise<WorkoutPlan> {
