@@ -35,6 +35,7 @@ import exerciseImageUrlsJson from "@/data/exercise-image-urls.json";
 import GymMachineIdentifier from "@/components/sport/GymMachineIdentifier";
 import SportWelcomeVideo from "@/components/sport/SportWelcomeVideo";
 import { SportAIConsultant } from "@/components/sport/SportAIConsultant";
+import { SportAIPlanner } from "@/components/sport/SportAIPlanner";
 
 export const Route = createFileRoute("/_app/sport")({
   component: SportPage,
@@ -3119,8 +3120,9 @@ function WorkoutBuilderTab({
 
       {subTab === "ai" && (
         <div className="space-y-4">
-          {/* ── Step-by-step AI questionnaire ─────────────────────────── */}
-          {!aiPlan && (
+          <SportAIPlanner />
+          {/* ── Legacy inline AI questionnaire (hidden — kept for plan history) ── */}
+          {false && !aiPlan && (
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4" dir="rtl">
             {/* Progress bar */}
             <div className="flex gap-1 mb-4">
