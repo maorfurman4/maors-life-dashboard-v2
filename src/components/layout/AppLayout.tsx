@@ -4,6 +4,7 @@ import { DesktopSidebar } from "./DesktopSidebar";
 import { TopBar } from "./TopBar";
 import { SideNavDrawer } from "./SideNavDrawer";
 import { RootLayout } from "./RootLayout";
+import { NotificationPermission } from "@/components/shared/NotificationPermission";
 
 export function AppLayout() {
   const [navOpen, setNavOpen] = useState(false);
@@ -19,6 +20,7 @@ export function AppLayout() {
           </main>
         </div>
         <SideNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
+        <NotificationPermission />
       </div>
     </RootLayout>
   );
