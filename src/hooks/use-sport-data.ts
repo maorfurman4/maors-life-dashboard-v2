@@ -29,7 +29,13 @@ export function useWeekWorkouts() {
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
-  // Use local date formatting to avoid UTC offset shifting the week start for Israeli users
+  // Use local date formatting to avoid UTC offset shifting the week start for Israeli users.
+  // DST edge case: on the clock-change night (last Friday of March / last Sunday of October in Israel),
+  // setDate() still produces the correct calendar date because it works in local wall-clock time,
+  // but if this function runs within the ambiguous hour (e.g. 01:30 local that gets repeated),
+  // "now" could resolve to a slightly wrong instant. This is unlikely to matter for a weekly
+  // query boundary, but a robust fix would use a dedicated date-fns/date-fns-tz startOfWeek()
+  // with the "Asia/Jerusalem" timezone — deferred to avoid adding a new dependency.
   const startDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, "0")}-${String(startOfWeek.getDate()).padStart(2, "0")}`;
 
   return useQuery({
@@ -361,8 +367,9 @@ export function useBodyProgress() {
         .order("date", { ascending: false })
         .limit(60);
       if (error) throw error;
-      // Generate 24h signed URLs for the private bucket
-      const photos = await Promise.all(
+      // Generate 24h signed URLs for the private bucket.
+      // Promise.allSettled ensures one failed URL signing doesn't break the entire list.
+      const results = await Promise.allSettled(
         (data || []).map(async (p: any) => {
           if (!p.photo_url) return { ...p, signedUrl: "" };
           const { data: s } = await supabase.storage
@@ -370,6 +377,9 @@ export function useBodyProgress() {
             .createSignedUrl(p.photo_url, 86400);
           return { ...p, signedUrl: s?.signedUrl ?? "" };
         })
+      );
+      const photos = results.map((result, i) =>
+        result.status === "fulfilled" ? result.value : { ...(data || [])[i], signedUrl: "" }
       );
       return photos;
     },
