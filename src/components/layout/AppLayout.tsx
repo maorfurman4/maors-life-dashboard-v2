@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Outlet } from "@tanstack/react-router";
+import { Outlet, useLocation } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { DesktopSidebar } from "./DesktopSidebar";
 import { TopBar } from "./TopBar";
 import { SideNavDrawer } from "./SideNavDrawer";
@@ -7,6 +8,7 @@ import { RootLayout } from "./RootLayout";
 
 export function AppLayout() {
   const [navOpen, setNavOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <RootLayout>
@@ -14,8 +16,19 @@ export function AppLayout() {
         <DesktopSidebar />
         <div className="flex-1 flex flex-col min-h-screen min-w-0">
           <TopBar onMenuOpen={() => setNavOpen(true)} />
-          <main id="main-content" role="main" aria-label="תוכן ראשי" className="flex-1 p-3 md:p-6 pt-[104px] md:pt-[112px]">
-            <Outlet />
+          <main id="main-content" role="main" aria-label="תוכן ראשי" className="flex-1 p-3 md:p-6 pt-[104px] md:pt-[112px] flex flex-col">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
           </main>
         </div>
         <SideNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
