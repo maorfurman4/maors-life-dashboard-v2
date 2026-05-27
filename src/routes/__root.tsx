@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { IncompleteOnboardingModal } from "@/components/onboarding/IncompleteOnboardingModal";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
+import { OfflineIndicator } from "@/components/shared/OfflineIndicator";
 
 // ─── Global Error Boundary ───────────────────────────────────────────────────
 
@@ -100,6 +101,7 @@ function RootComponent() {
     <GlobalErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <OfflineIndicator />
           <Outlet />
           <Toaster />
           <IncompleteOnboardingModal />

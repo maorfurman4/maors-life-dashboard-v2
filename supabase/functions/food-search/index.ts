@@ -49,6 +49,7 @@ async function translateToHebrew(names: string[]): Promise<string[]> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        // Model: gpt-4o-mini — used for simple text translation (food names)
         model: "gpt-4o-mini",
         messages: [
           {
@@ -115,6 +116,7 @@ async function estimateWithAI(query: string): Promise<FoodResult[]> {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
+        // Model: gpt-4o-mini — used for simple nutritional estimation (short response)
         model: "gpt-4o-mini",
         max_tokens: 200,
         messages: [

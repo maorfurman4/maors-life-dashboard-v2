@@ -28,7 +28,8 @@ ${(previousMonths || []).map((m: any) => `- ${m.label}: הכנסות ₪${m.inco
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        // Model: gpt-4o — used for complex financial analysis and multi-month comparisons
+        model: "gpt-4o",
         messages: [
           { role: "system", content: "אתה יועץ פיננסי אישי בישראל. דבר בעברית, תן עצות מעשיות וקצרות." },
           { role: "user", content: userPrompt },

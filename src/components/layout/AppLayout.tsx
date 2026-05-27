@@ -7,6 +7,7 @@ import { SideNavDrawer } from "./SideNavDrawer";
 import { RootLayout } from "./RootLayout";
 import { FloatingChatButton } from "@/components/ai-chat/FloatingChatButton";
 import { XPBar } from "@/components/gamification/XPBar";
+import { NotificationPermission } from "@/components/shared/NotificationPermission";
 
 export function AppLayout() {
   const [navOpen, setNavOpen] = useState(false);
@@ -35,6 +36,7 @@ export function AppLayout() {
         </div>
         <SideNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
         <FloatingChatButton />
+        <NotificationPermission />
       </div>
     </RootLayout>
   );
