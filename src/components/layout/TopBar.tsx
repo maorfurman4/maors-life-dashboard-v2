@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { mainNavItems, settingsNavItem } from "@/lib/navigation";
 import { Menu } from "lucide-react";
@@ -6,9 +7,10 @@ const allItems = [...mainNavItems, settingsNavItem];
 
 interface TopBarProps {
   onMenuOpen: () => void;
+  xpBar?: ReactNode;
 }
 
-export function TopBar({ onMenuOpen }: TopBarProps) {
+export function TopBar({ onMenuOpen, xpBar }: TopBarProps) {
   const location = useLocation();
 
   const current = allItems.find((item) =>
@@ -44,6 +46,13 @@ export function TopBar({ onMenuOpen }: TopBarProps) {
             {current?.displayLabel ?? current?.label ?? ""}
           </h1>
         </div>
+
+        {/* XP Bar — left side (physical left = end in RTL), pointer-events-auto */}
+        {xpBar && (
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-auto">
+            {xpBar}
+          </div>
+        )}
       </div>
     </header>
   );

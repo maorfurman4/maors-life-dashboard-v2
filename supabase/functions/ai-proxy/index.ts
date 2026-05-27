@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
+        // Model: gpt-4o for vision tasks, gpt-4o-mini for simple text generation
         model: isVision ? "gpt-4o" : "gpt-4o-mini",
         max_tokens: isVision ? 800 : 2500,
         messages: [{ role: "user", content }],

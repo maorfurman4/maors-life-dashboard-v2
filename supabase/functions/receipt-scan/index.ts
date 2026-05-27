@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
+        // Model: gpt-4o — used for vision analysis (receipt image OCR and parsing)
         model: "gpt-4o",
         messages: [
           {
