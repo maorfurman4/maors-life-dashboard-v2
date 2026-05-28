@@ -35,6 +35,7 @@ import exerciseImageUrlsJson from "@/data/exercise-image-urls.json";
 import GymMachineIdentifier from "@/components/sport/GymMachineIdentifier";
 import SportWelcomeVideo from "@/components/sport/SportWelcomeVideo";
 import { SportAIConsultant } from "@/components/sport/SportAIConsultant";
+import { HealthImport } from "@/components/sport/HealthImport";
 import { SportAIPlanner } from "@/components/sport/SportAIPlanner";
 
 export const Route = createFileRoute("/_app/sport")({
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/_app/sport")({
 });
 
 // ─── types ───────────────────────────────────────────────────────────────────
-type Tab = "dashboard" | "builder" | "library" | "running" | "progress";
+type Tab = "dashboard" | "builder" | "library" | "running" | "progress" | "import";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "dashboard", label: "בית"        },
@@ -50,6 +51,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "library",   label: "ספרייה"     },
   { key: "running",   label: "🏅 אירובי"  },
   { key: "progress",  label: "התקדמות"    },
+  { key: "import",    label: "ייבוא בריאות" },
 ];
 
 // ─── Quick-Add workout definitions ───────────────────────────────────────────
@@ -6999,6 +7001,7 @@ function SportPage() {
           )}
           {activeTab === "running"  && <CardioTab />}
           {activeTab === "progress" && <ProgressTab />}
+          {activeTab === "import"   && <HealthImport />}
         </div>
       </div>
 

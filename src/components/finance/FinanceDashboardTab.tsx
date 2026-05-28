@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, Minus, Check, X, RotateCcw, Sparkles, CreditCard as CardIcon, TrendingUp, TrendingDown, Target, Pencil, Archive } from "lucide-react";
+import { FinanceExportButton } from "@/components/finance/FinanceExportButton";
 import {
   useMonthlyFinance,
   useAddExpense,
@@ -852,8 +853,9 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
 
   return (
     <div className="space-y-4">
-      {/* Close Month button */}
-      <div className="flex justify-end">
+      {/* Close Month button + Export */}
+      <div className="flex justify-end gap-2">
+        <FinanceExportButton year={year} month={month} />
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">

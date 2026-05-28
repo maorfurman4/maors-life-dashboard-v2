@@ -8,6 +8,7 @@ import { RootLayout } from "./RootLayout";
 import { FloatingChatButton } from "@/components/ai-chat/FloatingChatButton";
 import { XPBar } from "@/components/gamification/XPBar";
 import { NotificationPermission } from "@/components/shared/NotificationPermission";
+import { PWAInstallPrompt } from "@/components/shared/PWAInstallPrompt";
 
 export function AppLayout() {
   const [navOpen, setNavOpen] = useState(false);
@@ -37,6 +38,7 @@ export function AppLayout() {
         <SideNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
         <FloatingChatButton />
         <NotificationPermission />
+        <PWAInstallPrompt />
       </div>
     </RootLayout>
   );

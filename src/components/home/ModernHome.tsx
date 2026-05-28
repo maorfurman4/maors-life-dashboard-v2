@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { CategoryCube } from "./CategoryCube";
 import { HomeSkeleton } from "@/components/shared/skeletons/HomeSkeleton";
 import { WeatherMini } from "./WeatherMini";
+import { WeeklyAIBrief } from "./WeeklyAIBrief";
 import { AddWorkoutDrawer } from "@/components/sport/AddWorkoutDrawer";
 import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
 import { AddExpenseDrawer } from "@/components/finance/AddExpenseDrawer";
@@ -93,6 +94,9 @@ export function ModernHome() {
           </div>
           <WeatherMini />
         </div>
+
+        {/* Weekly AI Brief (Sundays only) */}
+        <WeeklyAIBrief />
 
         {/* 2×2 category grid */}
         <div className="grid grid-cols-2 gap-3">
