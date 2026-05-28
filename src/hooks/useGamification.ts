@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { xpToLevel, levelProgress, type AchievementKey } from "@/lib/gamification";
+import { haptics } from "@/lib/haptics";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -110,6 +111,7 @@ export function useGamification() {
       return { newXp, newLevel, prevLevel: level };
     },
     onSuccess: () => {
+      haptics.heavy();
       qc.invalidateQueries({ queryKey: ["user-xp", userId] });
     },
   });

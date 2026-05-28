@@ -14,6 +14,7 @@ import { NutritionJournalTab } from "@/components/nutrition/NutritionJournalTab"
 import { NutritionCulinaryTab } from "@/components/nutrition/NutritionCulinaryTab";
 import { NutritionWeeklySummary } from "@/components/nutrition/NutritionWeeklySummary";
 import { NutritionWeeklyMealPlan } from "@/components/nutrition/NutritionWeeklyMealPlan";
+import { FavoriteMealsQuickAdd } from "@/components/nutrition/FavoriteMealsQuickAdd";
 import { recognizeMeal, type MealRecognitionResult } from "@/lib/ai-service";
 import { compressImageToBase64 } from "@/lib/image-utils";
 import { AIConfirmationCard } from "@/components/nutrition/AIConfirmationCard";
@@ -265,6 +266,9 @@ function NutritionPage() {
         ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "dashboard" && (
           <div className="px-4 pt-8 space-y-4">
+
+            {/* ── Favorite Meals Quick Add ── */}
+            <FavoriteMealsQuickAdd />
 
             {/* ── Main Macro Glass Panel ── */}
             <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5">

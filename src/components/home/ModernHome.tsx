@@ -11,6 +11,7 @@ import { AddExpenseDrawer } from "@/components/finance/AddExpenseDrawer";
 import { AddShiftDrawer } from "@/components/work/AddShiftDrawer";
 import { HomeBalanceCard } from "./HomeBalanceCard";
 import { QuickExpenseButtons } from "@/components/finance/QuickExpenseButtons";
+import { FavoriteMealsQuickAdd } from "@/components/nutrition/FavoriteMealsQuickAdd";
 
 const BG_IMAGE =
   "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1400&q=80";
@@ -103,6 +104,11 @@ export function ModernHome() {
         {/* Balance Card */}
         <div className="mb-3">
           <HomeBalanceCard />
+        </div>
+
+        {/* Favorite Meals Quick Add */}
+        <div className="mb-4">
+          <FavoriteMealsQuickAdd />
         </div>
 
         {/* Quick Expense Buttons */}

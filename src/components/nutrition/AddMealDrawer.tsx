@@ -3,6 +3,7 @@ import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { Loader2, Plus, UtensilsCrossed, Search, ScanBarcode } from "lucide-react";
 import { useAddNutrition } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 import { MealPhotoCapture } from "./MealPhotoCapture";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { supabase } from "@/integrations/supabase/client";
@@ -154,7 +155,7 @@ export function AddMealDrawer({
         fat_g: fat ? parseFloat(fat) : undefined,
       },
       {
-        onSuccess: () => { toast.success("ארוחה נשמרה!"); resetForm(); onClose(); },
+        onSuccess: () => { haptics.success(); toast.success("ארוחה נשמרה!"); resetForm(); onClose(); },
         onError: (err) => toast.error("שגיאה: " + err.message),
       }
     );
