@@ -99,7 +99,7 @@ export function useFavoriteMeals() {
       return meal;
     },
     onSuccess: (meal) => {
-      qc.invalidateQueries({ queryKey: ["nutrition-entries"] });
+      qc.invalidateQueries({ queryKey: ["nutrition-entries", userId] });
       toast.success(`✓ ${meal.name} נרשם — ${meal.calories ?? 0} קל`);
     },
     onError: (err: Error) => toast.error("שגיאה: " + err.message),
