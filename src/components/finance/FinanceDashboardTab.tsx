@@ -30,6 +30,8 @@ import { FinanceTransactions } from "@/components/finance/FinanceTransactions";
 import { FinanceSavingsGoals } from "@/components/finance/FinanceSavingsGoals";
 import { FinanceBillSplit } from "@/components/finance/FinanceBillSplit";
 import { FinanceAIForecast } from "@/components/finance/FinanceAIForecast";
+import { QuickExpenseButtons } from "@/components/finance/QuickExpenseButtons";
+import { WeeklyExpenseChart } from "@/components/finance/WeeklyExpenseChart";
 
 const fmt = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
 
@@ -901,6 +903,12 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
         month={month}
         year={year}
       />
+
+      {/* Quick Expense Buttons */}
+      <QuickExpenseButtons />
+
+      {/* Weekly Expense Chart */}
+      <WeeklyExpenseChart />
 
       {/* Health Score + Goal Rings */}
       <div
