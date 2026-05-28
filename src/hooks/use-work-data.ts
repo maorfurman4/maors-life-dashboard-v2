@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { calcMonthlyPayslip, DEFAULT_PAYROLL_SETTINGS, type PayrollSettings, type ShiftRow } from "@/lib/payroll-engine";
 import { useMemo } from "react";
 import { toast } from "sonner";
@@ -13,13 +14,16 @@ async function getUserId() {
 
 // ─── Work Shifts ───
 export function useWorkShifts(year: number, month: number) {
+  const { user } = useAuth();
+  const userId = user?.id;
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const endDate = month === 12
     ? `${year + 1}-01-01`
     : `${year}-${String(month + 1).padStart(2, "0")}-01`;
 
   return useQuery({
-    queryKey: ["work-shifts", year, month],
+    queryKey: ["work-shifts", userId, year, month],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("work_shifts")
@@ -34,6 +38,8 @@ export function useWorkShifts(year: number, month: number) {
 }
 
 export function useAddShift() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (shift: {
@@ -45,49 +51,56 @@ export function useAddShift() {
       hours: number | null;
       notes: string | null;
     }) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { error } = await supabase.from("work_shifts").insert({
         ...shift,
-        user_id: userId,
+        user_id: uid,
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["work-shifts"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["work-shifts", userId] }),
   });
 }
 
 export function useUpdateShift() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<ShiftRow>) => {
       const { error } = await supabase.from("work_shifts").update(updates).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["work-shifts"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["work-shifts", userId] }),
   });
 }
 
 export function useDeleteShift() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("work_shifts").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["work-shifts"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["work-shifts", userId] }),
   });
 }
 
 // ─── User Settings (payroll-related) ───
 export function usePayrollSettings() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["payroll-settings"],
+    queryKey: ["payroll-settings", userId],
+    enabled: !!userId,
     queryFn: async () => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { data, error } = await supabase
         .from("user_settings")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .maybeSingle();
       if (error) throw error;
       if (!data) return DEFAULT_PAYROLL_SETTINGS;
@@ -114,25 +127,29 @@ export function usePayrollSettings() {
 }
 
 export function useSavePayrollSettings() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (settings: Partial<PayrollSettings>) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { error } = await supabase
         .from("user_settings")
-        .upsert({ user_id: userId, ...settings }, { onConflict: "user_id" });
+        .upsert({ user_id: uid, ...settings }, { onConflict: "user_id" });
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["payroll-settings"] });
-      qc.invalidateQueries({ queryKey: ["finance-settings"] });
-      qc.invalidateQueries({ queryKey: ["user-settings"] });
+      qc.invalidateQueries({ queryKey: ["payroll-settings", userId] });
+      qc.invalidateQueries({ queryKey: ["finance-settings", userId] });
+      qc.invalidateQueries({ queryKey: ["user-settings", userId] });
     },
   });
 }
 
 // ─── Batch Add Shifts ───
 export function useBatchAddShifts() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (shifts: Array<{
@@ -152,7 +169,7 @@ export function useBatchAddShifts() {
       if (error) throw error;
     },
     onSuccess: (_, shifts) => {
-      qc.invalidateQueries({ queryKey: ["work-shifts"] });
+      qc.invalidateQueries({ queryKey: ["work-shifts", userId] });
       toast.success(`${shifts.length} משמרות נוספו בהצלחה ✅`);
     },
     onError: () => {
@@ -163,8 +180,11 @@ export function useBatchAddShifts() {
 
 // ─── Work Month History ───
 export function useWorkMonthHistory() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["work-monthly-history"],
+    queryKey: ["work-monthly-history", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
@@ -181,6 +201,8 @@ export function useWorkMonthHistory() {
 }
 
 export function useArchiveWorkMonth() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (args: {
@@ -209,7 +231,7 @@ export function useArchiveWorkMonth() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["work-monthly-history"] });
+      qc.invalidateQueries({ queryKey: ["work-monthly-history", userId] });
       toast.success("חודש העבודה נשמר בהיסטוריה ✅");
     },
     onError: () => {
@@ -219,6 +241,8 @@ export function useArchiveWorkMonth() {
 }
 
 export function useDeleteWorkMonthHistory() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
@@ -229,7 +253,7 @@ export function useDeleteWorkMonthHistory() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["work-monthly-history"] });
+      qc.invalidateQueries({ queryKey: ["work-monthly-history", userId] });
       toast.success("הרשומה נמחקה");
     },
     onError: () => toast.error("שגיאה במחיקה"),

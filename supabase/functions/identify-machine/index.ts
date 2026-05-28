@@ -12,30 +12,36 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) throw new Error("OPENAI_API_KEY not set");
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        // Model: gpt-4o — used for vision analysis (image_url content)
-        model: "gpt-4o",
-        max_tokens: 512,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}`,
-                  detail: "low",
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    let response: Response;
+    try {
+      response = await fetch("https://api.openai.com/v1/chat/completions", {
+        signal: controller.signal,
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          // Model: gpt-4o — used for vision analysis (image_url content)
+          model: "gpt-4o",
+          max_tokens: 512,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}`,
+                    detail: "low",
+                  },
                 },
-              },
-              {
-                type: "text",
-                text: `You are a personal trainer. Identify this gym machine.
+                {
+                  type: "text",
+                  text: `You are a personal trainer. Identify this gym machine.
 Target muscle group: ${muscleGroup}
 
 Respond ONLY with valid JSON (no markdown):
@@ -46,12 +52,23 @@ Respond ONLY with valid JSON (no markdown):
 }
 
 equipmentKeywords should match Hebrew equipment terms used in Israeli gyms (e.g. "כבל", "מכבש", "ספסל").`,
-              },
-            ],
-          },
-        ],
-      }),
-    });
+                },
+              ],
+            },
+          ],
+        }),
+      });
+      clearTimeout(timeout);
+    } catch (e) {
+      clearTimeout(timeout);
+      if ((e as Error).name === 'AbortError') {
+        return new Response(JSON.stringify({ error: 'AI request timed out' }), {
+          status: 504,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw e;
+    }
 
     if (!response.ok) {
       const t = await response.text();
@@ -62,7 +79,16 @@ equipmentKeywords should match Hebrew equipment terms used in Israeli gyms (e.g.
     const data = await response.json();
     const content = data?.choices?.[0]?.message?.content ?? "{}";
     const clean = content.replace(/```json?\n?/g, "").replace(/```\n?/g, "").trim();
-    const parsed = JSON.parse(clean);
+    let parsed;
+    try {
+      parsed = JSON.parse(clean);
+    } catch (e) {
+      console.error('Failed to parse OpenAI response:', content);
+      return new Response(JSON.stringify({ error: 'AI response was not valid JSON' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

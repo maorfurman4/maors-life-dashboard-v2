@@ -87,7 +87,15 @@ Deno.serve(async (req) => {
 
     const data = await res.json();
     const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
-    const args = toolCall ? JSON.parse(toolCall.function.arguments) : null;
+    let args = null;
+    if (toolCall) {
+      try {
+        args = JSON.parse(toolCall.function.arguments);
+      } catch (e) {
+        console.error('Failed to parse OpenAI tool call arguments:', toolCall.function.arguments);
+        return errResponse('AI response was not valid JSON');
+      }
+    }
     const items = (args?.items ?? []).filter((i: any) => i.name && i.amount > 0);
 
     return new Response(JSON.stringify({ items }), {

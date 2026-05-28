@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 // ─── Local-date helpers (avoids UTC-offset bugs for Israeli users UTC+2/+3) ───
@@ -23,8 +24,11 @@ async function getUserId() {
 
 // ─── Workouts ───
 export function useWorkouts(limit = 20) {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["workouts", limit],
+    queryKey: ["workouts", userId, limit],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("workouts")
@@ -38,6 +42,8 @@ export function useWorkouts(limit = 20) {
 }
 
 export function useWeekWorkouts() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
@@ -51,7 +57,8 @@ export function useWeekWorkouts() {
   const startDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, "0")}-${String(startOfWeek.getDate()).padStart(2, "0")}`;
 
   return useQuery({
-    queryKey: ["workouts-week", startDate],
+    queryKey: ["workouts-week", userId, startDate],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("workouts")
@@ -65,6 +72,8 @@ export function useWeekWorkouts() {
 }
 
 export function useAddWorkout() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (workout: {
@@ -125,13 +134,15 @@ export function useAddWorkout() {
       return workoutRow;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["workouts"] });
-      qc.invalidateQueries({ queryKey: ["workouts-week"] });
+      qc.invalidateQueries({ queryKey: ["workouts", userId] });
+      qc.invalidateQueries({ queryKey: ["workouts-week", userId] });
     },
   });
 }
 
 export function useDeleteWorkout() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
@@ -139,13 +150,15 @@ export function useDeleteWorkout() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["workouts"] });
-      qc.invalidateQueries({ queryKey: ["workouts-week"] });
+      qc.invalidateQueries({ queryKey: ["workouts", userId] });
+      qc.invalidateQueries({ queryKey: ["workouts-week", userId] });
     },
   });
 }
 
 export function useUpdateWorkout() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, notes, duration_minutes }: { id: string; notes?: string; duration_minutes?: number }) => {
@@ -156,17 +169,20 @@ export function useUpdateWorkout() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["workouts"] });
-      qc.invalidateQueries({ queryKey: ["workouts-week"] });
-      qc.invalidateQueries({ queryKey: ["workout-history"] });
+      qc.invalidateQueries({ queryKey: ["workouts", userId] });
+      qc.invalidateQueries({ queryKey: ["workouts-week", userId] });
+      qc.invalidateQueries({ queryKey: ["workout-history", userId] });
     },
   });
 }
 
 // ─── Workout Templates ───
 export function useWorkoutTemplates() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["workout-templates"],
+    queryKey: ["workout-templates", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("workout_templates")
@@ -182,8 +198,11 @@ export function useWorkoutTemplates() {
 
 // ─── Workout Streak ───
 export function useWorkoutStreak() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["workout-streak"],
+    queryKey: ["workout-streak", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
@@ -217,14 +236,17 @@ export function useWorkoutStreak() {
 }
 
 export function useWorkoutHistory() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["workout-history"],
+    queryKey: ["workout-history", userId],
+    enabled: !!userId,
     queryFn: async () => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { data, error } = await supabase
         .from("workouts")
         .select("id, date, category, duration_minutes, calories_burned, notes, template_id, workout_exercises(id, name, sets, reps, weight_kg)")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .order("date", { ascending: false })
         .limit(20);
       if (error) throw error;
@@ -234,6 +256,8 @@ export function useWorkoutHistory() {
 }
 
 export function useAddWorkoutTemplate() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (template: {
@@ -256,22 +280,26 @@ export function useAddWorkoutTemplate() {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-templates"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-templates", userId] }),
   });
 }
 
 export function useDeleteWorkoutTemplate() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("workout_templates").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-templates"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-templates", userId] }),
   });
 }
 
 export function useUpdateWorkoutTemplate() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, exercises }: { id: string; exercises: { name: string; sets: number; reps: number; weight_kg: number }[] }) => {
@@ -281,14 +309,17 @@ export function useUpdateWorkoutTemplate() {
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-templates"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-templates", userId] }),
   });
 }
 
 // ─── Weight Entries ───
 export function useWeightEntries(limit = 30) {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["weight-entries", limit],
+    queryKey: ["weight-entries", userId, limit],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("weight_entries")
@@ -302,54 +333,63 @@ export function useWeightEntries(limit = 30) {
 }
 
 export function useAddWeight() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (entry: { weight_kg: number; date?: string; notes?: string }) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const date = entry.date || new Date().toISOString().slice(0, 10);
       // upsert: if entry exists for this date, update weight instead of failing
       const { error } = await supabase.from("weight_entries").upsert(
-        { user_id: userId, weight_kg: entry.weight_kg, date, notes: entry.notes || null },
+        { user_id: uid, weight_kg: entry.weight_kg, date, notes: entry.notes || null },
         { onConflict: "user_id,date" }
       );
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["weight-entries"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["weight-entries", userId] }),
   });
 }
 
 export function useDeleteWeight() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("weight_entries").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["weight-entries"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["weight-entries", userId] }),
   });
 }
 
 export function useUpdateWeight() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, weight_kg }: { id: string; weight_kg: number }) => {
       const { error } = await supabase.from("weight_entries").update({ weight_kg }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["weight-entries"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["weight-entries", userId] }),
   });
 }
 
 // ─── Running History ───
 export function useRunHistory(limit = 20) {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["run-history", limit],
+    queryKey: ["run-history", userId, limit],
+    enabled: !!userId,
     queryFn: async () => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { data, error } = await supabase
         .from("workouts")
         .select("*, workout_runs(*)")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .eq("category", "running")
         .order("date", { ascending: false })
         .limit(limit);
@@ -368,14 +408,17 @@ export function useRunHistory(limit = 20) {
 
 // ─── Body Progress ───
 export function useBodyProgress() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["body-progress"],
+    queryKey: ["body-progress", userId],
+    enabled: !!userId,
     queryFn: async () => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { data, error } = await supabase
         .from("body_progress")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .order("date", { ascending: false })
         .limit(60);
       if (error) throw error;
@@ -399,6 +442,8 @@ export function useBodyProgress() {
 }
 
 export function useAddBodyProgress() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -431,12 +476,14 @@ export function useAddBodyProgress() {
         throw dbErr;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["body-progress"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["body-progress", userId] }),
     onError:   (e: Error) => toast.error("שגיאה בהעלאת תמונה: " + e.message),
   });
 }
 
 export function useDeleteBodyProgress() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, photoPath }: { id: string; photoPath?: string }) => {
@@ -446,7 +493,7 @@ export function useDeleteBodyProgress() {
       const { error } = await supabase.from("body_progress").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["body-progress"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["body-progress", userId] }),
     onError:   (e: Error) => toast.error("שגיאה במחיקה: " + e.message),
   });
 }
@@ -456,9 +503,12 @@ const toLocalDateStr = _localDateStr;
 
 // ─── Nutrition Entries ───
 export function useNutritionEntries(date?: string) {
+  const { user } = useAuth();
+  const userId = user?.id;
   const targetDate = date || toLocalDateStr();
   return useQuery({
-    queryKey: ["nutrition-entries", targetDate],
+    queryKey: ["nutrition-entries", userId, targetDate],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("nutrition_entries")
@@ -472,6 +522,8 @@ export function useNutritionEntries(date?: string) {
 }
 
 export function useAddNutrition() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (entry: {
@@ -498,26 +550,31 @@ export function useAddNutrition() {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["nutrition-entries"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["nutrition-entries", userId] }),
   });
 }
 
 export function useDeleteNutrition() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("nutrition_entries").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["nutrition-entries"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["nutrition-entries", userId] }),
   });
 }
 
 // ─── Water Entries ───
 export function useWaterEntry(date?: string) {
+  const { user } = useAuth();
+  const userId = user?.id;
   const targetDate = date || toLocalDateStr();
   return useQuery({
-    queryKey: ["water-entry", targetDate],
+    queryKey: ["water-entry", userId, targetDate],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("water_entries")
@@ -531,15 +588,17 @@ export function useWaterEntry(date?: string) {
 }
 
 export function useUpsertWater() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ glasses, date }: { glasses: number; date?: string }) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const targetDate = date || toLocalDateStr();
       const { data: existing } = await supabase
         .from("water_entries")
         .select("id")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .eq("date", targetDate)
         .maybeSingle();
 
@@ -548,14 +607,14 @@ export function useUpsertWater() {
         if (error) throw error;
       } else {
         const { error } = await supabase.from("water_entries").insert({
-          user_id: userId,
+          user_id: uid,
           glasses,
           date: targetDate,
         });
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["water-entry"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["water-entry", userId] }),
   });
 }
 
@@ -563,17 +622,19 @@ export function useUpsertWater() {
 // New UI uses ml amounts (+500, +750, +1500) instead of glass counts.
 // The `glasses` column is repurposed as total_ml_consumed for the day.
 export function useAddWaterMl() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ addMl, currentMl, date }: { addMl: number; currentMl: number; date?: string }) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const targetDate = date || toLocalDateStr();
       const newMl = Math.max(0, currentMl + addMl);
 
       const { data: existing } = await supabase
         .from("water_entries")
         .select("id")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .eq("date", targetDate)
         .maybeSingle();
 
@@ -586,18 +647,21 @@ export function useAddWaterMl() {
       } else {
         const { error } = await supabase
           .from("water_entries")
-          .insert({ user_id: userId, glasses: newMl, date: targetDate });
+          .insert({ user_id: uid, glasses: newMl, date: targetDate });
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["water-entry"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["water-entry", userId] }),
   });
 }
 
 // ─── Stock Holdings ───
 export function useStockHoldings() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["stock-holdings"],
+    queryKey: ["stock-holdings", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_holdings")
@@ -610,6 +674,8 @@ export function useStockHoldings() {
 }
 
 export function useAddStockHolding() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (holding: {
@@ -630,25 +696,30 @@ export function useAddStockHolding() {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["stock-holdings"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["stock-holdings", userId] }),
   });
 }
 
 export function useDeleteStockHolding() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("stock_holdings").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["stock-holdings"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["stock-holdings", userId] }),
   });
 }
 
 // ─── Personal Records ───
 export function usePersonalRecords() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["personal-records"],
+    queryKey: ["personal-records", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("personal_records")
@@ -661,6 +732,8 @@ export function usePersonalRecords() {
 }
 
 export function useAddPersonalRecord() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (pr: {
@@ -683,29 +756,33 @@ export function useAddPersonalRecord() {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["personal-records"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["personal-records", userId] }),
   });
 }
 
 export function useUpdatePersonalRecord() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, value }: { id: string; value: number }) => {
       const { error } = await supabase.from("personal_records").update({ value }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["personal-records"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["personal-records", userId] }),
   });
 }
 
 export function useDeletePersonalRecord() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("personal_records").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["personal-records"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["personal-records", userId] }),
   });
 }
 
@@ -714,17 +791,20 @@ export function useDeletePersonalRecord() {
 const _isoWeekStart = _israeliWeekStart;
 
 export function useWeeklyVolume(weeksBack = 8) {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["weekly-volume", weeksBack],
+    queryKey: ["weekly-volume", userId, weeksBack],
+    enabled: !!userId,
     queryFn: async () => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - weeksBack * 7);
 
       const { data, error } = await supabase
         .from("workouts")
         .select("date, workout_exercises(weight_kg, reps, sets)")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .gte("date", cutoff.toISOString().slice(0, 10))
         .order("date", { ascending: true });
       if (error) throw error;
@@ -763,8 +843,11 @@ export function useWeeklyVolume(weeksBack = 8) {
 
 // ─── Favorite Meals ───
 export function useFavoriteMeals() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["favorite-meals"],
+    queryKey: ["favorite-meals", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("favorite_meals")
@@ -777,6 +860,8 @@ export function useFavoriteMeals() {
 }
 
 export function useAddFavoriteMeal() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (meal: {
@@ -797,31 +882,36 @@ export function useAddFavoriteMeal() {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["favorite-meals"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["favorite-meals", userId] }),
   });
 }
 
 export function useDeleteFavoriteMeal() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("favorite_meals").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["favorite-meals"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["favorite-meals", userId] }),
   });
 }
 
 // ─── User Settings ───
 export function useUserSettings() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["user-settings"],
+    queryKey: ["user-settings", userId],
+    enabled: !!userId,
     queryFn: async () => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { data, error } = await supabase
         .from("user_settings")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -831,17 +921,19 @@ export function useUserSettings() {
 
 // Alias for generic settings updates (used by settings components)
 export function useUpdateUserSettings() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (settings: Record<string, unknown>) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { error } = await (supabase as any)
         .from("user_settings")
-        .upsert({ user_id: userId, ...settings }, { onConflict: "user_id" });
+        .upsert({ user_id: uid, ...settings }, { onConflict: "user_id" });
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["user-settings"] });
+      qc.invalidateQueries({ queryKey: ["user-settings", userId] });
     },
     onError: (e: Error) => {
       toast.error("שגיאה בשמירת ההגדרות: " + e.message);
@@ -850,6 +942,8 @@ export function useUpdateUserSettings() {
 }
 
 export function useSaveUserSettings() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (settings: Partial<{
@@ -879,9 +973,9 @@ export function useSaveUserSettings() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["user-settings"] });
-      qc.invalidateQueries({ queryKey: ["payroll-settings"] });
-      qc.invalidateQueries({ queryKey: ["finance-settings"] });
+      qc.invalidateQueries({ queryKey: ["user-settings", userId] });
+      qc.invalidateQueries({ queryKey: ["payroll-settings", userId] });
+      qc.invalidateQueries({ queryKey: ["finance-settings", userId] });
     },
   });
 }

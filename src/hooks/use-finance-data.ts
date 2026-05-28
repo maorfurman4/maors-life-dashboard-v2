@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMonthlyPayslip } from "@/hooks/use-work-data";
+import { useAuth } from "@/hooks/use-auth";
 import { useMemo } from "react";
 import { toast } from "sonner";
 
@@ -47,11 +48,14 @@ export const INCOME_CATEGORIES = [
 
 // ─── Expense Entries ───
 export function useExpenseEntries(year: number, month: number) {
+  const { user } = useAuth();
+  const userId = user?.id;
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const endDate = month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, "0")}-01`;
 
   return useQuery({
-    queryKey: ["expense-entries", year, month],
+    queryKey: ["expense-entries", userId, year, month],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("expense_entries")
@@ -66,6 +70,8 @@ export function useExpenseEntries(year: number, month: number) {
 }
 
 export function useAddExpense() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (expense: {
@@ -80,35 +86,40 @@ export function useAddExpense() {
       exchange_rate?: number;
       original_amount?: number;
     }) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { error } = await supabase.from("expense_entries").insert({
         ...expense,
-        user_id: userId,
+        user_id: uid,
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense-entries"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense-entries", userId] }),
   });
 }
 
 export function useDeleteExpense() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("expense_entries").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense-entries"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense-entries", userId] }),
   });
 }
 
 // ─── Income Entries ───
 export function useIncomeEntries(year: number, month: number) {
+  const { user } = useAuth();
+  const userId = user?.id;
   const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
   const endDate = month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, "0")}-01`;
 
   return useQuery({
-    queryKey: ["income-entries", year, month],
+    queryKey: ["income-entries", userId, year, month],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("income_entries")
@@ -123,6 +134,8 @@ export function useIncomeEntries(year: number, month: number) {
 }
 
 export function useAddIncome() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (income: {
@@ -132,33 +145,38 @@ export function useAddIncome() {
       date: string;
       source?: string;
     }) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { error } = await supabase.from("income_entries").insert({
         ...income,
         source: income.source || "manual",
-        user_id: userId,
+        user_id: uid,
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["income-entries"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["income-entries", userId] }),
   });
 }
 
 export function useDeleteIncome() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("income_entries").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["income-entries"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["income-entries", userId] }),
   });
 }
 
 // ─── Fixed Expenses ───
 export function useFixedExpenses() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["fixed-expenses"],
+    queryKey: ["fixed-expenses", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fixed_expenses")
@@ -171,6 +189,8 @@ export function useFixedExpenses() {
 }
 
 export function useAddFixedExpense() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (expense: {
@@ -182,43 +202,50 @@ export function useAddFixedExpense() {
       is_recurring?: boolean;
       notes?: string | null;
     }) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { error } = await supabase.from("fixed_expenses").insert({
         ...expense,
-        user_id: userId,
+        user_id: uid,
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-expenses"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-expenses", userId] }),
   });
 }
 
 export function useUpdateFixedExpense() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string; name?: string; amount?: number; category?: string; charge_day?: number; is_active?: boolean; is_recurring?: boolean; notes?: string }) => {
       const { error } = await supabase.from("fixed_expenses").update(updates).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-expenses"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-expenses", userId] }),
   });
 }
 
 export function useDeleteFixedExpense() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("fixed_expenses").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-expenses"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-expenses", userId] }),
   });
 }
 
 // ─── Finance Settings ───
 export function useFinanceSettings() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["finance-settings"],
+    queryKey: ["finance-settings", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const userId = await getUserId();
       const { data, error } = await db
@@ -238,27 +265,32 @@ export function useFinanceSettings() {
 }
 
 export function useSaveFinanceSettings() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (updates: { savings_goal_pct?: number; income_sync_mode?: "net" | "bank"; savings_goal_amount?: number | null }) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       const { error } = await db
         .from("user_settings")
-        .upsert({ user_id: userId, ...updates }, { onConflict: "user_id" });
+        .upsert({ user_id: uid, ...updates }, { onConflict: "user_id" });
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["finance-settings"] });
-      qc.invalidateQueries({ queryKey: ["payroll-settings"] });
-      qc.invalidateQueries({ queryKey: ["user-settings"] });
+      qc.invalidateQueries({ queryKey: ["finance-settings", userId] });
+      qc.invalidateQueries({ queryKey: ["payroll-settings", userId] });
+      qc.invalidateQueries({ queryKey: ["user-settings", userId] });
     },
   });
 }
 
 // ─── Expense Categories (CRUD) ───
 export function useExpenseCategories() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["expense-categories"],
+    queryKey: ["expense-categories", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("expense_categories")
@@ -271,10 +303,12 @@ export function useExpenseCategories() {
 }
 
 export function useUpsertCategory() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (cat: { id?: string; name: string; icon?: string; budget_limit?: number | null; sort_order?: number }) => {
-      const userId = await getUserId();
+      const uid = await getUserId();
       if (cat.id) {
         const { error } = await supabase
           .from("expense_categories")
@@ -283,7 +317,7 @@ export function useUpsertCategory() {
         if (error) throw error;
       } else {
         const { error } = await supabase.from("expense_categories").insert({
-          user_id: userId,
+          user_id: uid,
           name: cat.name,
           icon: cat.icon,
           budget_limit: cat.budget_limit,
@@ -292,18 +326,20 @@ export function useUpsertCategory() {
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense-categories"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense-categories", userId] }),
   });
 }
 
 export function useDeleteCategory() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("expense_categories").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense-categories"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense-categories", userId] }),
   });
 }
 
@@ -433,8 +469,11 @@ export function useMonthlyFinance(year: number, month: number) {
 
 // ─── Historical data for trends (6 months) ───
 export function useExpenseHistory(months: number = 6) {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["expense-history", months],
+    queryKey: ["expense-history", userId, months],
+    enabled: !!userId,
     queryFn: async () => {
       const now = new Date();
       const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
@@ -450,8 +489,11 @@ export function useExpenseHistory(months: number = 6) {
 }
 
 export function useIncomeHistory(months: number = 6) {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["income-history", months],
+    queryKey: ["income-history", userId, months],
+    enabled: !!userId,
     queryFn: async () => {
       const now = new Date();
       const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
@@ -469,8 +511,11 @@ export function useIncomeHistory(months: number = 6) {
 // ─── Fixed Income ───
 
 export function useFixedIncome() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["fixed-income"],
+    queryKey: ["fixed-income", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await db
         .from("fixed_income")
@@ -483,6 +528,8 @@ export function useFixedIncome() {
 }
 
 export function useAddFixedIncome() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (income: {
@@ -493,40 +540,47 @@ export function useAddFixedIncome() {
       is_active?: boolean;
       notes?: string | null;
     }) => {
-      const userId = await getUserId();
-      const { error } = await db.from("fixed_income").insert({ ...income, user_id: userId });
+      const uid = await getUserId();
+      const { error } = await db.from("fixed_income").insert({ ...income, user_id: uid });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-income"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-income", userId] }),
   });
 }
 
 export function useUpdateFixedIncome() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string; name?: string; amount?: number; category?: string; day_of_month?: number; is_active?: boolean; notes?: string }) => {
       const { error } = await db.from("fixed_income").update(updates).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-income"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-income", userId] }),
   });
 }
 
 export function useDeleteFixedIncome() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await db.from("fixed_income").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-income"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fixed-income", userId] }),
   });
 }
 
 // ─── Debts (Supabase) ───
 export function useDebts() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["debts"],
+    queryKey: ["debts", userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await db
         .from("debts")
@@ -539,6 +593,8 @@ export function useDebts() {
 }
 
 export function useAddDebt() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (debt: {
@@ -549,22 +605,24 @@ export function useAddDebt() {
       annual_interest_rate: number;
       months_elapsed: number;
     }) => {
-      const userId = await getUserId();
-      const { error } = await db.from("debts").insert({ ...debt, user_id: userId });
+      const uid = await getUserId();
+      const { error } = await db.from("debts").insert({ ...debt, user_id: uid });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["debts"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["debts", userId] }),
   });
 }
 
 export function useDeleteDebt() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await db.from("debts").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["debts"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["debts", userId] }),
   });
 }
 
@@ -578,15 +636,18 @@ export const INCOME_CATEGORIES_FIXED = [
 ];
 
 export function useMonthlySnapshots() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["monthly-snapshots"],
+    queryKey: ["monthly-snapshots", userId],
+    enabled: !!userId,
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      const { data: { user: u } } = await supabase.auth.getUser();
+      if (!u) return [];
       const { data, error } = await (supabase as any)
         .from("monthly_snapshots")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", u.id)
         .order("year", { ascending: false })
         .order("month", { ascending: false });
       if (error) throw error;
@@ -596,6 +657,8 @@ export function useMonthlySnapshots() {
 }
 
 export function useCloseMonth() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (snapshotData: {
@@ -619,7 +682,7 @@ export function useCloseMonth() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["monthly-snapshots"] });
+      qc.invalidateQueries({ queryKey: ["monthly-snapshots", userId] });
       toast.success("החודש נסגר ונשמר בהיסטוריה ✅");
     },
     onError: () => {

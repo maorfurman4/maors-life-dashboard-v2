@@ -1,3 +1,5 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -11,6 +13,28 @@ const errResponse = (msg: string, status = 500) =>
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Verify the request has a valid Supabase JWT
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   try {
     const body = await req.json().catch(() => ({}));
@@ -59,7 +83,14 @@ Deno.serve(async (req) => {
 
     const data = await res.json();
     const raw = data.choices?.[0]?.message?.content ?? "{}";
-    const parsed = JSON.parse(raw) as { insights?: string[] };
+    const cleaned = raw.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+    let parsed: { insights?: string[] };
+    try {
+      parsed = JSON.parse(cleaned) as { insights?: string[] };
+    } catch (e) {
+      console.error('Failed to parse OpenAI response:', raw);
+      return errResponse('AI response was not valid JSON');
+    }
 
     return new Response(JSON.stringify({ insights: parsed.insights ?? [] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
