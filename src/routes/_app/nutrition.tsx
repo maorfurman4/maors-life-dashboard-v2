@@ -13,6 +13,7 @@ import { NutritionPlannerTab } from "@/components/nutrition/NutritionPlannerTab"
 import { NutritionJournalTab } from "@/components/nutrition/NutritionJournalTab";
 import { NutritionCulinaryTab } from "@/components/nutrition/NutritionCulinaryTab";
 import { NutritionWeeklySummary } from "@/components/nutrition/NutritionWeeklySummary";
+import { NutritionWeeklyMealPlan } from "@/components/nutrition/NutritionWeeklyMealPlan";
 import { recognizeMeal, type MealRecognitionResult } from "@/lib/ai-service";
 import { compressImageToBase64 } from "@/lib/image-utils";
 import { AIConfirmationCard } from "@/components/nutrition/AIConfirmationCard";
@@ -23,12 +24,13 @@ export const Route = createFileRoute("/_app/nutrition")({
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Tab = "dashboard" | "planner" | "journal" | "culinary";
+type Tab = "dashboard" | "planner" | "journal" | "culinary" | "weekly";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "dashboard", label: "מסך ראשי"  },
   { key: "culinary",  label: "מתכונים"   },
   { key: "planner",   label: "מחשבון AI" },
+  { key: "weekly",    label: "תפריט שבועי" },
   { key: "journal",   label: "היסטוריה"  },
 ];
 
@@ -491,6 +493,13 @@ function NutritionPage() {
         ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "culinary" && (
           <NutritionCulinaryTab />
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════
+            TAB 5 — WEEKLY MEAL PLAN  (Phase 4)
+        ══════════════════════════════════════════════════════════════════ */}
+        {activeTab === "weekly" && (
+          <NutritionWeeklyMealPlan />
         )}
 
         </div>{/* end: relative z-10 content */}
