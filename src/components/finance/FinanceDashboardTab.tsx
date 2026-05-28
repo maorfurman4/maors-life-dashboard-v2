@@ -27,6 +27,9 @@ import { Button } from "@/components/ui/button";
 import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
 import { FinanceTransactions } from "@/components/finance/FinanceTransactions";
+import { FinanceSavingsGoals } from "@/components/finance/FinanceSavingsGoals";
+import { FinanceBillSplit } from "@/components/finance/FinanceBillSplit";
+import { FinanceAIForecast } from "@/components/finance/FinanceAIForecast";
 
 const fmt = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
 
@@ -923,6 +926,15 @@ export function FinanceDashboardTab({ year, month }: { year: number; month: numb
 
       {/* Savings Goal Settings */}
       <SavingsGoalSettings fin={fin} />
+
+      {/* AI Spending Forecast */}
+      <FinanceAIForecast />
+
+      {/* Savings Goals */}
+      <FinanceSavingsGoals />
+
+      {/* Bill Split */}
+      <FinanceBillSplit />
 
       {/* Recent Transactions */}
       <FinanceTransactions />

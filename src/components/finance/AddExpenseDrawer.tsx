@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { useAddExpense, DEFAULT_EXPENSE_CATEGORIES, useActiveExpenseCategories } from "@/hooks/use-finance-data";
 import { AmountScrollPicker } from "./AmountScrollPicker";
@@ -10,6 +10,23 @@ interface AddExpenseDrawerProps {
   onClose: () => void;
 }
 
+type Currency = "ILS" | "USD" | "EUR" | "GBP";
+
+const CURRENCIES: { value: Currency; symbol: string; label: string }[] = [
+  { value: "ILS", symbol: "₪", label: "שקל (₪)" },
+  { value: "USD", symbol: "$", label: "דולר ($)" },
+  { value: "EUR", symbol: "€", label: "יורו (€)" },
+  { value: "GBP", symbol: "£", label: "פאונד (£)" },
+];
+
+async function fetchExchangeRate(currency: Currency): Promise<number> {
+  if (currency === "ILS") return 1;
+  const res = await fetch(`https://api.exchangerate-api.com/v4/latest/ILS`);
+  if (!res.ok) throw new Error("לא ניתן לטעון שערי מטבע");
+  const data = await res.json();
+  return data.rates?.[currency] ?? 1;
+}
+
 export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
   const [category, setCategory] = useState("מזון");
   const [customCategory, setCustomCategory] = useState("");
@@ -17,8 +34,26 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(todayLocalStr);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [currency, setCurrency] = useState<Currency>("ILS");
+  const [exchangeRate, setExchangeRate] = useState<number>(1);
+  const [rateLoading, setRateLoading] = useState(false);
   const activeCategories = useActiveExpenseCategories();
   const addExpense = useAddExpense();
+
+  useEffect(() => {
+    if (currency === "ILS") {
+      setExchangeRate(1);
+      return;
+    }
+    setRateLoading(true);
+    fetchExchangeRate(currency)
+      .then(setExchangeRate)
+      .catch(() => toast.error("שגיאה בטעינת שער חליפין"))
+      .finally(() => setRateLoading(false));
+  }, [currency]);
+
+  const ilsAmount = amount != null && exchangeRate > 0 ? amount / exchangeRate : null;
+  const currencySymbol = CURRENCIES.find((c) => c.value === currency)?.symbol ?? "₪";
 
   const handleSave = () => {
     if (!amount || amount <= 0) {
@@ -26,15 +61,20 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
       return;
     }
     const effectiveCategory = category === "אחר" && customCategory.trim() ? customCategory.trim() : category;
+    const amountILS = currency === "ILS" ? amount : ilsAmount ?? amount;
+
     addExpense.mutate(
       {
-        amount,
+        amount: amountILS,
         category: effectiveCategory,
         description: description || undefined,
         date,
         expense_type: "variable",
         is_recurring: isRecurring,
         needs_review: false,
+        currency,
+        exchange_rate: exchangeRate,
+        original_amount: currency !== "ILS" ? amount : undefined,
       },
       {
         onSuccess: () => {
@@ -45,6 +85,8 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
           setCategory("מזון");
           setCustomCategory("");
           setIsRecurring(false);
+          setCurrency("ILS");
+          setExchangeRate(1);
         },
         onError: (err) => {
           console.error("AddExpense error:", err);
@@ -77,8 +119,26 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
         </div>
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-2 block">סכום (₪)</label>
-          {/* Direct text input for fast entry */}
+          <label className="text-xs font-medium text-muted-foreground mb-2 block">מטבע</label>
+          <div className="grid grid-cols-4 gap-2">
+            {CURRENCIES.map((c) => (
+              <button
+                key={c.value}
+                onClick={() => setCurrency(c.value)}
+                className={`py-2 rounded-xl border text-xs font-bold transition-colors ${
+                  currency === c.value ? "border-finance bg-finance/10 text-finance" : "border-border bg-card text-muted-foreground"
+                }`}
+              >
+                {c.symbol} {c.value}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-2 block">
+            סכום ({currencySymbol})
+          </label>
           <input
             type="number"
             inputMode="decimal"
@@ -88,7 +148,32 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
             className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-finance mb-2"
             dir="ltr"
           />
-          <AmountScrollPicker value={amount} onChange={setAmount} color="expense" />
+          {currency === "ILS" && (
+            <AmountScrollPicker value={amount} onChange={setAmount} color="expense" />
+          )}
+
+          {currency !== "ILS" && (
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground shrink-0">שער חליפין:</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={exchangeRate}
+                  onChange={(e) => setExchangeRate(Number(e.target.value) || 1)}
+                  className="flex-1 px-3 py-2 rounded-xl border border-border bg-card text-sm focus:outline-none focus:border-finance"
+                  dir="ltr"
+                  placeholder="1"
+                />
+                {rateLoading && <span className="text-xs text-muted-foreground">טוען...</span>}
+              </div>
+              {ilsAmount != null && (
+                <p className="text-xs text-muted-foreground">
+                  ≈ ₪{ilsAmount.toLocaleString("he-IL", { maximumFractionDigits: 2 })} בשקלים
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div>

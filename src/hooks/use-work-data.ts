@@ -238,8 +238,8 @@ export function useDeleteWorkMonthHistory() {
 
 // ─── Monthly Payslip (computed) ───
 export function useMonthlyPayslip(year: number, month: number) {
-  const { data: shifts, isLoading: shiftsLoading } = useWorkShifts(year, month);
-  const { data: settings, isLoading: settingsLoading } = usePayrollSettings();
+  const { data: shifts, isLoading: shiftsLoading, isError: shiftsIsError, error: shiftsError } = useWorkShifts(year, month);
+  const { data: settings, isLoading: settingsLoading, isError: settingsIsError, error: settingsError } = usePayrollSettings();
 
   const payslip = useMemo(() => {
     if (!shifts || !settings) return null;
@@ -251,5 +251,7 @@ export function useMonthlyPayslip(year: number, month: number) {
     shifts: shifts || [],
     settings: settings || DEFAULT_PAYROLL_SETTINGS,
     isLoading: shiftsLoading || settingsLoading,
+    isError: shiftsIsError || settingsIsError,
+    error: shiftsError ?? settingsError ?? null,
   };
 }

@@ -41,8 +41,7 @@ interface ShiftCardDef {
   type: string; isShabbat: boolean; color: string;
   bonusLabel: string | null; bonusAmount: number | null; hasBriefing: boolean;
   isCustomHours?: boolean;
-  times?: string;
-  hours?: string;
+  times?: string; hours?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────

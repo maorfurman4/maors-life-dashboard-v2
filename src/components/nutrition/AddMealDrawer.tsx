@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
-import { Loader2, Plus, UtensilsCrossed, Search } from "lucide-react";
+import { Loader2, Plus, UtensilsCrossed, Search, ScanBarcode } from "lucide-react";
 import { useAddNutrition } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
 import { MealPhotoCapture } from "./MealPhotoCapture";
+import { BarcodeScanner } from "./BarcodeScanner";
 import { supabase } from "@/integrations/supabase/client";
+import type { FoodFactsProduct } from "@/lib/open-food-facts";
 
 function autoMealType(): "breakfast" | "lunch" | "snack" | "dinner" {
   const h = new Date().getHours();
@@ -65,6 +67,7 @@ export function AddMealDrawer({
   const [results, setResults] = useState<FoodResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedBase, setSelectedBase] = useState<FoodBase | null>(null);
+  const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const addNutrition = useAddNutrition();
@@ -116,6 +119,24 @@ export function AddMealDrawer({
     setQuery("");
   };
 
+  const handleBarcodeProduct = (product: FoodFactsProduct) => {
+    setSelectedBase({
+      name: product.name,
+      brand: product.brand,
+      calories: product.calories,
+      protein: product.protein,
+      carbs: product.carbs,
+      fat: product.fat,
+    });
+    const factor = (parseFloat(grams) || 100) / 100;
+    setName(product.name + (product.brand ? ` (${product.brand})` : ""));
+    setCalories(Math.round(product.calories * factor).toString());
+    setProtein((product.protein * factor).toFixed(1));
+    setCarbs((product.carbs * factor).toFixed(1));
+    setFat((product.fat * factor).toFixed(1));
+    setMode("manual");
+  };
+
   const resetForm = () => {
     setName(""); setCalories(""); setProtein(""); setCarbs(""); setFat("");
     setQuery(""); setResults([]); setMode("search"); setSelectedBase(null); setGrams("100");
@@ -140,6 +161,13 @@ export function AddMealDrawer({
   };
 
   return (
+    <>
+    <BarcodeScanner
+      open={barcodeScannerOpen}
+      onClose={() => setBarcodeScannerOpen(false)}
+      onDetected={() => {}}
+      onProductFound={handleBarcodeProduct}
+    />
     <AddItemDrawer open={open} onClose={onClose} title="הוסף ארוחה">
       <div className="space-y-4" dir="rtl">
         {/* Mode toggle */}
@@ -159,6 +187,12 @@ export function AddMealDrawer({
             }`}
           >
             <Search className="h-3 w-3 inline ml-1" />חיפוש
+          </button>
+          <button
+            onClick={() => setBarcodeScannerOpen(true)}
+            className="flex-1 py-2 rounded-lg text-xs font-semibold transition-colors min-h-[36px] text-muted-foreground hover:text-foreground"
+          >
+            <ScanBarcode className="h-3 w-3 inline ml-1" />ברקוד
           </button>
         </div>
 
@@ -330,5 +364,6 @@ export function AddMealDrawer({
         </button>
       </div>
     </AddItemDrawer>
+    </>
   );
 }
