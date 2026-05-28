@@ -2,6 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// ─── Local-date helpers (avoids UTC-offset bugs for Israeli users UTC+2/+3) ───
+function _localDateStr(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+/** Israeli week starts on Sunday (day 0). Returns the Sunday of the given date's week. */
+function _israeliWeekStart(date: Date): string {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay()); // back to Sunday
+  d.setHours(0, 0, 0, 0);
+  return _localDateStr(d);
+}
+
 // ─── Auth helper ───
 async function getUserId() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -29,7 +41,13 @@ export function useWeekWorkouts() {
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
-  // Use local date formatting to avoid UTC offset shifting the week start for Israeli users
+  // Use local date formatting to avoid UTC offset shifting the week start for Israeli users.
+  // DST edge case: on the clock-change night (last Friday of March / last Sunday of October in Israel),
+  // setDate() still produces the correct calendar date because it works in local wall-clock time,
+  // but if this function runs within the ambiguous hour (e.g. 01:30 local that gets repeated),
+  // "now" could resolve to a slightly wrong instant. This is unlikely to matter for a weekly
+  // query boundary, but a robust fix would use a dedicated date-fns/date-fns-tz startOfWeek()
+  // with the "Asia/Jerusalem" timezone — deferred to avoid adding a new dependency.
   const startDate = `${startOfWeek.getFullYear()}-${String(startOfWeek.getMonth() + 1).padStart(2, "0")}-${String(startOfWeek.getDate()).padStart(2, "0")}`;
 
   return useQuery({
@@ -177,7 +195,7 @@ export function useWorkoutStreak() {
       if (error) throw error;
 
       const dates = new Set((data || []).map((w: { date: string }) => w.date));
-      const today = new Date().toISOString().slice(0, 10);
+      const today = _localDateStr(); // Bug fix: was .toISOString() which gives UTC, not Israeli local time
 
       // Start counting from today; if no workout today, start from yesterday
       let cursor = new Date();
@@ -185,7 +203,7 @@ export function useWorkoutStreak() {
 
       let streak = 0;
       for (let i = 0; i < 90; i++) {
-        const ds = cursor.toISOString().slice(0, 10);
+        const ds = _localDateStr(cursor); // Bug fix: was .toISOString() — same UTC issue
         if (dates.has(ds)) {
           streak++;
           cursor.setDate(cursor.getDate() - 1);
@@ -361,8 +379,9 @@ export function useBodyProgress() {
         .order("date", { ascending: false })
         .limit(60);
       if (error) throw error;
-      // Generate 24h signed URLs for the private bucket
-      const photos = await Promise.all(
+      // Generate 24h signed URLs for the private bucket.
+      // Promise.allSettled ensures one failed URL signing doesn't break the entire list.
+      const results = await Promise.allSettled(
         (data || []).map(async (p: any) => {
           if (!p.photo_url) return { ...p, signedUrl: "" };
           const { data: s } = await supabase.storage
@@ -370,6 +389,9 @@ export function useBodyProgress() {
             .createSignedUrl(p.photo_url, 86400);
           return { ...p, signedUrl: s?.signedUrl ?? "" };
         })
+      );
+      const photos = results.map((result, i) =>
+        result.status === "fulfilled" ? result.value : { ...(data || [])[i], signedUrl: "" }
       );
       return photos;
     },
@@ -429,10 +451,8 @@ export function useDeleteBodyProgress() {
   });
 }
 
-// ─── Local date helper (avoids UTC offset bugs for Israeli users UTC+2/+3) ───
-function toLocalDateStr(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+// ─── Local date helper (alias — kept for backward compat with callers below) ───
+const toLocalDateStr = _localDateStr;
 
 // ─── Nutrition Entries ───
 export function useNutritionEntries(date?: string) {
@@ -690,14 +710,8 @@ export function useDeletePersonalRecord() {
 }
 
 // ─── Weekly Training Volume ───
-function _isoWeekStart(date: Date): string {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // back to Monday
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-}
+// Bug fix: was using ISO Monday start — now uses Israeli Sunday start to match useWeekWorkouts
+const _isoWeekStart = _israeliWeekStart;
 
 export function useWeeklyVolume(weeksBack = 8) {
   return useQuery({

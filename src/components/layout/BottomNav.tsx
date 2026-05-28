@@ -1,4 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { getFilteredNavItems } from "@/lib/navigation";
 import { useHiddenModules } from "@/hooks/use-settings";
 import { cn } from "@/lib/utils";
@@ -23,20 +24,34 @@ export function BottomNav() {
               aria-label={item.label}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[44px] py-1 transition-colors",
+                "flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[44px] py-1 transition-colors relative",
                 active ? "text-foreground" : "text-muted-foreground"
               )}
             >
-              <item.icon
-                aria-hidden="true"
-                className={cn(
-                  "h-5 w-5 transition-colors",
-                  active && item.colorClass
-                )}
-              />
-              <span className={cn("text-[10px] font-medium", active && "font-bold")}>
-                {item.label}
-              </span>
+              {/* Active indicator dot */}
+              {active && (
+                <motion.div
+                  layoutId="nav-indicator"
+                  className="absolute top-0.5 w-5 h-0.5 rounded-full bg-primary"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
+              <motion.div
+                whileTap={{ scale: 0.85 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                className="flex flex-col items-center gap-0.5"
+              >
+                <item.icon
+                  aria-hidden="true"
+                  className={cn(
+                    "h-5 w-5 transition-colors",
+                    active && item.colorClass
+                  )}
+                />
+                <span className={cn("text-[10px] font-medium", active && "font-bold")}>
+                  {item.label}
+                </span>
+              </motion.div>
             </Link>
           );
         })}

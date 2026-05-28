@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dumbbell, Apple, Wallet, Briefcase } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { CategoryCube } from "./CategoryCube";
+import { HomeSkeleton } from "@/components/shared/skeletons/HomeSkeleton";
 import { WeatherMini } from "./WeatherMini";
 import { AddWorkoutDrawer } from "@/components/sport/AddWorkoutDrawer";
 import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
@@ -43,8 +44,12 @@ const cubes = [
 ] as const;
 
 export function ModernHome() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [openDrawer, setOpenDrawer] = useState<string | null>(null);
+
+  if (authLoading) {
+    return <HomeSkeleton />;
+  }
 
   const hour = new Date().getHours();
   const greeting =
@@ -91,13 +96,14 @@ export function ModernHome() {
 
         {/* 2×2 category grid */}
         <div className="grid grid-cols-2 gap-3">
-          {cubes.map((cube) => (
+          {cubes.map((cube, i) => (
             <CategoryCube
               key={cube.key}
               title={cube.title}
               icon={cube.icon}
               to={cube.to}
               imageUrl={cube.imageUrl}
+              index={i}
               onQuickAdd={(e) => {
                 e.preventDefault();
                 setOpenDrawer(cube.key);

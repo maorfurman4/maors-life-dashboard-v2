@@ -19,7 +19,8 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        // Model: gpt-4o — used for vision analysis (image_url content)
+        model: "gpt-4o",
         max_tokens: 512,
         messages: [
           {
