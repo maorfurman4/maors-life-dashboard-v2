@@ -23,5 +23,25 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "יתרה",
+      "short_name": "יתרה",
+      "url": "/finance",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "הוסף הוצאה",
+      "short_name": "הוצאה",
+      "url": "/finance?action=add",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "אימון",
+      "short_name": "אימון",
+      "url": "/sport",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

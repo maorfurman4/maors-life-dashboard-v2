@@ -14,8 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          achieved_at: string
+          achievement_key: string
+          id: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          achieved_at?: string
+          achievement_key: string
+          id?: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          achieved_at?: string
+          achievement_key?: string
+          id?: string
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: []
+      }
+      ai_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       body_progress: {
         Row: {
+          angle: string | null
           created_at: string
           date: string
           id: string
@@ -24,6 +73,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          angle?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -32,6 +82,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          angle?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -169,12 +220,15 @@ export type Database = {
           amount: number
           category: string
           created_at: string
+          currency: string | null
           date: string
           description: string | null
+          exchange_rate: number | null
           expense_type: string
           id: string
           is_recurring: boolean
           needs_review: boolean
+          original_amount: number | null
           updated_at: string
           user_id: string
         }
@@ -182,12 +236,15 @@ export type Database = {
           amount: number
           category: string
           created_at?: string
+          currency?: string | null
           date?: string
           description?: string | null
+          exchange_rate?: number | null
           expense_type?: string
           id?: string
           is_recurring?: boolean
           needs_review?: boolean
+          original_amount?: number | null
           updated_at?: string
           user_id: string
         }
@@ -195,13 +252,46 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
+          currency?: string | null
           date?: string
           description?: string | null
+          exchange_rate?: number | null
           expense_type?: string
           id?: string
           is_recurring?: boolean
           needs_review?: boolean
+          original_amount?: number | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expense_splits: {
+        Row: {
+          created_at: string | null
+          currency: string
+          description: string
+          id: string
+          participants: Json
+          total_amount: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string
+          description: string
+          id?: string
+          participants?: Json
+          total_amount: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string
+          description?: string
+          id?: string
+          participants?: Json
+          total_amount?: number
           user_id?: string
         }
         Relationships: []
@@ -245,6 +335,7 @@ export type Database = {
           category: string
           charge_day: number
           created_at: string
+          due_day: number | null
           id: string
           is_active: boolean
           is_recurring: boolean
@@ -258,6 +349,7 @@ export type Database = {
           category?: string
           charge_day?: number
           created_at?: string
+          due_day?: number | null
           id?: string
           is_active?: boolean
           is_recurring?: boolean
@@ -271,6 +363,7 @@ export type Database = {
           category?: string
           charge_day?: number
           created_at?: string
+          due_day?: number | null
           id?: string
           is_active?: boolean
           is_recurring?: boolean
@@ -469,6 +562,102 @@ export type Database = {
         }
         Relationships: []
       }
+      meal_plan_templates: {
+        Row: {
+          created_at: string
+          diet_type: string | null
+          id: string
+          name: string
+          plan_data: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          diet_type?: string | null
+          id?: string
+          name: string
+          plan_data: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          diet_type?: string | null
+          id?: string
+          name?: string
+          plan_data?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      monthly_snapshots: {
+        Row: {
+          balance: number
+          category_breakdown: Json | null
+          created_at: string | null
+          id: string
+          month: number
+          savings_pct: number
+          snapshot_data: Json | null
+          total_expenses: number
+          total_income: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          balance?: number
+          category_breakdown?: Json | null
+          created_at?: string | null
+          id?: string
+          month: number
+          savings_pct?: number
+          snapshot_data?: Json | null
+          total_expenses?: number
+          total_income?: number
+          user_id: string
+          year: number
+        }
+        Update: {
+          balance?: number
+          category_breakdown?: Json | null
+          created_at?: string | null
+          id?: string
+          month?: number
+          savings_pct?: number
+          snapshot_data?: Json | null
+          total_expenses?: number
+          total_income?: number
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          budget_alerts: boolean
+          nutrition_reminder: boolean
+          streak_alerts: boolean
+          user_id: string
+          workout_reminder: boolean
+          workout_reminder_time: string
+        }
+        Insert: {
+          budget_alerts?: boolean
+          nutrition_reminder?: boolean
+          streak_alerts?: boolean
+          user_id: string
+          workout_reminder?: boolean
+          workout_reminder_time?: string
+        }
+        Update: {
+          budget_alerts?: boolean
+          nutrition_reminder?: boolean
+          streak_alerts?: boolean
+          user_id?: string
+          workout_reminder?: boolean
+          workout_reminder_time?: string
+        }
+        Relationships: []
+      }
       nutrition_entries: {
         Row: {
           calories: number | null
@@ -514,6 +703,36 @@ export type Database = {
         }
         Relationships: []
       }
+      payslip_uploads: {
+        Row: {
+          created_at: string | null
+          extracted_data: Json | null
+          file_name: string | null
+          file_url: string
+          id: string
+          upload_month: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          extracted_data?: Json | null
+          file_name?: string | null
+          file_url: string
+          id?: string
+          upload_month?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          extracted_data?: Json | null
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          upload_month?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       personal_records: {
         Row: {
           category: string
@@ -550,6 +769,63 @@ export type Database = {
           updated_at?: string
           user_id?: string
           value?: number
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          keys: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          keys: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          keys?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      savings_goals: {
+        Row: {
+          created_at: string | null
+          current_amount: number
+          deadline: string | null
+          emoji: string | null
+          id: string
+          target_amount: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_amount?: number
+          deadline?: string | null
+          emoji?: string | null
+          id?: string
+          target_amount: number
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_amount?: number
+          deadline?: string | null
+          emoji?: string | null
+          id?: string
+          target_amount?: number
+          title?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -705,6 +981,42 @@ export type Database = {
           tdee?: number | null
           user_id?: string
           weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      user_fitness_profile: {
+        Row: {
+          age: number | null
+          avoided_muscles: string[] | null
+          blacklisted_exercises: string[] | null
+          favorite_exercises: string[] | null
+          fitness_level: string | null
+          gender: string | null
+          preferred_muscles: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          avoided_muscles?: string[] | null
+          blacklisted_exercises?: string[] | null
+          favorite_exercises?: string[] | null
+          fitness_level?: string | null
+          gender?: string | null
+          preferred_muscles?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          avoided_muscles?: string[] | null
+          blacklisted_exercises?: string[] | null
+          favorite_exercises?: string[] | null
+          fitness_level?: string | null
+          gender?: string | null
+          preferred_muscles?: string[] | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -969,6 +1281,60 @@ export type Database = {
         }
         Relationships: []
       }
+      user_streaks: {
+        Row: {
+          current_streak: number
+          id: string
+          last_activity_date: string | null
+          longest_streak: number
+          streak_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          streak_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number
+          streak_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_xp: {
+        Row: {
+          id: string
+          level: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          level?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          level?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       water_entries: {
         Row: {
           created_at: string
@@ -1017,6 +1383,45 @@ export type Database = {
           notes?: string | null
           user_id?: string
           weight_kg?: number
+        }
+        Relationships: []
+      }
+      work_monthly_history: {
+        Row: {
+          breakdown_by_type: Json | null
+          created_at: string | null
+          id: string
+          month: number
+          shifts_snapshot: Json | null
+          total_gross_pay: number
+          total_hours: number
+          total_shifts: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          breakdown_by_type?: Json | null
+          created_at?: string | null
+          id?: string
+          month: number
+          shifts_snapshot?: Json | null
+          total_gross_pay?: number
+          total_hours?: number
+          total_shifts?: number
+          user_id: string
+          year: number
+        }
+        Update: {
+          breakdown_by_type?: Json | null
+          created_at?: string | null
+          id?: string
+          month?: number
+          shifts_snapshot?: Json | null
+          total_gross_pay?: number
+          total_hours?: number
+          total_shifts?: number
+          user_id?: string
+          year?: number
         }
         Relationships: []
       }
@@ -1123,6 +1528,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      workout_plans: {
+        Row: {
+          created_at: string | null
+          deload_week: Json | null
+          goal: string | null
+          id: string
+          level: string | null
+          name: string
+          split_type: string | null
+          tips: string[] | null
+          user_id: string
+          weeks: Json
+        }
+        Insert: {
+          created_at?: string | null
+          deload_week?: Json | null
+          goal?: string | null
+          id?: string
+          level?: string | null
+          name: string
+          split_type?: string | null
+          tips?: string[] | null
+          user_id: string
+          weeks?: Json
+        }
+        Update: {
+          created_at?: string | null
+          deload_week?: Json | null
+          goal?: string | null
+          id?: string
+          level?: string | null
+          name?: string
+          split_type?: string | null
+          tips?: string[] | null
+          user_id?: string
+          weeks?: Json
+        }
+        Relationships: []
       }
       workout_runs: {
         Row: {
@@ -1392,3 +1836,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
