@@ -76,6 +76,9 @@ export function useAddExpense() {
       expense_type: string;
       is_recurring: boolean;
       needs_review: boolean;
+      currency?: string;
+      exchange_rate?: number;
+      original_amount?: number;
     }) => {
       const userId = await getUserId();
       const { error } = await supabase.from("expense_entries").insert({

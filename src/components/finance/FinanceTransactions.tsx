@@ -101,10 +101,17 @@ export function FinanceTransactions() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs font-black" dir="ltr"
-                  style={{ color: item._type === "expense" ? FT.danger : FT.success }}>
-                  {item._type === "expense" ? "-" : "+"}₪{fmt(Number(item.amount))}
-                </span>
+                <div className="text-end">
+                  <span className="text-xs font-black" dir="ltr"
+                    style={{ color: item._type === "expense" ? FT.danger : FT.success }}>
+                    {item._type === "expense" ? "-" : "+"}₪{fmt(Number(item.amount))}
+                  </span>
+                  {item._type === "expense" && item.currency && item.currency !== "ILS" && item.original_amount && (
+                    <p className="text-[9px] text-end" dir="ltr" style={{ color: FT.textFaint }}>
+                      {item.currency === "USD" ? "$" : item.currency === "EUR" ? "€" : "£"}{Number(item.original_amount).toLocaleString("he-IL", { maximumFractionDigits: 2 })}
+                    </p>
+                  )}
+                </div>
                 <button onClick={() => handleDelete(item)}
                   className="opacity-0 group-hover:opacity-100 transition-all p-1 rounded-lg active:scale-90"
                   style={{ color: FT.danger }}>
