@@ -4,6 +4,7 @@ import { useAddExpense, DEFAULT_EXPENSE_CATEGORIES, useActiveExpenseCategories }
 import { AmountScrollPicker } from "./AmountScrollPicker";
 import { todayLocalStr } from "@/utils/date";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 interface AddExpenseDrawerProps {
   open: boolean;
@@ -78,6 +79,7 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
       },
       {
         onSuccess: () => {
+          haptics.success();
           toast.success("הוצאה נשמרה");
           onClose();
           setAmount(null);
@@ -103,7 +105,7 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
           <label className="text-xs font-medium text-muted-foreground mb-2 block">קטגוריה</label>
           <div className="grid grid-cols-3 gap-2">
             {activeCategories.map((cat) => (
-              <button key={cat.name} onClick={() => setCategory(cat.name)}
+              <button key={cat.name} onClick={() => { haptics.tap(); setCategory(cat.name); }}
                 className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border transition-colors text-xs font-medium ${
                   category === cat.name ? "border-finance bg-finance/10 text-finance" : "border-border bg-card hover:bg-secondary/40 text-foreground"
                 }`}>

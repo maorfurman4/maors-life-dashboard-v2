@@ -9,6 +9,7 @@ import { AddWorkoutDrawer } from "@/components/sport/AddWorkoutDrawer";
 import { AddMealDrawer } from "@/components/nutrition/AddMealDrawer";
 import { AddExpenseDrawer } from "@/components/finance/AddExpenseDrawer";
 import { AddShiftDrawer } from "@/components/work/AddShiftDrawer";
+import { FavoriteMealsQuickAdd } from "@/components/nutrition/FavoriteMealsQuickAdd";
 
 const BG_IMAGE =
   "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1400&q=80";
@@ -97,6 +98,11 @@ export function ModernHome() {
 
         {/* Weekly AI Brief (Sundays only) */}
         <WeeklyAIBrief />
+
+        {/* Favorite Meals Quick Add */}
+        <div className="mb-4">
+          <FavoriteMealsQuickAdd />
+        </div>
 
         {/* 2×2 category grid */}
         <div className="grid grid-cols-2 gap-3">
