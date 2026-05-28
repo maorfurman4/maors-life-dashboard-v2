@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
 export interface ChatMessage {
   id: string;
@@ -101,17 +102,10 @@ export function useAiChat() {
         setOptimisticMessages([]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "שגיאה לא ידועה";
-        const errMsg: ChatMessage = {
-          id: `err-${Date.now()}`,
-          role: "assistant",
-          content: `שגיאה: ${msg}. נסה שוב בבקשה.`,
-          created_at: new Date().toISOString(),
-        };
-        setOptimisticMessages((prev) => [
-          ...prev.filter((m) => m.id !== tempUserMsgId),
-          userMsg,
-          errMsg,
-        ]);
+        console.error("[useAiChat] sendMessage error:", err);
+        // Remove the optimistic user message (avoid duplication) and show a toast
+        setOptimisticMessages((prev) => prev.filter((m) => m.id !== tempUserMsgId));
+        toast.error(`שגיאה בשליחת הודעה — ${msg}. נסה שוב`);
       } finally {
         setIsLoading(false);
       }

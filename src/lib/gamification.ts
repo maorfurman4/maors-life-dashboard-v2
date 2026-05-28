@@ -42,7 +42,13 @@ export function levelProgress(xp: number): { current: number; next: number; perc
   const thresholds = [0, 500, 1500, 3500, 7000, 12000, 20000];
   const level = xpToLevel(xp);
   const currentThreshold = thresholds[Math.min(level - 1, thresholds.length - 1)] ?? 0;
-  const nextThreshold = thresholds[Math.min(level, thresholds.length - 1)] ?? xp + 5000;
-  const percent = Math.min(100, Math.round(((xp - currentThreshold) / (nextThreshold - currentThreshold)) * 100));
-  return { current: xp - currentThreshold, next: nextThreshold - currentThreshold, percent };
+  // For levels beyond the defined thresholds, compute the next threshold dynamically
+  const nextThreshold =
+    level < thresholds.length
+      ? (thresholds[level] ?? xp + 5000)
+      : xp + 5000;
+  const range = nextThreshold - currentThreshold;
+  // Guard against division by zero (e.g. at max defined level)
+  const percent = range === 0 ? 100 : Math.min(100, Math.max(0, Math.round(((xp - currentThreshold) / range) * 100)));
+  return { current: xp - currentThreshold, next: Math.max(0, nextThreshold - currentThreshold), percent };
 }
