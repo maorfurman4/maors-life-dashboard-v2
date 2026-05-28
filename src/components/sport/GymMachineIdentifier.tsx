@@ -65,10 +65,29 @@ export default function GymMachineIdentifier({ open, onClose }: GymMachineIdenti
       });
       if (fnError) throw new Error(fnError.message);
       setResult(data);
-      // Filter exercises from library by muscle group
-      const matched = EXERCISE_LIBRARY.filter((ex) =>
+
+      // Bug fix #5: use equipmentKeywords from AI to find exercises for THIS specific machine
+      // first filter by muscle group, then rank by equipment match
+      const keywords: string[] = (data?.equipmentKeywords ?? []).map((k: string) => k.toLowerCase().trim());
+
+      const muscleFiltered = EXERCISE_LIBRARY.filter((ex) =>
         ex.muscleGroups.includes(selectedMuscle) || ex.primaryMuscle === selectedMuscle
-      ).slice(0, 8);
+      );
+
+      // Exercises that match the identified machine's equipment
+      const equipmentMatched = keywords.length > 0
+        ? muscleFiltered.filter((ex) =>
+            ex.equipment.some((eq) =>
+              keywords.some((kw) => eq.toLowerCase().includes(kw) || kw.includes(eq.toLowerCase()))
+            )
+          )
+        : [];
+
+      // Fall back to general muscle exercises if no equipment match
+      const matched = equipmentMatched.length >= 2
+        ? equipmentMatched.slice(0, 8)
+        : muscleFiltered.slice(0, 8);
+
       setMatchedExercises(matched);
     } catch (err: any) {
       setError(err.message || "שגיאה בזיהוי המכונה");

@@ -35,6 +35,7 @@ import exerciseImageUrlsJson from "@/data/exercise-image-urls.json";
 import GymMachineIdentifier from "@/components/sport/GymMachineIdentifier";
 import SportWelcomeVideo from "@/components/sport/SportWelcomeVideo";
 import { SportAIConsultant } from "@/components/sport/SportAIConsultant";
+import { SportAIPlanner } from "@/components/sport/SportAIPlanner";
 
 export const Route = createFileRoute("/_app/sport")({
   component: SportPage,
@@ -2395,7 +2396,7 @@ const CARDIO_OPTIONS = [
   { label: "HIIT",       icon: "⚡", value: "HIIT" },
   { label: "שחייה",      icon: "🏊", value: "שחייה" },
   { label: "חבל קפיצה", icon: "🤸", value: "חבל קפיצה" },
-  { label: "רוינג",      icon: "🚣", value: "רוינג" },
+  { label: "חתירה",      icon: "🚣", value: "חתירה" },
   { label: "אליפטי",     icon: "🎯", value: "אליפטי" },
   { label: "הליכה",      icon: "🚶", value: "הליכה" },
 ];
@@ -3119,8 +3120,9 @@ function WorkoutBuilderTab({
 
       {subTab === "ai" && (
         <div className="space-y-4">
-          {/* ── Step-by-step AI questionnaire ─────────────────────────── */}
-          {!aiPlan && (
+          <SportAIPlanner />
+          {/* ── Legacy inline AI questionnaire (hidden — kept for plan history) ── */}
+          {false && !aiPlan && (
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4" dir="rtl">
             {/* Progress bar */}
             <div className="flex gap-1 mb-4">
@@ -5481,12 +5483,12 @@ function PRSection() {
 }
 
 // ─── Weekly Volume Chart ──────────────────────────────────────────────────────
+// Bug fix: was ISO Monday start — now Israeli Sunday start to match useWeekWorkouts / useWeeklyVolume
 function getISOWeekStart(date: Date): string {
   const d = new Date(date);
-  const day = d.getDay();
-  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  d.setDate(d.getDate() - d.getDay()); // back to Sunday
   d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function VolumeChart() {
@@ -6069,9 +6071,9 @@ function RunningLogSection() {
 
   // Estimated duration: use entered time if available, else 6 min/km default
   const estimatedMins = totalMins > 0 ? totalMins : distKm * 6;
-  // Estimated calories (medium intensity running)
+  // Bug fix #1: pass distKm to use the Harvard/Margaria distance-based formula instead of MET-only
   const estimatedCalories = distKm > 0 || totalMins > 0
-    ? calcCardioCalories("running", "medium", Math.max(1, Math.round(estimatedMins)), bodyWeight)
+    ? calcCardioCalories("running", "medium", Math.max(1, Math.round(estimatedMins)), bodyWeight, undefined, distKm || undefined)
     : 0;
 
   const handleSave = async () => {
@@ -6080,6 +6082,7 @@ function RunningLogSection() {
       await addWorkout.mutateAsync({
         category: "running",
         duration_minutes: totalMins || undefined,
+        calories_burned:  estimatedCalories || undefined, // Bug fix #2: was missing — now saved to DB
         notes: runNotes || undefined,
         run: {
           distance_km:      distKm     || undefined,
@@ -6283,8 +6286,15 @@ const BODY_ANGLES: { key: BodyAngle; label: string; emoji: string }[] = [
   { key: "side",  label: "צד",    emoji: "↔️" },
 ];
 
+const BODY_PROGRESS_ANGLE_KEY = "body_progress_last_angle";
+
 function BodyProgressGallery() {
-  const [angle,      setAngle]      = useState<BodyAngle>("front");
+  // Improvement #14: remember last selected angle across sessions
+  const [angle, setAngle] = useState<BodyAngle>(() => {
+    const saved = localStorage.getItem(BODY_PROGRESS_ANGLE_KEY) as BodyAngle | null;
+    const validAngles: BodyAngle[] = BODY_ANGLES.map((a) => a.key);
+    return saved && validAngles.includes(saved) ? saved : "front";
+  });
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [newFile,    setNewFile]    = useState<File | null>(null);
   const [newPreview, setNewPreview] = useState<string | null>(null);
@@ -6360,6 +6370,7 @@ function BodyProgressGallery() {
             key={key}
             onClick={() => {
               setAngle(key);
+              localStorage.setItem(BODY_PROGRESS_ANGLE_KEY, key); // Improvement #14
               if (newPreview) URL.revokeObjectURL(newPreview);
               setNewFile(null); setNewPreview(null);
             }}
@@ -6548,11 +6559,12 @@ function BodyProgressGallery() {
           className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center"
           onClick={() => setLightboxIdx(null)}
         >
+          {/* Bug fix #3: icons were swapped — left button should show ← (ChevronLeft), right should show → (ChevronRight) */}
           <button
             className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
             onClick={(e) => { e.stopPropagation(); setLightboxIdx((prev) => prev !== null ? (prev - 1 + anglePhotos.length) % anglePhotos.length : null); }}
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronLeft className="w-6 h-6" />
           </button>
           <div className="flex flex-col items-center gap-3 max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
             <img
@@ -6573,7 +6585,7 @@ function BodyProgressGallery() {
             className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
             onClick={(e) => { e.stopPropagation(); setLightboxIdx((prev) => prev !== null ? (prev + 1) % anglePhotos.length : null); }}
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronRight className="w-6 h-6" />
           </button>
           <button
             className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"

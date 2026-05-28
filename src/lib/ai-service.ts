@@ -1,6 +1,20 @@
 import { supabase } from "@/integrations/supabase/client";
 import { EXERCISE_LIBRARY } from "@/lib/exercise-library";
 
+// ─── Retry Helper ─────────────────────────────────────────────────────────────
+
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3, delayMs = 1000): Promise<T> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === attempts - 1) throw err;
+      await new Promise(r => setTimeout(r, delayMs * (i + 1)));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 export interface MealRecognitionResult {
   name: string;
   items: string[];
@@ -16,20 +30,24 @@ async function invokeAI(payload: {
   imageBase64?: string;
   mimeType?: string;
 }): Promise<string> {
-  const { data, error } = await supabase.functions.invoke("ai-proxy", { body: payload });
-  if (error) throw new Error(error.message);
-  if (data?.error) throw new Error(data.error);
-  return data?.text ?? "";
+  return withRetry(async () => {
+    const { data, error } = await supabase.functions.invoke("ai-proxy", { body: payload });
+    if (error) throw new Error(error.message);
+    if (data?.error) throw new Error(data.error);
+    return data?.text ?? "";
+  });
 }
 
 export async function recognizeMeal(imageBase64: string): Promise<MealRecognitionResult> {
-  const { data, error } = await supabase.functions.invoke("meal-recognize", {
-    body: { imageBase64 },
+  return withRetry(async () => {
+    const { data, error } = await supabase.functions.invoke("meal-recognize", {
+      body: { imageBase64 },
+    });
+    if (error) throw new Error(error.message);
+    if (data?.error) throw new Error(data.error);
+    if (!data?.meal) throw new Error("לא הצלחתי לזהות ארוחה בתמונה");
+    return data.meal as MealRecognitionResult;
   });
-  if (error) throw new Error(error.message);
-  if (data?.error) throw new Error(data.error);
-  if (!data?.meal) throw new Error("לא הצלחתי לזהות ארוחה בתמונה");
-  return data.meal as MealRecognitionResult;
 }
 
 // ─── Receipt Scanning ─────────────────────────────────────────────────────────
@@ -41,12 +59,14 @@ export interface ScannedExpense {
 }
 
 export async function scanReceipt(imageBase64: string, mimeType?: string): Promise<ScannedExpense[]> {
-  const { data, error } = await supabase.functions.invoke("receipt-scan", {
-    body: { imageBase64, mimeType },
+  return withRetry(async () => {
+    const { data, error } = await supabase.functions.invoke("receipt-scan", {
+      body: { imageBase64, mimeType },
+    });
+    if (error) throw new Error(error.message);
+    if (data?.error) throw new Error(data.error);
+    return (data?.items ?? []) as ScannedExpense[];
   });
-  if (error) throw new Error(error.message);
-  if (data?.error) throw new Error(data.error);
-  return (data?.items ?? []) as ScannedExpense[];
 }
 
 // ─── Finance Insights ─────────────────────────────────────────────────────────
@@ -63,11 +83,13 @@ export async function getFinanceInsights(payload: {
   previousMonths: { label: string; income: number; expenses: number; savings: number }[];
   savingsGoalPct: number;
 }): Promise<FinanceInsights> {
-  const { data, error } = await supabase.functions.invoke("finance-insights-ai", { body: payload });
-  if (error) throw new Error(error.message);
-  if (data?.error) throw new Error(data.error);
-  if (!data?.insights) throw new Error("לא התקבל ניתוח");
-  return data.insights as FinanceInsights;
+  return withRetry(async () => {
+    const { data, error } = await supabase.functions.invoke("finance-insights-ai", { body: payload });
+    if (error) throw new Error(error.message);
+    if (data?.error) throw new Error(data.error);
+    if (!data?.insights) throw new Error("לא התקבל ניתוח");
+    return data.insights as FinanceInsights;
+  });
 }
 
 // ─── Workout Plan ─────────────────────────────────────────────────────────────
@@ -137,6 +159,10 @@ export interface GeneratePlanPayload {
   cardioFitnessLevel?: string;  // "מתחיל" | "בינוני" | "מתקדם" | "חוזר אחרי הפסקה"
   lastRunData?: { distanceKm?: number; paceMinPerKm?: number };
   availableExercises?: Array<{ name: string; equipment: string[]; muscleGroups: string[]; primaryMuscle: string }>;
+  // AI Planner v5 params:
+  goalType?: string;            // e.g. "עלייה במסת שריר 💪"
+  strengthLevel?: string;       // "מתחיל — פחות משנה" | "בינוני — 1–3 שנים" | "מתקדם — 3+ שנים"
+  preferredCardioType?: string; // "ריצה 🏃" | "אופניים 🚴" | "חתירה 🚣" | "HIIT 🔥" etc.
 }
 
 export async function generateWorkoutPlan(payload: GeneratePlanPayload): Promise<WorkoutPlan> {
@@ -169,11 +195,13 @@ export async function generateWorkoutPlan(payload: GeneratePlanPayload): Promise
       : {}),
     availableExercises,
   };
-  const { data, error } = await supabase.functions.invoke("workout-plan-ai", { body });
-  if (error) throw new Error(error.message);
-  if (data?.error) throw new Error(data.error);
-  if (!data?.plan) throw new Error("לא התקבלה תוכנית");
-  return data.plan as WorkoutPlan;
+  return withRetry(async () => {
+    const { data, error } = await supabase.functions.invoke("workout-plan-ai", { body });
+    if (error) throw new Error(error.message);
+    if (data?.error) throw new Error(data.error);
+    if (!data?.plan) throw new Error("לא התקבלה תוכנית");
+    return data.plan as WorkoutPlan;
+  });
 }
 
 // Helper: get all exercises from week 1 (for backward compat display)
