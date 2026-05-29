@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
+import { motion } from "framer-motion";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { useAddIncome, INCOME_CATEGORIES } from "@/hooks/use-finance-data";
 import { todayLocalStr } from "@/utils/date";
@@ -10,12 +11,34 @@ interface AddIncomeDrawerProps {
   onClose: () => void;
 }
 
+const inputCls = "w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-[15px] text-white/90 placeholder:text-white/30 focus:outline-none focus:border-white/25 focus:bg-white/7 transition-all";
+
+const IncomeCategoryChip = memo(function IncomeCategoryChip({
+  cat, isActive, onSelect,
+}: { cat: { value: string; label: string }; isActive: boolean; onSelect: (v: string) => void }) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.92 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      onClick={() => { haptics.tap(); onSelect(cat.value); }}
+      className={`px-3 py-2.5 rounded-2xl border transition-all text-xs font-semibold ${
+        isActive
+          ? "bg-gradient-to-b from-finance/20 to-finance/8 border-finance/40 text-finance shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+          : "bg-white/3 border-white/8 text-white/50 hover:bg-white/5 hover:text-white/70"
+      }`}>
+      {cat.label}
+    </motion.button>
+  );
+});
+
 export function AddIncomeDrawer({ open, onClose }: AddIncomeDrawerProps) {
   const [category, setCategory] = useState("other");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(todayLocalStr);
   const addIncome = useAddIncome();
+
+  const handleCategorySelect = useCallback((v: string) => setCategory(v), []);
 
   const handleSave = () => {
     if (!amount || Number(amount) <= 0) {
@@ -24,67 +47,60 @@ export function AddIncomeDrawer({ open, onClose }: AddIncomeDrawerProps) {
       return;
     }
     addIncome.mutate(
-      {
-        amount: Number(amount),
-        category,
-        description: description || undefined,
-        date,
-        source: "manual",
-      },
+      { amount: Number(amount), category, description: description || undefined, date, source: "manual" },
       {
         onSuccess: () => {
           haptics.success();
           toast.success("הכנסה נשמרה");
           onClose();
-          setAmount("");
-          setDescription("");
-          setCategory("other");
+          setAmount(""); setDescription(""); setCategory("other");
         },
         onError: () => { haptics.error(); toast.error("שגיאה בשמירה"); },
       }
     );
   };
 
+  const footer = (
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 500, damping: 25 }}
+      onClick={handleSave}
+      disabled={addIncome.isPending}
+      className="w-full py-3.5 rounded-2xl bg-finance font-bold text-[15px] text-white hover:brightness-110 transition-all disabled:opacity-40 shadow-[0_2px_20px_rgba(184,134,11,0.25)]"
+    >
+      {addIncome.isPending ? "שומר..." : "שמור הכנסה"}
+    </motion.button>
+  );
+
   return (
-    <AddItemDrawer open={open} onClose={onClose} title="הוסף הכנסה">
+    <AddItemDrawer open={open} onClose={onClose} title="הוסף הכנסה" footer={footer}>
       <div className="space-y-4">
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-2 block">סוג</label>
+          <label className="text-xs font-medium text-white/40 mb-2 block">סוג</label>
           <div className="grid grid-cols-2 gap-2">
             {INCOME_CATEGORIES.filter(c => c.value !== "salary").map((cat) => (
-              <button key={cat.value} onClick={() => setCategory(cat.value)}
-                className={`px-3 py-2.5 rounded-xl border transition-colors text-xs font-medium ${
-                  category === cat.value ? "border-finance bg-finance/10 text-finance" : "border-border bg-card hover:bg-secondary/40 text-foreground"
-                }`}>
-                {cat.label}
-              </button>
+              <IncomeCategoryChip key={cat.value} cat={cat} isActive={category === cat.value} onSelect={handleCategorySelect} />
             ))}
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1.5">הכנסה מהעבודה מחושבת אוטומטית מהמשמרות</p>
+          <p className="text-[10px] text-white/30 mt-1.5">הכנסה מהעבודה מחושבת אוטומטית מהמשמרות</p>
         </div>
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">סכום (₪)</label>
-          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0"
-            className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-finance" dir="ltr" />
+          <label className="text-xs font-medium text-white/40 mb-1.5 block">סכום (₪)</label>
+          <input type="number" inputMode="decimal" autoFocus value={amount}
+            onChange={(e) => setAmount(e.target.value)} placeholder="0" className={inputCls} dir="ltr" />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">תיאור</label>
-          <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="מקור ההכנסה..."
-            className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-finance" />
+          <label className="text-xs font-medium text-white/40 mb-1.5 block">תיאור</label>
+          <input type="text" value={description} onChange={(e) => setDescription(e.target.value)}
+            placeholder="מקור ההכנסה..." className={inputCls} />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">תאריך</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:border-finance" />
+          <label className="text-xs font-medium text-white/40 mb-1.5 block">תאריך</label>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />
         </div>
-
-        <button onClick={handleSave} disabled={addIncome.isPending}
-          className="w-full py-3 rounded-xl bg-finance text-finance-foreground font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
-          {addIncome.isPending ? "שומר..." : "שמור הכנסה"}
-        </button>
       </div>
     </AddItemDrawer>
   );

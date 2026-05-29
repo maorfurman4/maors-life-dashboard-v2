@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { Dumbbell, Footprints, Shuffle, Weight, Plus, Trash2, AlertTriangle, Save } from "lucide-react";
 import { useAddWorkout, useAddWorkoutTemplate, useWorkoutTemplates } from "@/hooks/use-sport-data";
@@ -18,6 +18,44 @@ interface Exercise {
   reps: string;
   weightKg: string;
 }
+
+interface ExerciseRowProps {
+  exercise: Exercise;
+  index: number;
+  onUpdate: (i: number, field: keyof Exercise, value: string) => void;
+  onRemove: (i: number) => void;
+}
+
+const ExerciseRow = memo(function ExerciseRow({ exercise, index, onUpdate, onRemove }: ExerciseRowProps) {
+  return (
+    <div className="rounded-xl bg-secondary/20 p-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <input type="text" value={exercise.name} onChange={(e) => onUpdate(index, "name", e.target.value)} placeholder="שם התרגיל"
+          className="flex-1 px-2 py-1.5 rounded-lg bg-card border border-border text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-sport min-h-[36px]" />
+        <button onClick={() => onRemove(index)} className="h-7 w-7 rounded-lg bg-destructive/10 flex items-center justify-center">
+          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+        </button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[9px] text-muted-foreground">סטים</label>
+          <input type="number" value={exercise.sets} onChange={(e) => onUpdate(index, "sets", e.target.value)}
+            className="w-full px-2 py-1.5 rounded-lg bg-card border border-border text-sm text-center focus:outline-none focus:border-sport min-h-[36px]" />
+        </div>
+        <div>
+          <label className="text-[9px] text-muted-foreground">חזרות</label>
+          <input type="number" value={exercise.reps} onChange={(e) => onUpdate(index, "reps", e.target.value)}
+            className="w-full px-2 py-1.5 rounded-lg bg-card border border-border text-sm text-center focus:outline-none focus:border-sport min-h-[36px]" />
+        </div>
+        <div>
+          <label className="text-[9px] text-muted-foreground">משקל (kg)</label>
+          <input type="number" value={exercise.weightKg} onChange={(e) => onUpdate(index, "weightKg", e.target.value)} placeholder="—"
+            className="w-full px-2 py-1.5 rounded-lg bg-card border border-border text-sm text-center placeholder:text-muted-foreground/30 focus:outline-none focus:border-sport min-h-[36px]" dir="ltr" />
+        </div>
+      </div>
+    </div>
+  );
+});
 
 interface AddWorkoutDrawerProps {
   open: boolean;
@@ -51,15 +89,13 @@ export function AddWorkoutDrawer({ open, onClose, defaultCategory }: AddWorkoutD
     setExercises([...exercises, { name: name || "", sets: "3", reps: "10", weightKg: "" }]);
   };
 
-  const updateExercise = (i: number, field: keyof Exercise, value: string) => {
-    const updated = [...exercises];
-    updated[i] = { ...updated[i], [field]: value };
-    setExercises(updated);
-  };
+  const updateExercise = useCallback((i: number, field: keyof Exercise, value: string) => {
+    setExercises(prev => prev.map((ex, idx) => idx === i ? { ...ex, [field]: value } : ex));
+  }, []); // setExercises is stable
 
-  const removeExercise = (i: number) => {
-    setExercises(exercises.filter((_, idx) => idx !== i));
-  };
+  const removeExercise = useCallback((i: number) => {
+    setExercises(prev => prev.filter((_, idx) => idx !== i));
+  }, []); // setExercises is stable
 
   const loadTemplate = (templateId: string) => {
     const tmpl = templates?.find((t) => t.id === templateId);
@@ -243,32 +279,13 @@ export function AddWorkoutDrawer({ open, onClose, defaultCategory }: AddWorkoutD
               </div>
             )}
             {exercises.map((ex, i) => (
-              <div key={i} className="rounded-xl bg-secondary/20 p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <input type="text" value={ex.name} onChange={(e) => updateExercise(i, "name", e.target.value)} placeholder="שם התרגיל"
-                    className="flex-1 px-2 py-1.5 rounded-lg bg-card border border-border text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-sport min-h-[36px]" />
-                  <button onClick={() => removeExercise(i)} className="h-7 w-7 rounded-lg bg-destructive/10 flex items-center justify-center">
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-[9px] text-muted-foreground">סטים</label>
-                    <input type="number" value={ex.sets} onChange={(e) => updateExercise(i, "sets", e.target.value)}
-                      className="w-full px-2 py-1.5 rounded-lg bg-card border border-border text-sm text-center focus:outline-none focus:border-sport min-h-[36px]" />
-                  </div>
-                  <div>
-                    <label className="text-[9px] text-muted-foreground">חזרות</label>
-                    <input type="number" value={ex.reps} onChange={(e) => updateExercise(i, "reps", e.target.value)}
-                      className="w-full px-2 py-1.5 rounded-lg bg-card border border-border text-sm text-center focus:outline-none focus:border-sport min-h-[36px]" />
-                  </div>
-                  <div>
-                    <label className="text-[9px] text-muted-foreground">משקל (kg)</label>
-                    <input type="number" value={ex.weightKg} onChange={(e) => updateExercise(i, "weightKg", e.target.value)} placeholder="—"
-                      className="w-full px-2 py-1.5 rounded-lg bg-card border border-border text-sm text-center placeholder:text-muted-foreground/30 focus:outline-none focus:border-sport min-h-[36px]" dir="ltr" />
-                  </div>
-                </div>
-              </div>
+              <ExerciseRow
+                key={i}
+                exercise={ex}
+                index={i}
+                onUpdate={updateExercise}
+                onRemove={removeExercise}
+              />
             ))}
           </div>
         )}

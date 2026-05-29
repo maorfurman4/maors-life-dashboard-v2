@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { useAddExpense, DEFAULT_EXPENSE_CATEGORIES, useActiveExpenseCategories } from "@/hooks/use-finance-data";
 import { AmountScrollPicker } from "./AmountScrollPicker";
@@ -10,6 +10,28 @@ interface AddExpenseDrawerProps {
   open: boolean;
   onClose: () => void;
 }
+
+const CategoryChip = memo(function CategoryChip({
+  cat,
+  isActive,
+  onSelect,
+}: {
+  cat: { name: string; icon: string };
+  isActive: boolean;
+  onSelect: (name: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onSelect(cat.name)}
+      className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border transition-colors text-xs font-medium ${
+        isActive ? "border-finance bg-finance/10 text-finance" : "border-border bg-card hover:bg-secondary/40 text-foreground"
+      }`}
+    >
+      <span className="text-base">{cat.icon}</span>
+      {cat.name}
+    </button>
+  );
+});
 
 type Currency = "ILS" | "USD" | "EUR" | "GBP";
 
@@ -40,6 +62,15 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
   const [rateLoading, setRateLoading] = useState(false);
   const activeCategories = useActiveExpenseCategories();
   const addExpense = useAddExpense();
+
+  const handleCategorySelect = useCallback((name: string) => {
+    haptics.tap();
+    setCategory(name);
+  }, []);
+
+  const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setDescription(e.target.value);
+  }, []);
 
   useEffect(() => {
     if (currency === "ILS") {
@@ -112,13 +143,12 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
           <label className="text-xs font-medium text-muted-foreground mb-2 block">קטגוריה</label>
           <div className="grid grid-cols-3 gap-2">
             {activeCategories.map((cat) => (
-              <button key={cat.name} onClick={() => { haptics.tap(); setCategory(cat.name); }}
-                className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border transition-colors text-xs font-medium ${
-                  category === cat.name ? "border-finance bg-finance/10 text-finance" : "border-border bg-card hover:bg-secondary/40 text-foreground"
-                }`}>
-                <span className="text-base">{cat.icon}</span>
-                {cat.name}
-              </button>
+              <CategoryChip
+                key={cat.name}
+                cat={cat}
+                isActive={category === cat.name}
+                onSelect={handleCategorySelect}
+              />
             ))}
           </div>
           {category === "אחר" && (
@@ -187,7 +217,7 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
 
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">תיאור</label>
-          <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="תיאור ההוצאה..."
+          <input type="text" value={description} onChange={handleDescriptionChange} placeholder="תיאור ההוצאה..."
             className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-finance" />
         </div>
 

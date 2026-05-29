@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { Loader2, Plus, UtensilsCrossed, Search, ScanBarcode } from "lucide-react";
 import { useAddNutrition } from "@/hooks/use-sport-data";
@@ -72,6 +72,13 @@ export function AddMealDrawer({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const addNutrition = useAddNutrition();
+
+  const macroPreview = useMemo(() => ({
+    calories: Math.round(Number(calories) || 0),
+    protein: Math.round(Number(protein) || 0),
+    carbs: Math.round(Number(carbs) || 0),
+    fat: Math.round(Number(fat) || 0),
+  }), [calories, protein, carbs, fat]);
 
   // Debounced search via food-search edge function (OFF → USDA → AI fallback)
   useEffect(() => {

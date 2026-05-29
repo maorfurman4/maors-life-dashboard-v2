@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { SHIFT_LABELS, SHIFT_TIMES, SHIFT_HOURS, calcShiftBreakdown, DEFAULT_PAYROLL_SETTINGS } from "@/lib/payroll-engine";
 import { useAddShift, usePayrollSettings } from "@/hooks/use-work-data";
@@ -36,12 +36,14 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
   const { data: payrollSettings } = usePayrollSettings();
 
   const settings = payrollSettings ?? DEFAULT_PAYROLL_SETTINGS;
-  const previewBreakdown = shiftType !== "manual_hourly"
-    ? calcShiftBreakdown(
-        { id: "", date, type: shiftType, role, is_shabbat_holiday: isShabbat, has_briefing: hasBriefing, hours: SHIFT_HOURS[shiftType] || 8, notes: null },
-        settings
-      )
-    : null;
+  const previewBreakdown = useMemo(() =>
+    shiftType !== "manual_hourly"
+      ? calcShiftBreakdown(
+          { id: "", date, type: shiftType, role, is_shabbat_holiday: isShabbat, has_briefing: hasBriefing, hours: SHIFT_HOURS[shiftType] || 8, notes: null },
+          settings
+        )
+      : null
+  , [shiftType, date, role, isShabbat, hasBriefing, settings]);
 
   const isMorningShift = shiftType === "long_morning" || shiftType === "morning";
 
