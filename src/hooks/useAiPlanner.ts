@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,8 +32,10 @@ const db = supabase as any;
 // ── Workout Plans ─────────────────────────────────────────────────────────────
 
 export function useWorkoutPlans() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["workout-plans"],
+    queryKey: ["workout-plans", userId],
     queryFn: async () => {
       const { data, error } = await db
         .from("workout_plans")
@@ -66,7 +69,7 @@ export function useSaveWorkoutPlan() {
       if (error) throw error;
       return data as WorkoutPlanRow;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-plans"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-plans"] }), // prefix match covers all userId variants
   });
 }
 
@@ -77,15 +80,17 @@ export function useDeleteWorkoutPlan() {
       const { error } = await db.from("workout_plans").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-plans"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-plans"] }), // prefix match covers all userId variants
   });
 }
 
 // ── User Fitness Profile ──────────────────────────────────────────────────────
 
 export function useUserFitnessProfile() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["user-fitness-profile"],
+    queryKey: ["user-fitness-profile", userId],
     queryFn: async () => {
       const { data, error } = await db
         .from("user_fitness_profile")
