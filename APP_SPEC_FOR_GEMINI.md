@@ -25,7 +25,7 @@
 - ❌ אל תציע React Router (פרויקט משתמש TanStack Router v1)
 - ❌ אל תציע query key ללא userId
 
-**פרוטוקול שיחה ראשונה:** אם המשתמש לא הגדיר מה הוא רוצה — שאל: "על מה לעזור? האפלקציה, תכנון פיצר, או אחד מ-28 הסקילים?"
+**פרוטוקול שיחה ראשונה:** אם המשתמש לא הגדיר מה הוא רוצה — שאל: "על מה לעזור? האפלקציה, תכנון פיצר, או אחד מהסקילים? (ראה סעיף 22 לרשימה מלאה)"
 
 ---
 
@@ -527,7 +527,7 @@ Special: all_modules_used
 | `ai-chat` | gpt-4o | צ'אט אישי | `{messages, context}` | `{reply: string}` |
 | `identify-machine` | gpt-4o | זיהוי מכשיר כושר | `{imageBase64}` | `{machineName, howToUse, equipmentKeywords}` |
 | `payslip-parse-ai` | gpt-4o | OCR תלוש שכר | `{fileUrl}` (image URL) | `{hourlyRate, grossPay, netPay, nationalInsurance, healthInsurance, pension, educationFund}` |
-| `food-search` | gpt-4o-mini | חיפוש מזון | `{query}` | `{results: FoodItem[]}` |
+| `food-search` | gpt-4o-mini | חיפוש מזון לפי שם | `{query: string}` | `{results: [{name, calories, protein_g, carbs_g, fat_g, serving_g}]}` |
 | `stock-quotes` | Yahoo Finance | מחיר מניה בזמן אמת | `{symbols: string[]}` | `{quotes: Quote[]}` |
 | `stock-search` | Yahoo Finance | חיפוש מניות/ETF | `{query}` | `{results: StockResult[]}` |
 | `ai-proxy` | gpt-4o-mini | proxy כללי לAI | `{prompt, imageBase64?, mimeType?}` | `{text: string}` |
@@ -581,7 +581,7 @@ Special: all_modules_used
 | ספורט | `#80c646` (ירוק) |
 | תזונה | `#c5a916` (צהוב-זהב) |
 | פיננסים | `#b8860b` (זהב) |
-| עבודה | סגול |
+| עבודה | `#7c3aed` (סגול) |
 | AI Chat | כחול/אינדיגו |
 
 ### Typography
@@ -635,6 +635,28 @@ haptics.error()   // [50,30,50] — שגיאה
 | `useFavoriteMeals()` | `hooks/useFavoriteMeals.ts` | ארוחות מועדפות |
 | `useAiChat()` | `hooks/useAiChat.ts` | AI chat messages |
 | `usePushNotifications()` | `hooks/usePushNotifications.ts` | Web Push |
+
+---
+
+## 18. מודול הגדרות (`/settings`)
+
+### תכונות
+| הגדרה | תיאור |
+|-------|-------|
+| **פרופיל** | שם, תמונה, גיל, גובה, משקל |
+| **תקציב חודשי** | הגדרת יעד תקציב פיננסי |
+| **יעד קלורי** | ברירת מחדל יומית לתזונה |
+| **יעד מים** | ml יומיים (ברירת מחדל 2,500) |
+| **שכר שעתי** | ברירת מחדל לחישוב עבודה |
+| **הוצאות מהירות** | הגדרת עד 5 כפתורי quick-tap (label, amount, category, emoji) |
+| **התראות** | workout / nutrition / budget / streak reminders |
+| **AI Fitness Profile** | רמה, מטרות, ציוד מועדף |
+| **הישגים** | גלריית כל ה-achievements |
+
+### קבצי הגדרות
+- `src/routes/_app/settings.tsx` — route ראשי
+- `user_settings` ב-DB — כל ההגדרות נשמרות שם
+- `user_fitness_profile` ב-DB — פרופיל כושר מורחב
 
 ---
 
@@ -987,11 +1009,11 @@ Stack:
 
 ---
 
-> **הערה לGemini Gem:** כשהמשתמש שואל "איך אני אומר לClaude לעשות X?" — השתמש בתבניות מסעיף זה. כשהמשתמש מתכנן פיצר — הצלב עם ה-DB schema בסעיף 4 ועם רשימת הEdge Functions בסעיף 13.
+> **הערה לGemini Gem:** כשהמשתמש שואל "איך אני אומר לClaude לעשות X?" — השתמש בתבניות מסעיף 21 זה. כשהמשתמש מתכנן פיצר — הצלב עם ה-DB schema בסעיף 4 ועם רשימת הEdge Functions בסעיף 14.
 
 ---
 
-## 22. קטלוג הסקילים הזמינים — 32 סקילים מותאמים אישית
+## 22. קטלוג הסקילים הזמינים — 28 סקילים מותאמים אישית
 
 > סעיף זה מפרט את כל הסקילים (Gemini Skills / Triggers) שהמשתמש בנה. כשמישהו שואל "מה אני יכול לעשות?", הGem צריך להפנות לסקיל הרלוונטי.
 
@@ -1058,15 +1080,15 @@ Stack:
 
 ---
 
-### 📊 סיכום — כמה סקילים זמינים לפי קטגוריה
+### 📊 סיכום — סקילים זמינים לפי קטגוריה
 
-| קטגוריה | מספר סקילים | סטטוס |
-|---------|------------|-------|
-| אוטומציה ועסקים | 5 | ✅ פעיל |
-| פיתוח ועיצוב | 10 | ✅ פעיל |
-| קריירה | 4 | ✅ פעיל |
-| לייף סטייל | 9 | ✅ פעיל |
-| **סה"כ** | **28** | ✅ |
+| קטגוריה | סקילים | Trigger לדוגמה |
+|---------|--------|---------------|
+| 🟡 אוטומציה ועסקים | 5 | `Green Invoice`, `Payroll Calculator` |
+| 🔵 פיתוח ועיצוב | 10 | `UI Design`, `Shabbat Freeze`, `Security Triage` |
+| 🟢 קריירה | 4 | `CV Builder`, `LinkedIn Israel` |
+| 🟠 לייף סטייל | 9 | `Ontopo`, `Flight Finder`, `Grocery Intelligence` |
+| **סה"כ** | **28** | — |
 
 ---
 
