@@ -122,7 +122,7 @@ export function ExerciseLibrary() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="חיפוש תרגיל או קבוצת שריר..."
-          className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-sport min-h-[44px]"
+          className="w-full pe-9 ps-3 py-2.5 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-sport min-h-[44px]"
         />
       </div>
 
@@ -161,7 +161,7 @@ export function ExerciseLibrary() {
             <button
               key={ex.id}
               onClick={() => openExercise(ex)}
-              className="w-full text-right rounded-xl border border-border bg-card p-3 hover:border-sport/40 transition-colors"
+              className="w-full text-end rounded-xl border border-border bg-card p-3 hover:border-sport/40 transition-colors"
             >
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="flex-1 min-w-0">

@@ -110,7 +110,6 @@ function AuthScreen() {
     <RootLayout>
       <div
         className="flex min-h-screen items-center justify-center px-4 py-12"
-        dir="rtl"
       >
         <div className="w-full max-w-sm space-y-6">
           {/* Logo + Title */}
@@ -172,7 +171,7 @@ function AuthScreen() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   dir="ltr"
-                  className="w-full rounded-2xl bg-white/10 border border-white/15 pr-10 pl-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all"
+                  className="w-full rounded-2xl bg-white/10 border border-white/15 pe-10 ps-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all"
                 />
               </div>
 
@@ -185,7 +184,7 @@ function AuthScreen() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   dir="ltr"
-                  className="w-full rounded-2xl bg-white/10 border border-white/15 pr-10 pl-10 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all"
+                  className="w-full rounded-2xl bg-white/10 border border-white/15 pe-10 ps-10 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/30 transition-all"
                 />
                 <button
                   type="button"

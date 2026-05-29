@@ -286,14 +286,14 @@ If conditions are not nutrition-relevant or you are unsure, return adjustment_kc
                 <p className="text-emerald-400/70">יום {daysElapsed + 1}</p>
               </div>
               {processEnd ? (
-                <div className="text-left">
+                <div className="text-start">
                   <p className="text-white/50 font-bold">סיום</p>
                   <p className="text-white/30">
                     {processEnd.toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "2-digit" })}
                   </p>
                 </div>
               ) : (
-                <div className="text-left opacity-40">
+                <div className="text-start opacity-40">
                   <p className="text-white/40">יעד?</p>
                 </div>
               )}

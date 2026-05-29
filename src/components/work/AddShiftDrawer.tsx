@@ -5,6 +5,7 @@ import { useAddShift, usePayrollSettings } from "@/hooks/use-work-data";
 import { useAddIncome } from "@/hooks/use-finance-data";
 import { todayLocalStr } from "@/utils/date";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 type ShiftType = 'morning' | 'afternoon' | 'night' | 'long_morning' | 'long_night' | 'briefing' | 'manual_hourly';
 type WorkRole = 'guard' | 'shift_manager';
@@ -63,6 +64,7 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
       },
       {
         onSuccess: () => {
+          haptics.success();
           // If had meal, add meal voucher income
           if (hadMeal) {
             addIncome.mutate(
@@ -70,6 +72,7 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
               {
                 onError: (err) => {
                   console.error("Meal voucher income error:", err);
+                  haptics.error();
                   toast.error("המשמרת נשמרה, אך שובר הארוחה נכשל: " + (err as Error).message);
                 },
               }
@@ -80,6 +83,7 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
           onClose();
         },
         onError: (err) => {
+          haptics.error();
           toast.error("שגיאה בשמירת משמרת: " + (err as Error).message);
         },
       }
@@ -136,7 +140,7 @@ export function AddShiftDrawer({ open, onClose }: AddShiftDrawerProps) {
           }`}>
             {hadMeal ? "🍽️ שובר ארוחה +68₪" : "ללא שובר ארוחה"}
             <button onClick={() => { setHadMeal(null); setShowMealQuestion(true); }}
-              className="mr-2 underline text-[10px]">שנה</button>
+              className="me-2 underline text-[10px]">שנה</button>
           </div>
         )}
 

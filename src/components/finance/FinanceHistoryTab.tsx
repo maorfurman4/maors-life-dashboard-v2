@@ -228,7 +228,7 @@ function DonutChart({
             <button
               key={entry.name}
               onClick={() => onSliceClick(entry.name)}
-              className="flex items-center gap-2 text-right w-full rounded-xl px-2 py-1 transition-all"
+              className="flex items-center gap-2 text-end w-full rounded-xl px-2 py-1 transition-all"
               style={{ background: isActive ? FT.goldDim : "transparent" }}
             >
               <span
@@ -270,7 +270,6 @@ function TransactionRow({ item, isAnomaly, onDelete }: {
         background: isAnomaly ? "rgba(212,178,100,0.08)" : FT.cardLight,
         border: `1px solid ${isAnomaly ? "rgba(212,178,100,0.22)" : isFixed ? "rgba(139,170,255,0.15)" : FT.brownBorder}`,
       }}
-      dir="rtl"
     >
       {/* Icon */}
       <div
@@ -391,7 +390,7 @@ export function FinanceHistoryTab({ year, month }: { year: number; month: number
   const anomalyCount = filtered.filter((t) => anomalyIds.has(t.id)).length;
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-4">
 
       {/* Donut Chart Card */}
       <div className="rounded-3xl p-5 space-y-3" style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}>

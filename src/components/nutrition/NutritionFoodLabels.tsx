@@ -84,12 +84,12 @@ export function NutritionFoodLabels() {
       >
         {isAnalyzing ? (
           <>
-            <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+            <Loader2 className="h-4 w-4 ms-2 animate-spin" />
             מנתח...
           </>
         ) : (
           <>
-            <Tag className="h-4 w-4 ml-2" />
+            <Tag className="h-4 w-4 ms-2" />
             נתח רכיבים
           </>
         )}

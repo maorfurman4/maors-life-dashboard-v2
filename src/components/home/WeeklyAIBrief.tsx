@@ -80,7 +80,6 @@ export function WeeklyAIBrief() {
         border: "1px solid rgba(255,255,255,0.12)",
         backdropFilter: "blur(10px)",
       }}
-      dir="rtl"
     >
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-black text-white">📊 תקציר השבוע</h2>

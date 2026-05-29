@@ -59,7 +59,7 @@ export function SportProgressSummary() {
             {topPRs.map((pr: any) => (
               <div
                 key={pr.id}
-                className="flex items-center justify-between text-[11px] border-r-2 border-amber-400/50 pr-2"
+                className="flex items-center justify-between text-[11px] border-e-2 border-amber-400/50 pe-2"
               >
                 <span className="font-semibold text-white/80 truncate">{pr.exercise_name}</span>
                 <span className="text-white/40 shrink-0 ms-2">

@@ -109,9 +109,9 @@ export default function GymMachineIdentifier({ open, onClose }: GymMachineIdenti
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { handleReset(); onClose(); } }}>
-      <DialogContent className="max-w-lg w-full bg-gray-900 border-white/10 text-white max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-lg w-full bg-gray-900 border-white/10 text-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-right flex items-center gap-2">
+          <DialogTitle className="text-end flex items-center gap-2">
             <Camera className="h-5 w-5 text-emerald-400" />
             זיהוי מכונת כושר
           </DialogTitle>
@@ -120,7 +120,7 @@ export default function GymMachineIdentifier({ open, onClose }: GymMachineIdenti
         {/* Step 1: Upload */}
         {step === 1 && (
           <div className="space-y-4">
-            <p className="text-white/60 text-sm text-right">צלם או העלה תמונה של מכונת הכושר</p>
+            <p className="text-white/60 text-sm text-end">צלם או העלה תמונה של מכונת הכושר</p>
             <label className="block">
               <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
               <div className="flex flex-col items-center justify-center gap-3 h-48 rounded-2xl border-2 border-dashed border-white/20 hover:border-emerald-500/50 cursor-pointer transition-colors bg-white/5">
@@ -145,7 +145,7 @@ export default function GymMachineIdentifier({ open, onClose }: GymMachineIdenti
                 <X className="h-3.5 w-3.5 text-white" />
               </button>
             </div>
-            <p className="text-white/70 text-sm font-bold text-right">לאיזה שריר תרצה להשתמש במכונה זו?</p>
+            <p className="text-white/70 text-sm font-bold text-end">לאיזה שריר תרצה להשתמש במכונה זו?</p>
             <div className="grid grid-cols-2 gap-2">
               {MUSCLE_OPTIONS.map(({ key, label, emoji }) => (
                 <button
@@ -182,19 +182,19 @@ export default function GymMachineIdentifier({ open, onClose }: GymMachineIdenti
               </div>
             )}
             {error && (
-              <div className="rounded-xl bg-red-500/10 border border-red-500/30 p-4 text-red-400 text-sm text-right">
+              <div className="rounded-xl bg-red-500/10 border border-red-500/30 p-4 text-red-400 text-sm text-end">
                 {error}
               </div>
             )}
             {result && !loading && (
               <>
                 <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-4 space-y-2">
-                  <h3 className="font-black text-emerald-400 text-right text-base">{result.machineName}</h3>
-                  <p className="text-white/70 text-sm text-right leading-relaxed">{result.howToUse}</p>
+                  <h3 className="font-black text-emerald-400 text-end text-base">{result.machineName}</h3>
+                  <p className="text-white/70 text-sm text-end leading-relaxed">{result.howToUse}</p>
                 </div>
                 {matchedExercises.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-white/50 text-xs font-bold uppercase tracking-wider text-right">תרגילים מומלצים</p>
+                    <p className="text-white/50 text-xs font-bold uppercase tracking-wider text-end">תרגילים מומלצים</p>
                     <div className="space-y-2">
                       {matchedExercises.map((ex) => (
                         <div key={ex.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
@@ -203,7 +203,7 @@ export default function GymMachineIdentifier({ open, onClose }: GymMachineIdenti
                               <span key={eq} className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/50">{eq}</span>
                             ))}
                           </div>
-                          <div className="text-right">
+                          <div className="text-end">
                             <p className="text-sm font-bold text-white">{ex.name}</p>
                             <p className="text-xs text-white/40">{ex.defaultSets} סטים × {ex.defaultReps} חזרות</p>
                           </div>

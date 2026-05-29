@@ -814,13 +814,13 @@ difficulty: קל/בינוני/מתקדם בלבד. JSON תקני בלבד.`;
                       <div key={key} className="py-2 border-b border-white/5 last:border-0 space-y-1">
                         <div className="flex items-start justify-between gap-3">
                           <span className="text-[10px] text-white/40 shrink-0 pt-0.5 font-bold">{label}</span>
-                          <div className="flex-1 min-w-0 text-left">
+                          <div className="flex-1 min-w-0 text-start">
                             <p className="text-sm text-white/90 font-medium leading-tight">{meal.name}</p>
                             <p className="text-[10px] text-white/30 mt-0.5">{meal.calories} קל׳ · {meal.protein}g חלבון</p>
                           </div>
                         </div>
                         <a href={ytUrl} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-[10px] text-rose-400/70 hover:text-rose-400 transition-colors font-semibold pr-1">
+                          className="flex items-center gap-1.5 text-[10px] text-rose-400/70 hover:text-rose-400 transition-colors font-semibold pe-1">
                           <Youtube className="h-3 w-3 shrink-0" />
                           צפה בסרטון הכנה
                         </a>
@@ -841,8 +841,7 @@ difficulty: קל/בינוני/מתקדם בלבד. JSON תקני בלבד.`;
           onClick={() => setSaveModal(false)}
         >
           <div
-            dir="rtl"
-            className="w-full max-w-sm rounded-3xl border border-white/15 bg-white/8 backdrop-blur-2xl p-5 space-y-4 shadow-2xl"
+              className="w-full max-w-sm rounded-3xl border border-white/15 bg-white/8 backdrop-blur-2xl p-5 space-y-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm font-black text-white">שמור תבנית</p>

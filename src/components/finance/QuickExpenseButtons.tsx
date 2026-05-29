@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Settings, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { haptics } from "@/lib/haptics";
 import { useUserSettings, useUpdateUserSettings } from "@/hooks/use-sport-data";
 import { useAddExpense, useActiveExpenseCategories } from "@/hooks/use-finance-data";
 import { FT } from "@/lib/finance-theme";
@@ -46,7 +47,7 @@ export function QuickExpenseButtons() {
   const [newEmoji, setNewEmoji] = useState(EMOJI_OPTIONS[0]);
 
   function handleTap(qe: QuickExpense) {
-    navigator.vibrate?.([10, 50, 10]);
+    haptics.success();
     addExpense.mutate(
       {
         amount: qe.amount,
@@ -60,7 +61,7 @@ export function QuickExpenseButtons() {
       {
         onSuccess: () =>
           toast.success(`${qe.emoji} ${qe.label} ₪${fmt(qe.amount)} נרשם`),
-        onError: (e) => toast.error("שגיאה: " + (e as Error).message),
+        onError: (e) => { haptics.error(); toast.error("שגיאה: " + (e as Error).message); },
       }
     );
   }
@@ -68,6 +69,7 @@ export function QuickExpenseButtons() {
   function handleAdd() {
     const amt = parseFloat(newAmount);
     if (!newLabel.trim() || !amt || amt <= 0) {
+      haptics.error();
       toast.error("מלא שם וסכום תקין");
       return;
     }
@@ -81,6 +83,7 @@ export function QuickExpenseButtons() {
     const updated = [...quickExpenses, newItem].slice(0, 5);
     updateSettings.mutate({ quick_expenses: updated }, {
       onSuccess: () => {
+        haptics.success();
         toast.success("הוצאה מהירה נוספה");
         setAddOpen(false);
         setNewLabel("");

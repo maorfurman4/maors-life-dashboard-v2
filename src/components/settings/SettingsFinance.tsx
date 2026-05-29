@@ -2,6 +2,7 @@ import { Wallet } from "lucide-react";
 import { useFinanceSettings, useSaveFinanceSettings } from "@/hooks/use-finance-data";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 export function SettingsFinance() {
   const { data: settings } = useFinanceSettings();
@@ -19,14 +20,15 @@ export function SettingsFinance() {
   const handleSave = () => {
     const pct = parseFloat(savingsGoal);
     if (isNaN(pct) || pct < 0 || pct > 100) {
+      haptics.error();
       toast.error("יעד חיסכון חייב להיות בין 0 ל-100");
       return;
     }
     save.mutate(
       { savings_goal_pct: pct, income_sync_mode: syncMode },
       {
-        onSuccess: () => toast.success("הגדרות כלכלה נשמרו"),
-        onError: (e) => toast.error("שגיאה: " + e.message),
+        onSuccess: () => { haptics.success(); toast.success("הגדרות כלכלה נשמרו"); },
+        onError: (e) => { haptics.error(); toast.error("שגיאה: " + e.message); },
       }
     );
   };

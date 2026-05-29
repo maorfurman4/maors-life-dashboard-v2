@@ -376,11 +376,11 @@ function ShiftCard({ card, settings, onLog, onStart }: {
           {card.bonusLabel}
         </div>
       )}
-      <p className="absolute bottom-[88px] left-0 right-0 px-3 text-base font-black text-white text-right leading-tight">{card.label}</p>
-      <p className="absolute bottom-[75px] left-0 right-0 px-3 text-[9px] text-white/45 text-right">{card.sublabel}</p>
+      <p className="absolute bottom-[88px] left-0 right-0 px-3 text-base font-black text-white text-end leading-tight">{card.label}</p>
+      <p className="absolute bottom-[75px] left-0 right-0 px-3 text-[9px] text-white/45 text-end">{card.sublabel}</p>
       <div className="absolute bottom-[50px] left-0 right-0 px-3">
-        <p className="text-sm font-black text-right" style={{ color: card.color }}>{fmtNis(gross)}</p>
-        <p className="text-[8px] text-white/30 text-right">{effH}ש׳ · ברוטו משוער</p>
+        <p className="text-sm font-black text-end" style={{ color: card.color }}>{fmtNis(gross)}</p>
+        <p className="text-[8px] text-white/30 text-end">{effH}ש׳ · ברוטו משוער</p>
       </div>
       <div className="absolute bottom-2 left-2 right-2 flex gap-1.5">
         <button onClick={() => onStart(card)}
@@ -695,7 +695,7 @@ function DashboardTab({ liveShift, setLiveShift, settings, shifts }: {
                   key={card.key}
                   disabled={addShift.isPending}
                   onClick={() => { setShowTodayPicker(false); handleLog(card, today()); }}
-                  className="flex items-center gap-2 px-3 py-3 rounded-2xl border border-white/10 bg-white/5 hover:border-emerald-400/40 hover:bg-emerald-400/8 transition-all active:scale-95 text-right"
+                  className="flex items-center gap-2 px-3 py-3 rounded-2xl border border-white/10 bg-white/5 hover:border-emerald-400/40 hover:bg-emerald-400/8 transition-all active:scale-95 text-end"
                 >
                   <span className="text-xl">{card.emoji}</span>
                   <div>
@@ -849,7 +849,7 @@ function FinanceTab({ payslip, shifts, monthlyGoal, onGoalChange }: {
           {editingGoal ? (
             <div className="flex items-center gap-2">
               <input type="number" value={goalInput} onChange={e => setGoalInput(e.target.value)}
-                className="w-24 bg-white/10 border border-white/15 rounded-xl px-2 py-1 text-sm text-white text-left outline-none focus:border-sky-500/50"
+                className="w-24 bg-white/10 border border-white/15 rounded-xl px-2 py-1 text-sm text-white text-start outline-none focus:border-sky-500/50"
                 dir="ltr" />
               <button onClick={() => { onGoalChange(Number(goalInput) || 10000); setEditingGoal(false); }}
                 className="text-[10px] px-2.5 py-1.5 rounded-xl bg-sky-500/20 border border-sky-500/30 text-sky-300 font-bold">שמור</button>
@@ -1046,7 +1046,7 @@ function ReportsTab({ shifts, settings, monthLabel }: {
           style={{ background: "linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)", boxShadow: "0 0 24px rgba(14,165,233,0.25)" }}>
           <div className="flex items-center gap-3">
             <FileText className="h-5 w-5 opacity-80" />
-            <div className="text-right">
+            <div className="text-end">
               <p className="text-sm font-black">הדפס תלוש שכר</p>
               <p className="text-[10px] opacity-60 font-normal">פירוט מלא ברוטו / ניכויים / נטו</p>
             </div>
@@ -1059,7 +1059,7 @@ function ReportsTab({ shifts, settings, monthLabel }: {
           <div className="h-9 w-9 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
             <Download className="h-4 w-4 text-emerald-400" />
           </div>
-          <div className="flex-1 text-right">
+          <div className="flex-1 text-end">
             <p className="text-sm font-bold text-white">ייצוא Excel / CSV</p>
             <p className="text-[10px] text-white/35">קובץ גיליון עם כל המשמרות</p>
           </div>
@@ -1070,7 +1070,7 @@ function ReportsTab({ shifts, settings, monthLabel }: {
           <div className="h-9 w-9 rounded-xl bg-violet-500/20 flex items-center justify-center shrink-0">
             <Calendar className="h-4 w-4 text-violet-400" />
           </div>
-          <div className="flex-1 text-right">
+          <div className="flex-1 text-end">
             <p className="text-sm font-bold text-white">סנכרון יומן (.ics)</p>
             <p className="text-[10px] text-white/35">Google Calendar / Apple Calendar</p>
           </div>
@@ -1109,7 +1109,7 @@ function SettingsTab({ settings }: { settings: PayrollSettings }) {
       <label className="text-[10px] font-bold text-white/40">{label}</label>
       <div className="flex items-center gap-2 bg-white/8 border border-white/10 rounded-xl px-3 py-2 focus-within:border-sky-500/40">
         <input type="number" step={step} value={Number(vals[field])} onChange={e => set(field, e.target.value)}
-          className="flex-1 bg-transparent text-sm text-white outline-none text-left" dir="ltr" />
+          className="flex-1 bg-transparent text-sm text-white outline-none" dir="ltr" />
         <span className="text-[10px] text-white/30 shrink-0">{suffix}</span>
       </div>
     </div>
@@ -1246,7 +1246,6 @@ function WorkPage() {
   return (
     <>
       <div
-        dir="rtl"
         className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 relative bg-cover bg-center"
         style={{
           backgroundImage: `url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2000&auto=format&fit=crop')`,

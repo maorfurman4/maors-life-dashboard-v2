@@ -3,6 +3,7 @@ import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { haptics } from "@/lib/haptics";
 
 interface AddPayslipDrawerProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function AddPayslipDrawer({ open, onClose }: AddPayslipDrawerProps) {
 
   const handleSave = async () => {
     if (!grossActual && !netActual) {
+      haptics.error();
       toast.error("הזן לפחות ברוטו או נטו");
       return;
     }
@@ -59,11 +61,13 @@ export function AddPayslipDrawer({ open, onClose }: AddPayslipDrawerProps) {
 
       if (error) throw error;
 
+      haptics.success();
       toast.success("תלוש נשמר");
       await queryClient.invalidateQueries({ queryKey: ["payslip-uploads"] });
       reset();
       onClose();
     } catch (e: any) {
+      haptics.error();
       toast.error("שגיאה בשמירת התלוש: " + e.message);
     } finally {
       setIsSaving(false);

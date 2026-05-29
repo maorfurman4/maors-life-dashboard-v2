@@ -3,6 +3,7 @@ import { Plus, X, Check, Users } from "lucide-react";
 import { useExpenseSplits, type SplitParticipant } from "@/hooks/useExpenseSplits";
 import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 const fmt = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 2 });
 
@@ -44,9 +45,9 @@ function NewSplitForm({ onSave, onCancel }: {
   }
 
   async function handleSave() {
-    if (!description.trim()) { toast.error("הזן תיאור"); return; }
-    if (!totalNum || totalNum <= 0) { toast.error("הזן סכום תקין"); return; }
-    if (validNames.length < 2) { toast.error("הוסף לפחות 2 משתתפים"); return; }
+    if (!description.trim()) { haptics.error(); toast.error("הזן תיאור"); return; }
+    if (!totalNum || totalNum <= 0) { haptics.error(); toast.error("הזן סכום תקין"); return; }
+    if (validNames.length < 2) { haptics.error(); toast.error("הוסף לפחות 2 משתתפים"); return; }
 
     const participants: SplitParticipant[] = validNames.map((name, i) => ({
       name,
@@ -57,9 +58,11 @@ function NewSplitForm({ onSave, onCancel }: {
     setSaving(true);
     try {
       await onSave(description.trim(), totalNum, participants);
+      haptics.success();
       toast.success("חלוקה נשמרה!");
       onCancel();
     } catch {
+      haptics.error();
       toast.error("שגיאה בשמירה");
     } finally {
       setSaving(false);

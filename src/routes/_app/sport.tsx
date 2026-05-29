@@ -1543,7 +1543,7 @@ function DayStatusBanner({ isTraining, onToggle }: { isTraining: boolean; onTogg
   return (
     <button
       onClick={onToggle}
-      className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl border backdrop-blur-xl transition-all duration-300 text-right ${
+      className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl border backdrop-blur-xl transition-all duration-300 text-end ${
         isTraining
           ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_6px_32px_rgba(16,185,129,0.14)]"
           : "border-white/10 bg-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
@@ -1573,7 +1573,7 @@ function QuickWorkoutCard({ workout, onQuickLog }: { workout: (typeof QUICK_WORK
     >
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
       <span className="absolute top-2.5 right-2.5 text-2xl leading-none drop-shadow-lg">{workout.emoji}</span>
-      <p className="absolute bottom-16 right-0 left-0 px-3 text-sm font-black text-white leading-tight text-right">{workout.label}</p>
+      <p className="absolute bottom-16 right-0 left-0 px-3 text-sm font-black text-white leading-tight text-end">{workout.label}</p>
       <div className="absolute bottom-8 left-0 right-0 flex gap-1 px-2.5 justify-end">
         {workout.durations.map((d) => (
           <button key={d} onClick={(e) => { e.stopPropagation(); setSelDuration(d); }}
@@ -1663,7 +1663,7 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
         <span className="absolute top-2.5 right-2.5 text-2xl leading-none drop-shadow-lg">{meta.emoji}</span>
-        <p className="absolute bottom-10 right-0 left-0 px-3 text-sm font-black text-white leading-tight text-right line-clamp-2">
+        <p className="absolute bottom-10 right-0 left-0 px-3 text-sm font-black text-white leading-tight text-end line-clamp-2">
           {t.name}
         </p>
         <button
@@ -1759,7 +1759,7 @@ function QuickAddRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => void }) {
                       <div className="h-10 w-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: meta.color + "22" }}>
                         {meta.emoji}
                       </div>
-                      <div className="flex-1 min-w-0 text-right">
+                      <div className="flex-1 min-w-0 text-end">
                         <div className="flex items-center justify-end gap-1.5">
                           <p className="text-sm font-black text-white truncate">{t.name}</p>
                           {t.is_system && <Star className="h-3 w-3 text-amber-400/60 shrink-0" />}
@@ -1882,7 +1882,7 @@ function QuickTemplatesRow({ onLoadTemplate }: { onLoadTemplate: (t: any) => voi
             <button
               key={t.id}
               onClick={() => onLoadTemplate(t)}
-              className="flex-shrink-0 flex flex-col gap-2 w-36 p-3 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl text-right active:scale-95 transition-all hover:border-white/20"
+              className="flex-shrink-0 flex flex-col gap-2 w-36 p-3 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl text-end active:scale-95 transition-all hover:border-white/20"
             >
               <div className="flex items-center justify-between">
                 <div
@@ -2004,7 +2004,7 @@ function Stepper({ value, onChange, min = 0, max = 999, step = 1, suffix = "" }:
       </button>
       <div className="w-14 text-center">
         <span className="text-sm font-black text-white">{fmt(value)}</span>
-        {suffix && <span className="text-[10px] text-white/40 ml-0.5">{suffix}</span>}
+        {suffix && <span className="text-[10px] text-white/40 ms-0.5">{suffix}</span>}
       </div>
       <button onClick={() => onChange(inc(value))}
         className="h-8 w-8 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center text-white/70 hover:bg-white/15 active:scale-95 transition-all">
@@ -2373,7 +2373,7 @@ function ConfettiCelebration({
               <div key={idx}
                 className="flex items-center justify-between px-3 py-2 rounded-2xl bg-amber-400/8 border border-amber-400/15"
               >
-                <span className="text-xs font-bold text-white/75 text-right truncate ml-2">{pr.name}</span>
+                <span className="text-xs font-bold text-white/75 text-end truncate ms-2">{pr.name}</span>
                 <span className="text-sm font-black text-amber-400 shrink-0">{pr.value} ק״ג</span>
               </div>
             ))}
@@ -2939,13 +2939,13 @@ function WorkoutBuilderTab({
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-4 py-3">
             <input value={workoutName} onChange={(e) => setWorkoutName(e.target.value)}
               placeholder="שם האימון (למשל: כוח עליון)"
-              className="w-full bg-transparent text-sm font-black text-white placeholder:text-white/25 outline-none text-right" dir="rtl" />
+              className="w-full bg-transparent text-sm font-black text-white placeholder:text-white/25 outline-none text-end" dir="rtl" />
           </div>
 
           {/* ── Exit template confirmation dialog ────────────────────── */}
           {exitTemplateConfirm && (
             <div className="fixed inset-0 z-50 flex items-center justify-center px-6 bg-black/60 backdrop-blur-sm">
-              <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-[#1a1a2e] p-6 space-y-4 shadow-2xl" dir="rtl">
+              <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-[#1a1a2e] p-6 space-y-4 shadow-2xl">
                 <div className="text-center space-y-1">
                   <p className="text-base font-black text-white">יציאה מהתבנית</p>
                   <p className="text-xs text-white/50">האם אתה בטוח שברצונך לצאת מהתבנית <span className="text-white/80 font-bold">"{workoutName}"</span>?</p>
@@ -3125,7 +3125,7 @@ function WorkoutBuilderTab({
           <SportAIPlanner />
           {/* ── Legacy inline AI questionnaire (hidden — kept for plan history) ── */}
           {false && !aiPlan && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4" dir="rtl">
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4">
             {/* Progress bar */}
             <div className="flex gap-1 mb-4">
               {[0,1,2,3,4].map(i => (
@@ -3182,7 +3182,7 @@ function WorkoutBuilderTab({
                     <p className="text-[11px] text-white/50">בחר ציוד לכל יום:</p>
                     {Array.from({ length: aiDays }, (_, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <span className="text-[10px] text-white/40 w-10 shrink-0 text-right">יום {i+1}</span>
+                        <span className="text-[10px] text-white/40 w-10 shrink-0 text-end">יום {i+1}</span>
                         <div className="flex gap-1.5 flex-1">
                           {DAY_EQUIPMENT_OPTIONS.map(opt => (
                             <button key={opt.value}
@@ -3349,8 +3349,8 @@ function WorkoutBuilderTab({
                   </div>
                   <div className="flex items-start justify-between text-xs gap-2">
                     <span className="text-white/40 shrink-0">⚙️ ציוד</span>
-                    <div className="text-left space-y-0.5">
-                      <span className="text-white font-semibold block text-right">{aiEquip}</span>
+                    <div className="text-start space-y-0.5">
+                      <span className="text-white font-semibold block text-end">{aiEquip}</span>
                       {aiEquip === "משולב" && Object.keys(aiDayEquipment).length > 0 && (
                         <div className="space-y-0.5">
                           {Array.from({ length: aiDays }, (_, i) => (
@@ -3381,7 +3381,7 @@ function WorkoutBuilderTab({
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-white/40">📝 מגבלות</span>
-                    <span className="text-white font-semibold truncate max-w-[60%] text-right">{aiConstraints || "אין"}</span>
+                    <span className="text-white font-semibold truncate max-w-[60%] text-end">{aiConstraints || "אין"}</span>
                   </div>
                 </div>
                 <button onClick={handleGeneratePlan} disabled={aiLoading}
@@ -3402,7 +3402,7 @@ function WorkoutBuilderTab({
           </div>
           )}
           {aiPlan && (
-            <div className="space-y-4" dir="rtl">
+            <div className="space-y-4">
               {/* Plan header */}
               <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/8 px-4 py-3 space-y-1">
                 <div className="flex items-center justify-between">
@@ -3432,13 +3432,13 @@ function WorkoutBuilderTab({
                       🔗 שתף
                     </button>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-xs font-black text-white">{aiPlan.split_type || "תוכנית מותאמת אישית"}</p>
                     <p className="text-[10px] text-white/40">{aiDays} ימי אימון · {aiSessionMins || 60} דק'</p>
                   </div>
                 </div>
-                <p className="text-[11px] text-white/60 text-right">{aiPlan.summary}</p>
-                {savedPlanBanner && <p className="text-[11px] text-emerald-400 font-bold text-right">✅ התוכנית נשמרה!</p>}
+                <p className="text-[11px] text-white/60 text-end">{aiPlan.summary}</p>
+                {savedPlanBanner && <p className="text-[11px] text-emerald-400 font-bold text-end">✅ התוכנית נשמרה!</p>}
               </div>
 
               {/* Week selector */}
@@ -3503,7 +3503,7 @@ function WorkoutBuilderTab({
                               <ChevronRight className={`h-4 w-4 text-white/40 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                               <span className="text-[11px] text-white/40">{workout.exercises?.length ?? 0} תרגילים</span>
                             </div>
-                            <div className="flex items-center gap-2 text-right">
+                            <div className="flex items-center gap-2 text-end">
                               <div>
                                 <p className="text-sm font-black text-white">{workout.name}</p>
                                 <p className="text-[10px] text-white/40">{workout.day} · {workout.duration_minutes} דק'</p>
@@ -3529,7 +3529,7 @@ function WorkoutBuilderTab({
                                       )}
                                     </div>
                                     {/* Info */}
-                                    <div className="flex-1 min-w-0 text-right">
+                                    <div className="flex-1 min-w-0 text-end">
                                       <p className="text-sm font-black text-white truncate">{ex.name}</p>
                                       <p className="text-[10px] text-white/50">{ex.sets} סטים × {ex.reps}</p>
                                       {ex.explanation && <p className="text-[10px] text-emerald-400/80 mt-0.5">{ex.explanation}</p>}
@@ -3591,16 +3591,16 @@ function WorkoutBuilderTab({
               {/* Tips */}
               {aiPlan.tips?.length > 0 && (
                 <div className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 space-y-2">
-                  <p className="text-[11px] font-black text-white/50 text-right">💡 טיפים</p>
+                  <p className="text-[11px] font-black text-white/50 text-end">💡 טיפים</p>
                   {aiPlan.tips.map((tip: string, i: number) => (
-                    <p key={i} className="text-[11px] text-white/60 text-right">• {tip}</p>
+                    <p key={i} className="text-[11px] text-white/60 text-end">• {tip}</p>
                   ))}
                 </div>
               )}
 
               {/* Small AI Chat */}
               <div className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 space-y-2">
-                <p className="text-[11px] font-bold text-white/40 text-right">💬 בקש שינוי</p>
+                <p className="text-[11px] font-bold text-white/40 text-end">💬 בקש שינוי</p>
                 <div className="flex gap-2">
                   <button
                     onClick={async () => {
@@ -3628,7 +3628,7 @@ function WorkoutBuilderTab({
                   <input
                     value={aiChatMsg} onChange={e => setAiChatMsg(e.target.value)}
                     placeholder="למשל: החלף את הסקוואט בלגפרס..."
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/25 outline-none focus:border-emerald-500/40 text-right"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/25 outline-none focus:border-emerald-500/40 text-end"
                     dir="rtl"
                     onKeyDown={e => { if (e.key === "Enter" && aiChatMsg.trim() && !aiChatLoading) { e.currentTarget.blur(); } }}
                   />
@@ -3651,7 +3651,7 @@ function WorkoutBuilderTab({
                             className="h-7 w-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0 hover:bg-red-500/20 transition-all">
                             <X className="h-3 w-3 text-red-400" />
                           </button>
-                          <div className="flex-1 min-w-0 text-right">
+                          <div className="flex-1 min-w-0 text-end">
                             <p className="text-xs font-black text-white truncate">{p.name}</p>
                             <p className="text-[10px] text-white/35">{new Date(p.created_at).toLocaleDateString("he-IL")} · {p.split_type || p.goal}</p>
                           </div>
@@ -3792,7 +3792,7 @@ function WorkoutBuilderTab({
         style={{ animation: "prBounce 0.3s cubic-bezier(.17,.67,.35,1.4) both" }}
       >
         <span className="text-xl shrink-0">🗑️</span>
-        <p className="flex-1 text-[13px] text-amber-200 font-semibold truncate" dir="rtl">
+        <p className="flex-1 text-[13px] text-amber-200 font-semibold truncate">
           "{templateUndoBanner.name}" נמחקה
         </p>
         <button
@@ -4187,7 +4187,7 @@ function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, onAddToWorkout
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="חפש תרגיל, שריר או ציוד..."
           dir="rtl"
-          className="w-full rounded-2xl border border-white/15 bg-white/8 backdrop-blur-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all pr-10 appearance-none [&::-webkit-search-cancel-button]:hidden"
+          className="w-full rounded-2xl border border-white/15 bg-white/8 backdrop-blur-xl px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all pe-10 appearance-none [&::-webkit-search-cancel-button]:hidden"
         />
         <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none" />
         {searchQuery && (
@@ -4302,7 +4302,7 @@ function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, onAddToWorkout
               const visibleCount = g.exercises.filter((ex) => !hidden.includes(ex.name)).length;
               return (
                 <button key={g.key} onClick={() => handleGroupSelect(g)}
-                  className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-right flex items-center gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.97] transition-all">
+                  className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 text-end flex items-center gap-3 hover:border-white/20 hover:bg-white/8 active:scale-[0.97] transition-all">
                   <div className="h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 relative" style={{ background: g.color + "22" }}>
                     <MuscleBodyIcon muscleKey={g.key} size={30} />
                   </div>
@@ -4409,7 +4409,7 @@ function ExerciseLibraryTab({ onAddToWorkout, onAddToWorkoutAsSS, onAddToWorkout
 
           {/* Active filter count */}
           {(activeSubFilter || activeEquipFilter) && (
-            <p className="text-[10px] text-white/35 text-right px-0.5">{filteredExercises.length} תרגילים</p>
+            <p className="text-[10px] text-white/35 text-end px-0.5">{filteredExercises.length} תרגילים</p>
           )}
 
           {/* Exercise list */}
@@ -4621,7 +4621,7 @@ function TemplateBottomSheet({ ex, onClose }: { ex: LibraryExercise; onClose: ()
           )}
           {userTemplates.map((t: any) => (
             <button key={t.id} onClick={() => handleAdd(t)}
-              className="w-full text-right p-3.5 rounded-2xl bg-white/6 border border-white/8 hover:bg-white/10 active:scale-[0.98] transition-all flex items-center justify-between gap-3">
+              className="w-full text-end p-3.5 rounded-2xl bg-white/6 border border-white/8 hover:bg-white/10 active:scale-[0.98] transition-all flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-bold text-white truncate">{t.name}</p>
                 <p className="text-[10px] text-white/35 mt-0.5">{(t.exercises ?? []).length} תרגילים</p>
@@ -4683,7 +4683,7 @@ function LibrarySettingsSheet({
             <div className="space-y-1.5">
               {hidden.map((name) => (
                 <div key={name} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/8">
-                  <span className="text-xs text-white/70 truncate flex-1 mr-3">{name}</span>
+                  <span className="text-xs text-white/70 truncate flex-1 me-3">{name}</span>
                   <button onClick={() => onUnhide(name)} className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 shrink-0">חשוף ✓</button>
                 </div>
               ))}
@@ -4698,7 +4698,7 @@ function LibrarySettingsSheet({
             <div className="space-y-1.5">
               {favorites.map((name) => (
                 <div key={name} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/8">
-                  <span className="text-xs text-white/70 truncate flex-1 mr-3">{name}</span>
+                  <span className="text-xs text-white/70 truncate flex-1 me-3">{name}</span>
                   <button onClick={() => onUnfavorite(name)} className="text-[11px] font-bold text-red-400 hover:text-red-300 shrink-0">הסר ✕</button>
                 </div>
               ))}
@@ -4870,7 +4870,7 @@ function ExerciseRow({
       )}
 
       {/* Text */}
-      <div className="flex-1 min-w-0 text-right">
+      <div className="flex-1 min-w-0 text-end">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-black text-white leading-tight flex-1 truncate">{ex.name}</p>
           {isFavorite && <Heart className="h-3 w-3 text-red-400 fill-red-400 shrink-0" />}
@@ -5013,7 +5013,7 @@ function WeightChart() {
 
       {latest && (
         <div className="flex items-end gap-3">
-          <p className="text-4xl font-black text-white">{latest.weight_kg}<span className="text-lg text-white/40 ml-1">kg</span></p>
+          <p className="text-4xl font-black text-white">{latest.weight_kg}<span className="text-lg text-white/40 ms-1">kg</span></p>
           {delta !== null && (
             <span className={`text-sm font-bold mb-1 ${Number(delta) < 0 ? "text-emerald-400" : Number(delta) > 0 ? "text-red-400" : "text-white/40"}`}>
               {Number(delta) > 0 ? "+" : ""}{delta}kg
@@ -5374,7 +5374,7 @@ function PRSection() {
                   ><Trash2 className="h-3 w-3 text-white/30" /></button>
                 </div>
               )}
-              <div className="ml-1 text-white/20">
+              <div className="ms-1 text-white/20">
                 {expandedEx === group.name ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </div>
             </div>
@@ -5629,7 +5629,7 @@ function WorkoutHistoryGrouped() {
       <div className="flex items-center gap-2">
         <BookOpen className="h-4 w-4 text-blue-400" />
         <p className="text-sm font-black text-white">היסטוריה לפי תבנית</p>
-        <span className="text-[10px] text-white/30 mr-auto">{workouts?.length ?? 0} אחרונים</span>
+        <span className="text-[10px] text-white/30 me-auto">{workouts?.length ?? 0} אחרונים</span>
       </div>
 
       {isLoading ? (
@@ -5649,12 +5649,12 @@ function WorkoutHistoryGrouped() {
               <div key={templateName} className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden">
                 {/* Accordion header */}
                 <button
-                  className="w-full flex items-center gap-3 px-3 py-3 text-right active:bg-white/5 transition-all"
+                  className="w-full flex items-center gap-3 px-3 py-3 text-end active:bg-white/5 transition-all"
                   onClick={() => setOpenKey(isOpen ? null : templateName)}
                 >
                   <span className="text-lg">{emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-black text-white truncate" dir="rtl">{templateName}</p>
+                    <p className="text-xs font-black text-white truncate">{templateName}</p>
                     <p className="text-[10px] text-white/35">{wList.length} אימונים · {totalMins} דק׳ · {totalCal} קל׳</p>
                   </div>
                   <span className={`text-white/30 text-xs transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>▾</span>
@@ -5671,7 +5671,7 @@ function WorkoutHistoryGrouped() {
                           </p>
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1.5 text-[10px] text-white/35">
-                              <span><Clock className="h-2.5 w-2.5 inline mr-0.5" />{w.duration_minutes || "—"} דק׳</span>
+                              <span><Clock className="h-2.5 w-2.5 inline me-0.5" />{w.duration_minutes || "—"} דק׳</span>
                             </div>
                             <button
                               onClick={() => setEditWorkout({ id: w.id, notes: w.notes ?? "", duration_minutes: w.duration_minutes ?? 45 })}
@@ -5726,7 +5726,7 @@ function WorkoutHistoryGrouped() {
           <div className="text-center space-y-2">
             <div className="text-3xl">🗑️</div>
             <p className="text-base font-black text-white">מחיקת אימון</p>
-            <p className="text-[12px] text-white/50" dir="rtl">האימון יימחק לצמיתות. פעולה זו אינה הפיכה.</p>
+            <p className="text-[12px] text-white/50">האימון יימחק לצמיתות. פעולה זו אינה הפיכה.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <button onClick={() => setConfirmDeleteId(null)}
@@ -5765,7 +5765,7 @@ function WorkoutHistoryGrouped() {
               <input
                 value={editWorkout.notes}
                 onChange={(e) => setEditWorkout((prev) => prev ? { ...prev, notes: e.target.value } : null)}
-                className="w-full bg-transparent text-sm font-bold text-white placeholder:text-white/25 outline-none text-right"
+                className="w-full bg-transparent text-sm font-bold text-white placeholder:text-white/25 outline-none text-end"
                 dir="rtl"
                 placeholder="שם האימון"
               />
@@ -5776,7 +5776,7 @@ function WorkoutHistoryGrouped() {
                 type="number"
                 value={editWorkout.duration_minutes}
                 onChange={(e) => setEditWorkout((prev) => prev ? { ...prev, duration_minutes: parseInt(e.target.value) || 0 } : null)}
-                className="w-full bg-transparent text-sm font-bold text-white outline-none text-right"
+                className="w-full bg-transparent text-sm font-bold text-white outline-none text-end"
                 dir="rtl"
                 min={1}
               />
@@ -6915,7 +6915,6 @@ function SportPage() {
   return (
     <>
       <div
-        dir="rtl"
         className="-mx-3 md:-mx-6 -mt-3 md:-mt-6 relative bg-cover bg-center"
         style={{
           backgroundImage: `url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2000&auto=format&fit=crop')`,
@@ -6956,7 +6955,6 @@ function SportPage() {
                   <button
                     onClick={() => setShowAIConsultant(false)}
                     className="absolute top-3 left-3 z-10 h-7 w-7 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
-                    dir="rtl"
                   >
                     <X className="h-3.5 w-3.5 text-white" />
                   </button>
@@ -6968,7 +6966,6 @@ function SportPage() {
                 <button
                   onClick={() => setShowAIConsultant(true)}
                   className="fixed bottom-24 left-4 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-sport text-sport-foreground font-bold text-sm shadow-[0_0_24px_rgba(0,255,135,0.4)] hover:opacity-90 transition-opacity"
-                  dir="rtl"
                 >
                   <BrainCircuit className="h-4 w-4" />
                   שאל מאמן AI

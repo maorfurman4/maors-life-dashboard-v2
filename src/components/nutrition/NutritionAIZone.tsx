@@ -76,7 +76,7 @@ ${history}
   const reset = () => setMessages([]);
 
   return (
-    <div className="rounded-2xl bg-card border border-border overflow-hidden flex flex-col" style={{ minHeight: 380 }} dir="rtl">
+    <div className="rounded-2xl bg-card border border-border overflow-hidden flex flex-col" style={{ minHeight: 380 }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-nutrition/5">
         <div className="flex items-center gap-2.5">
@@ -123,7 +123,7 @@ ${history}
                 }`}
               >
                 {m.role === "assistant" && (
-                  <Sparkles className="h-3 w-3 text-nutrition inline ml-1 mb-0.5" />
+                  <Sparkles className="h-3 w-3 text-nutrition inline ms-1 mb-0.5" />
                 )}
                 {m.text}
               </div>

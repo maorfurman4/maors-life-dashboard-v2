@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { haptics } from "@/lib/haptics";
 import { Timer, Pause, Play, RotateCcw, X, Plus, Minus } from "lucide-react";
 
 interface RestTimerProps {
@@ -33,7 +34,7 @@ export function RestTimer({ open, onClose, defaultSeconds = 60 }: RestTimerProps
       setSecondsLeft((s) => {
         if (s <= 1) {
           playBeep();
-          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+          haptics.heavy();
           setRunning(false);
           return 0;
         }
@@ -135,7 +136,7 @@ export function RestTimer({ open, onClose, defaultSeconds = 60 }: RestTimerProps
             onClick={() => setRunning(!running)}
             className="h-14 w-14 rounded-full bg-sport text-sport-foreground flex items-center justify-center shadow-lg shadow-sport/30 hover:opacity-90"
           >
-            {running ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-0.5" />}
+            {running ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ms-0.5" />}
           </button>
           <button onClick={reset} className="h-11 w-11 rounded-xl bg-secondary/40 flex items-center justify-center hover:bg-secondary/60">
             <RotateCcw className="h-4 w-4" />

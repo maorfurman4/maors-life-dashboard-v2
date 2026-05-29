@@ -66,7 +66,7 @@ export function FinanceDebtTracker() {
   }, 0);
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -111,7 +111,7 @@ export function FinanceDebtTracker() {
                   className="w-full flex items-center gap-3 p-4 hover:bg-secondary/10 transition-colors"
                   onClick={() => setExpanded(isExpanded ? null : debt.id)}
                 >
-                  <div className="flex-1 text-right min-w-0">
+                  <div className="flex-1 text-end min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-bold truncate">{debt.name}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-finance/10 text-finance border border-finance/20 shrink-0">
@@ -219,7 +219,7 @@ export function FinanceDebtTracker() {
 
       {/* Add drawer */}
       <AddItemDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="הוסף חוב / הלוואה">
-        <div className="space-y-4" dir="rtl">
+        <div className="space-y-4">
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">שם</label>
             <input

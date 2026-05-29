@@ -26,12 +26,12 @@ export default function SportWelcomeVideo() {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className="max-w-2xl w-full bg-gray-900 border-white/10 text-white" dir="rtl">
-        <DialogHeader className="text-right">
-          <DialogTitle className="text-xl font-bold text-right">
+      <DialogContent className="max-w-2xl w-full bg-gray-900 border-white/10 text-white">
+        <DialogHeader className="text-end">
+          <DialogTitle className="text-xl font-bold text-end">
             ברוך הבא למודול הספורט! 🏋️
           </DialogTitle>
-          <DialogDescription className="text-white/60 text-right">
+          <DialogDescription className="text-white/60 text-end">
             צפה בסרטון הקצר שיסביר לך איך להשתמש בכל הפיצ'רים
           </DialogDescription>
         </DialogHeader>

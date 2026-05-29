@@ -71,7 +71,6 @@ export function ModernHome() {
     <div
       className="-mx-3 -mt-3 md:-mx-6 md:-mt-6 relative min-h-screen px-4 pt-10 pb-28 md:px-8"
       style={{ backgroundImage: `url(${BG_IMAGE})`, backgroundSize: "cover", backgroundPosition: "center" }}
-      dir="rtl"
     >
       {/* Dark legibility overlay */}
       <div className="absolute inset-0 bg-black/55 pointer-events-none" />

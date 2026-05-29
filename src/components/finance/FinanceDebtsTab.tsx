@@ -184,7 +184,6 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
     <div
       className={`rounded-3xl overflow-hidden border ${meta.borderClass} ${meta.bgClass}`}
       style={{ background: FT.card }}
-      dir="rtl"
     >
       {/* Card Header */}
       <div className="flex items-center gap-2 p-4">
@@ -198,7 +197,7 @@ function DebtCard({ debt, onDelete }: { debt: Debt; onDelete: () => void }) {
 
         {/* Info — tappable to expand */}
         <button
-          className="flex-1 text-right min-w-0"
+          className="flex-1 text-end min-w-0"
           onClick={() => setExpanded((v) => !v)}
         >
           <div className="flex items-center gap-2 mb-0.5">
@@ -395,7 +394,7 @@ function AddDebtForm({ onAdd, onCancel }: { onAdd: (d: Omit<Debt, "id">) => void
   const subInput = { background: FT.card, border: `1px solid ${FT.goldBorder}` } as const;
 
   return (
-    <div className="rounded-2xl p-4 space-y-3" dir="rtl"
+    <div className="rounded-2xl p-4 space-y-3"
       style={{ background: FT.cardLight, border: `1px solid ${FT.goldBorder}` }}>
       <p className="text-[11px] font-black" style={{ color: FT.textSub, letterSpacing: 0 }}>
         הוספת חוב / משכנתא
@@ -610,7 +609,7 @@ export function FinanceDebtsTab(_: { year: number; month: number }) {
   }
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-xs font-black" style={{ color: FT.textMuted, letterSpacing: 0 }}>

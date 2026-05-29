@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { User, Save, ChevronLeft, AlertCircle } from "lucide-react";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 const GENDER_OPTIONS = ["זכר", "נקבה", "אחר", "מעדיף/ה לא לציין"];
 const LIMITATION_OPTIONS = ["כתף", "גב תחתון", "ברך", "מרפק", "ירך", "קרסול", "אחר", "אין מגבלות"];
@@ -279,10 +280,11 @@ export function SettingsPersonal() {
       },
       {
         onSuccess: () => {
+          haptics.success();
           toast.success("פרטים אישיים נשמרו ✅");
           setSavedDraft(draft);
         },
-        onError: (e) => toast.error("שגיאה: " + e.message),
+        onError: (e) => { haptics.error(); toast.error("שגיאה: " + e.message); },
       }
     );
   };

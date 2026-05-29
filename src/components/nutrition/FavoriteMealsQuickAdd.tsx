@@ -49,9 +49,9 @@ function AddFavoriteSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) { reset(); onClose(); } }}>
-      <SheetContent side="bottom" className="rounded-t-2xl pb-8" dir="rtl">
+      <SheetContent side="bottom" className="rounded-t-2xl pb-8">
         <SheetHeader className="mb-4">
-          <SheetTitle className="text-right">הוסף ארוחה מועדפת</SheetTitle>
+          <SheetTitle className="text-end">הוסף ארוחה מועדפת</SheetTitle>
         </SheetHeader>
         <div className="space-y-3">
           <div>
@@ -125,7 +125,7 @@ export function FavoriteMealsQuickAdd() {
 
   return (
     <>
-      <div dir="rtl" className="w-full">
+      <div className="w-full">
         <p className="text-xs font-semibold text-muted-foreground mb-2 px-1">מועדפות</p>
 
         {favorites.length === 0 ? (
@@ -175,17 +175,16 @@ export function FavoriteMealsQuickAdd() {
                   className="w-44 p-1.5 rounded-xl"
                   side="top"
                   align="center"
-                  dir="rtl"
                 >
                   <button
                     onClick={() => { haptics.success(); logFavorite(fav.id); setOpenPopoverId(null); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors text-right"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors text-end"
                   >
                     🍽️ רשום עכשיו
                   </button>
                   <button
                     onClick={() => { haptics.tap(); removeFavorite(fav.id); setOpenPopoverId(null); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors text-right"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors text-end"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     הסר ממועדפות

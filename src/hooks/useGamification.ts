@@ -137,6 +137,7 @@ export function useGamification() {
       if (error && !error.message?.includes("unique")) throw error;
     },
     onSuccess: () => {
+      haptics.heavy();
       qc.invalidateQueries({ queryKey: ["user-achievements", userId] });
     },
   });
