@@ -1,0 +1,713 @@
+# מסמך אפיון מלא — My Life Dashboard
+> מסמך זה מיועד לשימוש כ-System Prompt / Instructions לתוך Gemini Gem אישי.
+> הוא מכיל את כל המידע הטכני, עיצובי ופונקציונלי על האפלקציה.
+
+---
+
+## 1. סקירה כללית
+
+| פרט | ערך |
+|-----|-----|
+| **שם האפלקציה** | My Life Dashboard (כינוי: מיי לייף) |
+| **מטרה** | אפלקציית ניהול חיים אישית — פיננסים, תזונה, ספורט, עבודה |
+| **פלטפורמה** | PWA Mobile-First (מותקנת כ-iOS/Android app דרך הדפדפן) |
+| **שפת ממשק** | עברית מלאה, RTL (ימין לשמאל) |
+| **משתמשים** | מרובים — כל משתמש רואה רק את הנתונים שלו |
+| **Frontend Hosting** | Vercel (auto-deploy מ-GitHub main) |
+| **Backend** | Supabase (PostgreSQL, Auth, Storage, Edge Functions) |
+| **URL פרודקשן** | מוגדר ב-Vercel |
+
+---
+
+## 2. Stack טכנולוגי מלא
+
+### Frontend
+| ספרייה | גרסה | שימוש |
+|--------|------|-------|
+| React | 19 | UI framework |
+| TypeScript | 5.8 | type safety |
+| TanStack Router | v1.168 | file-based routing |
+| TanStack React Query | v5.83 | server state + caching |
+| Zustand | v4.5.5 | client-side state |
+| Vite | v7.3.1 | build tool + HMR |
+| Tailwind CSS | v4.2.1 | styling (oklch color space) |
+| Framer Motion | v12.40 | animations |
+| Recharts | v2.15.4 | data visualization |
+| Radix UI | 20+ components | accessible primitives |
+| Sonner | v2.0.7 | toast notifications |
+| Lucide React | v0.575 | icons |
+| Zod | v3.24.2 | schema validation |
+| Heebo | — | Hebrew-optimized font |
+
+### Backend / Services
+| שירות | שימוש |
+|-------|-------|
+| Supabase PostgreSQL v14 | מסד נתונים ראשי |
+| Supabase Auth | Email+Password, Google OAuth |
+| Supabase Storage | תמונות גוף, תצלומי ארוחות |
+| Supabase Edge Functions | Deno runtime — 13 AI functions |
+| OpenAI API | gpt-4o ו-gpt-4o-mini |
+| Yahoo Finance API | מחירי מניות ו-ETF |
+| Open Food Facts API | נתוני מזון לפי ברקוד |
+| Web Push / VAPID | Push notifications |
+| Workbox | Service Worker + caching |
+| IndexedDB | Offline queue |
+
+---
+
+## 3. ארכיטקטורה כללית
+
+```
+User (Mobile PWA)
+    │
+    ▼
+React 19 + TanStack Router
+    │
+    ├── TanStack React Query ──► Supabase REST API ──► PostgreSQL
+    │
+    ├── Supabase Storage ──► תמונות/קבצים
+    │
+    └── Supabase Edge Functions (Deno)
+              │
+              └── OpenAI API (gpt-4o / gpt-4o-mini)
+```
+
+**Authentication Flow:**
+1. משתמש מגיע ל-`/login`
+2. `_app.tsx` מגן על כל routes — בדיקת JWT
+3. אם חדש → `OnboardingFlow` → שאלון → `user_profile` נוצר
+4. auth state מנוהל ע"י `useAuth()` hook עם localStorage persistence
+
+---
+
+## 4. מסד נתונים — כל הטבלאות
+
+### ניהול משתמשים
+```
+user_profile
+  ├── id (uuid, PK, = auth.users.id)
+  ├── full_name (text)
+  ├── avatar_url (text)
+  ├── age (integer)
+  ├── height_cm (numeric)
+  ├── weight_kg (numeric)
+  ├── onboarding_completed (boolean)
+  └── created_at (timestamptz)
+
+user_settings
+  ├── user_id (uuid, FK)
+  ├── hourly_rate (numeric) — שכר שעתי
+  ├── monthly_budget (numeric) — תקציב חודשי
+  ├── calorie_goal (integer) — יעד קלורי יומי
+  ├── water_goal_ml (integer) — יעד מים יומי
+  ├── quick_expenses (jsonb) — הוצאות מהירות: [{label, amount, category, emoji}]
+  └── notification_settings (jsonb)
+
+user_xp
+  ├── user_id (uuid, FK)
+  ├── total_xp (integer)
+  └── level (integer)
+
+user_streaks
+  ├── user_id (uuid, FK)
+  ├── streak_type (text) — 'workout' | 'nutrition' | 'water'
+  ├── current_streak (integer)
+  ├── longest_streak (integer)
+  └── last_activity_date (date)
+
+user_fitness_profile
+  ├── user_id (uuid, FK)
+  ├── fitness_level (text)
+  ├── goal (text)
+  ├── preferred_equipment (jsonb)
+  └── health_conditions (text)
+```
+
+### פיננסים
+```
+expense_entries
+  ├── id (uuid, PK)
+  ├── user_id (uuid, FK)
+  ├── amount (numeric)
+  ├── category (text)
+  ├── date (date)
+  ├── notes (text)
+  ├── currency (text, default 'ILS')
+  ├── exchange_rate (numeric, default 1.0)
+  └── original_amount (numeric)
+
+income_entries
+  ├── id, user_id, amount, source, date, notes
+
+expense_categories
+  ├── id, user_id, name, color, emoji, is_default
+
+fixed_expenses
+  ├── id, user_id, name, amount, category, due_day (integer — יום בחודש)
+  ├── is_installment (boolean)
+  └── total_installments, current_installment
+
+fixed_income
+  ├── id, user_id, source, amount, frequency
+
+debts
+  ├── id, user_id, person_name, amount, direction ('owe'|'owed'), date, notes, is_paid
+
+savings_goals
+  ├── id, user_id, title, target_amount, current_amount, deadline, emoji
+
+expense_splits
+  ├── id, user_id, total_amount, description, currency
+  └── participants (jsonb) — [{name, amount, paid: boolean}]
+
+market_watchlist
+  ├── id, user_id, symbol, name, type ('stock'|'etf'|'crypto')
+
+stock_holdings
+  ├── id, user_id, symbol, shares, avg_price, currency
+
+monthly_snapshots
+  ├── id, user_id, month (date), income_total, expense_total, savings
+
+payslip_uploads
+  ├── id, user_id, file_url, parsed_data (jsonb), month, uploaded_at
+```
+
+### תזונה
+```
+nutrition_entries
+  ├── id, user_id, date, meal_type ('breakfast'|'lunch'|'dinner'|'snack')
+  ├── food_name, calories, protein_g, carbs_g, fat_g
+  └── image_url, barcode, notes
+
+favorite_meals
+  ├── id, user_id, name, calories, protein_g, carbs_g, fat_g
+  └── emoji, created_at
+
+meal_plan_templates
+  ├── id, user_id, name, plan_data (jsonb), created_at
+
+water_entries
+  ├── id, user_id, date, amount_ml
+
+tdee_history
+  ├── id, user_id, date, tdee, bmr, activity_level
+```
+
+### ספורט
+```
+workouts
+  ├── id, user_id, name, category, date, duration_minutes, calories_burned
+  └── notes, is_template
+
+workout_exercises
+  ├── id, workout_id, exercise_name, sets, reps, weight_kg, rest_seconds
+  └── notes, order_index
+
+workout_runs
+  ├── id, user_id, date, distance_km, duration_minutes, pace_min_per_km
+  └── route_data (jsonb), elevation_m
+
+workout_plans
+  ├── id, user_id, name, plan_data (jsonb), weeks, created_at, is_active
+
+personal_records
+  ├── id, user_id, exercise_name, value, unit ('kg'|'reps'|'min'|'km')
+  └── date, notes
+
+weight_entries
+  ├── id, user_id, date, weight_kg, body_fat_pct, notes
+
+body_progress
+  ├── id, user_id, date, photo_url, notes
+```
+
+### עבודה
+```
+work_shifts
+  ├── id, user_id, date, hours, hourly_rate, shift_type
+  ├── shift_types: 'regular'|'evening'|'night'|'friday'|'saturday'|'holiday'|'travel'|...
+  └── bonus_amount, notes
+
+work_monthly_history
+  ├── id, user_id, month, total_hours, gross_pay, net_pay
+```
+
+### Gamification
+```
+achievements
+  ├── id, user_id, achievement_key (text), achieved_at, xp_earned
+```
+
+### AI
+```
+ai_chat_messages
+  ├── id, user_id, role ('user'|'assistant'), content, module_context, created_at
+```
+
+### Push Notifications
+```
+push_subscriptions
+  ├── id, user_id, endpoint, keys (jsonb), created_at
+
+notification_preferences
+  ├── user_id (PK), workout_reminder (bool), workout_reminder_time (time)
+  ├── nutrition_reminder (bool), nutrition_reminder_time (time)
+  ├── budget_alerts (bool), streak_alerts (bool), xp_milestones (bool)
+```
+
+---
+
+## 5. Authentication & Onboarding
+
+### Login (`/login`)
+- **UI**: כרטיס זכוכית מרכזי, tabs "הרשמה" / "התחברות"
+- **שיטות**: Email+Password + כפתור Google OAuth
+- **שגיאות בעברית**: "סיסמה שגויה", "אימייל לא קיים", "אימייל לא מאומת"
+- **הצגת/הסתרת סיסמה**: toggle button
+
+### Guard (`_app.tsx`)
+- כל routes תחת `/_app` דורשים auth
+- `useAuth()` hook → user, session, loading, signOut
+- אם לא מחובר → redirect ל-`/login`
+- אם מחובר אך `onboarding_completed = false` → `OnboardingFlow`
+
+### Onboarding Flow (`OnboardingFlow` component)
+- שאלון אישי: שם מלא, גיל, גובה, משקל, מטרות (ירידה/עלייה/תחזוקה)
+- בסיום → שורה ב-`user_profile` + `onboarding_completed = true`
+- עוצב כ-wizard עם steps מונפשים
+
+---
+
+## 6. ניווט ו-Routes
+
+### מבנה Routes
+```
+/login           — דף כניסה (ציבורי)
+/_app            — layout עם auth guard
+  /              — דף הבית (Home Dashboard)
+  /finance       — פיננסים
+  /nutrition     — תזונה
+  /sport         — ספורט
+  /work          — עבודה
+  /settings      — הגדרות
+```
+
+### ניווט תחתי (Mobile Bottom Nav)
+- 5 כפתורים: 🏠 בית | 💰 פיננסים | 🍽️ תזונה | 🏋️ ספורט | 💼 עבודה
+- Active state עם Framer Motion animation
+- Settings נגישות דרך כפתור פרופיל בTopBar
+
+---
+
+## 7. דף הבית (`/`)
+
+### קומפוננטה ראשית: `ModernHome`
+
+**תוכן הדף (מלמעלה למטה):**
+1. **ברכה** — "שלום, [שם]! 👋" + תאריך עברי
+2. **HomeBalanceCard** — יתרה חודשית + progress bar מתקציב
+3. **WeeklyAIBrief** — (ביום ראשון בלבד) תובנות AI על השבוע
+4. **FavoriteMealsQuickAdd** — ארוחות מועדפות ל-1-לחיצה
+5. **QuickExpenseButtons** — הוצאות מהירות מוגדרות-משתמש
+6. **Category Cubes** — 4 קוביות קפיצה למודולים + stats מיידיות
+7. **XPBar** — progress bar ל-next level (בTopBar)
+
+---
+
+## 8. מודול פיננסים (`/finance`)
+
+### מבנה טאבים (4)
+| טאב | תוכן |
+|-----|------|
+| **מצב כללי** | יתרה חודשית, הכנסות vs הוצאות, פירוט קטגוריות (pie/bar chart), גרף שבועי 7 ימים |
+| **תזרים** | Quick-add הוצאה/הכנסה, הוצאות קבועות, תשלומים בתשלומים, QuickExpenseButtons |
+| **היסטוריה** | כל העסקאות עם חיפוש + filter לפי חודש/קטגוריה |
+| **חובות** | מי חייב לי / אני חייב — ניהול מלא |
+
+### AI בפיננסים
+- **`finance-insights-ai`**: ניתוח 3 חודשים → status (excellent/good/warning/danger), summary, comparisons, recommendations
+- **`weekly-brief-ai`**: כל יום ראשון — 3-4 תובנות קצרות עם emoji
+- **`payslip-parse-ai`**: OCR gpt-4o על תלוש שכר → hourlyRate, grossPay, netPay, pension, ביטוח לאומי, קרן השתלמות
+
+### תכונות נוספות
+- **מטבעות זרים**: USD/EUR/GBP עם המרה אוטומטית לשקל (exchangerate-api.com)
+- **יצוא PDF חודשי**: jsPDF — כותרת + הוצאות לפי קטגוריה + הכנסות
+- **מעקב מניות**: stock-quotes + stock-search (Yahoo Finance)
+- **יעדי חיסכון**: circular progress + "עוד X ימים לפי הקצב"
+- **פיצול הוצאות**: חישוב חלוקה שווה/מותאמת, סימון מי שילם
+
+---
+
+## 9. מודול תזונה (`/nutrition`)
+
+### מבנה טאבים (6)
+| טאב | תוכן |
+|-----|------|
+| **דשבורד** | ring מאקרו (קלוריות/חלבון/פחמימות/שומן), progress מים, TDEE |
+| **מנות** | רישום ארוחה ידנית + סורק ברקוד (Open Food Facts) |
+| **מתכנן** | תפריט שבועי AI — 7 ימים × 3 ארוחות |
+| **שבועי** | calendar view של ארוחות |
+| **יומן** | היסטוריה מלאה |
+| **מועדפות** | FavoriteMealsQuickAdd — כרטיסים ל-1-לחיצה |
+
+### AI בתזונה
+- **`meal-recognize`**: gpt-4o vision — מזהה ארוחה מתמונה → name, items[], calories, protein_g, carbs_g, fat_g, confidence
+- **`meal-plan-ai`**: gpt-4o — תפריט 7 ימים × 3 ארוחות + shopping list, לפי calorie goal + restrictions + budget
+- **`food-search`**: חיפוש מזון מהיר
+
+### תכונות נוספות
+- **FAB camera**: צלם ארוחה → AI מזהה ומוסיף לרישום
+- **Barcode scanner**: סרוק ברקוד → Open Food Facts API → מלא נתונים אוטומטית
+- **מחשבון TDEE**: Harris-Benedict + activity multiplier
+- **מעקב מים**: daily goal + כוס = +250ml, צבע progress
+
+---
+
+## 10. מודול ספורט (`/sport`)
+
+### מבנה טאבים (6)
+| טאב | תוכן |
+|-----|------|
+| **דשבורד** | אימונים השבוע, קלוריות, streak 🔥, volume chart |
+| **בונה** | בניית אימון — הוסף תרגילים, sets/reps/weight, timer |
+| **ספרייה** | 70+ תרגילים עם muscles, equipment, notes |
+| **ריצה** | מעקב ריצות — distance, pace, route GPS |
+| **פרוגרס** | גרפי PR, weight history, תמונות גוף |
+| **ייבוא** | Apple Health CSV / Google Fit JSON |
+
+### AI בספורט
+- **`workout-plan-ai`**: gpt-4o — תוכנית 4 שבועות מפורטת
+  - **קלט**: goal, daysPerWeek, equipment, age, gender, fitnessLevel, splitType, sessionMinutes, recentPRs, recentWorkouts, cardioType, preferredMuscles
+  - **פלט**: `{summary, split_type, weeks: [{week_number, overload_note, workouts: [{day, name, exercises: [{name, sets, reps, weight_kg, notes}]}]}], tips}`
+  - Split types: Full Body | Upper-Lower | PPL (Push-Pull-Legs) | A-B | A-B-C
+- **`identify-machine`**: gpt-4o vision — צלם מכשיר → machineName, howToUse, equipmentKeywords
+- **`ai-proxy`**: משפט עידוד מאמן אחרי אימון (gpt-4o-mini)
+
+### תכונות נוספות
+- **13 סוגי אימון** מוגדרים-מראש (חזה, גב, רגליים, כתפיים, HIIT, ריצה, שחייה...)
+- **PR tracking**: שיא חדש → confetti + XP +100
+- **ספריית תרגילים**: 70+ תרגילים עם שריר ראשי, ציוד, תיאור
+
+---
+
+## 11. מודול עבודה (`/work`)
+
+### מבנה טאבים (5)
+| טאב | תוכן |
+|-----|------|
+| **דשבורד** | שעות חודש נוכחי, הכנסה, ממוצע יומי, comparison לחודש קודם |
+| **פיננסים** | פירוט שכר: ברוטו, נטו, ניכויים |
+| **דוחות** | גרפי שעות חודשיות |
+| **הגדרות** | שכר שעתי, bonus settings |
+| **היסטוריה** | כל המשמרות עם edit/delete |
+
+### סוגי משמרות (12)
+- רגיל, ערב (+25%), לילה (+50%), שישי (+50%), **שבת (+150%)**, חג (+150%), נסיעה, אחסנה, הדרכה, ועוד
+- חישוב שכר ישראלי מדויק לפי חוק
+
+### AI בעבודה
+- **`payslip-parse-ai`**: gpt-4o vision OCR — נתח תלוש שכר ישראלי → JSON מפורט
+
+### תכונות נוספות
+- **ייצוא ICS**: ייצוא משמרות ל-Google Calendar/Apple Calendar
+- **אינטגרציה עם פיננסים**: הכנסות ממשמרות נספרות ביתרה הפיננסית
+
+---
+
+## 12. AI Assistant (Chat)
+
+### מיקום
+- **FAB button** ב-bottom-right של **כל** דף באפלקציה
+- **Drawer** שנפתח מהתחתית (bottom sheet)
+
+### מאפיינים
+- **Model**: gpt-4o
+- **שפה**: עברית בלבד
+- **Context injection** (נשלח בכל שיחה):
+  - יתרה פיננסית נוכחית
+  - ממוצע קלוריות 7 ימים אחרונים
+  - מספר אימונים בשבוע זה
+  - משקל נוכחי
+  - רמת XP + level
+- **היסטוריה**: 20 הודעות אחרונות מה-DB
+- **שמירה**: כל הודעה → `ai_chat_messages` בDB
+
+### System Prompt
+```
+אתה עוזר אישי חכם של {username}.
+מידע עדכני:
+- יתרה פיננסית: {balance}₪
+- ממוצע קלוריות 7 ימים: {avg_calories}
+- אימונים השבוע: {workouts}
+- משקל נוכחי: {weight}kg
+- רמה: {level} ({xp} XP)
+ענה קצר, בעברית, עם emoji. היה ידידותי ומעודד.
+```
+
+---
+
+## 13. Gamification System
+
+### XP Points
+| פעולה | XP |
+|-------|-----|
+| רישום אימון | +50 |
+| רישום ארוחה | +15 |
+| כוס מים | +5 |
+| רישום משמרת | +10 |
+| שיא אישי חדש (PR) | +100 |
+| Streak יומי | +streak×5 |
+
+### Levels (7 רמות)
+| רמה | XP נדרש |
+|-----|---------|
+| 1 — מתחיל | 0 |
+| 2 — מתפתח | 500 |
+| 3 — פעיל | 1,500 |
+| 4 — מנוסה | 3,500 |
+| 5 — מקצוען | 7,000 |
+| 6 — אלוף | 12,000 |
+| 7 — אגדה | 20,000 |
+
+### Achievements (12 הישגים)
+```
+Workout: first_workout, workouts_10, workouts_50, workouts_100
+Streaks: streak_3, streak_7, streak_30
+Nutrition: first_meal, meals_50
+Work: first_shift, shifts_20
+Sport: first_pr
+Special: all_modules_used
+```
+
+### UI Components
+- **XPBar** — progress bar ב-TopBar (תמיד גלוי)
+- **AchievementToast** — popup מונפש כשמשחררים הישג
+- **LevelUpModal** — מסך חגיגה full-screen בעלייה ברמה
+- **StreakBadge** — 🔥 badge עם מספר
+
+---
+
+## 14. Edge Functions (AI) — פירוט מלא
+
+כל הfunctions רצות ב-Deno runtime על Supabase.
+כולן דורשות Authorization header (Supabase JWT).
+
+| Function | Model | מטרה | קלט | פלט |
+|----------|-------|------|-----|-----|
+| `meal-recognize` | gpt-4o | זיהוי ארוחה מתמונה | `{imageBase64}` | `{meal: {name, items, calories, protein_g, carbs_g, fat_g, confidence}}` |
+| `workout-plan-ai` | gpt-4o | תוכנית אימונים 4 שבועות | `GeneratePlanPayload` | `{plan: WorkoutPlan}` |
+| `meal-plan-ai` | gpt-4o | תפריט שבועי | `{calorieGoal, restrictions, budget, userId}` | `{plan: DayPlan[], shoppingList: string[]}` |
+| `finance-insights-ai` | gpt-4o | תובנות פיננסיות | הוצאות 3 חודשים | `{insights: {status, summary, comparisons, recommendations}}` |
+| `weekly-brief-ai` | gpt-4o-mini | סיכום שבועי | `{weekExpenses, weekWorkouts, weekCalories, weekBalance, userName}` | `{insights: string[]}` |
+| `ai-chat` | gpt-4o | צ'אט אישי | `{messages, context}` | `{reply: string}` |
+| `identify-machine` | gpt-4o | זיהוי מכשיר כושר | `{imageBase64}` | `{machineName, howToUse, equipmentKeywords}` |
+| `payslip-parse-ai` | gpt-4o | OCR תלוש שכר | `{fileUrl}` (image URL) | `{hourlyRate, grossPay, netPay, nationalInsurance, healthInsurance, pension, educationFund}` |
+| `food-search` | gpt-4o-mini | חיפוש מזון | `{query}` | `{results: FoodItem[]}` |
+| `stock-quotes` | Yahoo Finance | מחיר מניה בזמן אמת | `{symbols: string[]}` | `{quotes: Quote[]}` |
+| `stock-search` | Yahoo Finance | חיפוש מניות/ETF | `{query}` | `{results: StockResult[]}` |
+| `ai-proxy` | gpt-4o-mini | proxy כללי לAI | `{prompt, imageBase64?, mimeType?}` | `{text: string}` |
+| `send-push` | Web Push API | שליחת push notifications | `{userId, title, body}` | `{success: boolean}` |
+
+---
+
+## 15. PWA — Progressive Web App
+
+### Manifest
+```json
+{
+  "name": "My Life",
+  "short_name": "My Life",
+  "description": "אפליקציה אישית לניהול כל תחומי החיים",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "he",
+  "dir": "rtl",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a"
+}
+```
+
+### Service Worker (Workbox)
+| Resource Type | Strategy | Cache Duration |
+|---------------|----------|----------------|
+| Supabase REST API | NetworkFirst | 5 דקות |
+| Supabase Storage | CacheFirst | 24 שעות |
+| Static assets | CacheFirst | לצמיתות |
+
+### Offline Support
+- **IndexedDB queue**: mutations שנוצרו offline נשמרות
+- **Flush on reconnect**: כשחוזרים לרשת → replay כל ה-mutations
+- **OfflineIndicator**: banner עם הודעה "אין חיבור לאינטרנט"
+
+### PWA Shortcuts
+- יתרה (`/finance`)
+- הוסף הוצאה (`/finance?action=add`)
+- אימון (`/sport`)
+
+---
+
+## 16. Design System
+
+### צבעים (Dark Mode בלבד)
+| אלמנט | ערך |
+|-------|-----|
+| Background | `#0a0a0a` |
+| Surface | oklch dark variants |
+| ספורט | `#80c646` (ירוק) |
+| תזונה | `#c5a916` (צהוב-זהב) |
+| פיננסים | `#b8860b` (זהב) |
+| עבודה | סגול |
+| AI Chat | כחול/אינדיגו |
+
+### Typography
+- **Font**: Heebo (Google Fonts) — עברית-optimized
+- **Weights**: 300 (Light) / 400 (Regular) / 500 (Medium) / 700 (Bold) / 900 (Black)
+- **Color space**: oklch (perceptually uniform)
+
+### RTL Support
+- `dir="rtl"` על כל האפלקציה
+- Tailwind logical properties: `ms-auto`, `pe-4`, `border-e`
+- Framer Motion animations מותאמות לRTL
+
+### Animations (Framer Motion)
+- **Page transitions**: fade + slide (200ms)
+- **Button press**: `whileTap={{ scale: 0.95 }}`
+- **Card appear**: `initial={{ opacity: 0, y: 20 }}`
+- **Stagger lists**: כל item עם delay
+- **Achievement unlock**: scale + glow burst
+
+### Haptic Feedback (`src/lib/haptics.ts`)
+```ts
+haptics.tap()     // 10ms — כל לחיצה
+haptics.success() // [10,50,10] — שמירה מוצלחת
+haptics.heavy()   // 50ms — XP gain / achievement
+haptics.error()   // [50,30,50] — שגיאה
+```
+
+---
+
+## 17. State Management
+
+### React Query (Server State)
+- **כל data מ-Supabase** עובר דרך React Query
+- **Query Keys**: תמיד כוללים `userId` — `['expenses', userId, month]`
+- **Cache**: 5 דקות stale time
+- **Background refetch**: בכל חזרה לפוקוס
+
+### Zustand (Client State)
+- UI state מקומי: drawer open/close, selected tab, modal visibility
+- לא משתמש ב-Zustand לdata מה-server
+
+### Optimistic Updates
+- הוצאות ומשמרות: UI מתעדכן מיידית לפני server confirmation
+- Rollback אוטומטי אם server נכשל
+
+---
+
+## 18. State Architecture & Hooks
+
+### Hooks עיקריים
+| Hook | קובץ | שימוש |
+|------|------|-------|
+| `useAuth()` | `hooks/use-auth.tsx` | user, session, signOut |
+| `useProfile()` | `hooks/use-profile.ts` | user_profile row |
+| `useFinanceData()` | `hooks/use-finance-data.ts` | הוצאות/הכנסות/categories |
+| `useSportData()` | `hooks/use-sport-data.ts` | אימונים, PR, weight |
+| `useNutritionData()` | `hooks/use-nutrition-data.ts` | ארוחות, מים, TDEE |
+| `useWorkData()` | `hooks/use-work-data.ts` | משמרות, שכר |
+| `useGamification()` | `hooks/useGamification.ts` | XP, level, achievements |
+| `useFavoriteMeals()` | `hooks/useFavoriteMeals.ts` | ארוחות מועדפות |
+| `useAiChat()` | `hooks/useAiChat.ts` | AI chat messages |
+| `usePushNotifications()` | `hooks/usePushNotifications.ts` | Web Push |
+
+---
+
+## 19. קבצי קוד מרכזיים
+
+```
+src/
+├── routes/
+│   ├── __root.tsx          — Global Error Boundary
+│   ├── login.tsx           — Login page
+│   ├── _app.tsx            — Auth guard + Onboarding
+│   └── _app/
+│       ├── index.tsx       — Home (ModernHome)
+│       ├── finance.tsx     — Finance module
+│       ├── nutrition.tsx   — Nutrition module
+│       ├── sport.tsx       — Sport module
+│       ├── work.tsx        — Work module
+│       └── settings.tsx    — Settings
+│
+├── components/
+│   ├── layout/AppLayout.tsx       — Shell: TopBar, BottomNav, FABs
+│   ├── home/ModernHome.tsx        — Home dashboard
+│   ├── finance/
+│   │   ├── FinanceDashboardTab.tsx
+│   │   ├── FinanceOperationsTab.tsx
+│   │   ├── FinanceHistoryTab.tsx
+│   │   ├── FinanceDebtsTab.tsx
+│   │   ├── HomeBalanceCard.tsx
+│   │   └── QuickExpenseButtons.tsx
+│   ├── nutrition/
+│   │   ├── AddMealDrawer.tsx
+│   │   ├── FavoriteMealsQuickAdd.tsx
+│   │   └── NutritionWeeklyMealPlan.tsx
+│   ├── sport/
+│   │   ├── WorkoutBuilder.tsx
+│   │   └── WorkoutPlanAI.tsx
+│   ├── gamification/
+│   │   ├── XPBar.tsx
+│   │   ├── AchievementToast.tsx
+│   │   ├── LevelUpModal.tsx
+│   │   └── StreakBadge.tsx
+│   ├── ai-chat/
+│   │   ├── FloatingChatButton.tsx
+│   │   ├── ChatDrawer.tsx
+│   │   └── ChatInput.tsx
+│   └── shared/
+│       ├── OfflineIndicator.tsx
+│       ├── PWAInstallPrompt.tsx
+│       └── skeletons/
+│
+├── hooks/                         — כל הdata hooks
+├── lib/
+│   ├── ai-service.ts              — OpenAI wrapper functions
+│   ├── gamification.ts            — XP/Level calculations
+│   ├── haptics.ts                 — Haptic feedback
+│   ├── offline-queue.ts           — IndexedDB offline queue
+│   ├── sync.ts                    — Online/offline sync
+│   └── pdf-export.ts              — PDF report generation
+│
+└── integrations/supabase/
+    ├── client.ts                  — Supabase singleton
+    └── types.ts                   — Full TypeScript DB types
+
+supabase/functions/               — 13 AI Edge Functions (Deno)
+```
+
+---
+
+## 20. הוראות לGemini Gem
+
+**כשמשתמש שואל על האפלקציה:**
+- תמיד ענה בעברית
+- התייחס לפרטים הספציפיים מהאפיון הזה
+- כשמציע שיפור — בדוק שלא שובר משהו קיים
+- הכר את Stack: React 19, TanStack Router, Supabase, OpenAI, Vite
+- אל תציע React Router — זה TanStack Router
+- אל תציע REST endpoint ידני — כל DB עובר דרך Supabase client
+- אל תציע הוספת אנימציות Lottie — יש Framer Motion
+- Models: vision → gpt-4o, simple text → gpt-4o-mini
+
+**כשמוצא באג:**
+- תמיד בדוק query keys (כוללים userId?)
+- בדוק auth headers בEdge Functions
+- RTL issues → logical CSS properties
+
+**כשמציע פיצר חדש:**
+- בדוק שה-DB schema מתאים (types.ts)
+- הוסף userId לכל query key חדש
+- הוסף haptics.success() לכל save action
+- שמור על dark mode (#0a0a0a background)
+- שמור על RTL
