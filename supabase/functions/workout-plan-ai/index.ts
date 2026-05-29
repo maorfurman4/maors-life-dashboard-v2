@@ -69,11 +69,9 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) throw new Error("OPENAI_API_KEY not set");
 
-    // Auto-select split type based on daysPerWeek
+    // Auto-select split type based on daysPerWeek (user-provided splitType takes precedence)
     const days = daysPerWeek || 4;
-    let splitType = "Upper/Lower";
-    if (days <= 3) splitType = "Full Body";
-    else if (days >= 5) splitType = "PPL";
+    const autoSplitType: string = splitType ?? (days <= 3 ? "Full Body" : days >= 5 ? "PPL" : "Upper/Lower");
 
     // Build exercise library block for the prompt (compact: name | muscles | equipment)
     const hasLibrary = Array.isArray(exerciseList) && exerciseList.length > 0;
@@ -97,7 +95,7 @@ Deno.serve(async (req) => {
     // avoidedMusclesNote below (after targetWeeks), to avoid duplicating them in the prompt.
 
     const recentWorkoutsNote = Array.isArray(recentWorkouts) && recentWorkouts.length > 0
-      ? `\nאימונים אחרונים (להתחשב בהם):\n${recentWorkouts.slice(0, 5).map((w: any) => `- ${w.name || w.category} (${w.date || "לאחרונה"})`).join("\n")}`
+      ? "\nאימונים אחרונים (להתחשב בהם):\n" + recentWorkouts.slice(0, 5).map((w: any) => "- " + (w.name || w.category) + " (" + (w.date || "לאחרונה") + ")").join("\n")
       : "";
 
     const cardioDaysNum = Number(cardioDays) || 0;
@@ -174,8 +172,8 @@ WORKOUT STRUCTURE RULES (MANDATORY):
       ? `\nציוד זמין: ${equipmentItems.join(', ')}. השתמש אך ורק בציוד הזה. אסור לכלול תרגיל שדורש ציוד שאינו ברשימה.`
       : "";
 
-    const splitTypeNote = splitType
-      ? `\nסוג פיצול נדרש: ${splitType}. בנה את כל האימונים לפי פיצול זה בדיוק.`
+    const splitTypeNote = autoSplitType
+      ? `\nסוג פיצול נדרש: ${autoSplitType}. בנה את כל האימונים לפי פיצול זה בדיוק.`
       : "";
 
     const restNote = restBetweenSets
@@ -214,7 +212,7 @@ WORKOUT STRUCTURE RULES (MANDATORY):
     const userPrompt = `
 מטרה: ${goal || "כוח ומסת שריר"}
 ימי אימון בשבוע: ${days}
-סוג פיצול מוצע: ${splitType}
+סוג פיצול מוצע: ${autoSplitType}
 ציוד זמין: ${equipment || "חדר כושר מלא"}
 מגבלות: ${constraints || "אין"}
 גיל: ${age || "לא צוין"}
