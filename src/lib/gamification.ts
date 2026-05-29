@@ -10,7 +10,8 @@ export type AchievementKey =
   | 'first_workout' | 'workouts_10' | 'workouts_50' | 'workouts_100'
   | 'streak_3' | 'streak_7' | 'streak_30'
   | 'first_meal' | 'meals_50' | 'first_shift' | 'shifts_20'
-  | 'first_pr' | 'all_modules_used';
+  | 'first_pr' | 'all_modules_used'
+  | 'ai_autopilot_first';
 
 export const ACHIEVEMENTS: Record<AchievementKey, { title: string; description: string; xp: number; icon: string }> = {
   first_workout: { title: 'אימון ראשון!', description: 'רשמת את האימון הראשון שלך', xp: 100, icon: '💪' },
@@ -26,6 +27,7 @@ export const ACHIEVEMENTS: Record<AchievementKey, { title: string; description: 
   shifts_20: { title: '20 משמרות', description: 'עובד קשה!', xp: 200, icon: '⏰' },
   first_pr: { title: 'שיא אישי!', description: 'שברת שיא אישי', xp: 150, icon: '🎯' },
   all_modules_used: { title: 'כל המודולים', description: 'השתמשת בכל מודולי האפלקציה', xp: 500, icon: '🌈' },
+  ai_autopilot_first: { title: 'AI Autopilot', description: 'רשמת הוצאה ראשונה דרך הבוט האישי', xp: 50, icon: '🤖' },
 };
 
 export function xpToLevel(xp: number): number {

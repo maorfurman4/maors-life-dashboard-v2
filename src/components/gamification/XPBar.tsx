@@ -1,4 +1,5 @@
 import { useGamification } from "@/hooks/useGamification";
+import { AIAutopilotBadge } from "@/components/gamification/AIAutopilotBadge";
 
 export function XPBar() {
   const { level, progress, isLoading } = useGamification();
@@ -14,6 +15,8 @@ export function XPBar() {
 
   return (
     <div className="flex items-center gap-1.5" dir="ltr" title={`${progress.current}/${progress.next} XP`}>
+      {/* AI Autopilot badge — only visible after first bot-logged expense */}
+      <AIAutopilotBadge />
       {/* Level badge */}
       <span className="text-xs font-bold text-yellow-400 whitespace-nowrap">
         Lv.{level}
