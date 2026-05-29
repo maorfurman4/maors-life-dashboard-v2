@@ -50,25 +50,6 @@ export async function recognizeMeal(imageBase64: string): Promise<MealRecognitio
   });
 }
 
-// ─── Receipt Scanning ─────────────────────────────────────────────────────────
-
-export interface ScannedExpense {
-  name: string;
-  amount: number;
-  category: string;
-}
-
-export async function scanReceipt(imageBase64: string, mimeType?: string): Promise<ScannedExpense[]> {
-  return withRetry(async () => {
-    const { data, error } = await supabase.functions.invoke("receipt-scan", {
-      body: { imageBase64, mimeType },
-    });
-    if (error) throw new Error(error.message);
-    if (data?.error) throw new Error(data.error);
-    return (data?.items ?? []) as ScannedExpense[];
-  });
-}
-
 // ─── Finance Insights ─────────────────────────────────────────────────────────
 
 export interface FinanceInsights {

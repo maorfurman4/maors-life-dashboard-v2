@@ -40,6 +40,8 @@ export const SHIFT_HOURS: Record<string, number> = {
   manual_hourly: 0,
   vacation_day: 8,
   sick_day: 8,
+  vacation: 8,      // alias for vacation_day (legacy)
+  sick: 8,          // alias for sick_day (legacy)
 };
 
 export const SHIFT_LABELS: Record<string, string> = {
@@ -140,7 +142,7 @@ function getShiftHours(shift: ShiftRow): number {
 }
 
 /** Shift types that receive no monetary compensation (tracked only) */
-const NON_PAID_TYPES = new Set(["vacation_day", "sick_day"]);
+const NON_PAID_TYPES = new Set(["vacation_day", "sick_day", "vacation", "sick"]);
 
 export function calcShiftBreakdown(shift: ShiftRow, settings: PayrollSettings): ShiftBreakdown {
   // Vacation/sick days — tracked but no pay calculation
@@ -160,21 +162,33 @@ export function calcShiftBreakdown(shift: ShiftRow, settings: PayrollSettings): 
     const totalGross = basePay + recovery + excellence + travel + briefingPay;
     return { basePay, recovery, excellence, shabbatPay: 0, travel, briefingPay, totalGross };
   }
+  const r2 = (n: number) => Math.round(n * 100) / 100;
   const hours = getShiftHours(shift);
 
-  // Shabbat rate replaces (not adds to) base rate
-  const rate = shift.is_shabbat_holiday
-    ? settings.shabbat_hourly_rate
-    : (shift.role === 'shift_manager' ? settings.alt_hourly_rate : settings.base_hourly_rate);
+  // BUG-13: Auto-detect Friday overnight → Shabbat: if night shift starts on Friday, apply Shabbat rate
+  const shiftDate = new Date(shift.date + 'T12:00:00');
+  const isFridayNight = ['night', 'long_night'].includes(shift.type) && shiftDate.getDay() === 5;
+  const isShabbat = shift.is_shabbat_holiday || isFridayNight;
 
-  const basePay = hours * rate;
-  const recovery = hours * settings.recovery_per_hour;
-  const excellence = hours * settings.excellence_per_hour;
-  const shabbatPay = 0; // already reflected in basePay
+  // BUG-5: Split Shabbat pay into base (normal rate) + premium (extra 50%) so shabbatPay > 0
+  const normalRate = shift.role === 'shift_manager' ? settings.alt_hourly_rate : settings.base_hourly_rate;
+
+  let basePay: number;
+  let shabbatPay: number;
+  if (isShabbat) {
+    basePay = r2(hours * normalRate);
+    shabbatPay = r2(hours * (settings.shabbat_hourly_rate - normalRate));
+  } else {
+    basePay = r2(hours * normalRate);
+    shabbatPay = 0;
+  }
+
+  const recovery = r2(hours * settings.recovery_per_hour);
+  const excellence = r2(hours * settings.excellence_per_hour);
   const travel = settings.travel_per_shift;
   const briefingPay = shift.has_briefing ? settings.briefing_per_shift : 0;
 
-  const totalGross = basePay + recovery + excellence + travel + briefingPay;
+  const totalGross = r2(basePay + shabbatPay + recovery + excellence + travel + briefingPay);
 
   return { basePay, recovery, excellence, shabbatPay, travel, briefingPay, totalGross };
 }
@@ -203,7 +217,9 @@ export function calcMonthlyPayslip(shifts: ShiftRow[], settings: PayrollSettings
     // Only count hours/shabbat for paid shifts — vacations/sick days tracked separately
     if (!NON_PAID_TYPES.has(shift.type)) {
       totalHours += hours;
-      if (shift.is_shabbat_holiday) shabbatHours += hours;
+      const shiftDateForCount = new Date(shift.date + 'T12:00:00');
+      const isFridayNightShift = ['night', 'long_night'].includes(shift.type) && shiftDateForCount.getDay() === 5;
+      if (shift.is_shabbat_holiday || isFridayNightShift) shabbatHours += hours;
     }
     if (shift.has_briefing) briefingCount++;
   }

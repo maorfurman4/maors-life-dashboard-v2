@@ -393,7 +393,7 @@ function NutritionPage() {
                     onChange={(e) => setWaterInputVal(e.target.value.replace(/\D/g, ""))}
                     onKeyDown={(e) => { if (e.key === "Enter") handleWaterManualSave(); if (e.key === "Escape") setWaterEditMode(false); }}
                     placeholder="הזן ml..."
-                    className="flex-1 bg-white/8 border border-cyan-500/30 rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-cyan-400/60 text-left"
+                    className="flex-1 bg-white/8 border border-cyan-500/30 rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-cyan-400/60 text-start"
                     autoFocus
                   />
                   <button

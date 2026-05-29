@@ -5,6 +5,7 @@ import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { SHIFT_LABELS, SHIFT_HOURS } from "@/lib/payroll-engine";
 import { useBatchAddShifts } from "@/hooks/use-work-data";
 import { X } from "lucide-react";
+import { haptics } from "@/lib/haptics";
 
 type WorkRole = "guard" | "shift_manager";
 
@@ -56,6 +57,7 @@ export function BatchShiftDrawer({ open, onOpenChange }: BatchShiftDrawerProps) 
     }));
     batchAdd.mutate(shifts, {
       onSuccess: () => {
+        haptics.success();
         setSelectedDates([]);
         setShiftType("morning");
         setRole("guard");

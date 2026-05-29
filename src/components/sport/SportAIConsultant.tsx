@@ -97,9 +97,9 @@ export function SportAIConsultant() {
           disabled={isLoading || !question.trim()}
         >
           {isLoading ? (
-            <><Loader2 className="h-4 w-4 ml-2 animate-spin" />מעבד...</>
+            <><Loader2 className="h-4 w-4 ms-2 animate-spin" />מעבד...</>
           ) : (
-            <><BrainCircuit className="h-4 w-4 ml-2" />קבל/י עצה</>
+            <><BrainCircuit className="h-4 w-4 ms-2" />קבל/י עצה</>
           )}
         </Button>
       </div>

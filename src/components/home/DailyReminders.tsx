@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Bell, X, Apple, Dumbbell, Droplets, CheckCircle2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Reminder {
   id: "meal" | "workout" | "water";
@@ -44,10 +45,12 @@ function saveDismissed(ids: Set<string>) {
 export function DailyReminders() {
   const today = getTodayStr();
   const [dismissed, setDismissed] = useState<Set<string>>(() => getDismissed());
+  const { user } = useAuth();
+  const userId = user?.id;
 
   // Check today's nutrition
   const { data: nutritionToday } = useQuery({
-    queryKey: ["reminders-nutrition", today],
+    queryKey: ["reminders-nutrition", userId, today],
     queryFn: async () => {
       const { data } = await supabase
         .from("nutrition_entries")
@@ -59,7 +62,7 @@ export function DailyReminders() {
 
   // Check today's workout
   const { data: workoutToday } = useQuery({
-    queryKey: ["reminders-workout", today],
+    queryKey: ["reminders-workout", userId, today],
     queryFn: async () => {
       const { data } = await supabase
         .from("workouts")
@@ -71,7 +74,7 @@ export function DailyReminders() {
 
   // Check today's water
   const { data: waterToday } = useQuery({
-    queryKey: ["reminders-water", today],
+    queryKey: ["reminders-water", userId, today],
     queryFn: async () => {
       const { data } = await supabase
         .from("water_entries")
@@ -84,7 +87,7 @@ export function DailyReminders() {
 
   // Get user water goal
   const { data: settings } = useQuery({
-    queryKey: ["reminders-settings"],
+    queryKey: ["reminders-settings", userId],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;

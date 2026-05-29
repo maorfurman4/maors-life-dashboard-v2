@@ -245,7 +245,7 @@ export function HealthImport() {
       </div>
 
       <motion.div
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragOver={(e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         onClick={() => fileInputRef.current?.click()}

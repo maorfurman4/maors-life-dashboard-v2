@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Dumbbell, Save, AlertCircle } from "lucide-react";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 const SPORT_TYPES = [
   "כוח / חדר כושר", "ריצה", "יוגה", "פילאטס", "שחייה", "אופניים",
@@ -89,10 +90,11 @@ export function SettingsSport() {
       },
       {
         onSuccess: () => {
+          haptics.success();
           toast.success("הגדרות ספורט נשמרו ✅");
           setSavedDraft(draft);
         },
-        onError: (e) => toast.error("שגיאה: " + e.message),
+        onError: (e) => { haptics.error(); toast.error("שגיאה: " + e.message); },
       }
     );
   };

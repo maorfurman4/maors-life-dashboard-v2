@@ -4,6 +4,7 @@ import { useFixedExpenses, useAddFixedExpense, useDeleteFixedExpense, useUpdateF
 import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { haptics } from "@/lib/haptics";
 
 const fmtNum = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
 
@@ -58,6 +59,7 @@ export function FinanceRecurringExpenses({ mode = "all" }: Props) {
 
   const handleSave = () => {
     if (!name || !amount || Number(amount) <= 0) {
+      haptics.error();
       toast.error("הזן שם וסכום");
       return;
     }
@@ -65,16 +67,16 @@ export function FinanceRecurringExpenses({ mode = "all" }: Props) {
       updateFixed.mutate(
         { id: editId, name, amount: Number(amount), category, charge_day: Number(chargeDay) },
         {
-          onSuccess: () => { toast.success("עודכן"); setDrawerOpen(false); resetForm(); },
-          onError: () => toast.error("שגיאה"),
+          onSuccess: () => { haptics.success(); toast.success("עודכן"); setDrawerOpen(false); resetForm(); },
+          onError: () => { haptics.error(); toast.error("שגיאה"); },
         }
       );
     } else {
       addFixed.mutate(
         { name, amount: Number(amount), category, charge_day: Number(chargeDay), ...(isSubscriptions ? { is_recurring: true } : {}) },
         {
-          onSuccess: () => { toast.success(isSubscriptions ? "מנוי נוסף" : "הוצאה נשמרה"); setDrawerOpen(false); resetForm(); },
-          onError: () => toast.error("שגיאה"),
+          onSuccess: () => { haptics.success(); toast.success(isSubscriptions ? "מנוי נוסף" : "הוצאה נשמרה"); setDrawerOpen(false); resetForm(); },
+          onError: () => { haptics.error(); toast.error("שגיאה"); },
         }
       );
     }

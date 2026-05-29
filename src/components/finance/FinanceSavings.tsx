@@ -3,6 +3,7 @@ import { PiggyBank, Target, Pencil, Check, X } from "lucide-react";
 import { useMonthlyFinance, useSaveFinanceSettings } from "@/hooks/use-finance-data";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 const fmtNum = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
 
@@ -36,14 +37,15 @@ export function FinanceSavings() {
   const confirmEdit = () => {
     const val = Number(goalDraft);
     if (isNaN(val) || val < 1 || val > 100) {
+      haptics.error();
       toast.error("יעד חיסכון חייב להיות בין 1 ל-100%");
       return;
     }
     saveSettings.mutate(
       { savings_goal_pct: val },
       {
-        onSuccess: () => { toast.success(`יעד חיסכון עודכן ל-${val}%`); setEditingGoal(false); },
-        onError: () => toast.error("שגיאה בשמירת היעד"),
+        onSuccess: () => { haptics.success(); toast.success(`יעד חיסכון עודכן ל-${val}%`); setEditingGoal(false); },
+        onError: () => { haptics.error(); toast.error("שגיאה בשמירת היעד"); },
       }
     );
   };

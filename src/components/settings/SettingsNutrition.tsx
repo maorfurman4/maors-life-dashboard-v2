@@ -3,6 +3,7 @@ import { Apple, Save } from "lucide-react";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { useUserSettings, useUpdateUserSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 const DIET_TYPES = [
   "רגיל (הכל)", "טבעוני", "צמחוני", "ללא גלוטן",
@@ -91,8 +92,8 @@ export function SettingsNutrition() {
         macro_preference: draft.macro_preference || null,
       },
       {
-        onSuccess: () => toast.success("הגדרות תזונה נשמרו"),
-        onError: (e) => toast.error("שגיאה: " + e.message),
+        onSuccess: () => { haptics.success(); toast.success("הגדרות תזונה נשמרו"); },
+        onError: (e) => { haptics.error(); toast.error("שגיאה: " + e.message); },
       }
     );
   };
@@ -110,8 +111,8 @@ export function SettingsNutrition() {
         daily_water_glasses_goal: goals.waterGlasses     ? Number(goals.waterGlasses)     : null,
       },
       {
-        onSuccess: () => toast.success("יעדים תזונתיים נשמרו ✅"),
-        onError: (e: any) => toast.error("שגיאה: " + e.message),
+        onSuccess: () => { haptics.success(); toast.success("יעדים תזונתיים נשמרו ✅"); },
+        onError: (e: any) => { haptics.error(); toast.error("שגיאה: " + e.message); },
       }
     );
   };

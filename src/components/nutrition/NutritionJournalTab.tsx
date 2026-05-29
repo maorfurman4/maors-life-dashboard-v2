@@ -5,6 +5,7 @@ import { useNutritionEntries, useDeleteNutrition, useUserSettings } from "@/hook
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/use-profile";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { localDateStr, todayLocalStr, yesterdayLocalStr, lastDayOfMonth } from "@/utils/date";
 import { toast } from "sonner";
@@ -54,9 +55,9 @@ const SLOT_MAP: Record<string, { label: string; emoji: string }> = {
 };
 
 // ─── 7-day calorie summary hook ──────────────────────────────────────────────
-function useWeekCalories(dates: string[]) {
+function useWeekCalories(dates: string[], userId: string | undefined) {
   return useQuery({
-    queryKey: ["nutrition-week", dates[0], dates[6]],
+    queryKey: ["nutrition-week", userId, dates[0], dates[6]],
     queryFn: async () => {
       const userId = await getUserId();
       const { data } = await supabase
@@ -161,10 +162,12 @@ export function NutritionJournalTab() {
   const [isExporting, setIsExporting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
+  const { user } = useAuth();
+  const userId = user?.id;
   const queryClient                        = useQueryClient();
   const [isCopyingYesterday, setIsCopyingYesterday] = useState(false);
   const { data: entries = [], isLoading } = useNutritionEntries(date);
-  const { data: weekCals }                = useWeekCalories(days);
+  const { data: weekCals }                = useWeekCalories(days, userId);
   const deleteMut                          = useDeleteNutrition();
   const { data: userSettings }            = useUserSettings();
   const { data: profile }                 = useProfile();
@@ -203,8 +206,8 @@ export function NutritionJournalTab() {
       if (insertError) throw insertError;
 
       await queryClient.invalidateQueries({ queryKey: ["nutrition-entries"] });
-      await queryClient.invalidateQueries({ queryKey: ["nutrition-week"] });
-      await queryClient.invalidateQueries({ queryKey: ["nutrition-weekly-summary"] });
+      await queryClient.invalidateQueries({ queryKey: ["nutrition-week", userId] });
+      await queryClient.invalidateQueries({ queryKey: ["nutrition-weekly-summary", userId] });
       toast.success("✅ ארוחות אתמול הועתקו ליום היום");
     } catch {
       toast.error("שגיאה בהעתקת ארוחות");

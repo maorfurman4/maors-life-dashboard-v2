@@ -3,6 +3,7 @@ import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { useAddIncome, INCOME_CATEGORIES } from "@/hooks/use-finance-data";
 import { todayLocalStr } from "@/utils/date";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 interface AddIncomeDrawerProps {
   open: boolean;
@@ -18,6 +19,7 @@ export function AddIncomeDrawer({ open, onClose }: AddIncomeDrawerProps) {
 
   const handleSave = () => {
     if (!amount || Number(amount) <= 0) {
+      haptics.error();
       toast.error("הזן סכום תקין");
       return;
     }
@@ -31,13 +33,14 @@ export function AddIncomeDrawer({ open, onClose }: AddIncomeDrawerProps) {
       },
       {
         onSuccess: () => {
+          haptics.success();
           toast.success("הכנסה נשמרה");
           onClose();
           setAmount("");
           setDescription("");
           setCategory("other");
         },
-        onError: () => toast.error("שגיאה בשמירה"),
+        onError: () => { haptics.error(); toast.error("שגיאה בשמירה"); },
       }
     );
   };

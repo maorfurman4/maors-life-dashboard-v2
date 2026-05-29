@@ -170,7 +170,7 @@ export function AddMealDrawer({
       onProductFound={handleBarcodeProduct}
     />
     <AddItemDrawer open={open} onClose={onClose} title="הוסף ארוחה">
-      <div className="space-y-4" dir="rtl">
+      <div className="space-y-4">
         {/* Mode toggle */}
         <div className="flex gap-1 rounded-xl bg-secondary/30 p-1">
           <button
@@ -187,13 +187,13 @@ export function AddMealDrawer({
               mode === "search" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
             }`}
           >
-            <Search className="h-3 w-3 inline ml-1" />חיפוש
+            <Search className="h-3 w-3 inline ms-1" />חיפוש
           </button>
           <button
             onClick={() => setBarcodeScannerOpen(true)}
             className="flex-1 py-2 rounded-lg text-xs font-semibold transition-colors min-h-[36px] text-muted-foreground hover:text-foreground"
           >
-            <ScanBarcode className="h-3 w-3 inline ml-1" />ברקוד
+            <ScanBarcode className="h-3 w-3 inline ms-1" />ברקוד
           </button>
         </div>
 
@@ -247,7 +247,7 @@ export function AddMealDrawer({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="חפש: חזה עוף, אורז, מלפפון..."
-                className="w-full px-3 py-2.5 pr-9 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
+                className="w-full px-3 py-2.5 pe-9 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-nutrition min-h-[44px]"
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
@@ -263,7 +263,7 @@ export function AddMealDrawer({
                   <button
                     key={i}
                     onClick={() => selectFood(r)}
-                    className="w-full flex items-center gap-2 p-2 rounded-xl bg-secondary/20 hover:bg-secondary/35 transition-colors text-right"
+                    className="w-full flex items-center gap-2 p-2 rounded-xl bg-secondary/20 hover:bg-secondary/35 transition-colors text-end"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">

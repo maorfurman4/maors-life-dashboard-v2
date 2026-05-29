@@ -31,7 +31,7 @@ export function FinanceInsights() {
   }
 
   // High daily avg
-  if (fin.avgDailyExpense > fin.totalIncome / fin.daysInMonth * 0.8) {
+  if (fin.totalIncome > 0 && fin.avgDailyExpense > fin.totalIncome / fin.daysInMonth * 0.8) {
     insights.push({
       icon: AlertTriangle,
       text: `ההוצאה היומית הממוצעת (₪${fmtNum(fin.avgDailyExpense)}) גבוהה — שים לב לקצב ההוצאות`,

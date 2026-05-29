@@ -12,6 +12,7 @@ import {
   calcTDEE,
   type ActivityLevel, type Goal, type Sex,
 } from "@/lib/tdee";
+import { useAuth } from "@/hooks/use-auth";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 async function getUserId() {
@@ -214,6 +215,8 @@ function RecipeCard({ recipe }: { recipe: RecipeResult }) {
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 export function NutritionCulinaryTab() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
 
   // ── Profile / diet preference ──
   const { data: profile }  = useProfile();
@@ -261,7 +264,7 @@ export function NutritionCulinaryTab() {
 
   // ── Saved goals from DB (the values the user explicitly saved in Planner) ──
   const { data: savedGoals } = useQuery({
-    queryKey: ["culinary-saved-goals"],
+    queryKey: ["culinary-saved-goals", userId],
     queryFn: async () => {
       const uid = await getUserId();
       const { data } = await supabase
@@ -316,7 +319,7 @@ export function NutritionCulinaryTab() {
 
   // ── Saved templates ──
   const { data: templates = [] } = useQuery<PlanTemplate[]>({
-    queryKey: ["meal-plan-templates"],
+    queryKey: ["meal-plan-templates", userId],
     queryFn: async () => {
       const userId = await getUserId();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -345,7 +348,7 @@ export function NutritionCulinaryTab() {
     },
     onSuccess: () => {
       toast.success("תבנית נשמרה!");
-      qc.invalidateQueries({ queryKey: ["meal-plan-templates"] });
+      qc.invalidateQueries({ queryKey: ["meal-plan-templates", userId] });
       setSaveModal(false);
       setTemplateName("");
     },
@@ -360,7 +363,7 @@ export function NutritionCulinaryTab() {
     },
     onSuccess: () => {
       toast.success("תבנית נמחקה");
-      qc.invalidateQueries({ queryKey: ["meal-plan-templates"] });
+      qc.invalidateQueries({ queryKey: ["meal-plan-templates", userId] });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה במחיקה"),
   });
@@ -811,13 +814,13 @@ difficulty: קל/בינוני/מתקדם בלבד. JSON תקני בלבד.`;
                       <div key={key} className="py-2 border-b border-white/5 last:border-0 space-y-1">
                         <div className="flex items-start justify-between gap-3">
                           <span className="text-[10px] text-white/40 shrink-0 pt-0.5 font-bold">{label}</span>
-                          <div className="flex-1 min-w-0 text-left">
+                          <div className="flex-1 min-w-0 text-start">
                             <p className="text-sm text-white/90 font-medium leading-tight">{meal.name}</p>
                             <p className="text-[10px] text-white/30 mt-0.5">{meal.calories} קל׳ · {meal.protein}g חלבון</p>
                           </div>
                         </div>
                         <a href={ytUrl} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-[10px] text-rose-400/70 hover:text-rose-400 transition-colors font-semibold pr-1">
+                          className="flex items-center gap-1.5 text-[10px] text-rose-400/70 hover:text-rose-400 transition-colors font-semibold pe-1">
                           <Youtube className="h-3 w-3 shrink-0" />
                           צפה בסרטון הכנה
                         </a>
@@ -838,8 +841,7 @@ difficulty: קל/בינוני/מתקדם בלבד. JSON תקני בלבד.`;
           onClick={() => setSaveModal(false)}
         >
           <div
-            dir="rtl"
-            className="w-full max-w-sm rounded-3xl border border-white/15 bg-white/8 backdrop-blur-2xl p-5 space-y-4 shadow-2xl"
+              className="w-full max-w-sm rounded-3xl border border-white/15 bg-white/8 backdrop-blur-2xl p-5 space-y-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm font-black text-white">שמור תבנית</p>

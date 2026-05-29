@@ -40,7 +40,7 @@ export function SportPRTracking() {
                     <p className="text-sm font-medium">{pr.exercise_name}</p>
                     <p className="text-[10px] text-muted-foreground">{dateStr}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-sm font-black text-sport">{pr.value} {pr.unit || 'ק"ג'}</p>
                     {pr.category && (
                       <p className="text-[10px] text-muted-foreground">{pr.category}</p>

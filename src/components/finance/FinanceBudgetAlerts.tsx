@@ -2,12 +2,13 @@ import { AlertTriangle, Shield } from "lucide-react";
 import { useMonthlyFinance, DEFAULT_EXPENSE_CATEGORIES } from "@/hooks/use-finance-data";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 const fmtNum = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
 
-function useExpenseCategories() {
+function useExpenseCategories(userId: string | undefined) {
   return useQuery({
-    queryKey: ["expense-categories"],
+    queryKey: ["expense-categories", userId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("expense_categories")
@@ -20,9 +21,11 @@ function useExpenseCategories() {
 }
 
 export function FinanceBudgetAlerts() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const now = new Date();
   const fin = useMonthlyFinance(now.getFullYear(), now.getMonth() + 1);
-  const { data: categories } = useExpenseCategories();
+  const { data: categories } = useExpenseCategories(userId);
 
   // Merge DB categories with defaults for budget limits
   const budgetMap: Record<string, number> = {};

@@ -93,7 +93,26 @@ export function useAddExpense() {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense-entries", userId] }),
+    onMutate: async (newExpense) => {
+      // Derive year/month from the expense date (format: "YYYY-MM-DD")
+      const [expYear, expMonth] = newExpense.date.split("-").map(Number);
+      const queryKey = ["expense-entries", userId, expYear, expMonth];
+      await qc.cancelQueries({ queryKey: ["expense-entries", userId] });
+      const previousExpenses = qc.getQueryData(queryKey);
+      qc.setQueryData(queryKey, (old: any[]) => [
+        ...(old ?? []),
+        { ...newExpense, id: "optimistic-" + Date.now(), created_at: new Date().toISOString() },
+      ]);
+      return { previousExpenses, queryKey };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousExpenses !== undefined) {
+        qc.setQueryData(context.queryKey, context.previousExpenses);
+      }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["expense-entries", userId] });
+    },
   });
 }
 
@@ -106,7 +125,30 @@ export function useDeleteExpense() {
       const { error } = await supabase.from("expense_entries").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["expense-entries", userId] }),
+    onMutate: async (expenseId) => {
+      await qc.cancelQueries({ queryKey: ["expense-entries", userId] });
+      // Snapshot all matching queries (any year/month combination) and optimistically remove
+      const previousSnapshots: Array<{ queryKey: readonly unknown[]; data: unknown }> = [];
+      qc.setQueriesData(
+        { queryKey: ["expense-entries", userId] },
+        (old: any) => {
+          if (!Array.isArray(old)) return old;
+          previousSnapshots.push({ queryKey: ["expense-entries", userId], data: old });
+          return old.filter((e: any) => e.id !== expenseId);
+        }
+      );
+      return { previousSnapshots };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousSnapshots) {
+        for (const { queryKey, data } of context.previousSnapshots) {
+          qc.setQueryData(queryKey, data);
+        }
+      }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["expense-entries", userId] });
+    },
   });
 }
 
@@ -418,7 +460,9 @@ export function useMonthlyFinance(year: number, month: number) {
 
     // Category breakdown
     const categoryBreakdown = (expenses || []).reduce((acc: Record<string, number>, e: any) => {
-      acc[e.category] = (acc[e.category] || 0) + Number(e.amount);
+      const cat = e.category;
+      if (!cat) return acc; // skip null/undefined categories to prevent phantom "null" entries
+      acc[cat] = (acc[cat] || 0) + Number(e.amount);
       return acc;
     }, {} as Record<string, number>);
 

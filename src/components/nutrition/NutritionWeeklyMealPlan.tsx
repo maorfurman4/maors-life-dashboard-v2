@@ -54,7 +54,7 @@ function MealAccordion({ meal, index }: { meal: Meal; index: number }) {
     >
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between p-3 text-right"
+        className="w-full flex items-center justify-between p-3 text-end"
       >
         <div className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full shrink-0" style={{ background: color }} />
@@ -158,7 +158,7 @@ export function NutritionWeeklyMealPlan() {
         }
       `}</style>
 
-      <div className="px-4 pt-6 pb-32 space-y-4" dir="rtl">
+      <div className="px-4 pt-6 pb-32 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-black text-white">תפריט שבועי</h2>

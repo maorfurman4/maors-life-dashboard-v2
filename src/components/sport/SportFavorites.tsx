@@ -95,7 +95,7 @@ export function SportFavorites({ onSelect }: Props) {
             className="text-xs"
             onClick={() => setShowSelector(true)}
           >
-            <Plus className="h-3 w-3 ml-1" />
+            <Plus className="h-3 w-3 ms-1" />
             הוסף מועדף
           </Button>
         </div>
@@ -106,11 +106,11 @@ export function SportFavorites({ onSelect }: Props) {
           {favorites.map((fav) => (
             <div
               key={fav.name}
-              className="flex items-center gap-1.5 bg-sport/10 border border-sport/20 rounded-full pl-2 pr-1 py-1.5 shrink-0 group"
+              className="flex items-center gap-1.5 bg-sport/10 border border-sport/20 rounded-full ps-2 pe-1 py-1.5 shrink-0 group"
             >
               <button
                 onClick={() => onSelect?.(fav.name)}
-                className="text-xs font-medium text-sport whitespace-nowrap pr-1"
+                className="text-xs font-medium text-sport whitespace-nowrap pe-1"
               >
                 {fav.name}
               </button>

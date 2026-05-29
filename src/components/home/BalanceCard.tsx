@@ -52,7 +52,7 @@ export function BalanceCard() {
             <div className="flex-1 h-1.5 rounded-full bg-border overflow-hidden">
               <div className={`h-full rounded-full ${m.colorClass.replace("text-", "bg-")}`} style={{ width: `${m.score}%` }} />
             </div>
-            <span className="text-xs font-bold w-7 text-left text-muted-foreground">—</span>
+            <span className="text-xs font-bold w-7 text-start text-muted-foreground">—</span>
           </div>
         ))}
       </div>

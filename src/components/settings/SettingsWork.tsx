@@ -3,6 +3,7 @@ import { Briefcase, Save, Loader2 } from "lucide-react";
 import { usePayrollSettings, useSavePayrollSettings } from "@/hooks/use-work-data";
 import { DEFAULT_PAYROLL_SETTINGS, type PayrollSettings } from "@/lib/payroll-engine";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 export function SettingsWork() {
   const { data: settings, isLoading } = usePayrollSettings();
@@ -23,8 +24,8 @@ export function SettingsWork() {
 
   const handleSave = () => {
     saveSettings.mutate(form, {
-      onSuccess: () => toast.success("הגדרות עבודה נשמרו"),
-      onError: () => toast.error("שגיאה בשמירת הגדרות"),
+      onSuccess: () => { haptics.success(); toast.success("הגדרות עבודה נשמרו"); },
+      onError: () => { haptics.error(); toast.error("שגיאה בשמירת הגדרות"); },
     });
   };
 

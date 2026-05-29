@@ -112,7 +112,7 @@ export function WeatherWidget() {
             </div>
           </div>
         </div>
-        <div className="text-left space-y-0.5">
+        <div className="text-start space-y-0.5">
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground justify-end">
             <Droplets className="h-3 w-3" />
             <span>{weather.humidity}%</span>

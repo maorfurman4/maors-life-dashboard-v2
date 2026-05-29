@@ -556,7 +556,6 @@ export function SportAIPlanner() {
   return (
     <div
       className="rounded-3xl bg-white/8 backdrop-blur-md border border-sport/35 shadow-[0_0_30px_rgba(0,255,135,0.12)] p-4 space-y-4"
-      dir="rtl"
     >
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -601,7 +600,7 @@ export function SportAIPlanner() {
                 <button
                   key={opt}
                   onClick={() => handleOptionSelect(opt)}
-                  className="py-3 px-3 rounded-2xl text-xs font-semibold border border-white/10 bg-white/5 text-white/70 hover:border-sport/40 hover:bg-sport/10 hover:text-sport transition-all min-h-[44px] text-right"
+                  className="py-3 px-3 rounded-2xl text-xs font-semibold border border-white/10 bg-white/5 text-white/70 hover:border-sport/40 hover:bg-sport/10 hover:text-sport transition-all min-h-[44px] text-end"
                 >
                   {opt}
                 </button>
@@ -827,7 +826,7 @@ export function SportAIPlanner() {
             {gymEquipmentSelection.length > 0 && (
               <div className="flex items-start justify-between text-[11px]">
                 <span className="text-white/40 shrink-0">ציוד חדר כושר</span>
-                <span className="font-semibold text-white text-left max-w-[55%] truncate">
+                <span className="font-semibold text-white text-start max-w-[55%] truncate">
                   {gymEquipmentSelection.length} פריטים
                 </span>
               </div>
@@ -835,7 +834,7 @@ export function SportAIPlanner() {
             {homeEquipmentSelection.length > 0 && (
               <div className="flex items-start justify-between text-[11px]">
                 <span className="text-white/40 shrink-0">ציוד בית/חוץ</span>
-                <span className="font-semibold text-white text-left max-w-[55%] truncate">
+                <span className="font-semibold text-white text-start max-w-[55%] truncate">
                   {homeEquipmentSelection.length} פריטים
                 </span>
               </div>
@@ -843,7 +842,7 @@ export function SportAIPlanner() {
             {preferredMuscles.length > 0 && (
               <div className="flex items-start justify-between text-[11px]">
                 <span className="text-white/40 shrink-0">דגש</span>
-                <span className="font-semibold text-white text-left max-w-[55%]">{preferredMuscles.join(", ")}</span>
+                <span className="font-semibold text-white text-start max-w-[55%]">{preferredMuscles.join(", ")}</span>
               </div>
             )}
           </div>
@@ -896,7 +895,7 @@ export function SportAIPlanner() {
                 </div>
                 <div className="space-y-1.5 border-t border-white/5 pt-2">
                   {w.exercises.map((ex, ei) => (
-                    <div key={ei} className="flex items-center justify-between text-[11px] border-r-2 border-sport/35 pr-2">
+                    <div key={ei} className="flex items-center justify-between text-[11px] border-e-2 border-sport/35 pe-2">
                       <span className="font-medium text-white/80 truncate">{ex.name}</span>
                       <span className="text-white/40 shrink-0 ms-2">
                         {ex.sets}×{ex.reps}{ex.weight_kg ? ` @${ex.weight_kg}kg` : ""}

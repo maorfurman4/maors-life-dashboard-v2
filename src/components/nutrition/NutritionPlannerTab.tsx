@@ -14,6 +14,7 @@ import {
   type ActivityLevel, type Goal, type Sex,
   type DeficitLevel, type WorkStyle, type MacroPreset,
 } from "@/lib/tdee";
+import { useAuth } from "@/hooks/use-auth";
 
 async function getUserId() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -64,6 +65,8 @@ function ToggleChips<T extends string>({
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export function NutritionPlannerTab() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
 
   // ── Core TDEE state ──
   const [sex,      setSex]      = useState<Sex>(() => (localStorage.getItem("tdee_sex") as Sex) ?? "male");
@@ -90,7 +93,7 @@ export function NutritionPlannerTab() {
 
   // ── Load settings from DB ──
   const { data: settings } = useQuery({
-    queryKey: ["user-settings-tdee"],
+    queryKey: ["user-settings-tdee", userId],
     queryFn: async () => {
       const userId = await getUserId();
       const { data } = await supabase
@@ -142,7 +145,7 @@ export function NutritionPlannerTab() {
 
   // ── Load history ──
   const { data: history = [] } = useQuery({
-    queryKey: ["tdee-history"],
+    queryKey: ["tdee-history", userId],
     queryFn: async () => {
       const uid = await getUserId();
       const { data } = await supabase
@@ -196,9 +199,9 @@ export function NutritionPlannerTab() {
     },
     onSuccess: () => {
       toast.success("יעדים עודכנו בהצלחה!");
-      qc.invalidateQueries({ queryKey: ["user-settings-tdee"] });
+      qc.invalidateQueries({ queryKey: ["user-settings-tdee", userId] });
       qc.invalidateQueries({ queryKey: ["nutrition-goals"] });
-      qc.invalidateQueries({ queryKey: ["tdee-history"] });
+      qc.invalidateQueries({ queryKey: ["tdee-history", userId] });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה בשמירה"),
   });
@@ -283,14 +286,14 @@ If conditions are not nutrition-relevant or you are unsure, return adjustment_kc
                 <p className="text-emerald-400/70">יום {daysElapsed + 1}</p>
               </div>
               {processEnd ? (
-                <div className="text-left">
+                <div className="text-start">
                   <p className="text-white/50 font-bold">סיום</p>
                   <p className="text-white/30">
                     {processEnd.toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "2-digit" })}
                   </p>
                 </div>
               ) : (
-                <div className="text-left opacity-40">
+                <div className="text-start opacity-40">
                   <p className="text-white/40">יעד?</p>
                 </div>
               )}

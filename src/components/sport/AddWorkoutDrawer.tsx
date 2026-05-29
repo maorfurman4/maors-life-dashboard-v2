@@ -3,6 +3,7 @@ import { AddItemDrawer } from "@/components/shared/AddItemDrawer";
 import { Dumbbell, Footprints, Shuffle, Weight, Plus, Trash2, AlertTriangle, Save } from "lucide-react";
 import { useAddWorkout, useAddWorkoutTemplate, useWorkoutTemplates } from "@/hooks/use-sport-data";
 import { toast } from "sonner";
+import { haptics } from "@/lib/haptics";
 
 const categories = [
   { value: "calisthenics", label: "קליסטניקס", icon: Dumbbell },
@@ -113,6 +114,7 @@ export function AddWorkoutDrawer({ open, onClose, defaultCategory }: AddWorkoutD
       },
       {
         onSuccess: () => {
+          haptics.success();
           toast.success("אימון נשמר בהצלחה!");
           // Save as template if requested
           if (saveAsTemplate && templateName.trim()) {
@@ -123,13 +125,13 @@ export function AddWorkoutDrawer({ open, onClose, defaultCategory }: AddWorkoutD
               estimated_duration_minutes: duration ? parseInt(duration) : undefined,
             }, {
               onSuccess: () => toast.success("תבנית נשמרה!"),
-              onError: (err) => toast.error("שגיאה בשמירת תבנית: " + err.message),
+              onError: (err) => { haptics.error(); toast.error("שגיאה בשמירת תבנית: " + err.message); },
             });
           }
           resetForm();
           onClose();
         },
-        onError: (err) => toast.error("שגיאה בשמירת אימון: " + err.message),
+        onError: (err) => { haptics.error(); toast.error("שגיאה בשמירת אימון: " + err.message); },
       }
     );
   };

@@ -60,8 +60,8 @@ export function WorkShiftsList({ shifts, isLoading }: WorkShiftsListProps) {
                   <div className="min-w-0">
                     <p className="text-xs font-semibold truncate">
                       {SHIFT_LABELS[shift.type] || shift.type}
-                      {shift.is_shabbat_holiday && <span className="text-finance mr-1">🕯️</span>}
-                      {shift.has_briefing && <span className="text-work mr-1">📋</span>}
+                      {shift.is_shabbat_holiday && <span className="text-finance me-1">🕯️</span>}
+                      {shift.has_briefing && <span className="text-work me-1">📋</span>}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       {shift.role === 'shift_manager' ? 'אחראי משמרת' : 'מאבטח'} · {shift.hours || 8} שעות
