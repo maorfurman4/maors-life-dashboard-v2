@@ -40,8 +40,8 @@ export function AIConfirmationCard({ result, onAdd, onEdit, onDismiss }: Props) 
       {
         name:      result.name,
         meal_type: mealType,
-        calories:  Math.round(result.calories),
-        protein_g: Math.round(result.protein_g),
+        calories:  Math.round(result.calories  ?? 0),
+        protein_g: Math.round(result.protein_g ?? 0),
         carbs_g:   Math.round(result.carbs_g  ?? 0),
         fat_g:     Math.round(result.fat_g    ?? 0),
       },
@@ -53,8 +53,8 @@ export function AIConfirmationCard({ result, onAdd, onEdit, onDismiss }: Props) 
   };
 
   const macros = [
-    { label: "קלוריות", value: Math.round(result.calories),      unit: "קל׳", color: "text-emerald-400", border: "border-emerald-500/20" },
-    { label: "חלבון",   value: Math.round(result.protein_g),     unit: "g",   color: "text-blue-400",   border: "border-blue-500/20"    },
+    { label: "קלוריות", value: Math.round(result.calories  ?? 0), unit: "קל׳", color: "text-emerald-400", border: "border-emerald-500/20" },
+    { label: "חלבון",   value: Math.round(result.protein_g ?? 0), unit: "g",   color: "text-blue-400",   border: "border-blue-500/20"    },
     { label: "פחמימות", value: Math.round(result.carbs_g  ?? 0), unit: "g",   color: "text-amber-400",  border: "border-amber-500/20"   },
     { label: "שומן",    value: Math.round(result.fat_g    ?? 0), unit: "g",   color: "text-rose-400",   border: "border-rose-500/20"    },
   ];

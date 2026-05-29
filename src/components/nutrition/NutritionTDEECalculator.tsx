@@ -60,6 +60,10 @@ export function NutritionTDEECalculator() {
 
   const applyMutation = useMutation({
     mutationFn: async () => {
+      if (!weightKg || weightKg <= 0 || !heightCm || heightCm <= 0) {
+        toast.error("יש להזין משקל וגובה תקינים");
+        return;
+      }
       const userId = await getUserId();
       const updates = {
         daily_calories_goal: result.targetCalories,
@@ -114,15 +118,15 @@ export function NutritionTDEECalculator() {
           </select>
         </Field>
         <Field label="גיל">
-          <input type="number" value={age} onChange={(e) => setAge(+e.target.value)}
+          <input type="number" min="10" max="120" value={age} onChange={(e) => setAge(Math.max(10, +e.target.value))}
             className="w-full rounded-lg bg-secondary/40 border border-border px-2 py-2 text-sm min-h-[40px]" dir="ltr" />
         </Field>
         <Field label='גובה (ס"מ)'>
-          <input type="number" value={heightCm} onChange={(e) => setHeightCm(+e.target.value)}
+          <input type="number" min="50" max="300" value={heightCm} onChange={(e) => setHeightCm(Math.max(50, +e.target.value))}
             className="w-full rounded-lg bg-secondary/40 border border-border px-2 py-2 text-sm min-h-[40px]" dir="ltr" />
         </Field>
         <Field label='משקל (ק"ג)'>
-          <input type="number" value={weightKg} onChange={(e) => setWeightKg(+e.target.value)}
+          <input type="number" min="1" max="500" value={weightKg} onChange={(e) => setWeightKg(Math.max(1, +e.target.value))}
             className="w-full rounded-lg bg-secondary/40 border border-border px-2 py-2 text-sm min-h-[40px]" dir="ltr" />
         </Field>
       </div>

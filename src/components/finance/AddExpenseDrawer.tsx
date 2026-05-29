@@ -49,7 +49,10 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
     setRateLoading(true);
     fetchExchangeRate(currency)
       .then(setExchangeRate)
-      .catch(() => toast.error("שגיאה בטעינת שער חליפין"))
+      .catch(() => {
+        toast.error("שגיאה בטעינת שער חליפין — השתמש בשער ידני");
+        setExchangeRate(1);
+      })
       .finally(() => setRateLoading(false));
   }, [currency]);
 
@@ -62,7 +65,11 @@ export function AddExpenseDrawer({ open, onClose }: AddExpenseDrawerProps) {
       return;
     }
     const effectiveCategory = category === "אחר" && customCategory.trim() ? customCategory.trim() : category;
-    const amountILS = currency === "ILS" ? amount : ilsAmount ?? amount;
+    if (currency !== "ILS" && exchangeRate <= 0) {
+      toast.error("שגיאה: שער חליפין לא תקין, לא ניתן לשמור");
+      return;
+    }
+    const amountILS = currency === "ILS" ? amount : amount / exchangeRate;
 
     addExpense.mutate(
       {

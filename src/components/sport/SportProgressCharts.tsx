@@ -33,10 +33,15 @@ export function SportProgressCharts() {
     // Group by week
     const weekMap: Record<string, number> = {};
     for (const e of entries) {
-      const d = new Date(e.date);
+      const d = new Date(e.date + 'T12:00:00'); // noon local time — safe for all UTC offsets
       const weekStart = new Date(d);
-      weekStart.setDate(d.getDate() - d.getDay());
-      const key = weekStart.toISOString().slice(0, 10);
+      weekStart.setDate(d.getDate() - d.getDay()); // Sunday of that week, in local time
+      // Format as YYYY-MM-DD using local date (not UTC)
+      const key = [
+        weekStart.getFullYear(),
+        String(weekStart.getMonth() + 1).padStart(2, '0'),
+        String(weekStart.getDate()).padStart(2, '0'),
+      ].join('-');
       weekMap[key] = Math.max(weekMap[key] || 0, e.weight);
     }
 
