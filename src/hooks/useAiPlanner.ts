@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,8 +32,10 @@ const db = supabase as any;
 // ── Workout Plans ─────────────────────────────────────────────────────────────
 
 export function useWorkoutPlans() {
+  const { user } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ["workout-plans"],
+    queryKey: ["workout-plans", userId],
     queryFn: async () => {
       const { data, error } = await db
         .from("workout_plans")
@@ -66,7 +69,9 @@ export function useSaveWorkoutPlan() {
       if (error) throw error;
       return data as WorkoutPlanRow;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-plans"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["workout-plans"] });
+    },
   });
 }
 

@@ -5,6 +5,12 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// SECURITY: This file contains SUPABASE_SERVICE_ROLE_KEY which bypasses ALL RLS.
+// It must NEVER be imported from any browser/frontend component.
+if (typeof window !== 'undefined') {
+  throw new Error('[SECURITY] client.server.ts must not be imported in browser context. Use the regular client instead.');
+}
+
 function createSupabaseAdminClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

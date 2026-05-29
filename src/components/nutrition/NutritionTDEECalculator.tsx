@@ -13,6 +13,7 @@ import {
   type Goal,
   type Sex,
 } from "@/lib/tdee";
+import { useAuth } from "@/hooks/use-auth";
 
 async function getUserId() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -22,8 +23,10 @@ async function getUserId() {
 
 export function NutritionTDEECalculator() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
   const { data: settings, isLoading } = useQuery({
-    queryKey: ["user-settings-tdee"],
+    queryKey: ["user-settings-tdee", userId],
     queryFn: async () => {
       const userId = await getUserId();
       const { data } = await supabase
@@ -81,7 +84,7 @@ export function NutritionTDEECalculator() {
     },
     onSuccess: () => {
       toast.success("יעדים עודכנו בהצלחה!");
-      qc.invalidateQueries({ queryKey: ["user-settings-tdee"] });
+      qc.invalidateQueries({ queryKey: ["user-settings-tdee", userId] });
       qc.invalidateQueries({ queryKey: ["nutrition-goals"] });
     },
     onError: (e: any) => toast.error(e?.message || "שגיאה בשמירה"),

@@ -12,6 +12,7 @@ import {
   calcTDEE,
   type ActivityLevel, type Goal, type Sex,
 } from "@/lib/tdee";
+import { useAuth } from "@/hooks/use-auth";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 async function getUserId() {
@@ -214,6 +215,8 @@ function RecipeCard({ recipe }: { recipe: RecipeResult }) {
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 export function NutritionCulinaryTab() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const userId = user?.id;
 
   // ── Profile / diet preference ──
   const { data: profile }  = useProfile();
@@ -261,7 +264,7 @@ export function NutritionCulinaryTab() {
 
   // ── Saved goals from DB (the values the user explicitly saved in Planner) ──
   const { data: savedGoals } = useQuery({
-    queryKey: ["culinary-saved-goals"],
+    queryKey: ["culinary-saved-goals", userId],
     queryFn: async () => {
       const uid = await getUserId();
       const { data } = await supabase
@@ -316,7 +319,7 @@ export function NutritionCulinaryTab() {
 
   // ── Saved templates ──
   const { data: templates = [] } = useQuery<PlanTemplate[]>({
-    queryKey: ["meal-plan-templates"],
+    queryKey: ["meal-plan-templates", userId],
     queryFn: async () => {
       const userId = await getUserId();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -345,7 +348,7 @@ export function NutritionCulinaryTab() {
     },
     onSuccess: () => {
       toast.success("תבנית נשמרה!");
-      qc.invalidateQueries({ queryKey: ["meal-plan-templates"] });
+      qc.invalidateQueries({ queryKey: ["meal-plan-templates", userId] });
       setSaveModal(false);
       setTemplateName("");
     },
@@ -360,7 +363,7 @@ export function NutritionCulinaryTab() {
     },
     onSuccess: () => {
       toast.success("תבנית נמחקה");
-      qc.invalidateQueries({ queryKey: ["meal-plan-templates"] });
+      qc.invalidateQueries({ queryKey: ["meal-plan-templates", userId] });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה במחיקה"),
   });

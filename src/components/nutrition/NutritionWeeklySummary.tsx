@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserSettings } from "@/hooks/use-sport-data";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 async function getUserId() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -14,9 +15,9 @@ function localDateStr(offsetDays = 0): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function useWeeklyStats(dailyGoal: number) {
+function useWeeklyStats(dailyGoal: number, userId: string | undefined) {
   return useQuery({
-    queryKey: ["nutrition-weekly-summary", dailyGoal],
+    queryKey: ["nutrition-weekly-summary", userId, dailyGoal],
     queryFn: async () => {
       const userId = await getUserId();
       const start = localDateStr(6);
@@ -54,9 +55,11 @@ function useWeeklyStats(dailyGoal: number) {
 }
 
 export function NutritionWeeklySummary() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const { data: userSettings } = useUserSettings();
   const dailyGoal = (userSettings as any)?.daily_calories_goal || 2000;
-  const { data, isLoading } = useWeeklyStats(dailyGoal);
+  const { data, isLoading } = useWeeklyStats(dailyGoal, userId);
 
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 space-y-3">
