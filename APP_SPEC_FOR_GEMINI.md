@@ -711,3 +711,260 @@ supabase/functions/               — 13 AI Edge Functions (Deno)
 - הוסף haptics.success() לכל save action
 - שמור על dark mode (#0a0a0a background)
 - שמור על RTL
+
+---
+
+## 21. פרוטוקול עבודה עם Claude Code — המדריך הקטלני המלא
+
+> סעיף זה מלמד אותך (הGemini Gem) **בדיוק** כיצד להכין את המשתמש לשיחות עם Claude Code, אילו פקודות קיימות, ואיך לנסח בקשות שיעבדו מהפעם הראשונה.
+
+---
+
+### 21.1 פקודות מיוחדות של Claude Code
+
+| פקודה | מה עושה | מתי להמליץ |
+|-------|---------|-----------|
+| `/compact` | מסכם את כל ההקשר — חוסך טוקנים | כל 20–25 הודעות, כשהשיחה "כבדה" |
+| `/ultrathink` | מפעיל חשיבה עמוקה לפני תשובה | ארכיטקטורה מורכבת, באגים קשים, תכנון DB |
+| `/resume` | טוען סיכום שיחה קודמת | אחרי הפסקה / שיחה חדשה |
+| `Plan Mode` | מתכנן ומציג לאישור לפני ביצוע | לפני כל פיצר חדש משמעותי |
+| `/subagents` | מריץ סוכני משנה מקבילים | משימות שאינן תלויות זו בזו |
+| `/hooks` | הגדרת אוטומציות קבועות | pre-commit checks, TypeScript validation |
+
+> ⚠️ `/compact` הוא הנשק החשוב ביותר לחיסכון — אם לא מפעילים אותו בזמן, Claude מתחיל "לשכוח" דברים ישנים מתחילת השיחה.
+
+---
+
+### 21.2 ביצוע מקביל — הכפלת המהירות
+
+Claude Code יכול להריץ **2–4 סוכנים בו-זמנית**. זה חוסך 50–75% מהזמן:
+
+**תבנית לביצוע מקביל:**
+```
+"תפצל ל-2 סוכנים במקביל:
+סוכן A: [משימה ראשונה + קבצים]
+סוכן B: [משימה שנייה + קבצים]"
+```
+
+**דוגמה מעשית:**
+```
+"תפצל ל-2 סוכנים במקביל:
+סוכן A: תוסיף FavoriteMealsQuickAdd לדף הבית (src/components/home/ModernHome.tsx)
+סוכן B: תוסיף QuickExpenseButtons לפיננסים (src/components/finance/FinanceDashboardTab.tsx)"
+```
+
+**מתי מקביל? מתי סדרתי?**
+- ✅ מקביל: קבצים שונים, מודולים שונים, אין תלות
+- ❌ סדרתי: B תלוי בתוצאת A / שני סוכנים עורכים אותו קובץ
+
+---
+
+### 21.3 תבנית הבקשה המנצחת — עקרון ה-5 שניות
+
+**הכלל:** אם Claude לא מבין מה אתה רוצה ב-5 שניות — הבקשה גרועה.
+
+```
+🎯 מה אני רוצה: [משפט אחד ברור]
+📁 קבצים רלוונטיים: [נתיבים מדויקים]
+⛔ אל תגע ב: [מה שעובד וצריך להישאר]
+📊 פלט מצופה: [קוד / JSON / PR / הסבר]
+⚡ בצע במקביל: [כן — פצל לסוכנים / לא — סדרתי]
+```
+
+**דוגמה טובה vs. גרועה:**
+```
+❌ גרוע:  "תשפר את הפיננסים"
+✅ מעולה: "תוסיף haptics.success() בשמירת הוצאה
+           קובץ: src/components/finance/AddExpenseDrawer.tsx
+           שורה: בתוך onSubmit handler, אחרי queryClient.invalidateQueries
+           אל תגע ביתר הקוד"
+```
+
+---
+
+### 21.4 ניהול הקשר — תמנע מ"שכחה"
+
+#### Persona — הגדרת תפקיד בתחילת שיחה
+```
+"פעל כ-Senior React developer עם ניסיון ב:
+- TanStack Router v1 (לא React Router!)
+- Supabase Edge Functions (Deno runtime)
+- Hebrew RTL, dark mode only (#0a0a0a)
+- React Query v5 עם userId בכל query key
+לעולם אל תציע פתרונות שלא מתאימים לפרויקט הזה"
+```
+
+#### Context Anchoring — עגן בתחילת כל שיחה חדשה
+```
+"הפרויקט: React 19 + TanStack Router + Supabase
+Stack מלא: ראה APP_SPEC_FOR_GEMINI.md
+כלל ברזל: אל תשבור דברים שעובדים
+Environment: מובייל בלבד, RTL עברית, dark mode"
+```
+
+#### Few-Shot — תן דוגמה
+```
+"הנה קומפוננטה קיימת שכבר עובדת: [הדבק קוד]
+תכתוב משהו דומה עבור [X] באותו סגנון ומבנה"
+```
+
+---
+
+### 21.5 כללי חיסכון בטוקנים — 10 זהב
+
+1. **ישר לעניין** — "תקן שורה 45" לא "אני חושב שאולי יש בעיה..."
+2. **נתיב מלא תמיד** — `src/components/finance/AddExpenseDrawer.tsx` לא "בקובץ הפיננסים"
+3. **`/compact`** כל 20 הודעות — חובה
+4. **שיחה חדשה** לכל נושא חדש — אל תמשיך שיחה ישנה לנושא אחר
+5. **`"Return only valid JSON"`** — כשרוצים JSON בלבד, ללא הסברים
+6. **`"Use minimum words necessary"`** — Claude יענה קצר
+7. **Plan Mode** לפני ביצוע — חוסך ריצות חוזרות
+8. **`"Directly to the content. No preamble."`** — ללא "כמובן! אשמח לעזור..."
+9. **הפרד משימות** — מקסימום 2–3 משימות קשורות בהודעה אחת
+10. **סדרתי עם אישור** — A → אשר → B, לא A+B+C יחד
+
+---
+
+### 21.6 לחשוב מחוץ לקופסא
+
+#### Chain of Thought
+```
+"Think step-by-step לפני שאתה מציע פתרון"
+תוצאה: Claude חושב עמוק לפני שמבצע — פחות טעויות
+```
+
+#### ביקורת עצמית לפני שליחה
+```
+"לפני שתשלח את הקוד — עבור עליו ובדוק:
+1. TypeScript errors (npx tsc --noEmit)
+2. האם כל query key כולל userId?
+3. האם יש RTL issues?
+4. האם dark mode לא נשבר?"
+```
+
+#### עצור וברר לפני ביצוע
+```
+"אל תתחיל לכתוב קוד — שאל אותי 3 שאלות הבהרה קודם"
+```
+
+#### Plan Mode — חובה לפני פיצר גדול
+```
+"היכנס ל-Plan Mode: הצג תוכנית מפורטת → אחכה לאישורי → רק אז תבצע"
+```
+
+---
+
+### 21.7 יכולות מיוחדות של Claude Code
+
+- **Coworker**: בניית מסמכים, PDF, הכנת תוכן מורכב
+- **קריאת תמונות/screenshots**: "הנה screenshot של הUI — בנה את הקומפוננטה לפי זה"
+- **PR אוטומטי**: "צור branch + commit + PR ל-GitHub עם הכותרת [X]"
+- **Deploy ל-Supabase**: ישירות דרך MCP — "deploy את ה-edge function הזו"
+- **TypeScript check**: "הרץ `npx tsc --noEmit` ותדווח על שגיאות"
+- **ביצוע מקביל**: עד 4 sub-agents בו-זמנית
+
+---
+
+### 21.8 שגיאות נפוצות — אזהר תמיד מאלה
+
+```
+❌ React Router     → תמיד TanStack Router v1
+❌ REST ידני        → תמיד supabase.functions.invoke()
+❌ letter-spacing לעברית → שובר קריאות
+❌ light mode components → background חייב #0a0a0a
+❌ direction: rtl בלבד → תשתמש ב-Logical CSS Properties (ms-auto, pe-4)
+❌ query key בלי userId → גורם לבאגים multi-user
+❌ edge function בלי auth → חובה לבדוק Authorization header
+❌ הוספת npm packages ללא אישור → תמיד תשאל קודם
+```
+
+---
+
+### 21.9 Query Keys — הכלל הזהב
+
+```typescript
+// ✅ נכון — userId תמיד במקום ראשון
+['expenses', userId, month, year]
+['workouts', userId, weekStart]
+['nutrition', userId, date]
+
+// ❌ שגוי — חסר userId → כל המשתמשים יראו אותם נתונים!
+['expenses', month]
+['workouts', weekStart]
+```
+
+---
+
+### 21.10 מילון מונחים — שפה משותפת
+
+| מה המשתמש אומר | מה Claude Code צריך לבצע |
+|----------------|--------------------------|
+| "תוסיף במקביל" | הפעל sub-agents מקבילים |
+| "תכנן קודם" | הכנס Plan Mode, הצג לאישור |
+| "אל תשבור" | preserve all existing working code |
+| "compact" | הפעל /compact לסיכום הקשר |
+| "אשר לפני" | הצג תוכנית מפורטת, אל תבצע עד אישור |
+| "קטלני / מטורף" | best possible implementation, no shortcuts |
+| "PR" | branch + commit + pull request לGitHub |
+| "deploy" | הפעל/עדכן edge function בSupabase |
+| "edge function" | `supabase/functions/[name]/index.ts` (Deno) |
+| "hook" | React Query hook ב-`src/hooks/` |
+| "migration" | SQL שנשלח ל-Supabase MCP |
+| "ultrathink" | `/ultrathink` לחשיבה עמוקה |
+
+---
+
+### 21.11 כיצד הGemini Gem מכין שיחה עם Claude Code
+
+**כשהמשתמש מבקש פיצר חדש:**
+1. בדוק: "האם הטבלה הנדרשת קיימת כבר ב-DB?" (ראה סעיף 4)
+2. הצע: "השתמש ב-Plan Mode לפני שמתחיל"
+3. הזהר: "ודא שה-query key יכלול userId"
+4. המלץ: "בצע במקביל עם subagents אם יש 2+ קבצים שאינם תלויים"
+5. הזכר: "הוסף haptics.success() לכל save action"
+
+**כשהמשתמש מדווח על באג:**
+1. שאל: "הבאג ב-edge function או ב-frontend?"
+2. בדוק: "האם ה-query key כולל userId?"
+3. בדוק: "האם יש Authorization header בEdge Function?"
+4. הצע: "תוסיף `/ultrathink` לפני debug מורכב"
+
+**כשהמשתמש רוצה לחסוך זמן:**
+```
+→ "כתוב לClaude: 'תפצל ל-X סוכנים מקביליים'"
+→ "לפני שיחה ארוכה — הפעל /compact"
+→ "תן הקשר מלא מ-APP_SPEC_FOR_GEMINI.md"
+→ "בקש Plan Mode לפני כל פיצר גדול"
+```
+
+---
+
+### 21.12 Template מלא לתחילת שיחה עם Claude Code
+
+העתק-הדבק את זה בתחילת כל שיחה חדשה עם Claude Code:
+
+```
+היי, אני ממשיך לעבוד על My Life Dashboard.
+
+Context:
+- React 19 + TypeScript 5.8 + TanStack Router v1
+- Supabase (PostgreSQL + Auth + Edge Functions/Deno)
+- OpenAI: gpt-4o לvision/complex, gpt-4o-mini לsimple text
+- Vite v7 + Tailwind v4 (oklch) + Framer Motion v12
+- Dark mode בלבד (#0a0a0a), RTL עברית, Heebo font
+- Multi-user: כל query key חייב לכלול userId
+- PWA: Workbox + IndexedDB offline queue
+
+כללים קבועים:
+1. אל תשבור דברים שעובדים
+2. Plan Mode לפני פיצר גדול
+3. Query keys תמיד עם userId
+4. haptics.success() בכל save
+5. לא להוסיף npm packages ללא אישורי
+
+משימה: [תאר כאן מה אתה רוצה]
+```
+
+---
+
+> **הערה לGemini Gem:** כשהמשתמש שואל "איך אני אומר לClaude לעשות X?" — השתמש בתבניות מסעיף זה. כשהמשתמש מתכנן פיצר — הצלב עם ה-DB schema בסעיף 4 ועם רשימת הEdge Functions בסעיף 13.
