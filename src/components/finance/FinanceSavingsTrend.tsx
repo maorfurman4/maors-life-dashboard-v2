@@ -2,8 +2,10 @@ import { TrendingUp } from "lucide-react";
 import { useExpenseHistory, useIncomeHistory } from "@/hooks/use-finance-data";
 import { useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
+import { motion } from "framer-motion";
+import { formatAmount } from "@/utils/format-currency";
 
-const fmtNum = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
+const fmtNum = formatAmount;
 
 export function FinanceSavingsTrend() {
   const { data: expenseHistory } = useExpenseHistory(6);
@@ -45,7 +47,12 @@ export function FinanceSavingsTrend() {
   if (chartData.length < 2) return null;
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-5 space-y-4">
+    <motion.div
+      className="rounded-2xl bg-card border border-border p-5 space-y-4"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       <div className="flex items-center gap-2">
         <TrendingUp className="h-4 w-4 text-finance" />
         <h3 className="text-sm font-semibold text-muted-foreground">מגמת חיסכון — 6 חודשים</h3>
@@ -54,18 +61,26 @@ export function FinanceSavingsTrend() {
       <div className="h-52">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="month" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-            <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={40} tickFormatter={(v) => `${v}%`} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+            <XAxis dataKey="month" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.4)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "rgba(255,255,255,0.3)" }} width={40} tickFormatter={(v) => `${v}%`} axisLine={false} tickLine={false} />
             <Tooltip
-              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
+              contentStyle={{
+                background: "#0d0d0d",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 12,
+                fontSize: 12,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+              }}
+              labelStyle={{ color: "rgba(255,255,255,0.5)", fontSize: 10 }}
+              itemStyle={{ color: "#fff" }}
               formatter={(v: number, name: string) => {
                 if (name === "savingsPct") return [`${v}%`, "% חיסכון"];
                 return [`₪${fmtNum(v)}`, name === "income" ? "הכנסות" : name === "expense" ? "הוצאות" : "חיסכון"];
               }}
             />
-            <ReferenceLine y={35} stroke="hsl(45, 80%, 55%)" strokeDasharray="5 5" label={{ value: "יעד 35%", fill: "hsl(45, 80%, 55%)", fontSize: 10 }} />
-            <Line type="monotone" dataKey="savingsPct" stroke="hsl(145, 80%, 50%)" strokeWidth={2} dot={{ r: 3 }} name="savingsPct" />
+            <ReferenceLine y={35} stroke="rgba(244,226,140,0.5)" strokeDasharray="5 5" label={{ value: "יעד 35%", fill: "rgba(244,226,140,0.6)", fontSize: 10 }} />
+            <Line type="monotone" dataKey="savingsPct" stroke="hsl(145, 80%, 50%)" strokeWidth={2} dot={{ r: 3, fill: "hsl(145,80%,50%)" }} name="savingsPct" />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -85,6 +100,6 @@ export function FinanceSavingsTrend() {
           </div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
