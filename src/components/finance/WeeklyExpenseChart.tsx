@@ -9,8 +9,10 @@ import {
   ReferenceLine,
   Cell,
 } from "recharts";
+import { motion } from "framer-motion";
 import { useExpenseHistory } from "@/hooks/use-finance-data";
 import { FT } from "@/lib/finance-theme";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Period = "week" | "month" | "3months";
 
@@ -171,14 +173,36 @@ export function WeeklyExpenseChart() {
   }, [data]);
 
   if (isLoading) {
-    return <div className="h-48 rounded-3xl animate-pulse bg-white/10" />;
+    return (
+      <div
+        className="rounded-3xl p-4 space-y-4"
+        style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}
+      >
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-3 w-24 rounded" />
+          <div className="flex gap-1">
+            <Skeleton className="h-6 w-14 rounded-full" />
+            <Skeleton className="h-6 w-14 rounded-full" />
+            <Skeleton className="h-6 w-20 rounded-full" />
+          </div>
+        </div>
+        <div className="flex items-end gap-1.5 h-40 pt-2">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Skeleton key={i} className="flex-1 rounded-t-md" style={{ height: `${30 + Math.random() * 70}%` }} />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div
+    <motion.div
       className="rounded-3xl p-4 space-y-4"
       style={{ background: FT.card, border: `1px solid ${FT.goldBorder}` }}
       dir="rtl"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="flex items-center justify-between">
         <p className="text-xs font-black" style={{ color: FT.textMuted }}>
@@ -249,6 +273,6 @@ export function WeeklyExpenseChart() {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </motion.div>
   );
 }
