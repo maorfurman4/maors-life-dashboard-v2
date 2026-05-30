@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { haptics } from "@/lib/haptics";
+import { fileToBase64 } from "@/utils/file-utils";
 
 interface AddPayslipDrawerProps {
   open: boolean;
@@ -30,18 +31,6 @@ const inputCls =
 const inputSmCls =
   "w-full px-3 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-[13px] text-white/90 placeholder:text-white/30 focus:outline-none focus:border-white/25 transition-all";
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // Strip the data URL prefix, keep only base64 payload
-      resolve(result.split(",")[1]);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 export function AddPayslipDrawer({ open, onClose }: AddPayslipDrawerProps) {
   const queryClient = useQueryClient();
