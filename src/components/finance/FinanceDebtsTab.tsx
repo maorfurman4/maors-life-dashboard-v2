@@ -3,6 +3,7 @@ import {
   Plus, ChevronDown, ChevronUp, Trash2,
   Building2, Car, CreditCard, Zap, X, Check,
 } from "lucide-react";
+import { FixedExpenseSkeleton } from "@/components/finance/FinanceSkeleton";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
@@ -633,10 +634,7 @@ export function FinanceDebtsTab(_: { year: number; month: number }) {
       {showForm && <AddDebtForm onAdd={handleAdd} onCancel={() => setShowForm(false)} />}
 
       {isLoading ? (
-        <div className="flex justify-center py-6">
-          <div className="h-5 w-5 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: `${FT.goldBorder} ${FT.goldBorder} ${FT.goldBorder} ${FT.gold}` }} />
-        </div>
+        <FixedExpenseSkeleton />
       ) : (
         <>
           {debts.length > 1 && <DebtsSummary debts={debts} />}

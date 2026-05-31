@@ -3,6 +3,7 @@ import {
   Plus, Minus, Check, ChevronDown, ChevronUp,
   Trash2, RefreshCw, CreditCard,
 } from "lucide-react";
+import { FixedExpenseSkeleton } from "@/components/finance/FinanceSkeleton";
 import {
   useAddExpense,
   useAddIncome,
@@ -592,10 +593,7 @@ function FixedSection({ year, month }: { year: number; month: number }) {
 
       {/* Active items */}
       {isLoading ? (
-        <div className="flex justify-center py-6">
-          <div className="h-5 w-5 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: `${FT.goldBorder} ${FT.goldBorder} ${FT.goldBorder} ${FT.gold}` }} />
-        </div>
+        <FixedExpenseSkeleton />
       ) : active.length === 0 && !showForm ? (
         <p className="text-center text-xs py-6" style={{ color: FT.textFaint, letterSpacing: 0 }}>
           אין קבועות פעילות · לחץ "הוסף" להוספה ראשונה

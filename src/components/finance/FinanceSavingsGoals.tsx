@@ -3,6 +3,7 @@ import { Plus, Trash2, PiggyBank } from "lucide-react";
 import { useSavingsGoals, type SavingsGoal } from "@/hooks/useSavingsGoals";
 import { FT } from "@/lib/finance-theme";
 import { toast } from "sonner";
+import { SavingsGoalSkeleton } from "@/components/finance/FinanceSkeleton";
 
 const EMOJI_OPTIONS = ["🎯", "🏠", "🚗", "✈️", "💎", "🎓"];
 const fmt = (n: number) => n.toLocaleString("he-IL", { maximumFractionDigits: 0 });
@@ -310,17 +311,7 @@ export function FinanceSavingsGoals() {
         />
       )}
 
-      {isLoading && (
-        <div className="space-y-3">
-          {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="rounded-3xl h-28 animate-pulse"
-              style={{ background: FT.card }}
-            />
-          ))}
-        </div>
-      )}
+      {isLoading && <SavingsGoalSkeleton />}
 
       {!isLoading && goals.length === 0 && !addOpen && (
         <div
