@@ -87,7 +87,7 @@ export function FinanceTransactions() {
         <div className="space-y-2">
           {displayed.map((item: any) => (
             <div key={item.id}
-              className="flex items-center justify-between px-3 py-2.5 rounded-2xl group transition-all"
+              className="flex items-center justify-between px-3 py-2.5 rounded-2xl group transition-all duration-150 hover:bg-white/5 cursor-pointer"
               style={{ background: FT.cardLight, border: `1px solid ${FT.brownBorder}` }}>
               <div className="flex items-center gap-2 min-w-0">
                 {item._type === "expense"
