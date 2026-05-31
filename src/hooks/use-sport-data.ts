@@ -302,10 +302,22 @@ export function useUpdateWorkoutTemplate() {
   const userId = user?.id;
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, exercises }: { id: string; exercises: { name: string; sets: number; reps: number; weight_kg: number }[] }) => {
+    mutationFn: async ({ id, exercises, name, category, estimated_duration_minutes }: {
+      id: string;
+      exercises: { name: string; sets: number; reps: number; weight_kg: number; youtube_link?: string }[];
+      name?: string;
+      category?: string;
+      estimated_duration_minutes?: number;
+    }) => {
       const { error } = await supabase
         .from("workout_templates")
-        .update({ exercises })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({
+          exercises: exercises as any,
+          ...(name !== undefined && { name }),
+          ...(category !== undefined && { category }),
+          ...(estimated_duration_minutes !== undefined && { estimated_duration_minutes }),
+        } as any)
         .eq("id", id);
       if (error) throw error;
     },
