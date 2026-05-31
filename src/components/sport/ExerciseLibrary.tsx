@@ -165,7 +165,7 @@ export function ExerciseLibrary() {
             >
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">{ex.name}</p>
+                  <p className="text-sm font-bold leading-tight line-clamp-2">{ex.name}</p>
                   <p className="text-[10px] text-muted-foreground" dir="ltr">{ex.nameEn}</p>
                 </div>
                 <span className={`shrink-0 px-2 py-0.5 rounded text-[9px] font-semibold ${DIFFICULTY_COLOR[ex.difficulty]}`}>
