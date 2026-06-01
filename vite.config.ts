@@ -17,6 +17,18 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,webp}'],
         runtimeCaching: [
+          // HTML navigation requests — always try network first so users
+          // always get the latest index.html after a new deployment.
+          // Falls back to cache only when offline (networkTimeoutSeconds).
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-navigation-cache',
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 10, maxAgeSeconds: 86400 },
+            },
+          },
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\//,
             handler: 'NetworkFirst',
