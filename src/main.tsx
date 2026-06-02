@@ -2,8 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
 import { registerSW } from 'virtual:pwa-register'
+import { toast } from 'sonner'
 import { getRouter } from './router'
 import './styles.css'
+
+// ✅ VERSION PROBE — remove after confirming update reached user
+const APP_VERSION = 'v2.1-sport-update'
 
 // Auto-reload when a new Service Worker version is available.
 // skipWaiting + clientsClaim are set in vite.config.ts so the new SW
@@ -25,6 +29,14 @@ registerSW({
 })
 
 const router = getRouter()
+
+// Show version toast after first render
+setTimeout(() => {
+  toast.success(`✅ גרסה עדכנית נטענה — ${APP_VERSION}`, {
+    duration: 6000,
+    position: 'top-center',
+  })
+}, 1500)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
