@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { DesktopSidebar } from "./DesktopSidebar";
 import { TopBar } from "./TopBar";
 import { SideNavDrawer } from "./SideNavDrawer";
-import { RootLayout } from "./RootLayout";
 import { FloatingChatButton } from "@/components/ai-chat/FloatingChatButton";
 import { XPBar } from "@/components/gamification/XPBar";
 import { NotificationPermission } from "@/components/shared/NotificationPermission";
@@ -34,20 +33,18 @@ export function AppLayout() {
   // No useLocation() here — only AnimatedOutlet subscribes to navigation changes
 
   return (
-    <RootLayout>
-      <div className="flex min-h-screen w-full overflow-x-hidden" dir="rtl">
-        <DesktopSidebar />
-        <div className="flex-1 flex flex-col min-h-screen min-w-0">
-          <TopBar onMenuOpen={() => setNavOpen(true)} xpBar={<XPBar />} />
-          <main id="main-content" role="main" aria-label="תוכן ראשי" className="flex-1 p-3 md:p-6 pt-[104px] md:pt-[112px] flex flex-col">
-            <AnimatedOutlet />
-          </main>
-        </div>
-        <SideNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
-        <FloatingChatButton />
-        <NotificationPermission />
-        <PWAInstallPrompt />
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-background" dir="rtl">
+      <DesktopSidebar />
+      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+        <TopBar onMenuOpen={() => setNavOpen(true)} xpBar={<XPBar />} />
+        <main id="main-content" role="main" aria-label="תוכן ראשי" className="flex-1 p-3 md:p-6 pt-[104px] md:pt-[112px] flex flex-col">
+          <AnimatedOutlet />
+        </main>
       </div>
-    </RootLayout>
+      <SideNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
+      <FloatingChatButton />
+      <NotificationPermission />
+      <PWAInstallPrompt />
+    </div>
   );
 }
