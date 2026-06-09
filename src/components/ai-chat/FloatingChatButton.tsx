@@ -15,7 +15,7 @@ export function FloatingChatButton() {
         onClick={() => setOpen(true)}
         aria-label="פתח עוזר אישי"
         className={[
-          "fixed z-[140] bottom-20 right-4",
+          "fixed z-[140] bottom-20 left-4",
           "w-12 h-12 rounded-full",
           "bg-gradient-to-br from-blue-600 to-purple-600",
           "shadow-lg shadow-blue-900/50",
