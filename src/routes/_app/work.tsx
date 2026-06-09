@@ -1230,8 +1230,25 @@ function WorkPage() {
   }, []);
 
   const now   = new Date();
-  const year  = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const todayYear  = now.getFullYear();
+  const todayMonth = now.getMonth() + 1;
+
+  // Month navigator state — defaults to current month
+  const [year,  setYear]  = useState(todayYear);
+  const [month, setMonth] = useState(todayMonth);
+
+  const isCurrentMonth = year === todayYear && month === todayMonth;
+
+  const goToPrevMonth = useCallback(() => {
+    setYear(y => month === 1 ? y - 1 : y);
+    setMonth(m => m === 1 ? 12 : m - 1);
+  }, [month]);
+
+  const goToNextMonth = useCallback(() => {
+    if (isCurrentMonth) return;
+    setYear(y => month === 12 ? y + 1 : y);
+    setMonth(m => m === 12 ? 1 : m + 1);
+  }, [month, isCurrentMonth]);
 
   const { data: settings } = usePayrollSettings();
   const { data: shifts }   = useWorkShifts(year, month);
@@ -1259,8 +1276,40 @@ function WorkPage() {
         </div>
 
         <div className="relative z-10 pb-32 pt-8">
-          {/* Monthly gross summary */}
-          <div className="px-4 pt-4 pb-2 flex justify-end">
+          {/* Month navigator + gross summary */}
+          <div className="px-4 pt-4 pb-2 flex items-center justify-between gap-3">
+            {/* ← → month picker */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={goToPrevMonth}
+                className="h-8 w-8 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <span className="text-white/70 text-sm">›</span>
+              </button>
+              <div className="text-center min-w-[90px]">
+                <p className="text-sm font-bold text-white/90">{monthLabel}</p>
+                {!isCurrentMonth && (
+                  <button
+                    onClick={() => { setYear(todayYear); setMonth(todayMonth); }}
+                    className="text-[9px] text-sky-400 font-medium hover:underline"
+                  >
+                    חזור להיום
+                  </button>
+                )}
+                {isCurrentMonth && (
+                  <p className="text-[9px] text-white/30">חודש נוכחי</p>
+                )}
+              </div>
+              <button
+                onClick={goToNextMonth}
+                disabled={isCurrentMonth}
+                className="h-8 w-8 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
+              >
+                <span className="text-white/70 text-sm">‹</span>
+              </button>
+            </div>
+
+            {/* Gross pill */}
             <div className="rounded-2xl border border-sky-500/20 bg-sky-500/8 backdrop-blur-xl px-3 py-2 text-center shrink-0">
               <p className="text-[9px] text-white/35 font-medium">ברוטו חודש</p>
               <p className="text-sm font-black text-sky-300">{fmtNis(payslip.totalGross + couponTotal)}</p>
