@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_app/work")({
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type WorkTab = "dashboard" | "finance" | "reports" | "settings" | "history";
+type WorkTab = "dashboard" | "finance" | "reports" | "settings";
 
 interface LiveShiftState {
   type: string;
@@ -50,7 +50,6 @@ const TABS: { key: WorkTab; label: string }[] = [
   { key: "finance",   label: "הבנק"     },
   { key: "reports",   label: "דוחות"    },
   { key: "settings",  label: "חוזה"     },
-  { key: "history",   label: "היסטוריה 📋" },
 ];
 
 const SHIFT_CARDS: ShiftCardDef[] = [
@@ -1356,16 +1355,6 @@ function WorkPage() {
           )}
           {activeTab === "settings" && (
             <SettingsTab settings={resolvedSettings} />
-          )}
-          {activeTab === "history" && (
-            <HistoryTab
-              shifts={resolvedShifts}
-              settings={resolvedSettings}
-              year={year}
-              month={month}
-              monthLabel={monthLabel}
-              payslip={payslip}
-            />
           )}
         </div>
       </div>
